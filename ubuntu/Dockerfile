@@ -18,7 +18,7 @@ RUN apt-get update \
 
 # Install agent-browser + Chromium with system deps
 RUN npm install -g agent-browser \
- && agent-browser install --with-deps
+ && npx playwright install-deps chromium
 
 COPY package.json index.js /app/
 RUN cd /app && npm install --production
