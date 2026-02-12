@@ -174,7 +174,105 @@ if [[ -n "$GH_TOKEN" ]]; then
   ok "gh auth configured"
 fi
 
-# ─── 12. Cleanup ─────────────────────────────────────────────────────
+# ─── 12. Generate uninstall script ────────────────────────────────────
+banner "Generating uninstall script"
+UNINSTALL="/home/clawdius/uninstall.sh"
+cat > "$UNINSTALL" <<'UNINSTALL_EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; NC='\033[0m'
+banner() { printf "\n${CYAN}==> %s${NC}\n" "$*"; }
+ok()     { printf "${GREEN} ✓  %s${NC}\n" "$*"; }
+die()    { printf "${RED}ERROR: %s${NC}\n" "$*" >&2; exit 1; }
+
+if [[ $EUID -ne 0 ]]; then
+  printf "\n${RED}  This script must be run with sudo.${NC}\n"
+  printf "  Usage: sudo bash %s\n\n" "$0"
+  exit 1
+fi
+
+printf "\n${RED}  WARNING: This will remove all tools and the clawdius user.${NC}\n"
+printf "  The following will be uninstalled:\n"
+printf "    - Node.js, npm\n"
+printf "    - Bun\n"
+printf "    - uv\n"
+printf "    - GitHub CLI\n"
+UNINSTALL_EOF
+
+# Conditionally add optional tools to the warning list
+if [[ "$INSTALL_BROWSER" == true ]]; then
+  echo 'printf "    - agent-browser + Chromium\n"' >> "$UNINSTALL"
+fi
+if [[ "$INSTALL_OPENCLAW" == true ]]; then
+  echo 'printf "    - OpenClaw CLI\n"' >> "$UNINSTALL"
+fi
+
+cat >> "$UNINSTALL" <<'UNINSTALL_EOF'
+printf "    - User: clawdius (and /home/clawdius)\n"
+printf "\n"
+read -rp "  Are you sure? Type 'yes' to confirm: " confirm
+[[ "$confirm" == "yes" ]] || { printf "Aborted.\n"; exit 0; }
+
+banner "Removing Node.js"
+apt-get purge -y nodejs || true
+rm -f /etc/apt/sources.list.d/nodesource.list
+ok "Node.js removed"
+
+banner "Removing Bun"
+rm -rf /home/clawdius/.bun /root/.bun
+ok "Bun removed"
+
+banner "Removing uv"
+rm -rf /home/clawdius/.local/bin/uv /home/clawdius/.local/bin/uvx \
+       /root/.local/bin/uv /root/.local/bin/uvx
+ok "uv removed"
+
+banner "Removing GitHub CLI"
+apt-get purge -y gh || true
+rm -f /etc/apt/sources.list.d/github-cli.list \
+      /usr/share/keyrings/githubcli-archive-keyring.gpg
+ok "GitHub CLI removed"
+UNINSTALL_EOF
+
+if [[ "$INSTALL_BROWSER" == true ]]; then
+  cat >> "$UNINSTALL" <<'UNINSTALL_EOF'
+
+banner "Removing agent-browser"
+npm rm -g agent-browser 2>/dev/null || true
+ok "agent-browser removed"
+UNINSTALL_EOF
+fi
+
+if [[ "$INSTALL_OPENCLAW" == true ]]; then
+  cat >> "$UNINSTALL" <<'UNINSTALL_EOF'
+
+banner "Removing OpenClaw CLI"
+rm -rf /home/clawdius/.openclaw
+su - clawdius -c "openclaw uninstall" 2>/dev/null || true
+ok "OpenClaw removed"
+UNINSTALL_EOF
+fi
+
+cat >> "$UNINSTALL" <<'UNINSTALL_EOF'
+
+banner "Removing clawdius user"
+userdel -r clawdius 2>/dev/null || true
+ok "User clawdius removed"
+
+banner "Cleaning up"
+apt-get autoremove -y
+apt-get clean
+ok "Cleanup complete"
+
+printf "\n${GREEN}  Uninstall finished.${NC}\n\n"
+UNINSTALL_EOF
+
+chmod +x "$UNINSTALL"
+chown clawdius:clawdius "$UNINSTALL"
+ok "Uninstall script written to $UNINSTALL"
+
+# ─── 13. Cleanup ─────────────────────────────────────────────────────
 banner "Cleaning up APT cache"
 rm -rf /var/lib/apt/lists/*
 ok "Done"
@@ -233,3 +331,10 @@ if [[ "$INSTALL_OPENCLAW" == true ]]; then
   printf "  Docs: https://docs.openclaw.ai/start/getting-started\n"
   printf "\n"
 fi
+
+printf "  ${CYAN}Uninstall${NC}\n"
+printf "  ──────────────────────────────────────\n"
+printf "  To remove everything installed by this script:\n"
+printf "\n"
+printf "    sudo bash /home/clawdius/uninstall.sh\n"
+printf "\n"
