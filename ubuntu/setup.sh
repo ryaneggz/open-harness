@@ -82,26 +82,7 @@ apt-get install -y --no-install-recommends \
   unzip
 ok "Base packages installed"
 
-# ─── 2. Node.js 22.x ────────────────────────────────────────────────
-banner "Installing Node.js 22.x"
-curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-apt-get install -y --no-install-recommends nodejs
-ok "Node.js $(node --version) installed"
-
-# ─── 3. Bun ─────────────────────────────────────────────────────────
-banner "Installing Bun"
-curl -fsSL https://bun.sh/install | bash
-export BUN_INSTALL="/root/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-ok "Bun $(bun --version) installed"
-
-# ─── 4. uv (Python package manager) ─────────────────────────────────
-banner "Installing uv"
-curl -LsSf https://astral.sh/uv/install.sh | sh
-export PATH="/root/.local/bin:$PATH"
-ok "uv $(uv --version) installed"
-
-# ─── 5. GitHub CLI ──────────────────────────────────────────────────
+# ─── 2. GitHub CLI ──────────────────────────────────────────────────
 banner "Installing GitHub CLI"
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
   -o /usr/share/keyrings/githubcli-archive-keyring.gpg
@@ -111,18 +92,7 @@ apt-get update
 apt-get install -y --no-install-recommends gh
 ok "GitHub CLI $(gh --version | head -1) installed"
 
-# ─── 6. agent-browser + Chromium (optional) ──────────────────────────
-if [[ "$INSTALL_BROWSER" == true ]]; then
-  banner "Installing agent-browser and Chromium"
-  npm install -g agent-browser
-  agent-browser install --with-deps
-  ok "agent-browser + Chromium installed"
-else
-  banner "Skipping agent-browser"
-  ok "Skipped"
-fi
-
-# ─── 7. Create clawdius user ──────────────────────────────────────────
+# ─── 3. Create clawdius user ──────────────────────────────────────────
 banner "Creating user 'clawdius'"
 if id "clawdius" &>/dev/null; then
   printf "  User 'clawdius' already exists — updating groups.\n"
@@ -132,6 +102,40 @@ fi
 echo "clawdius:${CLAWDIUS_PW}" | chpasswd
 usermod -aG sudo clawdius
 ok "User 'clawdius' configured (sudo)"
+
+# Helper to run commands as clawdius with nvm loaded
+as_clawdius() {
+  su - clawdius -c "export NVM_DIR=/home/clawdius/.nvm && [ -s \$NVM_DIR/nvm.sh ] && . \$NVM_DIR/nvm.sh && $1"
+}
+
+# ─── 4. nvm + Node.js 22 ────────────────────────────────────────────
+banner "Installing nvm and Node.js 22 for clawdius"
+su - clawdius -c "curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash"
+as_clawdius "nvm install 22"
+as_clawdius "nvm alias default 22"
+ok "nvm + Node.js $(as_clawdius 'node --version') installed"
+
+# ─── 5. Bun ──────────────────────────────────────────────────────────
+banner "Installing Bun for clawdius"
+su - clawdius -c "curl -fsSL https://bun.sh/install | bash"
+ok "Bun installed"
+
+# ─── 6. uv (Python package manager) ──────────────────────────────────
+banner "Installing uv for clawdius"
+su - clawdius -c "curl -LsSf https://astral.sh/uv/install.sh | sh"
+ok "uv installed"
+
+# ─── 7. agent-browser + Chromium (optional) ──────────────────────────
+if [[ "$INSTALL_BROWSER" == true ]]; then
+  banner "Installing agent-browser and Chromium"
+  as_clawdius "npm install -g agent-browser"
+  as_clawdius "npx agent-browser install --with-deps" || \
+    apt-get update && as_clawdius "npx playwright install-deps chromium"
+  ok "agent-browser + Chromium installed"
+else
+  banner "Skipping agent-browser"
+  ok "Skipped"
+fi
 
 # ─── 8. Git global config (optional) ─────────────────────────────────
 if [[ -n "$GIT_USER_NAME" ]]; then
@@ -159,7 +163,7 @@ fi
 # ─── 10. OpenClaw (optional) ──────────────────────────────────────────
 if [[ "$INSTALL_OPENCLAW" == true ]]; then
   banner "Installing OpenClaw CLI"
-  su - clawdius -c "curl -fsSL https://openclaw.ai/install.sh | bash"
+  as_clawdius "curl -fsSL https://openclaw.ai/install.sh | OPENCLAW_NO_TTY=1 bash"
   ok "OpenClaw CLI installed"
   printf "  Run 'openclaw onboard --install-daemon' as clawdius to complete setup.\n"
 else
@@ -194,7 +198,7 @@ fi
 
 printf "\n${RED}  WARNING: This will remove all tools and the clawdius user.${NC}\n"
 printf "  The following will be uninstalled:\n"
-printf "    - Node.js, npm\n"
+printf "    - nvm, Node.js, npm\n"
 printf "    - Bun\n"
 printf "    - uv\n"
 printf "    - GitHub CLI\n"
@@ -214,10 +218,9 @@ printf "\n"
 read -rp "  Are you sure? Type 'yes' to confirm: " confirm
 [[ "$confirm" == "yes" ]] || { printf "Aborted.\n"; exit 0; }
 
-banner "Removing Node.js"
-apt-get purge -y nodejs || true
-rm -f /etc/apt/sources.list.d/nodesource.list
-ok "Node.js removed"
+banner "Removing nvm + Node.js"
+rm -rf /home/clawdius/.nvm
+ok "nvm + Node.js removed"
 
 banner "Removing Bun"
 rm -rf /home/clawdius/.bun /root/.bun
@@ -282,10 +285,11 @@ banner "Setup complete"
 printf "\n"
 printf "  ${CYAN}Installed tools${NC}\n"
 printf "  ──────────────────────────────────────\n"
-printf "  Node.js  : %s\n" "$(node --version)"
-printf "  npm      : %s\n" "$(npm --version)"
-printf "  Bun      : %s\n" "$(bun --version)"
-printf "  uv       : %s\n" "$(uv --version)"
+printf "  nvm      : installed\n"
+printf "  Node.js  : %s (default)\n" "$(as_clawdius 'node --version')"
+printf "  npm      : %s\n" "$(as_clawdius 'npm --version')"
+printf "  Bun      : %s\n" "$(su - clawdius -c 'export BUN_INSTALL=/home/clawdius/.bun && export PATH=\$BUN_INSTALL/bin:\$PATH && bun --version')"
+printf "  uv       : %s\n" "$(su - clawdius -c 'export PATH=/home/clawdius/.local/bin:\$PATH && uv --version')"
 printf "  gh       : %s\n" "$(gh --version | head -1)"
 if [[ "$INSTALL_BROWSER" == true ]]; then
   printf "  browser  : agent-browser + Chromium\n"
@@ -303,6 +307,8 @@ printf "\n"
 printf "  ${CYAN}Quick test commands${NC}\n"
 printf "  ──────────────────────────────────────\n"
 printf "  su - clawdius\n"
+printf "  nvm ls\n"
+printf "  nvm install 20        # switch to another version\n"
 printf "  node -e \"console.log('hello from node')\"\n"
 printf "  bun --version\n"
 printf "  uv python install 3.12 && uv run python -c \"print('hello from python')\"\n"
