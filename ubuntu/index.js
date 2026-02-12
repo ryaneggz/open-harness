@@ -5,9 +5,9 @@ const { z } = require("zod");
 const { exec, execSync } = require("child_process");
 const crypto = require("crypto");
 
-// Resolve executor user UID/GID at startup
-const EXEC_UID = parseInt(execSync("id -u executor").toString().trim(), 10);
-const EXEC_GID = parseInt(execSync("id -g executor").toString().trim(), 10);
+// Resolve clawdius user UID/GID at startup
+const EXEC_UID = parseInt(execSync("id -u clawdius").toString().trim(), 10);
+const EXEC_GID = parseInt(execSync("id -g clawdius").toString().trim(), 10);
 
 const API_KEY = process.env.API_KEY || "";
 
@@ -49,7 +49,7 @@ function requestLogger(req, res, next) {
 function execCommandHandler({ cmd }) {
   log("info", "exec_command called", { cmd });
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 120000, maxBuffer: 1024 * 1024 * 10, cwd: "/home/executor", uid: EXEC_UID, gid: EXEC_GID, env: { HOME: "/home/executor", PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", TERM: "xterm" } }, (error, stdout, stderr) => {
+    exec(cmd, { timeout: 120000, maxBuffer: 1024 * 1024 * 10, cwd: "/home/clawdius", uid: EXEC_UID, gid: EXEC_GID, env: { HOME: "/home/clawdius", PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", TERM: "xterm" } }, (error, stdout, stderr) => {
       const output = [];
       if (stdout) output.push(`stdout:\n${stdout}`);
       if (stderr) output.push(`stderr:\n${stderr}`);
