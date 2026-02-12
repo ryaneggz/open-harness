@@ -181,12 +181,55 @@ ok "Done"
 
 # ─── Summary ─────────────────────────────────────────────────────────
 banner "Setup complete"
-printf "  Node.js : %s\n" "$(node --version)"
-printf "  npm     : %s\n" "$(npm --version)"
-printf "  Bun     : %s\n" "$(bun --version)"
-printf "  uv      : %s\n" "$(uv --version)"
-printf "  gh      : %s\n" "$(gh --version | head -1)"
-printf "  User    : clawdius (groups: sudo)\n"
-if [[ "$NON_INTERACTIVE" == false ]]; then
-  printf "\n  Log in as clawdius:  su - clawdius\n\n"
+printf "\n"
+printf "  ${CYAN}Installed tools${NC}\n"
+printf "  ──────────────────────────────────────\n"
+printf "  Node.js  : %s\n" "$(node --version)"
+printf "  npm      : %s\n" "$(npm --version)"
+printf "  Bun      : %s\n" "$(bun --version)"
+printf "  uv       : %s\n" "$(uv --version)"
+printf "  gh       : %s\n" "$(gh --version | head -1)"
+if [[ "$INSTALL_BROWSER" == true ]]; then
+  printf "  browser  : agent-browser + Chromium\n"
+fi
+if [[ "$INSTALL_OPENCLAW" == true ]]; then
+  printf "  openclaw : installed\n"
+fi
+printf "\n"
+printf "  ${CYAN}User${NC}\n"
+printf "  ──────────────────────────────────────\n"
+printf "  username : clawdius\n"
+printf "  groups   : sudo\n"
+printf "  home     : /home/clawdius\n"
+printf "\n"
+printf "  ${CYAN}Quick test commands${NC}\n"
+printf "  ──────────────────────────────────────\n"
+printf "  su - clawdius\n"
+printf "  node -e \"console.log('hello from node')\"\n"
+printf "  bun --version\n"
+printf "  uv python install 3.12 && uv run python -c \"print('hello from python')\"\n"
+printf "  gh auth status\n"
+if [[ "$INSTALL_BROWSER" == true ]]; then
+  printf "  agent-browser --help\n"
+fi
+printf "\n"
+
+if [[ "$INSTALL_OPENCLAW" == true ]]; then
+  printf "  ${CYAN}OpenClaw — next steps${NC}\n"
+  printf "  ──────────────────────────────────────\n"
+  printf "  Complete onboarding (run as clawdius):\n"
+  printf "\n"
+  printf "    su - clawdius\n"
+  printf "    openclaw onboard --install-daemon\n"
+  printf "\n"
+  printf "  Verify the gateway is running:\n"
+  printf "\n"
+  printf "    openclaw gateway status\n"
+  printf "\n"
+  printf "  Launch the web dashboard:\n"
+  printf "\n"
+  printf "    openclaw dashboard\n"
+  printf "\n"
+  printf "  Docs: https://docs.openclaw.ai/start/getting-started\n"
+  printf "\n"
 fi
