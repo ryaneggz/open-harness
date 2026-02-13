@@ -79,6 +79,7 @@ apt-get install -y --no-install-recommends \
   sudo \
   gnupg \
   lsb-release \
+  ripgrep \
   unzip
 ok "Base packages installed"
 
