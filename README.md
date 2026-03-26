@@ -87,6 +87,27 @@ sudo bash ~/install/setup.sh --non-interactive
 
 Interactive mode prompts for: SSH public key, Git identity, GitHub token, Claude Code install, agent-browser install.
 
+## Usage Examples
+
+Once inside the sandbox (`make shell`), Claude Code can be used for a variety of tasks:
+
+```bash
+# Log system time to a file every 2 minutes
+/loop 2m append the current system time to output.txt
+
+# Monitor disk usage every 5 minutes
+/loop 5m check disk usage and append a summary to disk-log.txt
+
+# Scaffold a new Python project
+claude -p "Create a Python CLI app with click that fetches weather data"
+
+# Generate and run a script
+claude -p "Write a bash script that finds all files larger than 10MB and list them"
+
+# Refactor existing code
+claude -p "Read main.py and refactor it to use async/await"
+```
+
 ## Releases
 
 Tag format: `claude-v<version>` (e.g. `claude-v1.0.0`)
