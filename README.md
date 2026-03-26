@@ -2,7 +2,21 @@
 
 Isolated, pre-configured sandbox images for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) agents.
 
-## Quick Start
+## Install (standalone)
+
+Run the setup script directly on any Ubuntu/Debian machine:
+
+```bash
+# curl
+curl -fsSL https://raw.githubusercontent.com/ruska-ai/sandboxes/refs/heads/claude-code/install/setup.sh -o setup.sh
+
+# wget
+wget -qO setup.sh https://raw.githubusercontent.com/ruska-ai/sandboxes/refs/heads/claude-code/install/setup.sh
+
+sudo bash setup.sh --non-interactive
+```
+
+## Docker Quick Start
 
 ```bash
 make build                                      # build the image
