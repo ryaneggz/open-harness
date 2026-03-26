@@ -19,7 +19,7 @@ done
 
 # ─── Collect all options upfront ─────────────────────────────────────
 INSTALL_BROWSER=true
-INSTALL_OPENCLAW=true
+INSTALL_CLAUDE_CODE=true
 SSH_PUBKEY=""
 GH_TOKEN=""
 GIT_USER_NAME=""
@@ -41,10 +41,10 @@ if [[ "$NON_INTERACTIVE" == false ]]; then
   printf "\n  GitHub personal access token for 'gh auth' (blank to skip)\n"
   read -rsp "  Token: " GH_TOKEN; echo
 
-  # 4) OpenClaw
-  printf "\n  Install OpenClaw CLI? (https://docs.openclaw.ai/start/getting-started)\n"
-  read -rp "  Install OpenClaw? [Y/n]: " answer
-  [[ "$answer" =~ ^[Nn]$ ]] && INSTALL_OPENCLAW=false
+  # 4) Claude Code
+  printf "\n  Install Claude Code CLI? (https://docs.anthropic.com/en/docs/claude-code)\n"
+  read -rp "  Install Claude Code? [Y/n]: " answer
+  [[ "$answer" =~ ^[Nn]$ ]] && INSTALL_CLAUDE_CODE=false
 
   # 5) agent-browser
   read -rp "  Install agent-browser + Chromium? [Y/n]: " answer
@@ -130,14 +130,14 @@ if [[ -n "$SSH_PUBKEY" ]]; then
   ok "SSH public key added"
 fi
 
-# ─── 9. OpenClaw (optional) ──────────────────────────────────────────
-if [[ "$INSTALL_OPENCLAW" == true ]]; then
-  banner "Installing OpenClaw CLI"
-  npm install -g openclaw
-  ok "OpenClaw CLI installed"
-  printf "  Run 'openclaw onboard --install-daemon' to complete setup.\n"
+# ─── 9. Claude Code (optional) ──────────────────────────────────────────
+if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
+  banner "Installing Claude Code CLI"
+  curl -fsSL https://claude.ai/install.sh | sh
+  ok "Claude Code CLI installed"
+  printf "  Run 'claude' to launch and authenticate via OAuth.\n"
 else
-  banner "Skipping OpenClaw"
+  banner "Skipping Claude Code"
   ok "Skipped"
 fi
 
@@ -177,8 +177,8 @@ UNINSTALL_EOF
 if [[ "$INSTALL_BROWSER" == true ]]; then
   echo 'printf "    - agent-browser + Chromium\n"' >> "$UNINSTALL"
 fi
-if [[ "$INSTALL_OPENCLAW" == true ]]; then
-  echo 'printf "    - OpenClaw CLI\n"' >> "$UNINSTALL"
+if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
+  echo 'printf "    - Claude Code CLI\n"' >> "$UNINSTALL"
 fi
 
 cat >> "$UNINSTALL" <<'UNINSTALL_EOF'
@@ -215,12 +215,13 @@ ok "agent-browser removed"
 UNINSTALL_EOF
 fi
 
-if [[ "$INSTALL_OPENCLAW" == true ]]; then
+if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
   cat >> "$UNINSTALL" <<'UNINSTALL_EOF'
 
-banner "Removing OpenClaw CLI"
-openclaw uninstall 2>/dev/null || true
-ok "OpenClaw removed"
+banner "Removing Claude Code CLI"
+npm rm -g @anthropic-ai/claude-code 2>/dev/null || true
+rm -rf ~/.claude 2>/dev/null || true
+ok "Claude Code removed"
 UNINSTALL_EOF
 fi
 
@@ -255,8 +256,8 @@ printf "  gh       : %s\n" "$(gh --version | head -1)"
 if [[ "$INSTALL_BROWSER" == true ]]; then
   printf "  browser  : agent-browser + Chromium\n"
 fi
-if [[ "$INSTALL_OPENCLAW" == true ]]; then
-  printf "  openclaw : installed\n"
+if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
+  printf "  claude   : installed\n"
 fi
 printf "\n"
 printf "  ${CYAN}Quick test commands${NC}\n"
@@ -270,13 +271,12 @@ if [[ "$INSTALL_BROWSER" == true ]]; then
 fi
 printf "\n"
 
-if [[ "$INSTALL_OPENCLAW" == true ]]; then
-  printf "  ${CYAN}OpenClaw — next steps${NC}\n"
+if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
+  printf "  ${CYAN}Claude Code — next steps${NC}\n"
   printf "  ──────────────────────────────────────\n"
-  printf "  openclaw onboard --install-daemon\n"
-  printf "  openclaw gateway status\n"
-  printf "  openclaw dashboard\n"
-  printf "  Docs: https://docs.openclaw.ai/start/getting-started\n"
+  printf "  claude                    # launch and authenticate via OAuth\n"
+  printf "  claude -p 'your prompt'   # non-interactive mode\n"
+  printf "  Docs: https://docs.anthropic.com/en/docs/claude-code\n"
   printf "\n"
 fi
 

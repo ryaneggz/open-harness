@@ -1,4 +1,4 @@
-SANDBOX_NAME ?= ubuntu
+SANDBOX_NAME ?= sandbox
 TAG ?= latest
 REGISTRY = ghcr.io/ruska-ai
 IMAGE = $(REGISTRY)/sandbox/$(SANDBOX_NAME):$(TAG)

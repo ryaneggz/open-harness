@@ -7,7 +7,7 @@ permissions:
 on:
     push:
         tags:
-            - "ubuntu-*"
+            - "sandbox-*"
 
 jobs:
     build:
@@ -24,7 +24,7 @@ jobs:
               id: parse
               run: |
                   # Expected tag format: sandbox-<type>-<version>
-                  # e.g. sandbox-ubuntu-v1.0.0
+                  # e.g. sandbox-claude-v1.0.0
                   TAG=${GITHUB_REF#refs/tags/sandbox-}
                   SANDBOX=${TAG%-*}
                   VERSION=${TAG##*-}
