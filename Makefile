@@ -1,7 +1,6 @@
-SANDBOX_NAME ?= claude
 TAG ?= latest
 REGISTRY = ghcr.io/ruska-ai
-IMAGE = $(REGISTRY)/sandbox/$(SANDBOX_NAME):$(TAG)
+IMAGE = $(REGISTRY)/sandbox:claude-$(TAG)
 
 .PHONY: build rebuild run shell stop push all clean
 

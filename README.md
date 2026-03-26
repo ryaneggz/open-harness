@@ -86,3 +86,16 @@ sudo bash ~/install/setup.sh --non-interactive
 ```
 
 Interactive mode prompts for: SSH public key, Git identity, GitHub token, Claude Code install, agent-browser install.
+
+## Releases
+
+Tag format: `claude-v<version>` (e.g. `claude-v1.0.0`)
+
+```bash
+git tag claude-v1.0.0
+git push origin claude-v1.0.0
+```
+
+This triggers the CI workflow which builds and pushes:
+- `ghcr.io/ruska-ai/sandbox:claude-v1.0.0`
+- `ghcr.io/ruska-ai/sandbox:claude-latest`
