@@ -1,12 +1,12 @@
-SANDBOX ?= ubuntu
+SANDBOX_NAME ?= ubuntu
 TAG ?= latest
 REGISTRY = ghcr.io/ruska-ai
-IMAGE = $(REGISTRY)/sandbox:$(SANDBOX)-$(TAG)
+IMAGE = $(REGISTRY)/sandbox/$(SANDBOX_NAME):$(TAG)
 
 .PHONY: build push all
 
 build:
-	docker build -t $(IMAGE) $(SANDBOX)/
+	docker build -t $(IMAGE) $(SANDBOX_NAME)/
 
 push:
 	docker push $(IMAGE)
