@@ -1,10 +1,6 @@
 services:
-  ubuntu:
+  sandbox:
     build:
-      context: ./ubuntu
-    ports:
-      - "3005:3005"
-    env_file:
-      - ./ubuntu/.env
+      context: ./sandbox
     stdin_open: true
     tty: true
