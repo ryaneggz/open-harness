@@ -17,6 +17,10 @@ done
 # ─── Root check ──────────────────────────────────────────────────────
 [[ $EUID -eq 0 ]] || die "This script must be run as root (or via sudo)."
 
+# ─── Sandbox user ───────────────────────────────────────────────────
+SANDBOX_USER="sandbox"
+SANDBOX_HOME="/home/$SANDBOX_USER"
+
 # ─── Collect all options upfront ─────────────────────────────────────
 INSTALL_BROWSER=true
 INSTALL_CLAUDE_CODE=true
@@ -68,13 +72,24 @@ apt-get install -y --no-install-recommends \
   unzip
 ok "Base packages installed"
 
-# ─── 2. Node.js 22.x ────────────────────────────────────────────────
+# ─── 2. Create sandbox user ─────────────────────────────────────────
+if ! id "$SANDBOX_USER" &>/dev/null; then
+  banner "Creating user $SANDBOX_USER"
+  useradd -m -s /bin/bash "$SANDBOX_USER"
+  echo "$SANDBOX_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/"$SANDBOX_USER"
+  ok "User $SANDBOX_USER created"
+else
+  banner "User $SANDBOX_USER already exists"
+  ok "Skipped"
+fi
+
+# ─── 3. Node.js 22.x ────────────────────────────────────────────────
 banner "Installing Node.js 22.x"
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt-get install -y --no-install-recommends nodejs
 ok "Node.js $(node --version) installed"
 
-# ─── 3. GitHub CLI ──────────────────────────────────────────────────
+# ─── 4. GitHub CLI ──────────────────────────────────────────────────
 banner "Installing GitHub CLI"
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
   -o /usr/share/keyrings/githubcli-archive-keyring.gpg
@@ -84,56 +99,54 @@ apt-get update
 apt-get install -y --no-install-recommends gh
 ok "GitHub CLI $(gh --version | head -1) installed"
 
-# ─── 4. Bun ──────────────────────────────────────────────────────────
+# ─── 5. Bun (installed as sandbox user) ─────────────────────────────────
 banner "Installing Bun"
-curl -fsSL https://bun.sh/install | bash
-export BUN_INSTALL="/home/$USER/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-ok "Bun $(bun --version) installed"
+su - "$SANDBOX_USER" -c "curl -fsSL https://bun.sh/install | bash"
+ok "Bun installed"
 
-# ─── 5. uv (Python package manager) ──────────────────────────────────
+# ─── 6. uv (installed as sandbox user) ──────────────────────────────────
 banner "Installing uv"
-curl -LsSf https://astral.sh/uv/install.sh | sh
-export PATH="/home/$USER/.local/bin:$PATH"
-ok "uv $(uv --version) installed"
+su - "$SANDBOX_USER" -c "curl -LsSf https://astral.sh/uv/install.sh | bash"
+ok "uv installed"
 
-# ─── 6. agent-browser + Chromium (optional) ──────────────────────────
+# ─── 7. agent-browser + Chromium (optional) ──────────────────────────
 if [[ "$INSTALL_BROWSER" == true ]]; then
   banner "Installing agent-browser and Chromium"
   npm install -g agent-browser
-  agent-browser install --with-deps
+  su - "$SANDBOX_USER" -c "agent-browser install --with-deps"
   ok "agent-browser + Chromium installed"
 else
   banner "Skipping agent-browser"
   ok "Skipped"
 fi
 
-# ─── 7. Git global config (optional) ─────────────────────────────────
+# ─── 8. Git global config (as sandbox user) ─────────────────────────────
 if [[ -n "$GIT_USER_NAME" ]]; then
-  git config --global user.name "${GIT_USER_NAME}"
+  su - "$SANDBOX_USER" -c "git config --global user.name '${GIT_USER_NAME}'"
 fi
 if [[ -n "$GIT_USER_EMAIL" ]]; then
-  git config --global user.email "${GIT_USER_EMAIL}"
+  su - "$SANDBOX_USER" -c "git config --global user.email '${GIT_USER_EMAIL}'"
 fi
 if [[ -n "$GIT_USER_NAME" || -n "$GIT_USER_EMAIL" ]]; then
-  ok "Git config set"
+  ok "Git config set for $SANDBOX_USER"
 fi
 
-# ─── 8. SSH authorized key (optional) ────────────────────────────────
+# ─── 9. SSH authorized key (as sandbox user) ─────────────────────────────
 if [[ -n "$SSH_PUBKEY" ]]; then
   banner "Configuring SSH authorized key"
-  SSHDIR="$HOME/.ssh"
+  SSHDIR="$SANDBOX_HOME/.ssh"
   mkdir -p "$SSHDIR"
   echo "$SSH_PUBKEY" >> "$SSHDIR/authorized_keys"
   chmod 700 "$SSHDIR"
   chmod 600 "$SSHDIR/authorized_keys"
-  ok "SSH public key added"
+  chown -R "$SANDBOX_USER:$SANDBOX_USER" "$SSHDIR"
+  ok "SSH public key added for $SANDBOX_USER"
 fi
 
-# ─── 9. Claude Code (optional) ──────────────────────────────────────────
+# ─── 10. Claude Code (installed as sandbox user) ─────────────────────────
 if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
   banner "Installing Claude Code CLI"
-  curl -fsSL https://claude.ai/install.sh | sh
+  su - "$SANDBOX_USER" -c "curl -fsSL https://claude.ai/install.sh | bash"
   ok "Claude Code CLI installed"
   printf "  Run 'claude' to launch and authenticate via OAuth.\n"
 else
@@ -141,32 +154,31 @@ else
   ok "Skipped"
 fi
 
-# ─── 10. GitHub CLI auth (optional) ──────────────────────────────────
+# ─── 11. GitHub CLI auth (as sandbox user) ───────────────────────────────
 if [[ -n "$GH_TOKEN" ]]; then
   banner "Authenticating GitHub CLI"
-  echo "$GH_TOKEN" | gh auth login --with-token
-  ok "gh auth configured"
+  echo "$GH_TOKEN" | su - "$SANDBOX_USER" -c "gh auth login --with-token"
+  ok "gh auth configured for $SANDBOX_USER"
 fi
 
-# ─── 11. Generate uninstall script ────────────────────────────────────
+# ─── 12. Generate uninstall script ────────────────────────────────────
 banner "Generating uninstall script"
-UNINSTALL="/home/$USER/uninstall.sh"
-cat > "$UNINSTALL" <<'UNINSTALL_EOF'
+UNINSTALL="$SANDBOX_HOME/uninstall.sh"
+cat > "$UNINSTALL" <<UNINSTALL_EOF
 #!/usr/bin/env bash
 set -euo pipefail
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; NC='\033[0m'
-banner() { printf "\n${CYAN}==> %s${NC}\n" "$*"; }
-ok()     { printf "${GREEN} ✓  %s${NC}\n" "$*"; }
-die()    { printf "${RED}ERROR: %s${NC}\n" "$*" >&2; exit 1; }
+banner() { printf "\n\${CYAN}==> %s\${NC}\n" "\$*"; }
+ok()     { printf "\${GREEN} ✓  %s\${NC}\n" "\$*"; }
 
-if [[ $EUID -ne 0 ]]; then
-  printf "\n${RED}  This script must be run with sudo.${NC}\n"
-  printf "  Usage: sudo bash %s\n\n" "$0"
+if [[ \$EUID -ne 0 ]]; then
+  printf "\n\${RED}  This script must be run with sudo.\${NC}\n"
+  printf "  Usage: sudo bash %s\n\n" "\$0"
   exit 1
 fi
 
-printf "\n${RED}  WARNING: This will remove all installed tools.${NC}\n"
+printf "\n\${RED}  WARNING: This will remove all installed tools.\${NC}\n"
 printf "  The following will be uninstalled:\n"
 printf "    - Node.js, npm\n"
 printf "    - Bun\n"
@@ -181,10 +193,10 @@ if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
   echo 'printf "    - Claude Code CLI\n"' >> "$UNINSTALL"
 fi
 
-cat >> "$UNINSTALL" <<'UNINSTALL_EOF'
+cat >> "$UNINSTALL" <<UNINSTALL_EOF
 printf "\n"
 read -rp "  Are you sure? Type 'yes' to confirm: " confirm
-[[ "$confirm" == "yes" ]] || { printf "Aborted.\n"; exit 0; }
+[[ "\$confirm" == "yes" ]] || { printf "Aborted.\n"; exit 0; }
 
 banner "Removing Node.js"
 apt-get purge -y nodejs || true
@@ -192,16 +204,16 @@ rm -f /etc/apt/sources.list.d/nodesource.list
 ok "Node.js removed"
 
 banner "Removing Bun"
-rm -rf /home/$USER/.bun
+rm -rf $SANDBOX_HOME/.bun
 ok "Bun removed"
 
 banner "Removing uv"
-rm -rf /home/$USER/.local/bin/uv /home/$USER/.local/bin/uvx
+rm -rf $SANDBOX_HOME/.local/bin/uv $SANDBOX_HOME/.local/bin/uvx
 ok "uv removed"
 
 banner "Removing GitHub CLI"
 apt-get purge -y gh || true
-rm -f /etc/apt/sources.list.d/github-cli.list \
+rm -f /etc/apt/sources.list.d/github-cli.list \\
       /usr/share/keyrings/githubcli-archive-keyring.gpg
 ok "GitHub CLI removed"
 UNINSTALL_EOF
@@ -216,11 +228,10 @@ UNINSTALL_EOF
 fi
 
 if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
-  cat >> "$UNINSTALL" <<'UNINSTALL_EOF'
+  cat >> "$UNINSTALL" <<UNINSTALL_EOF
 
 banner "Removing Claude Code CLI"
-npm rm -g @anthropic-ai/claude-code 2>/dev/null || true
-rm -rf ~/.claude 2>/dev/null || true
+rm -rf $SANDBOX_HOME/.claude 2>/dev/null || true
 ok "Claude Code removed"
 UNINSTALL_EOF
 fi
@@ -236,9 +247,10 @@ printf "\n${GREEN}  Uninstall finished.${NC}\n\n"
 UNINSTALL_EOF
 
 chmod +x "$UNINSTALL"
+chown "$SANDBOX_USER:$SANDBOX_USER" "$UNINSTALL"
 ok "Uninstall script written to $UNINSTALL"
 
-# ─── 12. Cleanup ─────────────────────────────────────────────────────
+# ─── 13. Cleanup ─────────────────────────────────────────────────────
 banner "Cleaning up APT cache"
 rm -rf /var/lib/apt/lists/*
 ok "Done"
@@ -246,12 +258,15 @@ ok "Done"
 # ─── Summary ─────────────────────────────────────────────────────────
 banner "Setup complete"
 printf "\n"
+printf "  ${CYAN}Sandbox user${NC}: $SANDBOX_USER\n"
+printf "  ${CYAN}Home${NC}: $SANDBOX_HOME\n"
+printf "\n"
 printf "  ${CYAN}Installed tools${NC}\n"
 printf "  ──────────────────────────────────────\n"
 printf "  Node.js  : %s\n" "$(node --version)"
 printf "  npm      : %s\n" "$(npm --version)"
-printf "  Bun      : %s\n" "$(bun --version)"
-printf "  uv       : %s\n" "$(uv --version)"
+printf "  Bun      : %s\n" "$(su - $SANDBOX_USER -c 'bun --version' 2>/dev/null || echo 'installed')"
+printf "  uv       : %s\n" "$(su - $SANDBOX_USER -c 'uv --version' 2>/dev/null || echo 'installed')"
 printf "  gh       : %s\n" "$(gh --version | head -1)"
 if [[ "$INSTALL_BROWSER" == true ]]; then
   printf "  browser  : agent-browser + Chromium\n"
@@ -260,20 +275,11 @@ if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
   printf "  claude   : installed\n"
 fi
 printf "\n"
-printf "  ${CYAN}Quick test commands${NC}\n"
-printf "  ──────────────────────────────────────\n"
-printf "  node -e \"console.log('hello from node')\"\n"
-printf "  bun --version\n"
-printf "  uv python install 3.12 && uv run python -c \"print('hello from python')\"\n"
-printf "  gh auth status\n"
-if [[ "$INSTALL_BROWSER" == true ]]; then
-  printf "  agent-browser --help\n"
-fi
-printf "\n"
 
 if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
   printf "  ${CYAN}Claude Code — next steps${NC}\n"
   printf "  ──────────────────────────────────────\n"
+  printf "  su - $SANDBOX_USER\n"
   printf "  claude                    # launch and authenticate via OAuth\n"
   printf "  claude -p 'your prompt'   # non-interactive mode\n"
   printf "  Docs: https://docs.anthropic.com/en/docs/claude-code\n"
@@ -282,5 +288,5 @@ fi
 
 printf "  ${CYAN}Uninstall${NC}\n"
 printf "  ──────────────────────────────────────\n"
-printf "  sudo bash /home/$USER/uninstall.sh\n"
+printf "  sudo bash $SANDBOX_HOME/uninstall.sh\n"
 printf "\n"

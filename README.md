@@ -18,7 +18,7 @@ sudo bash setup.sh
 
 ## Architecture
 
-The sandbox provisions a `clawdius` user with:
+The sandbox provisions a `sandbox` user with:
 
 - **Runtime tooling** -- Node.js 22.x, Bun, uv (Python), GitHub CLI
 - **Claude Code CLI** -- AI-powered coding assistant
