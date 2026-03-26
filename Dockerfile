@@ -7,7 +7,7 @@ RUN apt-get update \
 RUN useradd -m -s /bin/bash sandbox \
  && echo "sandbox ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/sandbox
 
-COPY sandbox/ /sandbox/
+COPY --chown=sandbox:sandbox sandbox/ /home/sandbox/
 
 USER sandbox
 WORKDIR /home/sandbox

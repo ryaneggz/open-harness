@@ -1,12 +1,17 @@
-SANDBOX_NAME ?= sandbox
+SANDBOX_NAME ?= claude
 TAG ?= latest
 REGISTRY = ghcr.io/ruska-ai
 IMAGE = $(REGISTRY)/sandbox/$(SANDBOX_NAME):$(TAG)
 
-.PHONY: build run shell stop push all clean
+.PHONY: build rebuild run shell stop push all clean
 
 build:
 	docker build -t $(IMAGE) .
+
+rebuild:
+	docker compose down --rmi local
+	docker build --no-cache -t $(IMAGE) .
+	docker compose up -d
 
 run:
 	docker compose up -d

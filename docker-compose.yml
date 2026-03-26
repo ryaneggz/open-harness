@@ -2,5 +2,7 @@ services:
   sandbox:
     build:
       context: .
+    volumes:
+      - ./sandbox:/home/sandbox
     stdin_open: true
     tty: true
