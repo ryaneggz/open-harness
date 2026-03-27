@@ -7,9 +7,11 @@
 
 ## Post
 
-I just open-sourced Open Harness — isolated Docker sandboxes for AI coding agents.
+🏗️ AI coding agents need full system access to be useful. Giving them that access on your actual machine is a bad idea.
 
-Three commands. That's it.
+Open Harness — isolated Docker sandboxes where agents run with full permissions and your host stays untouched.
+
+Three commands:
 
 ```
 git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
@@ -27,9 +29,7 @@ Here's what you get out of the box:
 🐳 Docker-in-Docker — agents can build and manage containers from inside the sandbox
 🔄 Multi-sandbox — spin up parallel named sandboxes for different workstreams
 
-The problem this solves: AI coding agents need broad system access to be useful. But giving them that access on your actual machine is a risk. Open Harness gives them a playground where they can't break anything that matters.
-
-It's agent-agnostic. Same sandbox runs Claude, Codex, and Pi side by side. Same AGENTS.md instructs all of them.
+Agent-agnostic. Same sandbox runs Claude, Codex, and Pi side by side. Same AGENTS.md instructs all of them.
 
 Star the repo if this is useful to you: https://github.com/ryaneggz/open-harness
 
