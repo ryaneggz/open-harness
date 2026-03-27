@@ -2,7 +2,7 @@ DOCKER  ?= false
 TAG     ?= latest
 REGISTRY = ghcr.io/ruska-ai
 
-HEARTBEAT_INTERVAL     ?= 1800
+HEARTBEAT_INTERVAL     ?= 900
 HEARTBEAT_ACTIVE_START ?=
 HEARTBEAT_ACTIVE_END   ?=
 HEARTBEAT_AGENT        ?= claude
