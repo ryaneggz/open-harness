@@ -19,29 +19,35 @@ sudo bash setup.sh --non-interactive
 ## Docker Quick Start
 
 ```bash
-make build                                      # build the image
-make run                                        # start the container
-make shell                                      # open a shell as sandbox user
+make NAME=my-sandbox build                      # build the image
+make NAME=my-sandbox run                        # start the container
+make NAME=my-sandbox shell                      # open a shell as sandbox user
 sudo bash ~/install/setup.sh                    # provision tools (interactive)
 cd ~/workspace && claude                        # launch an agent
+```
+
+Enable Docker-in-Docker (mounts host Docker socket):
+
+```bash
+make NAME=my-sandbox DOCKER=true run            # sandbox with Docker access
 ```
 
 Run multiple named sandboxes side by side:
 
 ```bash
-make NAME=research build run                    # named sandbox
-make NAME=research shell
-make NAME=frontend build run                    # another in parallel
+make NAME=research build run
+make NAME=frontend DOCKER=true build run        # this one gets Docker
 make list                                       # see all running sandboxes
 ```
 
-`make rebuild` does a full no-cache build and restart.
+`make rebuild` does a full no-cache build and restart. `NAME` is required for all targets.
 
 ## Structure
 
 ```
 ├── Dockerfile               # base image: Debian Bookworm slim + sandbox user
-├── docker-compose.yml       # mounts workspace/, Docker socket, host networking
+├── docker-compose.yml       # base compose: mounts workspace/
+├── docker-compose.docker.yml # Docker override: mounts socket + host networking
 ├── Makefile                 # build, run, shell, stop, rebuild, clean, push, list
 ├── install/
 │   └── setup.sh             # provisioning script (runs as root)
@@ -61,7 +67,7 @@ make list                                       # see all running sandboxes
    - Docker group membership for the sandbox user
    - Default shell drops into `/home/sandbox/workspace`
 
-2. **`docker-compose.yml`** bind-mounts `./workspace`, the Docker socket, and configures `host.docker.internal` so the sandbox can reach host containers while remaining isolated.
+2. **`docker-compose.yml`** bind-mounts `./workspace`. When `DOCKER=true`, the override file (`docker-compose.docker.yml`) additionally mounts the Docker socket and configures `host.docker.internal`.
 
 3. **`install/setup.sh`** provisions all tools system-wide (as root):
    - Node.js 22.x, npm, tmux, nano, ripgrep, jq (always)
@@ -88,7 +94,7 @@ make list                                       # see all running sandboxes
 | `make list` | List all running sandboxes |
 | `make all` | Build + push |
 
-All targets accept `NAME=<name>` to manage multiple sandboxes (default: `open-harness`).
+`NAME` is required for all targets. Pass `DOCKER=true` to enable Docker socket access.
 
 ## Configuration
 
