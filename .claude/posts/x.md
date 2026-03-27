@@ -7,16 +7,10 @@
 
 ## Post
 
-🏗️ AI coding agents need full system access. Your machine shouldn't be the one taking that risk.
+🏗️ AI agents need full system access. Your machine shouldn't take that risk.
 
-Open Harness — isolated Docker sandboxes where Claude Code, Codex, and Pi run side by side in a shared workspace with full permissions.
+Open Harness — Docker sandboxes where Claude, Codex, and Pi share one workspace with full permissions.
 
-Three commands to try it:
+Multi-agent. Persistent memory. Autonomous. Host stays clean.
 
-git clone https://github.com/ryaneggz/open-harness.git
-make NAME=dev quickstart
-make NAME=dev shell
-
-Multiple agents. One workspace. Persistent memory. Autonomous background tasks. Your host stays clean.
-
-⭐ https://github.com/ryaneggz/open-harness
+github.com/ryaneggz/open-harness
