@@ -1,25 +1,28 @@
-TAG ?= latest
+NAME ?= sandbox
+TAG  ?= latest
 REGISTRY = ghcr.io/ruska-ai
-IMAGE = $(REGISTRY)/sandbox:claude-$(TAG)
+IMAGE = $(REGISTRY)/$(NAME):$(TAG)
 
-.PHONY: build rebuild run shell stop push all clean
+export NAME
+
+.PHONY: build rebuild run shell stop push all clean list
 
 build:
 	docker build -t $(IMAGE) .
 
 rebuild:
-	docker compose down --rmi local
+	NAME=$(NAME) docker compose -p $(NAME) down --rmi local
 	docker build --no-cache -t $(IMAGE) .
-	docker compose up -d
+	NAME=$(NAME) docker compose -p $(NAME) up -d
 
 run:
-	docker compose up -d
+	NAME=$(NAME) docker compose -p $(NAME) up -d
 
 shell:
-	docker compose exec sandbox bash
+	docker exec -it $(NAME) bash
 
 stop:
-	docker compose down
+	NAME=$(NAME) docker compose -p $(NAME) down
 
 push:
 	docker push $(IMAGE)
@@ -27,4 +30,7 @@ push:
 all: build push
 
 clean:
-	docker compose down --rmi local
+	NAME=$(NAME) docker compose -p $(NAME) down --rmi local
+
+list:
+	@docker ps --filter "label=com.docker.compose.service=sandbox" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"

@@ -23,8 +23,12 @@ SANDBOX_HOME="/home/$SANDBOX_USER"
 # ─── Collect all options upfront ─────────────────────────────────────
 INSTALL_BROWSER=true
 INSTALL_CLAUDE_CODE=true
+INSTALL_CODEX=false
+INSTALL_PI_AGENT=false
+INSTALL_AGENTMAIL=false
 SSH_PUBKEY=""
 GH_TOKEN=""
+AGENTMAIL_KEY=""
 GIT_USER_NAME=""
 GIT_USER_EMAIL=""
 
@@ -45,6 +49,22 @@ if [[ "$NON_INTERACTIVE" == false ]]; then
   read -rp "  Install Claude Code? [Y/n]: " answer
   [[ "$answer" =~ ^[Nn]$ ]] && INSTALL_CLAUDE_CODE=false
 
+  printf "\n  Install OpenAI Codex CLI? (https://github.com/openai/codex)\n"
+  read -rp "  Install Codex? [y/N]: " answer
+  [[ "$answer" =~ ^[Yy]$ ]] && INSTALL_CODEX=true
+
+  printf "\n  Install Pi Coding Agent? (https://shittycodingagent.ai)\n"
+  read -rp "  Install Pi Agent? [y/N]: " answer
+  [[ "$answer" =~ ^[Yy]$ ]] && INSTALL_PI_AGENT=true
+
+  printf "\n  Install AgentMail CLI? (https://docs.agentmail.to/integrations/cli)\n"
+  read -rp "  Install AgentMail? [y/N]: " answer
+  if [[ "$answer" =~ ^[Yy]$ ]]; then
+    INSTALL_AGENTMAIL=true
+    printf "\n  AgentMail API key (blank to skip, configure later)\n"
+    read -rsp "  AGENTMAIL_API_KEY: " AGENTMAIL_KEY; echo
+  fi
+
   read -rp "  Install agent-browser + Chromium? [Y/n]: " answer
   [[ "$answer" =~ ^[Nn]$ ]] && INSTALL_BROWSER=false
 
@@ -62,7 +82,9 @@ apt-get install -y --no-install-recommends \
   sudo \
   gnupg \
   lsb-release \
+  nano \
   ripgrep \
+  tmux \
   unzip
 ok "Base packages installed"
 
@@ -93,19 +115,33 @@ apt-get update
 apt-get install -y --no-install-recommends gh
 ok "GitHub CLI $(gh --version | head -1) installed"
 
-# ─── 5. Bun (system-wide) ───────────────────────────────────────────
+# ─── 5. Docker CLI + Compose ──────────────────────────────────────
+banner "Installing Docker CLI and Compose plugin"
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
+apt-get update
+apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin
+# Add sandbox user to docker group (created by docker-ce-cli)
+groupadd -f docker
+usermod -aG docker "$SANDBOX_USER"
+ok "Docker CLI $(docker --version) + Compose installed"
+
+# ─── 6. Bun (system-wide) ────────────────────────────────────────
 banner "Installing Bun"
 BUN_INSTALL=/usr/local curl -fsSL https://bun.sh/install | bash
 ok "Bun $(bun --version) installed"
 
-# ─── 6. uv (system-wide) ────────────────────────────────────────────
+# ─── 7. uv (system-wide) ────────────────────────────────────────
 banner "Installing uv"
 curl -LsSf https://astral.sh/uv/install.sh | env INSTALLER_NO_MODIFY_PATH=1 sh
 cp /root/.local/bin/uv /usr/local/bin/uv
 cp /root/.local/bin/uvx /usr/local/bin/uvx
 ok "uv $(uv --version) installed"
 
-# ─── 7. agent-browser + Chromium (optional) ──────────────────────────
+# ─── 8. agent-browser + Chromium (optional) ──────────────────────
 if [[ "$INSTALL_BROWSER" == true ]]; then
   banner "Installing agent-browser and Chromium"
   npm install -g agent-browser
@@ -116,7 +152,7 @@ else
   ok "Skipped"
 fi
 
-# ─── 8. Claude Code (system-wide) ───────────────────────────────────
+# ─── 9. Claude Code (system-wide) ────────────────────────────────
 if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
   banner "Installing Claude Code CLI"
   npm install -g @anthropic-ai/claude-code
@@ -126,7 +162,47 @@ else
   ok "Skipped"
 fi
 
-# ─── 9. Git global config (for sandbox user) ────────────────────────
+# ─── 10. Codex CLI (optional) ─────────────────────────────────────
+if [[ "$INSTALL_CODEX" == true ]]; then
+  banner "Installing OpenAI Codex CLI"
+  npm install -g @openai/codex
+  ok "Codex CLI installed"
+else
+  banner "Skipping Codex"
+  ok "Skipped"
+fi
+
+# ─── 11. Pi Coding Agent (optional) ──────────────────────────────
+if [[ "$INSTALL_PI_AGENT" == true ]]; then
+  banner "Installing Pi Coding Agent"
+  npm install -g @mariozechner/pi-coding-agent
+  ok "Pi Coding Agent installed"
+else
+  banner "Skipping Pi Agent"
+  ok "Skipped"
+fi
+
+# ─── 12. AgentMail CLI (optional) ─────────────────────────────────
+if [[ "$INSTALL_AGENTMAIL" == true ]]; then
+  banner "Installing AgentMail CLI"
+  npm install -g agentmail-cli
+  # Store API key in sandbox user's .bashrc if provided (not in shell history)
+  if [[ -n "$AGENTMAIL_KEY" ]]; then
+    su - "$SANDBOX_USER" -c "
+      grep -q 'AGENTMAIL_API_KEY' \$HOME/.bashrc 2>/dev/null \
+        && sed -i 's|^export AGENTMAIL_API_KEY=.*|export AGENTMAIL_API_KEY=${AGENTMAIL_KEY}|' \$HOME/.bashrc \
+        || echo 'export AGENTMAIL_API_KEY=${AGENTMAIL_KEY}' >> \$HOME/.bashrc
+    "
+    ok "AgentMail CLI installed + API key configured in .bashrc"
+  else
+    ok "AgentMail CLI installed (set AGENTMAIL_API_KEY later)"
+  fi
+else
+  banner "Skipping AgentMail"
+  ok "Skipped"
+fi
+
+# ─── 13. Git global config (for sandbox user) ────────────────────
 if [[ -n "$GIT_USER_NAME" ]]; then
   su - "$SANDBOX_USER" -c "git config --global user.name '${GIT_USER_NAME}'"
 fi
@@ -137,7 +213,7 @@ if [[ -n "$GIT_USER_NAME" || -n "$GIT_USER_EMAIL" ]]; then
   ok "Git config set for $SANDBOX_USER"
 fi
 
-# ─── 10. SSH authorized key (for sandbox user) ──────────────────────
+# ─── 14. SSH authorized key (for sandbox user) ──────────────────
 if [[ -n "$SSH_PUBKEY" ]]; then
   banner "Configuring SSH authorized key"
   SSHDIR="$SANDBOX_HOME/.ssh"
@@ -149,14 +225,14 @@ if [[ -n "$SSH_PUBKEY" ]]; then
   ok "SSH public key added for $SANDBOX_USER"
 fi
 
-# ─── 11. GitHub CLI auth (for sandbox user) ──────────────────────────
+# ─── 15. GitHub CLI auth (for sandbox user) ──────────────────────
 if [[ -n "$GH_TOKEN" ]]; then
   banner "Authenticating GitHub CLI"
   echo "$GH_TOKEN" | su - "$SANDBOX_USER" -c "gh auth login --with-token"
   ok "gh auth configured for $SANDBOX_USER"
 fi
 
-# ─── 12. Cleanup ─────────────────────────────────────────────────────
+# ─── 16. Cleanup ─────────────────────────────────────────────────
 banner "Cleaning up APT cache"
 rm -rf /var/lib/apt/lists/*
 ok "Done"
@@ -174,20 +250,36 @@ printf "  npm      : %s\n" "$(npm --version)"
 printf "  Bun      : %s\n" "$(bun --version)"
 printf "  uv       : %s\n" "$(uv --version)"
 printf "  gh       : %s\n" "$(gh --version | head -1)"
+printf "  docker   : %s\n" "$(docker --version)"
+printf "  tmux     : %s\n" "$(tmux -V)"
 if [[ "$INSTALL_BROWSER" == true ]]; then
   printf "  browser  : agent-browser + Chromium\n"
 fi
 if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
   printf "  claude   : %s\n" "$(claude --version 2>/dev/null || echo 'installed')"
 fi
+if [[ "$INSTALL_CODEX" == true ]]; then
+  printf "  codex    : %s\n" "$(codex --version 2>/dev/null || echo 'installed')"
+fi
+if [[ "$INSTALL_PI_AGENT" == true ]]; then
+  printf "  pi       : %s\n" "$(pi --version 2>/dev/null || echo 'installed')"
+fi
+if [[ "$INSTALL_AGENTMAIL" == true ]]; then
+  printf "  agentmail: %s\n" "$(agentmail --version 2>/dev/null || echo 'installed')"
+fi
 printf "\n"
 
+printf "  ${CYAN}Coding agents — next steps${NC}\n"
+printf "  ──────────────────────────────────────\n"
+printf "  su - $SANDBOX_USER\n"
+printf "  cd workspace\n"
 if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
-  printf "  ${CYAN}Claude Code — next steps${NC}\n"
-  printf "  ──────────────────────────────────────\n"
-  printf "  su - $SANDBOX_USER\n"
-  printf "  cd workspace\n"
-  printf "  claude                    # launch and authenticate via OAuth\n"
-  printf "  Docs: https://docs.anthropic.com/en/docs/claude-code\n"
-  printf "\n"
+  printf "  claude                    # Claude Code (authenticate via OAuth)\n"
 fi
+if [[ "$INSTALL_CODEX" == true ]]; then
+  printf "  codex                     # OpenAI Codex\n"
+fi
+if [[ "$INSTALL_PI_AGENT" == true ]]; then
+  printf "  pi                        # Pi Coding Agent\n"
+fi
+printf "\n"

@@ -1,8 +1,12 @@
 services:
   sandbox:
+    container_name: ${NAME:-sandbox}
     build:
       context: .
     volumes:
       - ./workspace:/home/sandbox/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     stdin_open: true
     tty: true
