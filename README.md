@@ -7,7 +7,7 @@ Isolated, pre-configured sandbox images for AI coding agents — [Claude Code](h
 ## ⚡ Quickstart
 
 ```bash
-git clone https://github.com/ruska-ai/sandboxes.git && cd sandboxes
+git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
 make NAME=dev quickstart        # builds, provisions, done
 make NAME=dev shell             # drop into the sandbox
 claude                          # start coding with AI
