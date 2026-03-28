@@ -137,7 +137,7 @@ INBOX_ID=$(jq -r '.inbox_id' ~/workspace/.mail-state.json)
 agentmail inboxes:messages send \
   --api-key "$API_KEY" \
   --inbox-id "$INBOX_ID" \
-  --to kre8mymedia@gmail.com \
+  --to <email> \
   --subject "Dallas Weather Report — $(date -u +%Y-%m-%d)" \
   --text "<formatted weather report>"
 ```
