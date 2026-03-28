@@ -24,7 +24,7 @@ SANDBOX_HOME="/home/$SANDBOX_USER"
 INSTALL_BROWSER=true
 INSTALL_CLAUDE_CODE=true
 INSTALL_CODEX=false
-INSTALL_PI_AGENT=false
+INSTALL_PI_AGENT=true
 INSTALL_AGENTMAIL=false
 SSH_PUBKEY=""
 GH_TOKEN=""
@@ -54,8 +54,8 @@ if [[ "$NON_INTERACTIVE" == false ]]; then
   [[ "$answer" =~ ^[Yy]$ ]] && INSTALL_CODEX=true
 
   printf "\n  Install Pi Coding Agent? (https://shittycodingagent.ai)\n"
-  read -rp "  Install Pi Agent? [y/N]: " answer
-  [[ "$answer" =~ ^[Yy]$ ]] && INSTALL_PI_AGENT=true
+  read -rp "  Install Pi Agent? [Y/n]: " answer
+  [[ "$answer" =~ ^[Nn]$ ]] && INSTALL_PI_AGENT=false
 
   printf "\n  Install AgentMail CLI? (https://docs.agentmail.to/integrations/cli)\n"
   read -rp "  Install AgentMail? [y/N]: " answer

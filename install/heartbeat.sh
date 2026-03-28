@@ -13,7 +13,8 @@ LOG_FILE="${HEARTBEAT_DIR}/heartbeat.log"
 HEARTBEAT_INTERVAL="${HEARTBEAT_INTERVAL:-1800}"
 HEARTBEAT_ACTIVE_START="${HEARTBEAT_ACTIVE_START:-}"
 HEARTBEAT_ACTIVE_END="${HEARTBEAT_ACTIVE_END:-}"
-HEARTBEAT_AGENT="${HEARTBEAT_AGENT:-claude}"
+HEARTBEAT_AGENT="${HEARTBEAT_AGENT:-pi}"
+HEARTBEAT_FALLBACK="${HEARTBEAT_FALLBACK:-claude codex}"
 HEARTBEAT_FILE="${HEARTBEAT_FILE:-${HOME}/workspace/HEARTBEAT.md}"
 SOUL_FILE="${SOUL_FILE:-${HOME}/workspace/SOUL.md}"
 MEMORY_DIR="${MEMORY_DIR:-${HOME}/workspace/memory}"
@@ -83,6 +84,27 @@ is_heartbeat_ok() {
   (( ${#response} < 300 )) && [[ "$response" == *"HEARTBEAT_OK"* ]]
 }
 
+# Invoke a single agent. Sets caller's `response` and returns the exit code.
+invoke_agent() {
+  local agent="$1" prompt="$2"
+  local ec=0
+  case "$agent" in
+    claude)
+      response=$(timeout 300 claude -p "$prompt" --dangerously-skip-permissions 2>&1) || ec=$?
+      ;;
+    codex)
+      response=$(timeout 300 codex "$prompt" 2>&1) || ec=$?
+      ;;
+    pi)
+      response=$(timeout 300 pi -p "$prompt" --dangerously-skip-permissions 2>&1) || ec=$?
+      ;;
+    *)
+      response=$(timeout 300 "$agent" -p "$prompt" 2>&1) || ec=$?
+      ;;
+  esac
+  return $ec
+}
+
 # ---------------------------------------------------------------------------
 # Core
 # ---------------------------------------------------------------------------
@@ -128,28 +150,38 @@ HEARTBEAT.md:
 ${heartbeat_content}
 ---"
 
-  log "Running heartbeat (agent: ${HEARTBEAT_AGENT})"
+  # Build ordered agent list: primary + fallbacks
+  local agents=("$HEARTBEAT_AGENT")
+  for fb in $HEARTBEAT_FALLBACK; do
+    [[ "$fb" != "$HEARTBEAT_AGENT" ]] && agents+=("$fb")
+  done
 
   local response=""
   local exit_code=0
+  local succeeded=false
 
-  case "$HEARTBEAT_AGENT" in
-    claude)
-      response=$(timeout 300 claude -p "$prompt" --dangerously-skip-permissions 2>&1) || exit_code=$?
-      ;;
-    codex)
-      response=$(timeout 300 codex "$prompt" 2>&1) || exit_code=$?
-      ;;
-    *)
-      response=$(timeout 300 "$HEARTBEAT_AGENT" -p "$prompt" 2>&1) || exit_code=$?
-      ;;
-  esac
+  for agent in "${agents[@]}"; do
+    log "Running heartbeat (agent: ${agent})"
+    response=""
+    exit_code=0
+    invoke_agent "$agent" "$prompt" || exit_code=$?
 
-  if (( exit_code == 124 )); then
-    log "Heartbeat timed out (300s limit)"
-    return 0
-  elif (( exit_code != 0 )); then
-    log "Heartbeat failed (exit code ${exit_code}): ${response:0:500}"
+    if (( exit_code == 124 )); then
+      log "Agent ${agent} timed out (300s limit)"
+    elif (( exit_code != 0 )); then
+      log "Agent ${agent} failed (exit code ${exit_code}): ${response:0:500}"
+    else
+      succeeded=true
+      break
+    fi
+
+    if (( ${#agents[@]} > 1 )); then
+      log "Falling back to next agent..."
+    fi
+  done
+
+  if [[ "$succeeded" != true ]]; then
+    log "All agents failed"
     return 0
   fi
 
