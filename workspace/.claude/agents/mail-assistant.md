@@ -124,7 +124,7 @@ Append a brief summary to `~/workspace/memory/YYYY-MM-DD.md` (today's date):
 
 ## Weather Report Protocol
 
-Send a daily Dallas weather report to kre8mymedia@gmail.com:
+Send a daily Dallas weather report to <email>:
 
 1. **Check if already sent today**: Look for `WEATHER_SENT` in `~/workspace/memory/YYYY-MM-DD.md`. If found, skip.
 2. **Fetch weather**: Use `curl -s "wttr.in/Dallas,TX?format=4"` for current conditions and `curl -s "wttr.in/Dallas,TX?T"` for the detailed forecast.
