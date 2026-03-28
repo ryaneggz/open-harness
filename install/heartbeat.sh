@@ -13,7 +13,7 @@ LOG_FILE="${HEARTBEAT_DIR}/heartbeat.log"
 HEARTBEAT_INTERVAL="${HEARTBEAT_INTERVAL:-1800}"
 HEARTBEAT_ACTIVE_START="${HEARTBEAT_ACTIVE_START:-}"
 HEARTBEAT_ACTIVE_END="${HEARTBEAT_ACTIVE_END:-}"
-HEARTBEAT_AGENT="${HEARTBEAT_AGENT:-claude}"
+HEARTBEAT_AGENT="${HEARTBEAT_AGENT:-pi}"
 HEARTBEAT_FILE="${HEARTBEAT_FILE:-${HOME}/workspace/HEARTBEAT.md}"
 SOUL_FILE="${SOUL_FILE:-${HOME}/workspace/SOUL.md}"
 MEMORY_DIR="${MEMORY_DIR:-${HOME}/workspace/memory}"
@@ -139,6 +139,9 @@ ${heartbeat_content}
       ;;
     codex)
       response=$(timeout 300 codex "$prompt" 2>&1) || exit_code=$?
+      ;;
+    pi)
+      response=$(timeout 300 pi -p "$prompt" --dangerously-skip-permissions 2>&1) || exit_code=$?
       ;;
     *)
       response=$(timeout 300 "$HEARTBEAT_AGENT" -p "$prompt" 2>&1) || exit_code=$?

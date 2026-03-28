@@ -222,7 +222,7 @@ make NAME=my-sandbox heartbeat-stop                         # stop the loop
 | `HEARTBEAT_INTERVAL` | `1800` | Seconds between cycles |
 | `HEARTBEAT_ACTIVE_START` | _(unset)_ | Hour to start (0-23) |
 | `HEARTBEAT_ACTIVE_END` | _(unset)_ | Hour to stop (0-23) |
-| `HEARTBEAT_AGENT` | `claude` | Agent CLI to invoke |
+| `HEARTBEAT_AGENT` | `pi` | Agent CLI to invoke |
 
 If `HEARTBEAT.md` contains only headers or comments, the cycle is skipped (saves API costs). If the agent has nothing to report, it replies `HEARTBEAT_OK` and the response is suppressed.
 

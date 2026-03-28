@@ -5,7 +5,7 @@ REGISTRY = ghcr.io/ruska-ai
 HEARTBEAT_INTERVAL     ?= 900
 HEARTBEAT_ACTIVE_START ?=
 HEARTBEAT_ACTIVE_END   ?=
-HEARTBEAT_AGENT        ?= claude
+HEARTBEAT_AGENT        ?= pi
 
 # NAME is required — fail fast with a helpful message
 ifndef NAME
