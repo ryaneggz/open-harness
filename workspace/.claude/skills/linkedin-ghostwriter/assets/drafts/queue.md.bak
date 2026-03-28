@@ -1,0 +1,24 @@
+# Post Queue
+
+## Pending
+- [ ] Topic: "One agent replaced 12 Zapier zaps and saved $200/month" [Pillar 5: SMB/Platform]
+- [ ] Topic: "Agent memory that survives container restarts — MEMORY.md in Open Harness" [Pillar 2: Build Log]
+- [ ] Topic: "Guest checks in on Guesty — agent handles the rest" [Pillar 5: SMB/Platform]
+- [ ] Topic: "Copy this SOUL.md and your agents will stop hallucinating" [Pillar 3: Steal My Workflow]
+
+## In Progress
+
+## Done
+- [x] Topic: "Open Harness vs OpenClaw — why I forked my own sandbox" [Pillar 1: Pain->Solution] — [draft](2026-03-28-05-39.md)
+- [x] Topic: "Your Zoho CRM has an API — my agent knows how to use it" [Pillar 5: SMB/Platform] — [draft](2026-03-28-22-00.md)
+- [x] Topic: "I let my heartbeat agent run overnight and it drafted 6 posts — only 2 were usable" [Pillar 4: Honest Reflection] — [draft](2026-03-28-05-28.md)
+- [x] Topic: "What AI automation actually looks like for a 10-person business in Southern Utah" [Pillar 5: SMB] — [draft](2026-03-28-05-24.md)
+- [x] Topic: "3 commands from clone to coding with AI — the Open Harness quickstart" — [draft](2026-03-28-21-00.md)
+- [x] Topic: "Why I sandbox my AI agents — Open Harness gives them full permissions without touching your host" — [draft](2026-03-28-05-15.md)
+- [x] Topic: "The one-file trick that keeps my agents from hallucinating project context" — [draft](2026-03-28-17-30.md)
+- [x] Topic: "Why I give my agents a definition of done — and what happens when I don't" — [draft](2026-03-28-05-07.md)
+- [x] Topic: "How I use heartbeat loops to automate content drafting with Claude Code" — [draft](2026-03-28-heartbeat-loops.md)
+- [x] Topic: "Agent backpressure — why your agents need a definition of done before executing" — [draft](2026-03-28-14-30.md)
+- [x] Topic: "Spec -> PRD -> Build: collapsing the SDLC into one agent loop" — [draft](2026-03-28-16-00.md)
+- [x] Topic: "Giving your agents a SOUL.md — why identity files beat system prompts" — [draft](2026-03-28-04-58.md)
+- [x] Topic: "The tmux workflow that makes multi-agent development feel like pair programming" — [draft](2026-03-28-05-02.md)
