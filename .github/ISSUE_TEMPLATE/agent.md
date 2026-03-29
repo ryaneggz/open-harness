@@ -28,7 +28,7 @@ assignees: ""
 ```yml
 agent: "<agent-name>"
 branch: "agent/<agent-name>"
-worktree_path: "worktrees/<agent-name>"
+worktree_path: ".worktrees/<agent-name>"
 ```
 
 ### 1. Provision the agent
@@ -38,7 +38,7 @@ make NAME=<agent-name> quickstart
 ```
 
 This will:
-- Create a git worktree at `worktrees/<agent-name>` on branch `agent/<agent-name>`, branched from `development`
+- Create a git worktree at `.worktrees/<agent-name>` on branch `agent/<agent-name>`, branched from `development`
 - Build the Docker image from the worktree's context
 - Start the container with the worktree's workspace mounted
 - Run the setup script

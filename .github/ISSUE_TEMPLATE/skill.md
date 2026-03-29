@@ -95,7 +95,7 @@ description: |
 ```yml
 agent: "<agent-name>"
 branch: "agent/<agent-name>"
-worktree_path: "worktrees/<agent-name>"
+worktree_path: ".worktrees/<agent-name>"
 pull_request: "FROM agent/<agent-name> TO development"
 ```
 
@@ -107,7 +107,7 @@ make NAME=<agent-name> shell
 claude
 
 # When complete — PR from agent branch to development
-cd worktrees/<agent-name>
+cd .worktrees/<agent-name>
 git add -A && git commit -m "skill(<issue#>): <description>"
 git push -u origin agent/<agent-name>
 gh pr create --base development --title "skill(<issue#>): <shortdesc>" --body "Closes #<issue#>"
