@@ -10,7 +10,7 @@ Isolated, pre-configured sandbox images for AI coding agents — [Claude Code](h
 
 **What runs where**
 - **Host:** tiny `oh` bootstrap/proxy only
-- **Supervisor sandbox:** creates and manages sandboxes
+- **Supervisor sandbox:** runs the same `oh create/shell/stop/clean/...` commands and orchestrates sandboxes
 - **User sandbox:** where your coding agent actually works
 
 The repo root is the default workspace scaffold, so you can clone this repo and start immediately.
@@ -214,9 +214,9 @@ sudo bash setup.sh --non-interactive
 
 ---
 
-## 🛠️ Makefile Targets
+## 🛠️ Internal / Debugging Targets
 
-Most users should use `oh ...`. The Makefile is the lower-level orchestration layer that the supervisor calls internally.
+Most users should use `oh ...`. The Makefile is an implementation detail and low-level debugging layer. The real user/supervisor interface is `oh`, and the host simply forwards the same sandbox commands into the supervisor.
 
 | Target | Description |
 |--------|-------------|
@@ -236,7 +236,7 @@ Most users should use `oh ...`. The Makefile is the lower-level orchestration la
 | `make heartbeat-status` | Show heartbeat schedules and recent logs |
 | `make heartbeat-migrate` | Convert legacy `HEARTBEAT_INTERVAL` to `heartbeats.conf` |
 
-`NAME` is required for all sandbox targets. Pass `DOCKER=true` to enable Docker socket access in the user sandbox. Pass `WORKSPACE=/host/path` to mount an external workspace instead of creating a git worktree. In normal use, prefer `oh ...` so the supervisor handles these from inside a sandboxed control plane.
+`NAME` is required for all sandbox targets. Pass `DOCKER=true` to enable Docker socket access in the user sandbox. Pass `WORKSPACE=/host/path` to mount an external workspace instead of creating a git worktree. In normal use, prefer `oh ...`; think of `make` as internal plumbing and debugging escape hatches, not the primary interface.
 
 ---
 

@@ -50,7 +50,8 @@ Options for create:
   --branch BRANCH       Branch name for default worktree mode
 
 Behavior:
-  - Host-side `oh` is a small bootstrap/proxy shim
+  - The same `oh` sandbox commands run on the host and inside the supervisor
+  - On the host, `oh` is a small bootstrap/proxy shim that forwards sandbox commands into the supervisor
   - Sandbox lifecycle commands auto-bootstrap a supervisor container if needed
   - By default, create uses a git worktree workspace under .worktrees/<name>
   - If --workspace PATH is provided, that host path is mounted at /workspace instead

@@ -44,10 +44,12 @@ assert-name = $(if $(NAME),,$(error NAME is required. Usage: make NAME=my-sandbo
 
 help:
 	@echo ""
-	@echo "  Open Harness"
-	@echo "  ============"
+	@echo "  Open Harness (internal/debugging make targets)"
+	@echo "  ============================================="
 	@echo ""
 	@echo "  Usage: make NAME=<sandbox-name> <target>"
+	@echo ""
+	@echo "  Note: prefer 'oh ...' for normal use; these make targets are lower-level plumbing."
 	@echo ""
 	@echo "  Targets:"
 	@echo "    install-cli       Install the 'oh' CLI (global if possible, otherwise user-local)"
