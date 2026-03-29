@@ -66,10 +66,13 @@ Workflow:
 
 ## Heartbeat
 
-A periodic heartbeat loop can check on recurring tasks. The agent reads `HEARTBEAT.md` each cycle and follows its instructions.
+Heartbeats are periodic tasks executed on cron schedules. Each heartbeat is a `.md` file containing instructions for the agent.
 
-- **Start/stop from host**: `make heartbeat`, `make heartbeat-stop`, `make heartbeat-status`
-- **Configuration**: `HEARTBEAT_INTERVAL` (seconds, default 1800), `HEARTBEAT_ACTIVE_START`/`HEARTBEAT_ACTIVE_END` (hours 0-23)
+- **Schedule config**: `heartbeats.conf` in workspace root — maps files to cron expressions
+- **Format**: `<cron> | <file> | [agent] | [active_start-active_end]` (pipe-delimited)
+- **Heartbeat files**: `.md` files in `heartbeats/` (default: `heartbeats/default.md`)
+- **Manage from host**: `make heartbeat` (sync), `make heartbeat-stop`, `make heartbeat-status`
 - **Logs**: `~/.heartbeat/heartbeat.log` inside the container
-- If `HEARTBEAT.md` is empty (only headers/comments), the heartbeat is skipped to save API costs
+- Schedules auto-sync on container startup from `heartbeats.conf`
+- If a heartbeat file is empty (only headers/comments), that execution is skipped to save API costs
 - If nothing needs attention, reply `HEARTBEAT_OK`

@@ -6,14 +6,15 @@ Isolated, pre-configured sandbox images for AI coding agents — [Claude Code](h
 
 ## ⚡ Quickstart
 
+1. [**Fork this repo**](https://github.com/ryaneggz/open-harness/fork)
+2. Clone, build, go:
+
 ```bash
-git clone https://github.com/ruska-ai/sandboxes.git && cd sandboxes
+git clone https://github.com/<your-username>/open-harness.git && cd open-harness
 make NAME=dev quickstart        # builds, provisions, done
 make NAME=dev shell             # drop into the sandbox
 claude                          # start coding with AI
 ```
-
-That's it. Three commands — clone, build, go.
 
 > **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [Make](https://www.gnu.org/software/make/). That's all you need on your host.
 
@@ -50,11 +51,11 @@ Named sandboxes (`NAME=research`, `NAME=frontend`) run simultaneously, each with
 | Benefit | Details |
 |---------|---------|
 | 🔒 **Host protection** | Agents run in a disposable Debian container; only the workspace directory is bind-mounted |
-| 🔄 **Reproducibility** | Dockerfile + setup script = identical environment every time, on any machine |
+| 🔄 **Reproducibility** | `docker/Dockerfile` + setup script = identical environment every time, on any machine |
 | 🐳 **Docker-in-Docker** | `DOCKER=true` mounts the host socket so agents can build and manage containers from inside |
-| 🚀 **CI/CD ready** | GitHub Actions builds and pushes to `ghcr.io/ruska-ai/open-harness` on tagged releases |
+| 🚀 **CI/CD ready** | GitHub Actions builds and pushes to `ghcr.io/ryaneggz/open-harness` on tagged releases |
 | 🧠 **Agent memory** | SOUL / MEMORY / daily-log system gives agents durable state across restarts and sessions |
-| ⏰ **Unattended operation** | Heartbeat loop with active-hours gating, cost-saving empty-file detection, and auto-rotating logs |
+| ⏰ **Unattended operation** | Cron-scheduled heartbeats with multiple files/intervals, active-hours gating, cost-saving empty-file detection, and auto-rotating logs |
 | ⚙️ **Flexible provisioning** | Interactive mode prompts for SSH keys, Git identity, and per-agent installs; non-interactive mode uses sane defaults |
 | 🔧 **Entrypoint correctness** | `entrypoint.sh` dynamically matches the container's `docker` GID to the host socket's GID, avoiding "permission denied on /var/run/docker.sock" |
 | 🧩 **Per-project extensibility** | `.pi/extensions/`, `.claude/`, and `.codex/` directories live in the workspace — agents are customized per-project |
@@ -77,7 +78,7 @@ cd ~/workspace && claude                        # launch an agent
 **Standalone** (no Docker, direct on any Ubuntu/Debian machine):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ruska-ai/sandboxes/refs/heads/open-harness/install/setup.sh -o setup.sh
+curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/install/setup.sh -o setup.sh
 sudo bash setup.sh --non-interactive
 ```
 
@@ -102,18 +103,20 @@ make list                                       # see all running sandboxes
 ## 📁 Structure
 
 ```
-├── Dockerfile               # base image: Debian Bookworm slim + sandbox user
-├── docker-compose.yml       # base compose: mounts workspace/
-├── docker-compose.docker.yml # Docker override: mounts socket + host networking
+├── docker/
+│   ├── Dockerfile           # base image: Debian Bookworm slim + sandbox user
+│   ├── docker-compose.yml   # base compose: mounts workspace/
+│   └── docker-compose.docker.yml # Docker override: mounts socket + host networking
 ├── Makefile                 # build, run, shell, stop, rebuild, clean, push, list
 ├── install/
 │   ├── setup.sh             # provisioning script (runs as root)
-│   ├── heartbeat.sh         # periodic heartbeat runner (start/stop/status)
-│   └── entrypoint.sh        # container entrypoint (Docker GID matching)
+│   ├── heartbeat.sh         # cron-based heartbeat runner (sync/run/stop/status)
+│   └── entrypoint.sh        # container entrypoint (Docker GID matching + cron start)
 └── workspace/
     ├── AGENTS.md            # default instructions for all coding agents
     ├── CLAUDE.md            # symlink → AGENTS.md
-    ├── HEARTBEAT.md         # periodic task checklist (agent reads each cycle)
+    ├── heartbeats.conf      # heartbeat schedule config (cron expressions)
+    ├── heartbeats/          # heartbeat task .md files (default.md, etc.)
     ├── SOUL.md              # agent persona, tone, and boundaries
     ├── MEMORY.md            # curated long-term memory
     ├── memory/              # daily append-only logs (YYYY-MM-DD.md)
@@ -125,14 +128,14 @@ make list                                       # see all running sandboxes
 
 ## ⚙️ How It Works
 
-1. **`Dockerfile`** creates a minimal Debian image with a `sandbox` user (passwordless sudo) and bakes in:
+1. **`docker/Dockerfile`** creates a minimal Debian image with a `sandbox` user (passwordless sudo) and bakes in:
    - `install/` copied to `/home/sandbox/install/`
    - `workspace/` copied to `/home/sandbox/workspace/`
    - Agent aliases in `.bashrc` (`claude`, `codex`, `pi`)
    - Docker group membership for the sandbox user
    - Default shell drops into `/home/sandbox/workspace`
 
-2. **`docker-compose.yml`** bind-mounts `./workspace`. When `DOCKER=true`, the override file (`docker-compose.docker.yml`) additionally mounts the Docker socket and configures `host.docker.internal`.
+2. **`docker/docker-compose.yml`** bind-mounts `./workspace`. When `DOCKER=true`, the override file (`docker/docker-compose.docker.yml`) additionally mounts the Docker socket and configures `host.docker.internal`.
 
 3. **`install/setup.sh`** provisions all tools system-wide (as root):
    - Node.js 22.x, npm, tmux, nano, ripgrep, jq (always)
@@ -158,12 +161,13 @@ make list                                       # see all running sandboxes
 | `make shell` | Open a bash shell as `sandbox` user |
 | `make stop` | Stop the container |
 | `make clean` | Stop and remove the local image |
-| `make push` | Push image to ghcr.io/ruska-ai |
+| `make push` | Push image to ghcr.io/ryaneggz |
 | `make list` | List all running sandboxes |
 | `make all` | Build + push |
-| `make heartbeat` | Start the heartbeat loop (background) |
-| `make heartbeat-stop` | Stop the heartbeat loop |
-| `make heartbeat-status` | Show heartbeat status and recent logs |
+| `make heartbeat` | Sync heartbeat cron schedules from `heartbeats.conf` |
+| `make heartbeat-stop` | Remove all heartbeat cron schedules |
+| `make heartbeat-status` | Show heartbeat schedules and recent logs |
+| `make heartbeat-migrate` | Convert legacy `HEARTBEAT_INTERVAL` to `heartbeats.conf` |
 
 `NAME` is required for all targets. Pass `DOCKER=true` to enable Docker socket access.
 
@@ -193,7 +197,8 @@ Three workspace files give agents persistent identity and periodic task executio
 |------|---------|-------------|
 | `SOUL.md` | Agent persona, tone, boundaries | User (seeded with template) |
 | `MEMORY.md` | Curated long-term memory | Agent (distilled from daily logs) |
-| `HEARTBEAT.md` | Periodic task checklist | User |
+| `heartbeats.conf` | Heartbeat schedule config (cron → file mapping) | User |
+| `heartbeats/*.md` | Heartbeat task files (`default.md`, etc.) | User |
 | `memory/YYYY-MM-DD.md` | Daily append-only logs | Agent |
 
 ### 📝 How Memory Works
@@ -208,23 +213,38 @@ Agents are instructed to:
 
 ### 💓 Heartbeat
 
+Heartbeats are cron-scheduled tasks. Each heartbeat is a `.md` file with instructions for the agent, mapped to a cron schedule in `heartbeats.conf`.
+
 ```bash
-make NAME=my-sandbox heartbeat                              # default: 30 min interval
-make NAME=my-sandbox HEARTBEAT_INTERVAL=600 run             # 10 min interval (set at container start)
-make NAME=my-sandbox heartbeat-status                       # check status + recent logs
-make NAME=my-sandbox heartbeat-stop                         # stop the loop
+make NAME=my-sandbox heartbeat                              # sync schedules from heartbeats.conf
+make NAME=my-sandbox heartbeat-status                       # show schedules + recent logs
+make NAME=my-sandbox heartbeat-stop                         # remove all schedules
+make NAME=my-sandbox heartbeat-migrate                      # convert legacy HEARTBEAT_INTERVAL to conf
 ```
 
-**Configuration** (env vars, set at `make run` or in `docker-compose.yml`):
+**Schedule config** (`workspace/heartbeats.conf`):
+
+```
+# Format: <cron> | <file> | [agent] | [active_start-active_end]
+*/30 * * * * | heartbeats/default.md
+*/15 * * * * | heartbeats/check-deployments.md | claude | 9-18
+0 */4 * * *  | heartbeats/memory-distill.md
+0 20 * * *   | heartbeats/daily-summary.md
+```
+
+Schedules auto-sync on container startup. Edit `heartbeats.conf`, then run `make heartbeat` to apply changes.
+
+**Global defaults** (env vars, set at `make run` or in `docker/docker-compose.yml`):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HEARTBEAT_INTERVAL` | `1800` | Seconds between cycles |
-| `HEARTBEAT_ACTIVE_START` | _(unset)_ | Hour to start (0-23) |
-| `HEARTBEAT_ACTIVE_END` | _(unset)_ | Hour to stop (0-23) |
-| `HEARTBEAT_AGENT` | `claude` | Agent CLI to invoke |
+| `HEARTBEAT_ACTIVE_START` | _(unset)_ | Default active hour start (0-23) |
+| `HEARTBEAT_ACTIVE_END` | _(unset)_ | Default active hour end (0-23) |
+| `HEARTBEAT_AGENT` | `claude` | Default agent CLI to invoke |
 
-If `HEARTBEAT.md` contains only headers or comments, the cycle is skipped (saves API costs). If the agent has nothing to report, it replies `HEARTBEAT_OK` and the response is suppressed.
+Per-entry overrides for agent and active hours can be set in `heartbeats.conf`.
+
+If a heartbeat file contains only headers or comments, that execution is skipped (saves API costs). If the agent has nothing to report, it replies `HEARTBEAT_OK` and the response is suppressed.
 
 ---
 
@@ -258,5 +278,5 @@ git push origin oh-v1.0.0
 ```
 
 This triggers the CI workflow which builds and pushes:
-- `ghcr.io/ruska-ai/open-harness:v1.0.0`
-- `ghcr.io/ruska-ai/open-harness:latest`
+- `ghcr.io/ryaneggz/open-harness:v1.0.0`
+- `ghcr.io/ryaneggz/open-harness:latest`

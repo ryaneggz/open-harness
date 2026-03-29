@@ -41,10 +41,10 @@ jobs:
 
             - name: Build and push
               run: |
-                  IMAGE=ghcr.io/ruska-ai/open-harness:${{ steps.parse.outputs.version }}
-                  LATEST=ghcr.io/ruska-ai/open-harness:latest
+                  IMAGE=ghcr.io/ryaneggz/open-harness:${{ steps.parse.outputs.version }}
+                  LATEST=ghcr.io/ryaneggz/open-harness:latest
 
                   echo "Building: $IMAGE and $LATEST"
-                  docker build -t $IMAGE -t $LATEST .
+                  docker build -f docker/Dockerfile -t $IMAGE -t $LATEST .
                   docker push $IMAGE
                   docker push $LATEST

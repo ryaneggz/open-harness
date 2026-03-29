@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates curl wget sudo gosu \
+ && apt-get install -y --no-install-recommends ca-certificates cron curl wget sudo gosu \
  && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -s /bin/bash sandbox \
