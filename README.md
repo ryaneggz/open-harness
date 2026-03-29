@@ -214,32 +214,6 @@ sudo bash setup.sh --non-interactive
 
 ---
 
-## 🛠️ Internal / Debugging Targets
-
-Most users should use `oh ...`. The Makefile is an implementation detail and low-level debugging layer. The real user/supervisor interface is `oh`, and the host simply forwards the same sandbox commands into the supervisor.
-
-| Target | Description |
-|--------|-------------|
-| `make install-cli` | Install the `oh` CLI (global if possible, otherwise user-local) |
-| `make quickstart` | Internal sandbox build/provision target used by the supervisor |
-| `make build` | Build the Docker image |
-| `make rebuild` | Full no-cache rebuild + restart |
-| `make run` | Start the container (detached) |
-| `make shell` | Open a login shell as `sandbox` in `/workspace` |
-| `make stop` | Stop the container |
-| `make clean` | Stop and remove the local image |
-| `make push` | Push image to ghcr.io/ryaneggz |
-| `make list` | List running sandboxes and worktrees |
-| `make all` | Build + push |
-| `make heartbeat` | Sync heartbeat cron schedules from `heartbeats.conf` |
-| `make heartbeat-stop` | Remove all heartbeat cron schedules |
-| `make heartbeat-status` | Show heartbeat schedules and recent logs |
-| `make heartbeat-migrate` | Convert legacy `HEARTBEAT_INTERVAL` to `heartbeats.conf` |
-
-`NAME` is required for all sandbox targets. Pass `DOCKER=true` to enable Docker socket access in the user sandbox. Pass `WORKSPACE=/host/path` to mount an external workspace instead of creating a git worktree. In normal use, prefer `oh ...`; think of `make` as internal plumbing and debugging escape hatches, not the primary interface.
-
----
-
 ## 🔧 Configuration
 
 In the normal `oh create ...` workflow, provisioning happens automatically inside the sandbox. The setup script below is the lower-level provisioning entrypoint used by the image and supervisor.
@@ -349,3 +323,29 @@ git push origin oh-v1.0.0
 This triggers the CI workflow which builds and pushes:
 - `ghcr.io/ryaneggz/open-harness:v1.0.0`
 - `ghcr.io/ryaneggz/open-harness:latest`
+
+---
+
+## 🛠️ Appendix: Internal / Debugging Make Targets
+
+Most users should use `oh ...`. The Makefile is an implementation detail and low-level debugging layer. The real user/supervisor interface is `oh`, and the host simply forwards the same sandbox commands into the supervisor.
+
+| Target | Description |
+|--------|-------------|
+| `make install-cli` | Install the `oh` CLI (global if possible, otherwise user-local) |
+| `make quickstart` | Internal sandbox build/provision target used by the supervisor |
+| `make build` | Build the Docker image |
+| `make rebuild` | Full no-cache rebuild + restart |
+| `make run` | Start the container (detached) |
+| `make shell` | Open a login shell as `sandbox` in `/workspace` |
+| `make stop` | Stop the container |
+| `make clean` | Stop and remove the local image |
+| `make push` | Push image to ghcr.io/ryaneggz |
+| `make list` | List running sandboxes and worktrees |
+| `make all` | Build + push |
+| `make heartbeat` | Sync heartbeat cron schedules from `heartbeats.conf` |
+| `make heartbeat-stop` | Remove all heartbeat cron schedules |
+| `make heartbeat-status` | Show heartbeat schedules and recent logs |
+| `make heartbeat-migrate` | Convert legacy `HEARTBEAT_INTERVAL` to `heartbeats.conf` |
+
+`NAME` is required for all sandbox targets. Pass `DOCKER=true` to enable Docker socket access in the user sandbox. Pass `WORKSPACE=/host/path` to mount an external workspace instead of creating a git worktree. In normal use, prefer `oh ...`; think of `make` as internal plumbing and debugging escape hatches, not the primary interface.
