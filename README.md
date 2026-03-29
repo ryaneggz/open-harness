@@ -4,22 +4,48 @@ Isolated, pre-configured sandbox images for AI coding agents — [Claude Code](h
 
 > **Spin up isolated, fully-provisioned Docker sandboxes where AI coding agents can operate with full permissions, persistent memory, and autonomous background tasks — without touching your host system.**
 
-## ⚡ Quickstart
+## ⚡ Start Here: End-to-End
 
-1. [**Fork this repo**](https://github.com/ryaneggz/open-harness/fork)
-2. Clone, build, go:
+> **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [Make](https://www.gnu.org/software/make/). That's all you need on your host.
+
+If you're evaluating Open Harness, this is the full first-run lifecycle:
+1. install the tiny `oh` host shim
+2. bootstrap the supervisor sandbox
+3. create your first agent sandbox through that supervisor
+4. enter the sandbox and run an agent
+5. stop / clean the sandbox when done
+6. tear down the supervisor when you want everything gone
 
 The repo root is the default project workspace scaffold, so users can clone it and start directly inside the sandbox without first creating a separate nested workspace.
 
 ```bash
 git clone https://github.com/<your-username>/open-harness.git && cd open-harness
 ./setup/oh install             # installs `oh` globally when possible, otherwise offers ~/.local/bin fallback
-oh create dev -i               # auto-bootstraps the supervisor sandbox, then builds/provisions your sandbox
-oh shell dev                   # drop into the sandbox
-claude                         # start coding with AI
+
+oh bootstrap                   # explicitly start the supervisor control plane
+oh supervisor status           # confirm the supervisor is running
+
+oh create dev -i               # create your first sandbox via the supervisor
+oh shell dev                   # open a shell inside the sandbox
+claude                         # or: codex / pi
+exit
+
+oh stop dev                    # stop the sandbox container
+oh clean dev                   # remove sandbox container/image/worktree
+oh supervisor down             # tear down the supervisor sandbox too
 ```
 
-> **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [Make](https://www.gnu.org/software/make/). That's all you need on your host.
+### Fastest path
+
+If you don't care about the explicit supervisor step, `oh create` bootstraps it for you automatically:
+
+```bash
+git clone https://github.com/<your-username>/open-harness.git && cd open-harness
+./setup/oh install
+oh create dev -i
+oh shell dev
+claude
+```
 
 ---
 
