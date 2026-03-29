@@ -10,12 +10,14 @@ RUN useradd -m -s /bin/bash sandbox \
  && echo "alias claude='claude --dangerously-skip-permissions'" >> /home/sandbox/.bashrc \
  && echo "alias codex='codex --full-auto'" >> /home/sandbox/.bashrc \
  && echo "alias pi='pi'" >> /home/sandbox/.bashrc \
- && echo '[ -f ~/install/banner.sh ] && source ~/install/banner.sh' >> /home/sandbox/.bashrc
+ && echo '[ -f /opt/open-harness/install/banner.sh ] && source /opt/open-harness/install/banner.sh' >> /home/sandbox/.bashrc
 
-COPY install/entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY --chown=sandbox:sandbox install/ /home/sandbox/install/
-COPY --chown=sandbox:sandbox workspace/ /home/sandbox/workspace/
+COPY setup/install/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --chown=sandbox:sandbox setup/install/ /opt/open-harness/install/
 
-WORKDIR /home/sandbox
+ENV PROJECT_ROOT=/workspace
+ENV INSTALL_ROOT=/opt/open-harness/install
+
+WORKDIR /workspace
 ENTRYPOINT ["entrypoint.sh"]
 CMD ["bash"]

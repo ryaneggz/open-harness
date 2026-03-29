@@ -1,3 +1,4 @@
 **/.env*
-docker/Dockerfile
+setup/docker/Dockerfile
 .claude/
+.worktrees/

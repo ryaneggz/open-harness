@@ -16,9 +16,11 @@ done
 # ─── Root check ──────────────────────────────────────────────────────
 [[ $EUID -eq 0 ]] || die "This script must be run as root (or via sudo)."
 
-# ─── Sandbox user ───────────────────────────────────────────────────
+# ─── Sandbox user / mounted project ─────────────────────────────────
 SANDBOX_USER="sandbox"
 SANDBOX_HOME="/home/$SANDBOX_USER"
+PROJECT_ROOT="${PROJECT_ROOT:-/workspace}"
+INSTALL_ROOT="${INSTALL_ROOT:-/opt/open-harness/install}"
 
 # ─── Collect all options upfront ─────────────────────────────────────
 INSTALL_BROWSER=true
@@ -241,7 +243,8 @@ ok "Done"
 banner "Setup complete"
 printf "\n"
 printf "  ${CYAN}Sandbox user${NC}: $SANDBOX_USER\n"
-printf "  ${CYAN}Workspace${NC}: $SANDBOX_HOME/workspace\n"
+printf "  ${CYAN}Project root${NC}: $PROJECT_ROOT\n"
+printf "  ${CYAN}Runtime install${NC}: $INSTALL_ROOT\n"
 printf "\n"
 printf "  ${CYAN}Installed tools${NC}\n"
 printf "  ──────────────────────────────────────\n"
@@ -272,7 +275,7 @@ printf "\n"
 printf "  ${CYAN}Coding agents — next steps${NC}\n"
 printf "  ──────────────────────────────────────\n"
 printf "  su - $SANDBOX_USER\n"
-printf "  cd workspace\n"
+printf "  cd $PROJECT_ROOT\n"
 if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
   printf "  claude                    # Claude Code (authenticate via OAuth)\n"
 fi

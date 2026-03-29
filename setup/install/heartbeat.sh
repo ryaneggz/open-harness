@@ -9,11 +9,13 @@ set -euo pipefail
 HEARTBEAT_DIR="${HOME}/.heartbeat"
 LOG_FILE="${HEARTBEAT_DIR}/heartbeat.log"
 ENV_FILE="${HEARTBEAT_DIR}/env.sh"
-WORKSPACE="${HOME}/workspace"
-CONFIG_FILE="${WORKSPACE}/heartbeats.conf"
-LEGACY_FILE="${WORKSPACE}/HEARTBEAT.md"  # backward compat for users who haven't migrated
-SOUL_FILE="${SOUL_FILE:-${WORKSPACE}/SOUL.md}"
-MEMORY_DIR="${MEMORY_DIR:-${WORKSPACE}/memory}"
+PROJECT_ROOT="${PROJECT_ROOT:-/workspace}"
+INSTALL_ROOT="${INSTALL_ROOT:-/opt/open-harness/install}"
+WORKSPACE="${PROJECT_ROOT}"
+CONFIG_FILE="${PROJECT_ROOT}/heartbeats.conf"
+LEGACY_FILE="${PROJECT_ROOT}/HEARTBEAT.md"  # backward compat for users who haven't migrated
+SOUL_FILE="${SOUL_FILE:-${PROJECT_ROOT}/SOUL.md}"
+MEMORY_DIR="${MEMORY_DIR:-${PROJECT_ROOT}/memory}"
 
 HEARTBEAT_AGENT="${HEARTBEAT_AGENT:-claude}"
 HEARTBEAT_ACTIVE_START="${HEARTBEAT_ACTIVE_START:-}"
@@ -112,6 +114,8 @@ generate_env() {
     echo "export HOME='${HOME}'"
     echo "export PATH='${PATH}'"
     echo "export USER='${USER:-sandbox}'"
+    echo "export PROJECT_ROOT='${PROJECT_ROOT}'"
+    echo "export INSTALL_ROOT='${INSTALL_ROOT}'"
     # Capture API keys and relevant env vars
     env | grep -E '^(ANTHROPIC_|OPENAI_|HEARTBEAT_|GH_|GITHUB_|AGENTMAIL_|NODE_|NPM_|BUN_)' \
       | sed "s/'/'\\\\''/g" \
@@ -270,7 +274,7 @@ cmd_sync() {
       fi
 
       # Build crontab line
-      local entry="${cron_expr} . ${ENV_FILE} && ${HOME}/install/heartbeat.sh run \"${file_path}\" \"${agent}\" \"${active_range}\" >> ${LOG_FILE} 2>&1 ${CRON_MARKER}"
+      local entry="${cron_expr} . ${ENV_FILE} && ${INSTALL_ROOT}/heartbeat.sh run \"${file_path}\" \"${agent}\" \"${active_range}\" >> ${LOG_FILE} 2>&1 ${CRON_MARKER}"
       entries+=("$entry")
     done < "$CONFIG_FILE"
 
@@ -289,7 +293,7 @@ cmd_sync() {
       legacy_target="HEARTBEAT.md"
     fi
 
-    local entry="${cron_expr} . ${ENV_FILE} && ${HOME}/install/heartbeat.sh run \"${legacy_target}\" \"${HEARTBEAT_AGENT}\" \"${active_range}\" >> ${LOG_FILE} 2>&1 ${CRON_MARKER}"
+    local entry="${cron_expr} . ${ENV_FILE} && ${INSTALL_ROOT}/heartbeat.sh run \"${legacy_target}\" \"${HEARTBEAT_AGENT}\" \"${active_range}\" >> ${LOG_FILE} 2>&1 ${CRON_MARKER}"
     entries+=("$entry")
     log "Legacy mode: using ${legacy_target} with interval ${HEARTBEAT_INTERVAL}s (${cron_expr})"
   else
@@ -422,7 +426,7 @@ cmd_migrate() {
 # Format: <cron-expression> | <file-path> | [agent] | [active_start-active_end]
 #
 # - cron-expression: Standard 5-field cron (min hour dom mon dow)
-# - file-path: Relative to ~/workspace/
+# - file-path: Relative to the mounted project root (${PROJECT_ROOT})
 # - agent: (optional) Override HEARTBEAT_AGENT env var. Default: ${HEARTBEAT_AGENT}
 # - active_start-active_end: (optional) Hours (0-23). Only run during this window.
 #

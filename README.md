@@ -9,11 +9,14 @@ Isolated, pre-configured sandbox images for AI coding agents — [Claude Code](h
 1. [**Fork this repo**](https://github.com/ryaneggz/open-harness/fork)
 2. Clone, build, go:
 
+The repo root is the default project workspace scaffold, so users can clone it and start directly inside the sandbox without first creating a separate nested workspace.
+
 ```bash
 git clone https://github.com/<your-username>/open-harness.git && cd open-harness
-make NAME=dev quickstart        # builds, provisions, done
-make NAME=dev shell             # drop into the sandbox
-claude                          # start coding with AI
+./setup/oh install             # installs global `oh` CLI
+oh create dev -i               # builds, provisions, done
+oh shell dev                   # drop into the sandbox
+claude                         # start coding with AI
 ```
 
 > **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [Make](https://www.gnu.org/software/make/). That's all you need on your host.
@@ -27,22 +30,22 @@ AI coding agents are powerful — but they run with broad system permissions, ex
 ### Core Intentions
 
 #### 1. **Isolation & Safety**
-Agents run `--dangerously-skip-permissions` by default — inside a disposable Docker container. They can `rm -rf`, install packages, and spawn processes without any risk to your host machine. The workspace directory is the only thing bind-mounted; everything else is ephemeral.
+Agents run `--dangerously-skip-permissions` by default — inside a disposable Docker container. They can `rm -rf`, install packages, and spawn processes without any risk to your host machine. The full project directory is bind-mounted at `/workspace`; the sandbox user's home stays clean and container-local.
 
 #### 2. **Zero-to-Agent in Minutes**
-One provisioning script (`install/setup.sh`) installs Node.js, Bun, uv, Docker CLI, GitHub CLI, ripgrep, tmux, and whichever agents you choose — interactively or fully unattended with `--non-interactive`. No more "install 15 things" friction.
+One provisioning script (`setup/install/setup.sh`) installs Node.js, Bun, uv, Docker CLI, GitHub CLI, ripgrep, tmux, and whichever agents you choose — interactively or fully unattended with `--non-interactive`. No more "install 15 things" friction.
 
 #### 3. **Agent-Agnostic**
-Not a wrapper for one tool. The same sandbox runs Claude Code, Codex, and Pi Agent side by side, sharing workspace files and context. `AGENTS.md` is symlinked to `CLAUDE.md` so every agent reads the same instructions.
+Not a wrapper for one tool. The same sandbox runs Claude Code, Codex, and Pi Agent side by side, sharing project files and context. `AGENTS.md` is symlinked to `CLAUDE.md` so every agent reads the same instructions.
 
 #### 4. **Persistent Identity**
 `SOUL.md`, `MEMORY.md`, and daily logs (`memory/YYYY-MM-DD.md`) give agents continuity across sessions — not ephemeral chat windows, but persistent collaborators that remember decisions, preferences, and lessons learned.
 
 #### 5. **Autonomous Background Work**
-The heartbeat system (`install/heartbeat.sh` + `HEARTBEAT.md`) lets agents wake on a timer, perform tasks from a user-authored checklist, and go back to sleep — turning reactive tools into proactive workers that can monitor, maintain, and report without human presence.
+The heartbeat system (`setup/install/heartbeat.sh` + `heartbeats.conf` + `heartbeats/*.md`) lets agents wake on a timer, perform tasks from a user-authored checklist, and go back to sleep — turning reactive tools into proactive workers that can monitor, maintain, and report without human presence.
 
 #### 6. **Multi-Sandbox Parallelism**
-Named sandboxes (`NAME=research`, `NAME=frontend`) run simultaneously, each with its own container, workspace, and agent sessions — enabling parallel workstreams or agent-per-project setups.
+Named sandboxes (`NAME=research`, `NAME=frontend`) run simultaneously, each with its own container, mounted project root, and agent sessions — enabling parallel workstreams or agent-per-project setups.
 
 ---
 
@@ -50,35 +53,45 @@ Named sandboxes (`NAME=research`, `NAME=frontend`) run simultaneously, each with
 
 | Benefit | Details |
 |---------|---------|
-| 🔒 **Host protection** | Agents run in a disposable Debian container; only the workspace directory is bind-mounted |
-| 🔄 **Reproducibility** | `docker/Dockerfile` + setup script = identical environment every time, on any machine |
+| 🔒 **Host protection** | Agents run in a disposable Debian container; the full project is bind-mounted at `/workspace` while `~/` remains container-local |
+| 🔄 **Reproducibility** | `setup/docker/Dockerfile` + setup script = identical environment every time, on any machine |
 | 🐳 **Docker-in-Docker** | `DOCKER=true` mounts the host socket so agents can build and manage containers from inside |
 | 🚀 **CI/CD ready** | GitHub Actions builds and pushes to `ghcr.io/ryaneggz/open-harness` on tagged releases |
 | 🧠 **Agent memory** | SOUL / MEMORY / daily-log system gives agents durable state across restarts and sessions |
 | ⏰ **Unattended operation** | Cron-scheduled heartbeats with multiple files/intervals, active-hours gating, cost-saving empty-file detection, and auto-rotating logs |
 | ⚙️ **Flexible provisioning** | Interactive mode prompts for SSH keys, Git identity, and per-agent installs; non-interactive mode uses sane defaults |
 | 🔧 **Entrypoint correctness** | `entrypoint.sh` dynamically matches the container's `docker` GID to the host socket's GID, avoiding "permission denied on /var/run/docker.sock" |
-| 🧩 **Per-project extensibility** | `.pi/extensions/`, `.claude/`, and `.codex/` directories live in the workspace — agents are customized per-project |
+| 🧩 **Per-project extensibility** | `.pi/extensions/`, `.claude/`, and `.codex/` directories live at the project root — agents are customized per-project |
 | 📦 **Shareable** | Published as a container image — teams `docker pull` a pre-provisioned sandbox instead of each developer running setup |
 
 ---
 
 ## 🚀 More Ways to Run
 
+**CLI-first** (recommended):
+
+```bash
+./setup/oh install
+oh create my-sandbox -i                         # prompts for optional external workspace path
+oh shell my-sandbox
+```
+
+By default, `oh create <name>` uses a git worktree under `.worktrees/<name>`. If you pass `-w /some/path` (or choose one in `-i` mode), that host path is mounted at `/workspace` instead.
+
 **Step-by-step** (if you want control over each stage):
 
 ```bash
 make NAME=my-sandbox build                      # build the image
 make NAME=my-sandbox run                        # start the container
-make NAME=my-sandbox shell                      # open a shell as sandbox user
-sudo bash ~/install/setup.sh                    # provision tools (interactive)
-cd ~/workspace && claude                        # launch an agent
+make NAME=my-sandbox shell                      # open a login shell in /workspace
+sudo bash /opt/open-harness/install/setup.sh    # provision tools (interactive)
+cd /workspace && claude                         # launch an agent
 ```
 
 **Standalone** (no Docker, direct on any Ubuntu/Debian machine):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/install/setup.sh -o setup.sh
+curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/setup/install/setup.sh -o setup.sh
 sudo bash setup.sh --non-interactive
 ```
 
@@ -103,41 +116,44 @@ make list                                       # see all running sandboxes
 ## 📁 Structure
 
 ```
-├── docker/
-│   ├── Dockerfile           # base image: Debian Bookworm slim + sandbox user
-│   ├── docker-compose.yml   # base compose: mounts workspace/
-│   └── docker-compose.docker.yml # Docker override: mounts socket + host networking
-├── Makefile                 # build, run, shell, stop, rebuild, clean, push, list
-├── install/
-│   ├── setup.sh             # provisioning script (runs as root)
-│   ├── heartbeat.sh         # cron-based heartbeat runner (sync/run/stop/status)
-│   └── entrypoint.sh        # container entrypoint (Docker GID matching + cron start)
-└── workspace/
-    ├── AGENTS.md            # default instructions for all coding agents
-    ├── CLAUDE.md            # symlink → AGENTS.md
-    ├── heartbeats.conf      # heartbeat schedule config (cron expressions)
-    ├── heartbeats/          # heartbeat task .md files (default.md, etc.)
-    ├── SOUL.md              # agent persona, tone, and boundaries
-    ├── MEMORY.md            # curated long-term memory
-    ├── memory/              # daily append-only logs (YYYY-MM-DD.md)
-    ├── .claude/             # Claude Code config directory
-    └── .codex/              # Codex config directory
+├── AGENTS.md                # default instructions for all coding agents
+├── CLAUDE.md                # symlink → AGENTS.md
+├── SOUL.md                  # agent persona, tone, and boundaries
+├── MEMORY.md                # curated long-term memory
+├── heartbeats.conf          # heartbeat schedule config (cron expressions)
+├── heartbeats/              # heartbeat task .md files (default.md, etc.)
+├── memory/                  # daily append-only logs (YYYY-MM-DD.md)
+├── .claude/                 # Claude Code config + agents/skills/
+├── .codex/                  # Codex config (symlink or directory)
+├── .pi/                     # Pi extensions/config
+├── ...                      # your actual project files live here too
+├── Makefile                 # thin entrypoint that includes setup/Makefile
+└── setup/
+    ├── oh                   # host-side CLI entrypoint (`oh`)
+    ├── Makefile             # build, run, shell, stop, rebuild, clean, push, list
+    ├── docker/
+    │   ├── Dockerfile           # base image: Debian Bookworm slim + sandbox user
+    │   ├── docker-compose.yml   # base compose: mounts the full project at /workspace
+    │   └── docker-compose.docker.yml # Docker override: mounts socket + host networking
+    └── install/
+        ├── setup.sh             # provisioning script source (copied into image)
+        ├── heartbeat.sh         # cron-based heartbeat runner (sync/run/stop/status)
+        └── entrypoint.sh        # container entrypoint (Docker GID matching + cron start)
 ```
 
 ---
 
 ## ⚙️ How It Works
 
-1. **`docker/Dockerfile`** creates a minimal Debian image with a `sandbox` user (passwordless sudo) and bakes in:
-   - `install/` copied to `/home/sandbox/install/`
-   - `workspace/` copied to `/home/sandbox/workspace/`
+1. **`setup/docker/Dockerfile`** creates a minimal Debian image with a `sandbox` user (passwordless sudo) and bakes in:
+   - `setup/install/` copied to `/opt/open-harness/install/` for runtime use
    - Agent aliases in `.bashrc` (`claude`, `codex`, `pi`)
    - Docker group membership for the sandbox user
-   - Default shell drops into `/home/sandbox/workspace`
+   - Clean `~/` for user state, with the project mounted separately at `/workspace`
 
-2. **`docker/docker-compose.yml`** bind-mounts `./workspace`. When `DOCKER=true`, the override file (`docker/docker-compose.docker.yml`) additionally mounts the Docker socket and configures `host.docker.internal`.
+2. **`setup/docker/docker-compose.yml`** bind-mounts the selected host workspace to `/workspace`. By default that is the sandbox worktree; the `oh` CLI can also point it at any external path. When `DOCKER=true`, the override file (`setup/docker/docker-compose.docker.yml`) additionally mounts the Docker socket and configures `host.docker.internal`.
 
-3. **`install/setup.sh`** provisions all tools system-wide (as root):
+3. **`setup/install/setup.sh`** provisions all tools system-wide (as root):
    - Node.js 22.x, npm, tmux, nano, ripgrep, jq (always)
    - Docker CLI + Compose plugin (always)
    - GitHub CLI (always)
@@ -146,7 +162,7 @@ make list                                       # see all running sandboxes
    - OpenAI Codex, Pi Agent, AgentMail CLI (opt-in)
    - agent-browser + Chromium (default yes)
 
-4. **`workspace/AGENTS.md`** provides default context to all coding agents. `CLAUDE.md` is a symlink to it — editing either updates both.
+4. **`AGENTS.md`** in the project root provides default context to all coding agents. `CLAUDE.md` is a symlink to it — editing either updates both.
 
 ---
 
@@ -154,11 +170,12 @@ make list                                       # see all running sandboxes
 
 | Target | Description |
 |--------|-------------|
+| `make install-cli` | Install the global `oh` CLI to `/usr/local/bin/oh` |
 | `make quickstart` | Build, provision, and prepare sandbox (one command) |
 | `make build` | Build the Docker image |
 | `make rebuild` | Full no-cache rebuild + restart |
 | `make run` | Start the container (detached) |
-| `make shell` | Open a bash shell as `sandbox` user |
+| `make shell` | Open a login shell as `sandbox` in `/workspace` |
 | `make stop` | Stop the container |
 | `make clean` | Stop and remove the local image |
 | `make push` | Push image to ghcr.io/ryaneggz |
@@ -169,7 +186,7 @@ make list                                       # see all running sandboxes
 | `make heartbeat-status` | Show heartbeat schedules and recent logs |
 | `make heartbeat-migrate` | Convert legacy `HEARTBEAT_INTERVAL` to `heartbeats.conf` |
 
-`NAME` is required for all targets. Pass `DOCKER=true` to enable Docker socket access.
+`NAME` is required for all sandbox targets. Pass `DOCKER=true` to enable Docker socket access. Pass `WORKSPACE=/host/path` to mount an external workspace instead of creating a git worktree.
 
 ---
 
@@ -179,10 +196,10 @@ The setup script supports interactive and non-interactive modes:
 
 ```bash
 # Interactive (prompts for each option)
-sudo bash ~/install/setup.sh
+sudo bash /opt/open-harness/install/setup.sh
 
 # Non-interactive (installs everything with defaults)
-sudo bash ~/install/setup.sh --non-interactive
+sudo bash /opt/open-harness/install/setup.sh --non-interactive
 ```
 
 Interactive mode prompts for: SSH public key, Git identity, GitHub token, Claude Code, Codex, Pi Agent, AgentMail (with API key), agent-browser.
@@ -191,7 +208,7 @@ Interactive mode prompts for: SSH public key, Git identity, GitHub token, Claude
 
 ## 🧠 Heartbeat, Soul & Memory
 
-Three workspace files give agents persistent identity and periodic task execution:
+These project-root files and directories give agents persistent identity and periodic task execution:
 
 | File | Purpose | Authored by |
 |------|---------|-------------|
@@ -222,7 +239,7 @@ make NAME=my-sandbox heartbeat-stop                         # remove all schedul
 make NAME=my-sandbox heartbeat-migrate                      # convert legacy HEARTBEAT_INTERVAL to conf
 ```
 
-**Schedule config** (`workspace/heartbeats.conf`):
+**Schedule config** (`heartbeats.conf` in the project root):
 
 ```
 # Format: <cron> | <file> | [agent] | [active_start-active_end]
@@ -234,7 +251,7 @@ make NAME=my-sandbox heartbeat-migrate                      # convert legacy HEA
 
 Schedules auto-sync on container startup. Edit `heartbeats.conf`, then run `make heartbeat` to apply changes.
 
-**Global defaults** (env vars, set at `make run` or in `docker/docker-compose.yml`):
+**Global defaults** (env vars, set at `make run` or in `setup/docker/docker-compose.yml`):
 
 | Variable | Default | Description |
 |----------|---------|-------------|

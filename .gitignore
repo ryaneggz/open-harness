@@ -1,3 +1,2 @@
 **/.env*
-.worktrees/*
-!.worktrees/.gitkeep
+.worktrees/
