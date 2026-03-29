@@ -1,0 +1,254 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+usage() {
+  cat <<'EOF'
+Open Harness CLI
+
+Usage:
+  oh install
+  oh create <name> [-i] [-w PATH] [--docker] [--tag TAG] [--base-branch BRANCH] [--branch BRANCH]
+  oh shell <name>
+  oh stop <name>
+  oh clean <name>
+  oh build <name>
+  oh run <name>
+  oh rebuild <name>
+  oh list
+  oh heartbeat <name>
+  oh heartbeat-stop <name>
+  oh heartbeat-status <name>
+  oh heartbeat-migrate <name>
+  oh help
+
+Options for create:
+  -i, --interactive     Prompt for missing values
+  -w, --workspace PATH  Mount an external host path at /workspace
+  --docker              Enable Docker socket mount
+  --tag TAG             Image tag (default: latest)
+  --base-branch BRANCH  Base branch for default worktree mode
+  --branch BRANCH       Branch name for default worktree mode
+
+Behavior:
+  - By default, create uses a git worktree workspace under .worktrees/<name>
+  - If --workspace PATH is provided, that host path is mounted at /workspace instead
+EOF
+}
+
+run_make() {
+  (cd "$REPO_ROOT" && make "$@")
+}
+
+require_name() {
+  local name="${1:-}"
+  if [[ -z "$name" ]]; then
+    echo "Error: sandbox name is required." >&2
+    exit 1
+  fi
+}
+
+resolve_path() {
+  local path="$1"
+  if [[ -z "$path" ]]; then
+    return 0
+  fi
+
+  local dir base
+  dir="$(dirname "$path")"
+  base="$(basename "$path")"
+  mkdir -p "$dir"
+  dir="$(cd "$dir" && pwd)"
+  printf '%s/%s\n' "$dir" "$base"
+}
+
+prompt_yes_no() {
+  local prompt="$1"
+  local default="${2:-y}"
+  local answer
+
+  if [[ "$default" == "y" ]]; then
+    read -rp "$prompt [Y/n]: " answer
+    [[ -z "$answer" || "$answer" =~ ^[Yy]$ ]]
+  else
+    read -rp "$prompt [y/N]: " answer
+    [[ "$answer" =~ ^[Yy]$ ]]
+  fi
+}
+
+seed_workspace() {
+  local dest="$1"
+  mkdir -p "$dest" "$dest/heartbeats" "$dest/memory" "$dest/.claude/agents" "$dest/.claude/skills" "$dest/.pi/extensions"
+
+  [[ -e "$dest/AGENTS.md" ]] || cp "$REPO_ROOT/AGENTS.md" "$dest/AGENTS.md"
+  [[ -e "$dest/SOUL.md" ]] || cp "$REPO_ROOT/SOUL.md" "$dest/SOUL.md"
+  [[ -e "$dest/MEMORY.md" ]] || cp "$REPO_ROOT/MEMORY.md" "$dest/MEMORY.md"
+  [[ -e "$dest/heartbeats.conf" ]] || cp "$REPO_ROOT/heartbeats.conf" "$dest/heartbeats.conf"
+  [[ -e "$dest/heartbeats/default.md" ]] || cp "$REPO_ROOT/heartbeats/default.md" "$dest/heartbeats/default.md"
+  [[ -e "$dest/memory/.gitkeep" ]] || : > "$dest/memory/.gitkeep"
+  [[ -e "$dest/.pi/banner.json" ]] || cp "$REPO_ROOT/.pi/banner.json" "$dest/.pi/banner.json"
+  [[ -e "$dest/.pi/extensions/custom-banner.ts" ]] || cp "$REPO_ROOT/.pi/extensions/custom-banner.ts" "$dest/.pi/extensions/custom-banner.ts"
+
+  for file in agent-builder.md command-builder.md skill-builder.md; do
+    [[ -e "$dest/.claude/agents/$file" ]] || cp "$REPO_ROOT/.claude/agents/$file" "$dest/.claude/agents/$file"
+  done
+
+  [[ -e "$dest/CLAUDE.md" ]] || ln -s AGENTS.md "$dest/CLAUDE.md"
+  [[ -e "$dest/.codex" ]] || ln -s .claude "$dest/.codex"
+}
+
+cmd_install() {
+  chmod +x "$REPO_ROOT/setup/oh"
+  if [[ -w /usr/local/bin ]]; then
+    ln -sf "$REPO_ROOT/setup/oh" /usr/local/bin/oh
+  else
+    sudo ln -sf "$REPO_ROOT/setup/oh" /usr/local/bin/oh
+  fi
+  echo "Installed: /usr/local/bin/oh -> $REPO_ROOT/setup/oh"
+}
+
+cmd_create() {
+  local name=""
+  local workspace=""
+  local interactive=false
+  local docker=false
+  local tag="latest"
+  local base_branch=""
+  local branch=""
+  local seed="auto"
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -i|--interactive)
+        interactive=true
+        ;;
+      -w|--workspace)
+        shift
+        workspace="${1:-}"
+        ;;
+      --docker)
+        docker=true
+        ;;
+      --tag)
+        shift
+        tag="${1:-latest}"
+        ;;
+      --base-branch)
+        shift
+        base_branch="${1:-}"
+        ;;
+      --branch)
+        shift
+        branch="${1:-}"
+        ;;
+      --seed)
+        seed="yes"
+        ;;
+      --no-seed)
+        seed="no"
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        if [[ -z "$name" ]]; then
+          name="$1"
+        else
+          echo "Unknown argument: $1" >&2
+          exit 1
+        fi
+        ;;
+    esac
+    shift || true
+  done
+
+  if [[ "$interactive" == true ]]; then
+    if [[ -z "$name" ]]; then
+      read -rp "Sandbox name: " name
+    fi
+
+    read -rp "External workspace path (blank = use default worktree): " prompt_workspace
+    if [[ -n "$prompt_workspace" ]]; then
+      workspace="$prompt_workspace"
+    fi
+
+    if prompt_yes_no "Enable Docker socket access?" "n"; then
+      docker=true
+    fi
+  fi
+
+  require_name "$name"
+
+  if [[ -n "$workspace" ]]; then
+    workspace="$(resolve_path "$workspace")"
+    mkdir -p "$workspace"
+
+    if [[ "$seed" == "auto" && "$interactive" == true && ! -e "$workspace/AGENTS.md" ]]; then
+      if prompt_yes_no "Seed default workspace files into $workspace?" "y"; then
+        seed="yes"
+      else
+        seed="no"
+      fi
+    fi
+
+    if [[ "$seed" == "yes" ]]; then
+      seed_workspace "$workspace"
+    fi
+  fi
+
+  local args=("NAME=$name" "TAG=$tag")
+  [[ "$docker" == true ]] && args+=("DOCKER=true")
+  [[ -n "$workspace" ]] && args+=("WORKSPACE=$workspace")
+  [[ -n "$base_branch" ]] && args+=("BASE_BRANCH=$base_branch")
+  [[ -n "$branch" ]] && args+=("BRANCH=$branch")
+
+  run_make "${args[@]}" quickstart
+}
+
+cmd_named_target() {
+  local target="$1"
+  shift
+  local name="${1:-}"
+  require_name "$name"
+  run_make "NAME=$name" "$target"
+}
+
+main() {
+  local cmd="${1:-help}"
+  shift || true
+
+  case "$cmd" in
+    install)
+      cmd_install
+      ;;
+    create|new)
+      cmd_create "$@"
+      ;;
+    shell|stop|clean|build|run|rebuild|heartbeat|heartbeat-stop|heartbeat-status|heartbeat-migrate)
+      cmd_named_target "$cmd" "$@"
+      ;;
+    list)
+      run_make list
+      ;;
+    help|-h|--help)
+      usage
+      ;;
+    *)
+      echo "Unknown command: $cmd" >&2
+      echo ""
+      usage >&2
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
