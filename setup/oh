@@ -53,6 +53,7 @@ Behavior:
   - The same `oh` sandbox commands run on the host and inside the supervisor
   - On the host, `oh` is a small bootstrap/proxy shim that forwards sandbox commands into the supervisor
   - Sandbox lifecycle commands auto-bootstrap a supervisor container if needed
+  - `oh list` is host-side inspection only and never bootstraps the supervisor
   - By default, create uses a git worktree workspace under .worktrees/<name>
   - If --workspace PATH is provided, that host path is mounted at /workspace instead
 EOF
@@ -478,6 +479,27 @@ run_in_supervisor() {
   supervisor_exec sandbox "$SUPERVISOR_PROJECT_ROOT/setup/oh" __internal "$@"
 }
 
+cmd_list_host() {
+  echo ""
+  echo "  Running containers:"
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "  docker is not installed on the host"
+  elif ! docker info >/dev/null 2>&1; then
+    echo "  Docker daemon is not reachable"
+  else
+    docker ps --filter "label=com.docker.compose.service=sandbox" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
+  fi
+
+  echo ""
+  echo "  Worktrees:"
+  if git -C "$REPO_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git -C "$REPO_ROOT" worktree list
+  else
+    echo "  $REPO_ROOT is not a git worktree"
+  fi
+  echo ""
+}
+
 host_main() {
   local cmd="${1:-help}"
   shift || true
@@ -492,10 +514,13 @@ host_main() {
     supervisor)
       cmd_supervisor "$@"
       ;;
+    list)
+      cmd_list_host
+      ;;
     help|-h|--help)
       usage
       ;;
-    create|new|shell|stop|clean|build|run|rebuild|list|heartbeat|heartbeat-stop|heartbeat-status|heartbeat-migrate)
+    create|new|shell|stop|clean|build|run|rebuild|heartbeat|heartbeat-stop|heartbeat-status|heartbeat-migrate)
       run_in_supervisor "$cmd" "$@"
       ;;
     *)
