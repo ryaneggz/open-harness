@@ -13,7 +13,7 @@ HEARTBEAT_AGENT        ?= claude
 ifdef NAME
   IMAGE = $(REGISTRY)/$(NAME):$(TAG)
   export NAME
-  WORKTREE = worktrees/$(NAME)
+  WORKTREE = .worktrees/$(NAME)
   # Use worktree if it exists, otherwise fall back to repo root
   PROJECT_ROOT = $(if $(wildcard $(WORKTREE)/Makefile),$(WORKTREE),.)
   COMPOSE_FILES = -f $(PROJECT_ROOT)/docker/docker-compose.yml
