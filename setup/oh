@@ -10,12 +10,23 @@ done
 SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+SUPERVISOR_NAME="${OH_SUPERVISOR_NAME:-oh-supervisor}"
+SUPERVISOR_IMAGE="${OH_SUPERVISOR_IMAGE:-open-harness-supervisor:latest}"
+SUPERVISOR_MARKER="/opt/open-harness/.supervisor-ready"
+SUPERVISOR_PROJECT_ROOT="${OH_REPO_ROOT:-$REPO_ROOT}"
+HOST_HOME_PATH="${OH_HOST_HOME:-${HOME:-}}"
+
 usage() {
   cat <<'EOF'
 Open Harness CLI
 
 Usage:
   oh install
+  oh bootstrap
+  oh supervisor up
+  oh supervisor down
+  oh supervisor shell
+  oh supervisor status
   oh create <name> [-i] [-w PATH] [--docker] [--tag TAG] [--base-branch BRANCH] [--branch BRANCH]
   oh shell <name>
   oh stop <name>
@@ -39,6 +50,8 @@ Options for create:
   --branch BRANCH       Branch name for default worktree mode
 
 Behavior:
+  - Host-side `oh` is a small bootstrap/proxy shim
+  - Sandbox lifecycle commands auto-bootstrap a supervisor container if needed
   - By default, create uses a git worktree workspace under .worktrees/<name>
   - If --workspace PATH is provided, that host path is mounted at /workspace instead
 EOF
@@ -86,14 +99,13 @@ prompt_yes_no() {
 
 seed_workspace() {
   local dest="$1"
-  mkdir -p "$dest" "$dest/heartbeats" "$dest/memory" "$dest/.claude/agents" "$dest/.claude/skills" "$dest/.pi/extensions"
+  mkdir -p "$dest" "$dest/heartbeats" "$dest/.claude/agents" "$dest/.claude/skills" "$dest/.pi/extensions"
 
   [[ -e "$dest/AGENTS.md" ]] || cp "$REPO_ROOT/AGENTS.md" "$dest/AGENTS.md"
   [[ -e "$dest/SOUL.md" ]] || cp "$REPO_ROOT/SOUL.md" "$dest/SOUL.md"
   [[ -e "$dest/MEMORY.md" ]] || cp "$REPO_ROOT/MEMORY.md" "$dest/MEMORY.md"
   [[ -e "$dest/heartbeats.conf" ]] || cp "$REPO_ROOT/heartbeats.conf" "$dest/heartbeats.conf"
   [[ -e "$dest/heartbeats/default.md" ]] || cp "$REPO_ROOT/heartbeats/default.md" "$dest/heartbeats/default.md"
-  [[ -e "$dest/memory/.gitkeep" ]] || : > "$dest/memory/.gitkeep"
   [[ -e "$dest/.pi/banner.json" ]] || cp "$REPO_ROOT/.pi/banner.json" "$dest/.pi/banner.json"
   [[ -e "$dest/.pi/extensions/custom-banner.ts" ]] || cp "$REPO_ROOT/.pi/extensions/custom-banner.ts" "$dest/.pi/extensions/custom-banner.ts"
 
@@ -107,12 +119,217 @@ seed_workspace() {
 
 cmd_install() {
   chmod +x "$REPO_ROOT/setup/oh"
+
+  local global_target="/usr/local/bin/oh"
+  local user_bin="$HOME/.local/bin"
+  local user_target="$user_bin/oh"
+
   if [[ -w /usr/local/bin ]]; then
-    ln -sf "$REPO_ROOT/setup/oh" /usr/local/bin/oh
-  else
-    sudo ln -sf "$REPO_ROOT/setup/oh" /usr/local/bin/oh
+    ln -sf "$REPO_ROOT/setup/oh" "$global_target"
+    echo "Installed: $global_target -> $REPO_ROOT/setup/oh"
+    return
   fi
-  echo "Installed: /usr/local/bin/oh -> $REPO_ROOT/setup/oh"
+
+  if sudo -n true 2>/dev/null; then
+    sudo ln -sf "$REPO_ROOT/setup/oh" "$global_target"
+    echo "Installed: $global_target -> $REPO_ROOT/setup/oh"
+    return
+  fi
+
+  echo "/usr/local/bin is not writable and passwordless sudo is unavailable."
+
+  if [[ -t 0 && -t 1 ]]; then
+    echo "Choose an install location:"
+    echo "  1) ~/.local/bin/oh (recommended)"
+    echo "  2) Try sudo install to /usr/local/bin/oh"
+    echo "  3) Cancel"
+
+    local choice
+    read -rp "Install method [1/2/3]: " choice
+
+    case "${choice:-1}" in
+      2)
+        if sudo ln -sf "$REPO_ROOT/setup/oh" "$global_target"; then
+          echo "Installed: $global_target -> $REPO_ROOT/setup/oh"
+          return
+        fi
+        echo "Falling back to ~/.local/bin/oh"
+        ;;
+      3)
+        echo "Cancelled."
+        exit 1
+        ;;
+    esac
+  fi
+
+  mkdir -p "$user_bin"
+  ln -sf "$REPO_ROOT/setup/oh" "$user_target"
+  echo "Installed: $user_target -> $REPO_ROOT/setup/oh"
+
+  if [[ ":$PATH:" != *":$user_bin:"* ]]; then
+    echo ""
+    echo "Add ~/.local/bin to your PATH if needed:"
+    echo '  export PATH="$HOME/.local/bin:$PATH"'
+  fi
+}
+
+require_docker() {
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "Error: docker is required on the host for supervisor bootstrap." >&2
+    exit 1
+  fi
+
+  if ! docker info >/dev/null 2>&1; then
+    echo "Error: Docker daemon is not reachable. Start Docker and try again." >&2
+    exit 1
+  fi
+}
+
+supervisor_exists() {
+  docker inspect "$SUPERVISOR_NAME" >/dev/null 2>&1
+}
+
+supervisor_running() {
+  [[ "$(docker inspect -f '{{.State.Running}}' "$SUPERVISOR_NAME" 2>/dev/null || true)" == "true" ]]
+}
+
+supervisor_exec() {
+  local user="$1"
+  shift
+
+  local docker_args=(exec --user "$user")
+  if [[ -t 0 && -t 1 ]]; then
+    docker_args+=( -it )
+  fi
+
+  docker_args+=(
+    -e HOME=/home/sandbox
+    -e USER=sandbox
+    -e PROJECT_ROOT="$SUPERVISOR_PROJECT_ROOT"
+    -e INSTALL_ROOT=/opt/open-harness/install
+    -e OH_SUPERVISOR=1
+    -e OH_REPO_ROOT="$SUPERVISOR_PROJECT_ROOT"
+    -e OH_HOST_HOME="$HOST_HOME_PATH"
+    -w "$SUPERVISOR_PROJECT_ROOT"
+    "$SUPERVISOR_NAME"
+  )
+
+  docker "${docker_args[@]}" "$@"
+}
+
+build_supervisor_image() {
+  chmod +x "$REPO_ROOT/setup/oh"
+  docker build -f "$REPO_ROOT/setup/docker/Dockerfile" -t "$SUPERVISOR_IMAGE" "$REPO_ROOT"
+}
+
+create_supervisor_container() {
+  local docker_args=(
+    run -d
+    --name "$SUPERVISOR_NAME"
+    --label open-harness.role=supervisor
+    --restart unless-stopped
+    -e PROJECT_ROOT="$REPO_ROOT"
+    -e INSTALL_ROOT=/opt/open-harness/install
+    -e OH_SUPERVISOR=1
+    -e OH_REPO_ROOT="$REPO_ROOT"
+    -e OH_HOST_HOME="$HOST_HOME_PATH"
+    -w "$REPO_ROOT"
+    -v /var/run/docker.sock:/var/run/docker.sock
+    -v "$REPO_ROOT:$REPO_ROOT"
+  )
+
+  if [[ -n "$HOST_HOME_PATH" && -d "$HOST_HOME_PATH" ]]; then
+    docker_args+=( -v "$HOST_HOME_PATH:$HOST_HOME_PATH" )
+  fi
+
+  if [[ -f "$HOST_HOME_PATH/.gitconfig" ]]; then
+    docker_args+=( -v "$HOST_HOME_PATH/.gitconfig:/home/sandbox/.gitconfig:ro" )
+  fi
+
+  if [[ -d "$HOST_HOME_PATH/.ssh" ]]; then
+    docker_args+=( -v "$HOST_HOME_PATH/.ssh:/home/sandbox/.ssh:ro" )
+  fi
+
+  if [[ -n "${SSH_AUTH_SOCK:-}" && -S "${SSH_AUTH_SOCK:-}" ]]; then
+    docker_args+=( -v "$SSH_AUTH_SOCK:$SSH_AUTH_SOCK" -e "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" )
+  fi
+
+  docker "${docker_args[@]}" "$SUPERVISOR_IMAGE" sleep infinity >/dev/null
+}
+
+provision_supervisor() {
+  if docker exec --user root "$SUPERVISOR_NAME" test -f "$SUPERVISOR_MARKER" >/dev/null 2>&1; then
+    return
+  fi
+
+  echo "Provisioning supervisor sandbox..."
+  docker exec --user root "$SUPERVISOR_NAME" bash -lc "/opt/open-harness/install/setup.sh --non-interactive && touch '$SUPERVISOR_MARKER'"
+}
+
+ensure_supervisor() {
+  require_docker
+
+  if supervisor_running; then
+    provision_supervisor
+    return
+  fi
+
+  if supervisor_exists; then
+    docker start "$SUPERVISOR_NAME" >/dev/null
+    provision_supervisor
+    return
+  fi
+
+  echo "Bootstrapping supervisor sandbox: $SUPERVISOR_NAME"
+  build_supervisor_image
+  create_supervisor_container
+  provision_supervisor
+}
+
+cmd_bootstrap() {
+  ensure_supervisor
+  echo "Supervisor ready: $SUPERVISOR_NAME"
+}
+
+cmd_supervisor() {
+  local subcmd="${1:-status}"
+  shift || true
+
+  case "$subcmd" in
+    up)
+      cmd_bootstrap
+      ;;
+    down|stop)
+      require_docker
+      if supervisor_exists; then
+        docker rm -f "$SUPERVISOR_NAME" >/dev/null
+        echo "Supervisor removed: $SUPERVISOR_NAME"
+      else
+        echo "Supervisor not running: $SUPERVISOR_NAME"
+      fi
+      ;;
+    shell)
+      ensure_supervisor
+      supervisor_exec sandbox bash --login
+      ;;
+    status)
+      require_docker
+      if supervisor_exists; then
+        docker ps -a --filter "name=^${SUPERVISOR_NAME}$" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
+        if docker exec --user root "$SUPERVISOR_NAME" test -f "$SUPERVISOR_MARKER" >/dev/null 2>&1; then
+          echo "Provisioned: yes"
+        else
+          echo "Provisioned: no"
+        fi
+      else
+        echo "Supervisor not running: $SUPERVISOR_NAME"
+      fi
+      ;;
+    *)
+      echo "Unknown supervisor command: $subcmd" >&2
+      exit 1
+      ;;
+  esac
 }
 
 cmd_create() {
@@ -190,6 +407,13 @@ cmd_create() {
 
   if [[ -n "$workspace" ]]; then
     workspace="$(resolve_path "$workspace")"
+
+    if [[ -n "$HOST_HOME_PATH" && "$workspace" != "$REPO_ROOT" && "$workspace" != "$REPO_ROOT"/* && "$workspace" != "$HOST_HOME_PATH" && "$workspace" != "$HOST_HOME_PATH"/* ]]; then
+      echo "Error: external workspace '$workspace' is outside the supervisor-mounted paths." >&2
+      echo "Use a path under '$HOST_HOME_PATH' or under the repo root, or extend the supervisor mounts first." >&2
+      exit 1
+    fi
+
     mkdir -p "$workspace"
 
     if [[ "$seed" == "auto" && "$interactive" == true && ! -e "$workspace/AGENTS.md" ]]; then
@@ -222,14 +446,11 @@ cmd_named_target() {
   run_make "NAME=$name" "$target"
 }
 
-main() {
+internal_main() {
   local cmd="${1:-help}"
   shift || true
 
   case "$cmd" in
-    install)
-      cmd_install
-      ;;
     create|new)
       cmd_create "$@"
       ;;
@@ -247,6 +468,58 @@ main() {
       echo ""
       usage >&2
       exit 1
+      ;;
+  esac
+}
+
+run_in_supervisor() {
+  ensure_supervisor
+  supervisor_exec sandbox "$SUPERVISOR_PROJECT_ROOT/setup/oh" __internal "$@"
+}
+
+host_main() {
+  local cmd="${1:-help}"
+  shift || true
+
+  case "$cmd" in
+    install)
+      cmd_install
+      ;;
+    bootstrap)
+      cmd_bootstrap
+      ;;
+    supervisor)
+      cmd_supervisor "$@"
+      ;;
+    help|-h|--help)
+      usage
+      ;;
+    create|new|shell|stop|clean|build|run|rebuild|list|heartbeat|heartbeat-stop|heartbeat-status|heartbeat-migrate)
+      run_in_supervisor "$cmd" "$@"
+      ;;
+    *)
+      echo "Unknown command: $cmd" >&2
+      echo ""
+      usage >&2
+      exit 1
+      ;;
+  esac
+}
+
+main() {
+  local cmd="${1:-help}"
+
+  case "$cmd" in
+    __internal)
+      shift || true
+      internal_main "$@"
+      ;;
+    *)
+      if [[ "${OH_SUPERVISOR:-}" == "1" ]]; then
+        internal_main "$@"
+      else
+        host_main "$@"
+      fi
       ;;
   esac
 }

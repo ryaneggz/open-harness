@@ -50,7 +50,7 @@ help:
 	@echo "  Usage: make NAME=<sandbox-name> <target>"
 	@echo ""
 	@echo "  Targets:"
-	@echo "    install-cli       Install the global 'oh' CLI to /usr/local/bin/oh"
+	@echo "    install-cli       Install the 'oh' CLI (global if possible, otherwise user-local)"
 	@echo "    quickstart        Create workspace, build image, start container, and run setup"
 	@echo "    worktree          Create a git worktree for the sandbox (skipped if WORKSPACE is set)"
 	@echo "    build             Build the Docker image"
@@ -77,13 +77,7 @@ help:
 	@echo ""
 
 install-cli:
-	@chmod +x "$(SETUP_DIR)/oh"
-	@if [ -w /usr/local/bin ]; then \
-		ln -sf "$(SETUP_DIR)/oh" /usr/local/bin/oh; \
-	else \
-		sudo ln -sf "$(SETUP_DIR)/oh" /usr/local/bin/oh; \
-	fi
-	@echo "Installed: /usr/local/bin/oh -> $(SETUP_DIR)/oh"
+	@"$(SETUP_DIR)/oh" install
 
 worktree:
 	@$(assert-name)

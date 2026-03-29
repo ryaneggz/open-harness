@@ -6,6 +6,7 @@ RUN apt-get update \
 
 RUN useradd -m -s /bin/bash sandbox \
  && echo "sandbox ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/sandbox \
+ && chmod 0440 /etc/sudoers.d/sandbox \
  && groupadd -f docker && usermod -aG docker sandbox \
  && echo "alias claude='claude --dangerously-skip-permissions'" >> /home/sandbox/.bashrc \
  && echo "alias codex='codex --full-auto'" >> /home/sandbox/.bashrc \

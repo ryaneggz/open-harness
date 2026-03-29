@@ -22,6 +22,17 @@ if command -v cron &>/dev/null; then
   service cron start 2>/dev/null || true
 fi
 
+# Ensure runtime memory dir exists and stays ignored by default
+gosu sandbox env HOME="$HOME" USER="$USER" PROJECT_ROOT="$PROJECT_ROOT" INSTALL_ROOT="$INSTALL_ROOT" bash -lc '
+  mkdir -p "$PROJECT_ROOT/memory"
+  if [ ! -f "$PROJECT_ROOT/memory/.gitignore" ]; then
+    printf "*\n!.gitignore\n!.gitkeep\n" > "$PROJECT_ROOT/memory/.gitignore"
+  fi
+  if [ ! -f "$PROJECT_ROOT/memory/.gitkeep" ]; then
+    : > "$PROJECT_ROOT/memory/.gitkeep"
+  fi
+' 2>/dev/null || true
+
 # Auto-sync heartbeat schedules from the mounted project root
 if [ -f "$PROJECT_ROOT/heartbeats.conf" ]; then
   gosu sandbox env HOME="$HOME" USER="$USER" PROJECT_ROOT="$PROJECT_ROOT" INSTALL_ROOT="$INSTALL_ROOT" \

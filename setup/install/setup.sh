@@ -81,6 +81,8 @@ apt-get install -y --no-install-recommends \
   curl \
   git \
   jq \
+  make \
+  openssh-client \
   sudo \
   gnupg \
   lsb-release \
@@ -95,6 +97,7 @@ if ! id "$SANDBOX_USER" &>/dev/null; then
   banner "Creating user $SANDBOX_USER"
   useradd -m -s /bin/bash "$SANDBOX_USER"
   echo "$SANDBOX_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/"$SANDBOX_USER"
+  chmod 0440 /etc/sudoers.d/"$SANDBOX_USER"
   ok "User $SANDBOX_USER created"
 else
   banner "User $SANDBOX_USER already exists"
@@ -133,7 +136,7 @@ ok "Docker CLI $(docker --version) + Compose installed"
 
 # ─── 6. Bun (system-wide) ────────────────────────────────────────
 banner "Installing Bun"
-BUN_INSTALL=/usr/local curl -fsSL https://bun.sh/install | bash
+curl -fsSL https://bun.sh/install | env BUN_INSTALL=/usr/local bash
 ok "Bun $(bun --version) installed"
 
 # ─── 7. uv (system-wide) ────────────────────────────────────────
@@ -254,6 +257,7 @@ printf "  Bun      : %s\n" "$(bun --version)"
 printf "  uv       : %s\n" "$(uv --version)"
 printf "  gh       : %s\n" "$(gh --version | head -1)"
 printf "  docker   : %s\n" "$(docker --version)"
+printf "  make     : %s\n" "$(make --version | head -1)"
 printf "  tmux     : %s\n" "$(tmux -V)"
 if [[ "$INSTALL_BROWSER" == true ]]; then
   printf "  browser  : agent-browser + Chromium\n"
