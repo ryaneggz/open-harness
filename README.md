@@ -4,47 +4,55 @@ Isolated, pre-configured sandbox images for AI coding agents — [Claude Code](h
 
 > **Spin up isolated, fully-provisioned Docker sandboxes where AI coding agents can operate with full permissions, persistent memory, and autonomous background tasks — without touching your host system.**
 
-## ⚡ Start Here: End-to-End
+## ⚡ Start Here
 
 > **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [Make](https://www.gnu.org/software/make/). That's all you need on your host.
 
-If you're evaluating Open Harness, this is the full first-run lifecycle:
-1. install the tiny `oh` host shim
-2. bootstrap the supervisor sandbox
-3. create your first agent sandbox through that supervisor
-4. enter the sandbox and run an agent
-5. stop / clean the sandbox when done
-6. tear down the supervisor when you want everything gone
+**What runs where**
+- **Host:** tiny `oh` bootstrap/proxy only
+- **Supervisor sandbox:** creates and manages sandboxes
+- **User sandbox:** where your coding agent actually works
 
-The repo root is the default project workspace scaffold, so users can clone it and start directly inside the sandbox without first creating a separate nested workspace.
+The repo root is the default workspace scaffold, so you can clone this repo and start immediately.
 
-```bash
-git clone https://github.com/<your-username>/open-harness.git && cd open-harness
-./setup/oh install             # installs `oh` globally when possible, otherwise offers ~/.local/bin fallback
-
-oh bootstrap                   # explicitly start the supervisor control plane
-oh supervisor status           # confirm the supervisor is running
-
-oh create dev -i               # create your first sandbox via the supervisor
-oh shell dev                   # open a shell inside the sandbox
-claude                         # or: codex / pi
-exit
-
-oh stop dev                    # stop the sandbox container
-oh clean dev                   # remove sandbox container/image/worktree
-oh supervisor down             # tear down the supervisor sandbox too
-```
-
-### Fastest path
-
-If you don't care about the explicit supervisor step, `oh create` bootstraps it for you automatically:
+### End-to-end: supervisor, first sandbox, agent, teardown
 
 ```bash
 git clone https://github.com/<your-username>/open-harness.git && cd open-harness
 ./setup/oh install
-oh create dev -i
+
+oh bootstrap                   # start supervisor sandbox
+oh supervisor status           # verify supervisor is up
+
+oh create dev -i               # create first sandbox
+oh shell dev                   # enter sandbox
+claude                         # or: codex / pi
+exit
+
+oh stop dev                    # stop sandbox
+oh clean dev                   # remove sandbox + worktree/image
+oh supervisor down             # remove supervisor too
+```
+
+### Fastest path
+
+```bash
+git clone https://github.com/<your-username>/open-harness.git && cd open-harness
+./setup/oh install
+oh create dev -i               # auto-bootstraps supervisor if needed
 oh shell dev
 claude
+```
+
+### Core commands
+
+```bash
+oh supervisor status           # control plane status
+oh create <name>              # create sandbox
+oh shell <name>               # enter sandbox
+oh stop <name>                # stop sandbox
+oh clean <name>               # destroy sandbox
+oh supervisor down            # tear down control plane
 ```
 
 ---
