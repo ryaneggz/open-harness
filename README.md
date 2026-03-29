@@ -6,7 +6,7 @@ Isolated, pre-configured sandbox images for AI coding agents — [Claude Code](h
 
 ## ⚡ Start Here
 
-> **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [Make](https://www.gnu.org/software/make/). That's all you need on your host.
+> **Prerequisites:** [Docker](https://docs.docker.com/get-docker/). That's all you need for the normal `oh ...` workflow on your host. (`make` is only needed for the lower-level manual flow.)
 
 **What runs where**
 - **Host:** tiny `oh` bootstrap/proxy only
@@ -47,12 +47,13 @@ claude
 ### Core commands
 
 ```bash
-oh supervisor status           # control plane status
-oh create <name>              # create sandbox
-oh shell <name>               # enter sandbox
-oh stop <name>                # stop sandbox
-oh clean <name>               # destroy sandbox
-oh supervisor down            # tear down control plane
+oh supervisor status          # control plane status
+oh create <name>             # create sandbox
+oh shell <name>              # enter sandbox
+oh list                      # list sandboxes
+oh stop <name>               # stop sandbox
+oh clean <name>              # destroy sandbox
+oh supervisor down           # tear down control plane
 ```
 
 ---
@@ -89,7 +90,7 @@ Named sandboxes (`NAME=research`, `NAME=frontend`) run simultaneously, each with
 |---------|---------|
 | 🔒 **Host protection** | Agents run in a disposable Debian container; the full project is bind-mounted at `/workspace` while `~/` remains container-local |
 | 🔄 **Reproducibility** | `setup/docker/Dockerfile` + setup script = identical environment every time, on any machine |
-| 🐳 **Docker-in-Docker** | `DOCKER=true` mounts the host socket so agents can build and manage containers from inside |
+| 🐳 **Docker-in-Docker** | The supervisor mounts the host Docker socket by default; user sandboxes can also get it with `oh create --docker` |
 | 🚀 **CI/CD ready** | GitHub Actions builds and pushes to `ghcr.io/ryaneggz/open-harness` on tagged releases |
 | 🧠 **Agent memory** | SOUL / MEMORY / daily-log system gives agents durable state across restarts and sessions |
 | ⏰ **Unattended operation** | Cron-scheduled heartbeats with multiple files/intervals, active-hours gating, cost-saving empty-file detection, and auto-rotating logs |
@@ -105,45 +106,52 @@ Named sandboxes (`NAME=research`, `NAME=frontend`) run simultaneously, each with
 **CLI-first** (recommended):
 
 ```bash
-./setup/oh install             # global if possible, otherwise user-local fallback
-oh create my-sandbox -i        # auto-starts the supervisor, then prompts for sandbox options
+./setup/oh install
+oh bootstrap                   # optional; `oh create` will do this automatically if needed
+oh create my-sandbox -i
 oh shell my-sandbox
 ```
 
 By default, `oh create <name>` uses a git worktree under `.worktrees/<name>`. If you pass `-w /some/path` (or choose one in `-i` mode), that host path is mounted at `/workspace` instead.
 
-**Step-by-step** (if you want control over each stage):
+**User sandbox with Docker access**:
 
 ```bash
-make NAME=my-sandbox build                      # build the image
-make NAME=my-sandbox run                        # start the container
-make NAME=my-sandbox shell                      # open a login shell in /workspace
-sudo bash /opt/open-harness/install/setup.sh    # provision tools (interactive)
-cd /workspace && claude                         # launch an agent
-```
-
-**Standalone** (no Docker, direct on any Ubuntu/Debian machine):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/setup/install/setup.sh -o setup.sh
-sudo bash setup.sh --non-interactive
-```
-
-**Docker-in-Docker** (agents can build and manage containers):
-
-```bash
-make NAME=my-sandbox DOCKER=true quickstart     # sandbox with Docker access
+oh create my-sandbox --docker  # pass host Docker socket through to the user sandbox too
+oh shell my-sandbox
 ```
 
 **Multiple sandboxes** (parallel workstreams):
 
 ```bash
-make NAME=research quickstart
-make NAME=frontend DOCKER=true quickstart       # this one gets Docker
-make list                                       # see all running sandboxes
+oh create research
+oh create frontend --docker    # this one gets Docker socket access
+oh list
 ```
 
-`make rebuild` does a full no-cache build and restart. `NAME` is required for all targets.
+**Supervisor management**:
+
+```bash
+oh supervisor status
+oh supervisor shell
+oh supervisor down
+```
+
+**Advanced / low-level make flow** (mainly for debugging; normally the supervisor calls these):
+
+```bash
+make NAME=my-sandbox quickstart
+make NAME=my-sandbox shell
+make NAME=my-sandbox rebuild
+make NAME=my-sandbox clean
+```
+
+**Standalone provisioning script** (no supervisor, direct on a Debian/Ubuntu machine):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/setup/install/setup.sh -o setup.sh
+sudo bash setup.sh --non-interactive
+```
 
 ---
 
@@ -163,8 +171,8 @@ make list                                       # see all running sandboxes
 ├── ...                      # your actual project files live here too
 ├── Makefile                 # thin entrypoint that includes setup/Makefile
 └── setup/
-    ├── oh                   # host-side CLI entrypoint (`oh`)
-    ├── Makefile             # build, run, shell, stop, rebuild, clean, push, list
+    ├── oh                   # host bootstrap/proxy CLI (`oh`)
+    ├── Makefile             # lower-level build/run/shell/clean targets used by the supervisor
     ├── docker/
     │   ├── Dockerfile           # base image: Debian Bookworm slim + sandbox user
     │   ├── docker-compose.yml   # base compose: mounts the full project at /workspace
@@ -189,15 +197,17 @@ make list                                       # see all running sandboxes
    - Docker group membership for the sandbox user
    - Clean `~/` for user state, with the project mounted separately at `/workspace`
 
-4. **`setup/docker/docker-compose.yml`** bind-mounts the selected host workspace to `/workspace`. By default that is the sandbox worktree; the `oh` CLI can also point it at any external path. When `DOCKER=true`, the override file (`setup/docker/docker-compose.docker.yml`) additionally mounts the Docker socket and configures `host.docker.internal`.
+4. **`setup/docker/docker-compose.yml`** bind-mounts the selected host workspace to `/workspace`. By default that is the sandbox worktree; the `oh` CLI can also point it at an external path. When `DOCKER=true`, the override file (`setup/docker/docker-compose.docker.yml`) additionally mounts the Docker socket and configures `host.docker.internal` for the user sandbox.
 
 5. **`setup/install/setup.sh`** provisions all tools system-wide (as root):
-   - Node.js 22.x, npm, tmux, nano, ripgrep, jq (always)
+   - Node.js 22.x, npm, tmux, nano, ripgrep, jq, make, openssh-client (always)
    - Docker CLI + Compose plugin (always)
    - GitHub CLI (always)
    - Bun, uv (always)
    - Claude Code CLI (default yes)
-   - OpenAI Codex, Pi Agent, AgentMail CLI (opt-in)
+   - OpenAI Codex CLI (default yes in non-interactive mode)
+   - Pi Agent (default yes in non-interactive mode)
+   - AgentMail CLI (opt-in)
    - agent-browser + Chromium (default yes)
 
 6. **`AGENTS.md`** in the project root provides default context to all coding agents. `CLAUDE.md` is a symlink to it — editing either updates both.
@@ -205,6 +215,8 @@ make list                                       # see all running sandboxes
 ---
 
 ## 🛠️ Makefile Targets
+
+Most users should use `oh ...`. The Makefile is the lower-level orchestration layer that the supervisor calls internally.
 
 | Target | Description |
 |--------|-------------|
@@ -217,20 +229,20 @@ make list                                       # see all running sandboxes
 | `make stop` | Stop the container |
 | `make clean` | Stop and remove the local image |
 | `make push` | Push image to ghcr.io/ryaneggz |
-| `make list` | List all running sandboxes |
+| `make list` | List running sandboxes and worktrees |
 | `make all` | Build + push |
 | `make heartbeat` | Sync heartbeat cron schedules from `heartbeats.conf` |
 | `make heartbeat-stop` | Remove all heartbeat cron schedules |
 | `make heartbeat-status` | Show heartbeat schedules and recent logs |
 | `make heartbeat-migrate` | Convert legacy `HEARTBEAT_INTERVAL` to `heartbeats.conf` |
 
-`NAME` is required for all sandbox targets. Pass `DOCKER=true` to enable Docker socket access. Pass `WORKSPACE=/host/path` to mount an external workspace instead of creating a git worktree. In normal use, prefer `oh ...` so the supervisor handles these from inside a sandboxed control plane.
+`NAME` is required for all sandbox targets. Pass `DOCKER=true` to enable Docker socket access in the user sandbox. Pass `WORKSPACE=/host/path` to mount an external workspace instead of creating a git worktree. In normal use, prefer `oh ...` so the supervisor handles these from inside a sandboxed control plane.
 
 ---
 
 ## 🔧 Configuration
 
-The setup script supports interactive and non-interactive modes:
+In the normal `oh create ...` workflow, provisioning happens automatically inside the sandbox. The setup script below is the lower-level provisioning entrypoint used by the image and supervisor.
 
 ```bash
 # Interactive (prompts for each option)
@@ -240,7 +252,9 @@ sudo bash /opt/open-harness/install/setup.sh
 sudo bash /opt/open-harness/install/setup.sh --non-interactive
 ```
 
-Interactive mode prompts for: SSH public key, Git identity, GitHub token, Claude Code, Codex, Pi Agent, AgentMail (with API key), agent-browser.
+Interactive mode prompts for: SSH public key, Git identity, GitHub token, Claude Code, Codex, Pi Agent, AgentMail (with API key), and agent-browser.
+
+Non-interactive mode defaults to installing: Claude Code, Codex, Pi Agent, and agent-browser. AgentMail stays opt-in.
 
 ---
 
@@ -271,10 +285,10 @@ Agents are instructed to:
 Heartbeats are cron-scheduled tasks. Each heartbeat is a `.md` file with instructions for the agent, mapped to a cron schedule in `heartbeats.conf`.
 
 ```bash
-make NAME=my-sandbox heartbeat                              # sync schedules from heartbeats.conf
-make NAME=my-sandbox heartbeat-status                       # show schedules + recent logs
-make NAME=my-sandbox heartbeat-stop                         # remove all schedules
-make NAME=my-sandbox heartbeat-migrate                      # convert legacy HEARTBEAT_INTERVAL to conf
+oh heartbeat my-sandbox                                     # sync schedules from heartbeats.conf
+oh heartbeat-status my-sandbox                              # show schedules + recent logs
+oh heartbeat-stop my-sandbox                                # remove all schedules
+oh heartbeat-migrate my-sandbox                             # convert legacy HEARTBEAT_INTERVAL to conf
 ```
 
 **Schedule config** (`heartbeats.conf` in the project root):
@@ -287,9 +301,9 @@ make NAME=my-sandbox heartbeat-migrate                      # convert legacy HEA
 0 20 * * *   | heartbeats/daily-summary.md
 ```
 
-Schedules auto-sync on container startup. Edit `heartbeats.conf`, then run `make heartbeat` to apply changes.
+Schedules auto-sync on container startup. Edit `heartbeats.conf`, then run `oh heartbeat <name>` to apply changes.
 
-**Global defaults** (env vars, set at `make run` or in `setup/docker/docker-compose.yml`):
+**Global defaults** (env vars, set by the lower-level run flow or in `setup/docker/docker-compose.yml`):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -305,7 +319,7 @@ If a heartbeat file contains only headers or comments, that execution is skipped
 
 ## 💻 Usage Examples
 
-Once inside the sandbox (`make shell`), use any installed coding agent:
+Once inside the sandbox (`oh shell <name>`), use any installed coding agent:
 
 ```bash
 # Claude Code
