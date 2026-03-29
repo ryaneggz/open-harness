@@ -6,6 +6,7 @@ services:
       dockerfile: docker/Dockerfile
     volumes:
       - ../workspace:/home/sandbox/workspace
+    working_dir: /home/sandbox
     stdin_open: true
     tty: true
     environment:

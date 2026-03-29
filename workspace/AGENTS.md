@@ -6,7 +6,7 @@ You are running inside an isolated Docker container provisioned for AI coding ag
 
 - **OS**: Debian Bookworm (slim)
 - **User**: `sandbox` (passwordless sudo)
-- **Working directory**: `/home/sandbox/workspace` (persisted via bind mount)
+- **Working directory**: `/home/sandbox` (home dir — `~/workspace/` is persisted via bind mount)
 - **Docker**: CLI + Compose available; host Docker socket mounted for container management
 - **Permissions**: `--dangerously-skip-permissions` is the default for Claude Code (aliased in `.bashrc`)
 
