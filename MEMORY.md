@@ -10,7 +10,8 @@
 
 ## Decisions & Preferences
 
-- The full harness project is mounted at `/workspace`.
+- Managed sandbox worktrees are mounted at `~` inside each container.
+- The host-side `oh` CLI is the supervisor; sandboxes are created only from managed git worktrees under `.worktrees/`.
 - The sandbox user's home stays container-local and should not be treated as the editable project root.
 - Runtime install scripts execute from `/opt/open-harness/install/`; repo changes under `setup/install/` require rebuild/restart to take effect.
 - The host-side CLI lives at `setup/oh` and installs globally as `oh`.

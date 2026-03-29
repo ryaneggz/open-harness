@@ -4,7 +4,6 @@ REGISTRY = ghcr.io/ryaneggz
 
 BASE_BRANCH ?= development
 BRANCH      ?= agent/$(NAME)
-WORKSPACE   ?=
 
 HEARTBEAT_ACTIVE_START ?=
 HEARTBEAT_ACTIVE_END   ?=
@@ -13,21 +12,17 @@ HEARTBEAT_AGENT        ?= claude
 SETUP_DIR := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 REPO_ROOT := $(patsubst %/,%,$(dir $(SETUP_DIR)))
 
+ifneq ($(strip $(WORKSPACE)),)
+  $(error WORKSPACE is no longer supported. Managed sandboxes must use git worktrees under .worktrees/<NAME>)
+endif
+
 # NAME-dependent variables (only evaluated when NAME is set)
 ifdef NAME
   IMAGE = $(REGISTRY)/$(NAME):$(TAG)
   export NAME
   WORKTREE = $(REPO_ROOT)/.worktrees/$(NAME)
-
-  ifneq ($(strip $(WORKSPACE)),)
-    HARNESS_ROOT = $(REPO_ROOT)
-    WORKSPACE_ROOT = $(abspath $(WORKSPACE))
-    WORKSPACE_MODE = external
-  else
-    HARNESS_ROOT = $(if $(wildcard $(WORKTREE)/Makefile),$(WORKTREE),$(REPO_ROOT))
-    WORKSPACE_ROOT = $(abspath $(HARNESS_ROOT))
-    WORKSPACE_MODE = worktree
-  endif
+  HARNESS_ROOT = $(if $(wildcard $(WORKTREE)/Makefile),$(WORKTREE),$(REPO_ROOT))
+  WORKSPACE_ROOT = $(abspath $(WORKTREE))
 
   COMPOSE_FILES = -f $(HARNESS_ROOT)/setup/docker/docker-compose.yml
   ifeq ($(DOCKER),true)
@@ -53,12 +48,12 @@ help:
 	@echo ""
 	@echo "  Targets:"
 	@echo "    install-cli       Install the 'oh' CLI (global if possible, otherwise user-local)"
-	@echo "    quickstart        Create workspace, build image, start container, and run setup"
-	@echo "    worktree          Create a git worktree for the sandbox (skipped if WORKSPACE is set)"
+	@echo "    quickstart        Create worktree, build image, start container, and run setup"
+	@echo "    worktree          Create a managed git worktree for the sandbox"
 	@echo "    build             Build the Docker image"
 	@echo "    rebuild           Tear down, rebuild (no cache), and start"
 	@echo "    run               Start the sandbox container"
-	@echo "    shell             Open a login shell in /workspace as sandbox"
+	@echo "    shell             Open a login shell in ~ as sandbox"
 	@echo "    stop              Stop and remove the sandbox"
 	@echo "    clean             Stop, remove the sandbox, its image, and worktree"
 	@echo "    push              Push the image to the registry"
@@ -71,7 +66,7 @@ help:
 	@echo ""
 	@echo "  Options:"
 	@echo "    NAME=<name>       (required) Sandbox name"
-	@echo "    WORKSPACE=<path>  Optional external host path to mount at /workspace"
+	@echo "    Managed worktrees always live under .worktrees/<NAME>"
 	@echo "    BRANCH=<branch>   Git branch name (default: agent/<NAME>)"
 	@echo "    BASE_BRANCH=<b>   Base branch for worktree (default: development)"
 	@echo "    DOCKER=true       Use Docker-in-Docker compose override"
@@ -83,30 +78,25 @@ install-cli:
 
 worktree:
 	@$(assert-name)
-	@if [ -n "$(strip $(WORKSPACE))" ]; then \
-		mkdir -p "$(WORKSPACE_ROOT)"; \
-		echo "  Using external workspace: $(WORKSPACE_ROOT)"; \
-	else \
-		if [ ! -d "$(WORKTREE)" ]; then \
-			echo "  Creating worktree: $(WORKTREE) (branch: $(BRANCH))"; \
-			mkdir -p "$(dir $(WORKTREE))"; \
-			git -C "$(REPO_ROOT)" fetch origin $(BASE_BRANCH) 2>/dev/null || true; \
-			git -C "$(REPO_ROOT)" fetch origin $(BRANCH) 2>/dev/null || true; \
-			if git -C "$(REPO_ROOT)" show-ref --verify --quiet refs/heads/$(BRANCH) 2>/dev/null || \
-			   git -C "$(REPO_ROOT)" show-ref --verify --quiet refs/remotes/origin/$(BRANCH) 2>/dev/null; then \
-				echo "  Branch '$(BRANCH)' already exists, checking out..."; \
-				git -C "$(REPO_ROOT)" worktree add "$(WORKTREE)" $(BRANCH); \
-			else \
-				echo "  Creating new branch '$(BRANCH)' from origin/$(BASE_BRANCH)..."; \
-				git -C "$(REPO_ROOT)" worktree add "$(WORKTREE)" -b $(BRANCH) origin/$(BASE_BRANCH); \
-			fi; \
+	@if [ ! -d "$(WORKTREE)" ]; then \
+		echo "  Creating worktree: $(WORKTREE) (branch: $(BRANCH))"; \
+		mkdir -p "$(dir $(WORKTREE))"; \
+		git -C "$(REPO_ROOT)" fetch origin $(BASE_BRANCH) 2>/dev/null || true; \
+		git -C "$(REPO_ROOT)" fetch origin $(BRANCH) 2>/dev/null || true; \
+		if git -C "$(REPO_ROOT)" show-ref --verify --quiet refs/heads/$(BRANCH) 2>/dev/null || \
+		   git -C "$(REPO_ROOT)" show-ref --verify --quiet refs/remotes/origin/$(BRANCH) 2>/dev/null; then \
+			echo "  Branch '$(BRANCH)' already exists, checking out..."; \
+			git -C "$(REPO_ROOT)" worktree add "$(WORKTREE)" $(BRANCH); \
 		else \
-			echo "  Worktree already exists: $(WORKTREE)"; \
+			echo "  Creating new branch '$(BRANCH)' from origin/$(BASE_BRANCH)..."; \
+			git -C "$(REPO_ROOT)" worktree add "$(WORKTREE)" -b $(BRANCH) origin/$(BASE_BRANCH); \
 		fi; \
+	else \
+		echo "  Worktree already exists: $(WORKTREE)"; \
 	fi
 
 quickstart: worktree
-	@$(MAKE) --no-print-directory NAME=$(NAME) WORKSPACE='$(WORKSPACE)' DOCKER=$(DOCKER) TAG=$(TAG) BRANCH='$(BRANCH)' BASE_BRANCH='$(BASE_BRANCH)' _quickstart
+	@$(MAKE) --no-print-directory NAME=$(NAME) DOCKER=$(DOCKER) TAG=$(TAG) BRANCH='$(BRANCH)' BASE_BRANCH='$(BASE_BRANCH)' _quickstart
 
 _quickstart:
 	docker build -f $(HARNESS_ROOT)/setup/docker/Dockerfile -t $(IMAGE) $(HARNESS_ROOT)
@@ -114,12 +104,8 @@ _quickstart:
 	docker exec --user root $(NAME) bash -c '/opt/open-harness/install/setup.sh --non-interactive'
 	@echo ""
 	@echo "  Sandbox '$(NAME)' is ready!"
-	@if [ "$(WORKSPACE_MODE)" = "worktree" ]; then \
-		echo "  Worktree: $(WORKSPACE_ROOT)"; \
-		echo "  Branch:   $$(git -C "$(WORKSPACE_ROOT)" branch --show-current)"; \
-	else \
-		echo "  Workspace: $(WORKSPACE_ROOT)"; \
-	fi
+	@echo "  Worktree: $(WORKSPACE_ROOT)"; \
+	 echo "  Branch:   $$(git -C "$(WORKSPACE_ROOT)" branch --show-current)"
 	@echo ""
 	@echo "  Run:  make NAME=$(NAME) shell"
 	@echo "  Or:   oh shell $(NAME)"
@@ -142,7 +128,7 @@ run:
 
 shell:
 	@$(assert-name)
-	@docker exec --user sandbox -e HOME=/home/sandbox -w /workspace -it $(NAME) bash --login 2>/dev/null \
+	@docker exec --user sandbox -e HOME=/home/sandbox -w /home/sandbox -it $(NAME) bash --login 2>/dev/null \
 		|| (echo "Error: container '$(NAME)' is not running. Start it with: make NAME=$(NAME) run" >&2; exit 1)
 
 stop:
@@ -160,7 +146,7 @@ clean:
 	@$(assert-name)
 	@$(COMPOSE) down --rmi local 2>/dev/null \
 		|| (echo "Error: no sandbox '$(NAME)' found to clean." >&2; exit 1)
-	@if [ -z "$(strip $(WORKSPACE))" ] && [ -d "$(WORKTREE)" ]; then \
+	@if [ -d "$(WORKTREE)" ]; then \
 		git -C "$(REPO_ROOT)" worktree remove "$(WORKTREE)" --force; \
 		echo "  Worktree removed: $(WORKTREE)"; \
 	fi

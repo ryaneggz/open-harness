@@ -5,12 +5,12 @@ services:
       context: ${HARNESS_ROOT:-../..}
       dockerfile: setup/docker/Dockerfile
     volumes:
-      - ${HOST_WORKSPACE:-../..}:/workspace
-    working_dir: /workspace
+      - ${HOST_WORKSPACE:-../..}:/home/sandbox
+    working_dir: /home/sandbox
     stdin_open: true
     tty: true
     environment:
-      - PROJECT_ROOT=/workspace
+      - PROJECT_ROOT=/home/sandbox
       - INSTALL_ROOT=/opt/open-harness/install
       - HEARTBEAT_ACTIVE_START=${HEARTBEAT_ACTIVE_START:-}
       - HEARTBEAT_ACTIVE_END=${HEARTBEAT_ACTIVE_END:-}

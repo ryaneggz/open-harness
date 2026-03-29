@@ -19,7 +19,7 @@ done
 # ─── Sandbox user / mounted project ─────────────────────────────────
 SANDBOX_USER="sandbox"
 SANDBOX_HOME="/home/$SANDBOX_USER"
-PROJECT_ROOT="${PROJECT_ROOT:-/workspace}"
+PROJECT_ROOT="${PROJECT_ROOT:-/home/sandbox}"
 INSTALL_ROOT="${INSTALL_ROOT:-/opt/open-harness/install}"
 
 # ─── Collect all options upfront ─────────────────────────────────────
@@ -191,14 +191,11 @@ fi
 if [[ "$INSTALL_AGENTMAIL" == true ]]; then
   banner "Installing AgentMail CLI"
   npm install -g agentmail-cli
-  # Store API key in sandbox user's .bashrc if provided (not in shell history)
+  # Store API key in a global shell profile so it survives the home-directory worktree mount
   if [[ -n "$AGENTMAIL_KEY" ]]; then
-    su - "$SANDBOX_USER" -c "
-      grep -q 'AGENTMAIL_API_KEY' \$HOME/.bashrc 2>/dev/null \
-        && sed -i 's|^export AGENTMAIL_API_KEY=.*|export AGENTMAIL_API_KEY=${AGENTMAIL_KEY}|' \$HOME/.bashrc \
-        || echo 'export AGENTMAIL_API_KEY=${AGENTMAIL_KEY}' >> \$HOME/.bashrc
-    "
-    ok "AgentMail CLI installed + API key configured in .bashrc"
+    printf "export AGENTMAIL_API_KEY=%q\n" "$AGENTMAIL_KEY" > /etc/profile.d/agentmail.sh
+    chmod 0644 /etc/profile.d/agentmail.sh
+    ok "AgentMail CLI installed + API key configured in /etc/profile.d/agentmail.sh"
   else
     ok "AgentMail CLI installed (set AGENTMAIL_API_KEY later)"
   fi
@@ -207,15 +204,15 @@ else
   ok "Skipped"
 fi
 
-# ─── 13. Git global config (for sandbox user) ────────────────────
+# ─── 13. Git config ───────────────────────────────────────────────
 if [[ -n "$GIT_USER_NAME" ]]; then
-  su - "$SANDBOX_USER" -c "git config --global user.name '${GIT_USER_NAME}'"
+  git config --system user.name "$GIT_USER_NAME"
 fi
 if [[ -n "$GIT_USER_EMAIL" ]]; then
-  su - "$SANDBOX_USER" -c "git config --global user.email '${GIT_USER_EMAIL}'"
+  git config --system user.email "$GIT_USER_EMAIL"
 fi
 if [[ -n "$GIT_USER_NAME" || -n "$GIT_USER_EMAIL" ]]; then
-  ok "Git config set for $SANDBOX_USER"
+  ok "Git config set system-wide for sandbox sessions"
 fi
 
 # ─── 14. SSH authorized key (for sandbox user) ──────────────────

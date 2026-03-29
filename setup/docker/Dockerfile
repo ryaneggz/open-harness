@@ -8,17 +8,20 @@ RUN useradd -m -s /bin/bash sandbox \
  && echo "sandbox ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/sandbox \
  && chmod 0440 /etc/sudoers.d/sandbox \
  && groupadd -f docker && usermod -aG docker sandbox \
- && echo "alias claude='claude --dangerously-skip-permissions'" >> /home/sandbox/.bashrc \
- && echo "alias codex='codex --full-auto'" >> /home/sandbox/.bashrc \
- && echo "alias pi='pi'" >> /home/sandbox/.bashrc \
- && echo '[ -f /opt/open-harness/install/banner.sh ] && source /opt/open-harness/install/banner.sh' >> /home/sandbox/.bashrc
+ && printf "%s\n" \
+      "alias claude='claude --dangerously-skip-permissions'" \
+      "alias codex='codex --full-auto'" \
+      "alias pi='pi'" \
+      "[ -f /opt/open-harness/install/banner.sh ] && source /opt/open-harness/install/banner.sh" \
+    > /etc/profile.d/open-harness.sh \
+ && chmod 0644 /etc/profile.d/open-harness.sh
 
 COPY setup/install/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY --chown=sandbox:sandbox setup/install/ /opt/open-harness/install/
 
-ENV PROJECT_ROOT=/workspace
+ENV PROJECT_ROOT=/home/sandbox
 ENV INSTALL_ROOT=/opt/open-harness/install
 
-WORKDIR /workspace
+WORKDIR /home/sandbox
 ENTRYPOINT ["entrypoint.sh"]
 CMD ["bash"]

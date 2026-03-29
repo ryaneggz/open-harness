@@ -7,7 +7,7 @@ You are working inside an isolated Docker container on the **Open Harness** proj
 - **OS**: Debian Bookworm (slim)
 - **User**: `sandbox` (passwordless sudo)
 - **Home**: `/home/sandbox` (container-local user state)
-- **Working directory**: `/workspace` (bind-mounted project root from the host)
+- **Working directory**: `~` (the sandbox worktree is bind-mounted directly to the sandbox user's home)
 - **Docker**: CLI + Compose available; host Docker socket may be mounted for container management
 - **Permissions**: `--dangerously-skip-permissions` is the default for Claude Code (aliased in `.bashrc`)
 
@@ -49,7 +49,7 @@ All tools are installed system-wide in `/usr/local/bin` or via apt:
 
 ## Guidelines
 
-- Work from the project root at `/workspace`
+- Work from the project root at `~`
 - This repo is mounted whole so the harness can edit itself
 - `setup/install/` in the repo is the source of truth; the currently running runtime copy lives at `/opt/open-harness/install/`
 - Changes to Docker/runtime bootstrap behavior typically require rebuild/restart to validate

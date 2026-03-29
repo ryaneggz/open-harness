@@ -9,12 +9,7 @@ while [ -L "$SOURCE" ]; do
 done
 SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-SUPERVISOR_NAME="${OH_SUPERVISOR_NAME:-oh-supervisor}"
-SUPERVISOR_IMAGE="${OH_SUPERVISOR_IMAGE:-open-harness-supervisor:latest}"
-SUPERVISOR_MARKER="/opt/open-harness/.supervisor-ready"
-SUPERVISOR_PROJECT_ROOT="${OH_REPO_ROOT:-$REPO_ROOT}"
-HOST_HOME_PATH="${OH_HOST_HOME:-${HOME:-}}"
+WORKTREE_ROOT="$REPO_ROOT/.worktrees"
 
 usage() {
   cat <<'EOF'
@@ -23,11 +18,8 @@ Open Harness CLI
 Usage:
   oh install
   oh bootstrap
-  oh supervisor up
-  oh supervisor down
-  oh supervisor shell
   oh supervisor status
-  oh create <name> [-i] [-w PATH] [--docker] [--tag TAG] [--base-branch BRANCH] [--branch BRANCH]
+  oh create <name> [-i] [--docker] [--tag TAG] [--base-branch BRANCH] [--branch BRANCH]
   oh shell <name>
   oh stop <name>
   oh clean <name>
@@ -43,24 +35,48 @@ Usage:
 
 Options for create:
   -i, --interactive     Prompt for missing values
-  -w, --workspace PATH  Mount an external host path at /workspace
   --docker              Enable Docker socket mount
   --tag TAG             Image tag (default: latest)
-  --base-branch BRANCH  Base branch for default worktree mode
-  --branch BRANCH       Branch name for default worktree mode
+  --base-branch BRANCH  Base branch for the sandbox worktree
+  --branch BRANCH       Branch name for the sandbox worktree
 
 Behavior:
-  - The same `oh` sandbox commands run on the host and inside the supervisor
-  - On the host, `oh` is a small bootstrap/proxy shim that forwards sandbox commands into the supervisor
-  - Sandbox lifecycle commands auto-bootstrap a supervisor container if needed
-  - `oh list` is host-side inspection only and never bootstraps the supervisor
-  - By default, create uses a git worktree workspace under .worktrees/<name>
-  - If --workspace PATH is provided, that host path is mounted at /workspace instead
+  - The supervisor lives on the host; there is no supervisor container
+  - Managed sandboxes always use git worktrees under .worktrees/<name>
+  - Each sandbox mounts its managed worktree directly at ~ inside the container
+  - External workspaces are intentionally rejected
 EOF
 }
 
 run_make() {
   (cd "$REPO_ROOT" && make "$@")
+}
+
+require_docker() {
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "Error: docker is required on the host." >&2
+    exit 1
+  fi
+
+  if ! docker info >/dev/null 2>&1; then
+    echo "Error: Docker daemon is not reachable. Start Docker and try again." >&2
+    exit 1
+  fi
+}
+
+require_git_repo() {
+  if ! git -C "$REPO_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Error: $REPO_ROOT is not a git worktree. Open Harness sandboxes require git worktrees under .worktrees/." >&2
+    exit 1
+  fi
+}
+
+validate_name() {
+  local name="$1"
+  if [[ ! "$name" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
+    echo "Error: invalid sandbox name '$name'. Use only letters, numbers, dot, underscore, and dash." >&2
+    exit 1
+  fi
 }
 
 require_name() {
@@ -69,20 +85,7 @@ require_name() {
     echo "Error: sandbox name is required." >&2
     exit 1
   fi
-}
-
-resolve_path() {
-  local path="$1"
-  if [[ -z "$path" ]]; then
-    return 0
-  fi
-
-  local dir base
-  dir="$(dirname "$path")"
-  base="$(basename "$path")"
-  mkdir -p "$dir"
-  dir="$(cd "$dir" && pwd)"
-  printf '%s/%s\n' "$dir" "$base"
+  validate_name "$name"
 }
 
 prompt_yes_no() {
@@ -97,26 +100,6 @@ prompt_yes_no() {
     read -rp "$prompt [y/N]: " answer
     [[ "$answer" =~ ^[Yy]$ ]]
   fi
-}
-
-seed_workspace() {
-  local dest="$1"
-  mkdir -p "$dest" "$dest/heartbeats" "$dest/.claude/agents" "$dest/.claude/skills" "$dest/.pi/extensions"
-
-  [[ -e "$dest/AGENTS.md" ]] || cp "$REPO_ROOT/AGENTS.md" "$dest/AGENTS.md"
-  [[ -e "$dest/SOUL.md" ]] || cp "$REPO_ROOT/SOUL.md" "$dest/SOUL.md"
-  [[ -e "$dest/MEMORY.md" ]] || cp "$REPO_ROOT/MEMORY.md" "$dest/MEMORY.md"
-  [[ -e "$dest/heartbeats.conf" ]] || cp "$REPO_ROOT/heartbeats.conf" "$dest/heartbeats.conf"
-  [[ -e "$dest/heartbeats/default.md" ]] || cp "$REPO_ROOT/heartbeats/default.md" "$dest/heartbeats/default.md"
-  [[ -e "$dest/.pi/banner.json" ]] || cp "$REPO_ROOT/.pi/banner.json" "$dest/.pi/banner.json"
-  [[ -e "$dest/.pi/extensions/custom-banner.ts" ]] || cp "$REPO_ROOT/.pi/extensions/custom-banner.ts" "$dest/.pi/extensions/custom-banner.ts"
-
-  for file in agent-builder.md command-builder.md skill-builder.md; do
-    [[ -e "$dest/.claude/agents/$file" ]] || cp "$REPO_ROOT/.claude/agents/$file" "$dest/.claude/agents/$file"
-  done
-
-  [[ -e "$dest/CLAUDE.md" ]] || ln -s AGENTS.md "$dest/CLAUDE.md"
-  [[ -e "$dest/.codex" ]] || ln -s .claude "$dest/.codex"
 }
 
 cmd_install() {
@@ -175,122 +158,15 @@ cmd_install() {
   fi
 }
 
-require_docker() {
-  if ! command -v docker >/dev/null 2>&1; then
-    echo "Error: docker is required on the host for supervisor bootstrap." >&2
-    exit 1
-  fi
-
-  if ! docker info >/dev/null 2>&1; then
-    echo "Error: Docker daemon is not reachable. Start Docker and try again." >&2
-    exit 1
-  fi
-}
-
-supervisor_exists() {
-  docker inspect "$SUPERVISOR_NAME" >/dev/null 2>&1
-}
-
-supervisor_running() {
-  [[ "$(docker inspect -f '{{.State.Running}}' "$SUPERVISOR_NAME" 2>/dev/null || true)" == "true" ]]
-}
-
-supervisor_exec() {
-  local user="$1"
-  shift
-
-  local docker_args=(exec --user "$user")
-  if [[ -t 0 && -t 1 ]]; then
-    docker_args+=( -it )
-  fi
-
-  docker_args+=(
-    -e HOME=/home/sandbox
-    -e USER=sandbox
-    -e PROJECT_ROOT="$SUPERVISOR_PROJECT_ROOT"
-    -e INSTALL_ROOT=/opt/open-harness/install
-    -e OH_SUPERVISOR=1
-    -e OH_REPO_ROOT="$SUPERVISOR_PROJECT_ROOT"
-    -e OH_HOST_HOME="$HOST_HOME_PATH"
-    -w "$SUPERVISOR_PROJECT_ROOT"
-    "$SUPERVISOR_NAME"
-  )
-
-  docker "${docker_args[@]}" "$@"
-}
-
-build_supervisor_image() {
-  chmod +x "$REPO_ROOT/setup/oh"
-  docker build -f "$REPO_ROOT/setup/docker/Dockerfile" -t "$SUPERVISOR_IMAGE" "$REPO_ROOT"
-}
-
-create_supervisor_container() {
-  local docker_args=(
-    run -d
-    --name "$SUPERVISOR_NAME"
-    --label open-harness.role=supervisor
-    --restart unless-stopped
-    -e PROJECT_ROOT="$REPO_ROOT"
-    -e INSTALL_ROOT=/opt/open-harness/install
-    -e OH_SUPERVISOR=1
-    -e OH_REPO_ROOT="$REPO_ROOT"
-    -e OH_HOST_HOME="$HOST_HOME_PATH"
-    -w "$REPO_ROOT"
-    -v /var/run/docker.sock:/var/run/docker.sock
-    -v "$REPO_ROOT:$REPO_ROOT"
-  )
-
-  if [[ -n "$HOST_HOME_PATH" && -d "$HOST_HOME_PATH" ]]; then
-    docker_args+=( -v "$HOST_HOME_PATH:$HOST_HOME_PATH" )
-  fi
-
-  if [[ -f "$HOST_HOME_PATH/.gitconfig" ]]; then
-    docker_args+=( -v "$HOST_HOME_PATH/.gitconfig:/home/sandbox/.gitconfig:ro" )
-  fi
-
-  if [[ -d "$HOST_HOME_PATH/.ssh" ]]; then
-    docker_args+=( -v "$HOST_HOME_PATH/.ssh:/home/sandbox/.ssh:ro" )
-  fi
-
-  if [[ -n "${SSH_AUTH_SOCK:-}" && -S "${SSH_AUTH_SOCK:-}" ]]; then
-    docker_args+=( -v "$SSH_AUTH_SOCK:$SSH_AUTH_SOCK" -e "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" )
-  fi
-
-  docker "${docker_args[@]}" "$SUPERVISOR_IMAGE" sleep infinity >/dev/null
-}
-
-provision_supervisor() {
-  if docker exec --user root "$SUPERVISOR_NAME" test -f "$SUPERVISOR_MARKER" >/dev/null 2>&1; then
-    return
-  fi
-
-  echo "Provisioning supervisor sandbox..."
-  docker exec --user root "$SUPERVISOR_NAME" bash -lc "/opt/open-harness/install/setup.sh --non-interactive && touch '$SUPERVISOR_MARKER'"
-}
-
-ensure_supervisor() {
-  require_docker
-
-  if supervisor_running; then
-    provision_supervisor
-    return
-  fi
-
-  if supervisor_exists; then
-    docker start "$SUPERVISOR_NAME" >/dev/null
-    provision_supervisor
-    return
-  fi
-
-  echo "Bootstrapping supervisor sandbox: $SUPERVISOR_NAME"
-  build_supervisor_image
-  create_supervisor_container
-  provision_supervisor
-}
-
 cmd_bootstrap() {
-  ensure_supervisor
-  echo "Supervisor ready: $SUPERVISOR_NAME"
+  require_docker
+  require_git_repo
+  mkdir -p "$WORKTREE_ROOT"
+
+  echo "Host supervisor ready"
+  echo "  Repo root:      $REPO_ROOT"
+  echo "  Worktree root:  $WORKTREE_ROOT"
+  echo "  Workspace mount inside sandboxes: ~"
 }
 
 cmd_supervisor() {
@@ -301,31 +177,24 @@ cmd_supervisor() {
     up)
       cmd_bootstrap
       ;;
-    down|stop)
-      require_docker
-      if supervisor_exists; then
-        docker rm -f "$SUPERVISOR_NAME" >/dev/null
-        echo "Supervisor removed: $SUPERVISOR_NAME"
+    status)
+      require_git_repo
+      echo "Supervisor mode: host"
+      echo "Repo root: $REPO_ROOT"
+      echo "Managed worktree root: $WORKTREE_ROOT"
+      if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+        echo "Docker daemon: reachable"
       else
-        echo "Supervisor not running: $SUPERVISOR_NAME"
+        echo "Docker daemon: unavailable"
       fi
+      ;;
+    down|stop)
+      echo "Error: the supervisor runs on the host and has nothing to tear down." >&2
+      exit 1
       ;;
     shell)
-      ensure_supervisor
-      supervisor_exec sandbox bash --login
-      ;;
-    status)
-      require_docker
-      if supervisor_exists; then
-        docker ps -a --filter "name=^${SUPERVISOR_NAME}$" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
-        if docker exec --user root "$SUPERVISOR_NAME" test -f "$SUPERVISOR_MARKER" >/dev/null 2>&1; then
-          echo "Provisioned: yes"
-        else
-          echo "Provisioned: no"
-        fi
-      else
-        echo "Supervisor not running: $SUPERVISOR_NAME"
-      fi
+      echo "Error: the supervisor is the host-side 'oh' CLI; there is no separate supervisor shell." >&2
+      exit 1
       ;;
     *)
       echo "Unknown supervisor command: $subcmd" >&2
@@ -336,13 +205,11 @@ cmd_supervisor() {
 
 cmd_create() {
   local name=""
-  local workspace=""
   local interactive=false
   local docker=false
   local tag="latest"
   local base_branch=""
   local branch=""
-  local seed="auto"
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -350,8 +217,8 @@ cmd_create() {
         interactive=true
         ;;
       -w|--workspace)
-        shift
-        workspace="${1:-}"
+        echo "Error: external workspaces are not supported. Sandboxes must use managed git worktrees under .worktrees/<name>." >&2
+        exit 1
         ;;
       --docker)
         docker=true
@@ -368,11 +235,9 @@ cmd_create() {
         shift
         branch="${1:-}"
         ;;
-      --seed)
-        seed="yes"
-        ;;
-      --no-seed)
-        seed="no"
+      --seed|--no-seed)
+        echo "Error: seeding external workspaces is no longer supported. Managed worktrees already contain the project scaffold." >&2
+        exit 1
         ;;
       -h|--help)
         usage
@@ -390,50 +255,21 @@ cmd_create() {
     shift || true
   done
 
+  if [[ "$interactive" == true && -z "$name" ]]; then
+    read -rp "Sandbox name: " name
+  fi
+
   if [[ "$interactive" == true ]]; then
-    if [[ -z "$name" ]]; then
-      read -rp "Sandbox name: " name
-    fi
-
-    read -rp "External workspace path (blank = use default worktree): " prompt_workspace
-    if [[ -n "$prompt_workspace" ]]; then
-      workspace="$prompt_workspace"
-    fi
-
     if prompt_yes_no "Enable Docker socket access?" "n"; then
       docker=true
     fi
   fi
 
   require_name "$name"
-
-  if [[ -n "$workspace" ]]; then
-    workspace="$(resolve_path "$workspace")"
-
-    if [[ -n "$HOST_HOME_PATH" && "$workspace" != "$REPO_ROOT" && "$workspace" != "$REPO_ROOT"/* && "$workspace" != "$HOST_HOME_PATH" && "$workspace" != "$HOST_HOME_PATH"/* ]]; then
-      echo "Error: external workspace '$workspace' is outside the supervisor-mounted paths." >&2
-      echo "Use a path under '$HOST_HOME_PATH' or under the repo root, or extend the supervisor mounts first." >&2
-      exit 1
-    fi
-
-    mkdir -p "$workspace"
-
-    if [[ "$seed" == "auto" && "$interactive" == true && ! -e "$workspace/AGENTS.md" ]]; then
-      if prompt_yes_no "Seed default workspace files into $workspace?" "y"; then
-        seed="yes"
-      else
-        seed="no"
-      fi
-    fi
-
-    if [[ "$seed" == "yes" ]]; then
-      seed_workspace "$workspace"
-    fi
-  fi
+  cmd_bootstrap >/dev/null
 
   local args=("NAME=$name" "TAG=$tag")
   [[ "$docker" == true ]] && args+=("DOCKER=true")
-  [[ -n "$workspace" ]] && args+=("WORKSPACE=$workspace")
   [[ -n "$base_branch" ]] && args+=("BASE_BRANCH=$base_branch")
   [[ -n "$branch" ]] && args+=("BRANCH=$branch")
 
@@ -445,38 +281,8 @@ cmd_named_target() {
   shift
   local name="${1:-}"
   require_name "$name"
+  require_docker
   run_make "NAME=$name" "$target"
-}
-
-internal_main() {
-  local cmd="${1:-help}"
-  shift || true
-
-  case "$cmd" in
-    create|new)
-      cmd_create "$@"
-      ;;
-    shell|stop|clean|build|run|rebuild|heartbeat|heartbeat-stop|heartbeat-status|heartbeat-migrate)
-      cmd_named_target "$cmd" "$@"
-      ;;
-    list)
-      run_make list
-      ;;
-    help|-h|--help)
-      usage
-      ;;
-    *)
-      echo "Unknown command: $cmd" >&2
-      echo ""
-      usage >&2
-      exit 1
-      ;;
-  esac
-}
-
-run_in_supervisor() {
-  ensure_supervisor
-  supervisor_exec sandbox "$SUPERVISOR_PROJECT_ROOT/setup/oh" __internal "$@"
 }
 
 cmd_list_host() {
@@ -500,7 +306,7 @@ cmd_list_host() {
   echo ""
 }
 
-host_main() {
+dispatch_main() {
   local cmd="${1:-help}"
   shift || true
 
@@ -514,14 +320,17 @@ host_main() {
     supervisor)
       cmd_supervisor "$@"
       ;;
+    create|new)
+      cmd_create "$@"
+      ;;
+    shell|stop|clean|build|run|rebuild|heartbeat|heartbeat-stop|heartbeat-status|heartbeat-migrate)
+      cmd_named_target "$cmd" "$@"
+      ;;
     list)
       cmd_list_host
       ;;
     help|-h|--help)
       usage
-      ;;
-    create|new|shell|stop|clean|build|run|rebuild|heartbeat|heartbeat-stop|heartbeat-status|heartbeat-migrate)
-      run_in_supervisor "$cmd" "$@"
       ;;
     *)
       echo "Unknown command: $cmd" >&2
@@ -538,14 +347,10 @@ main() {
   case "$cmd" in
     __internal)
       shift || true
-      internal_main "$@"
+      dispatch_main "$@"
       ;;
     *)
-      if [[ "${OH_SUPERVISOR:-}" == "1" ]]; then
-        internal_main "$@"
-      else
-        host_main "$@"
-      fi
+      dispatch_main "$@"
       ;;
   esac
 }

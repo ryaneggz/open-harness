@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-PROJECT_ROOT="${PROJECT_ROOT:-/workspace}"
+PROJECT_ROOT="${PROJECT_ROOT:-/home/sandbox}"
 INSTALL_ROOT="${INSTALL_ROOT:-/opt/open-harness/install}"
 export HOME="/home/sandbox"
 export USER="sandbox"

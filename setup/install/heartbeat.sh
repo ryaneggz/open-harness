@@ -9,7 +9,7 @@ set -euo pipefail
 HEARTBEAT_DIR="${HOME}/.heartbeat"
 LOG_FILE="${HEARTBEAT_DIR}/heartbeat.log"
 ENV_FILE="${HEARTBEAT_DIR}/env.sh"
-PROJECT_ROOT="${PROJECT_ROOT:-/workspace}"
+PROJECT_ROOT="${PROJECT_ROOT:-/home/sandbox}"
 INSTALL_ROOT="${INSTALL_ROOT:-/opt/open-harness/install}"
 WORKSPACE="${PROJECT_ROOT}"
 CONFIG_FILE="${PROJECT_ROOT}/heartbeats.conf"

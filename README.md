@@ -9,29 +9,28 @@ Isolated, pre-configured sandbox images for AI coding agents — [Claude Code](h
 > **Prerequisites:** [Docker](https://docs.docker.com/get-docker/). That's all you need for the normal `oh ...` workflow on your host. (`make` is only needed for the lower-level manual flow.)
 
 **What runs where**
-- **Host:** tiny `oh` bootstrap/proxy only
-- **Supervisor sandbox:** runs the same `oh create/shell/stop/clean/...` commands and orchestrates sandboxes
-- **User sandbox:** where your coding agent actually works
+- **Host:** the `oh` supervisor CLI validates Docker, creates managed worktrees, and launches agent containers
+- **Managed worktrees:** each sandbox gets its own git worktree under `.worktrees/<name>`
+- **User sandbox:** the selected worktree is mounted directly at `~`, which is the default project root inside the container
 
-The repo root is the default workspace scaffold, so you can clone this repo and start immediately.
+The repo root is the scaffold source, and each sandbox is created from a managed git worktree under `.worktrees/`.
 
-### End-to-end: supervisor, first sandbox, agent, teardown
+### End-to-end: host supervisor, first sandbox, agent, teardown
 
 ```bash
 git clone https://github.com/<your-username>/open-harness.git && cd open-harness
 ./setup/oh install
 
-oh bootstrap                   # start supervisor sandbox
-oh supervisor status           # verify supervisor is up
+oh bootstrap                   # verify Docker + initialize host supervisor state
+oh supervisor status           # show host supervisor mode
 
-oh create dev -i               # create first sandbox
-oh shell dev                   # enter sandbox
+oh create dev -i               # create .worktrees/dev + sandbox container
+oh shell dev                   # enter sandbox (starts in ~)
 claude                         # or: codex / pi
 exit
 
 oh stop dev                    # stop sandbox
 oh clean dev                   # remove sandbox + worktree/image
-oh supervisor down             # remove supervisor too
 ```
 
 ### Fastest path
@@ -39,7 +38,7 @@ oh supervisor down             # remove supervisor too
 ```bash
 git clone https://github.com/<your-username>/open-harness.git && cd open-harness
 ./setup/oh install
-oh create dev -i               # auto-bootstraps supervisor if needed
+oh create dev -i               # validates host supervisor prerequisites automatically
 oh shell dev
 claude
 ```
@@ -47,13 +46,12 @@ claude
 ### Core commands
 
 ```bash
-oh supervisor status          # control plane status
-oh create <name>             # create sandbox
-oh shell <name>              # enter sandbox
-oh list                      # list sandboxes
+oh supervisor status          # host supervisor status
+oh create <name>             # create managed worktree + sandbox
+oh shell <name>              # enter sandbox at ~
+oh list                      # list sandboxes + worktrees
 oh stop <name>               # stop sandbox
-oh clean <name>              # destroy sandbox
-oh supervisor down           # tear down control plane
+oh clean <name>              # destroy sandbox + worktree
 ```
 
 ---
@@ -65,7 +63,7 @@ AI coding agents are powerful — but they run with broad system permissions, ex
 ### Core Intentions
 
 #### 1. **Isolation & Safety**
-Agents run `--dangerously-skip-permissions` by default — inside disposable Docker containers. The host now only needs to bootstrap a tiny `oh` shim plus a supervisor sandbox; all project orchestration then happens from inside that supervisor. User sandboxes can `rm -rf`, install packages, and spawn processes without any risk to your host machine. The full project directory is bind-mounted at `/workspace`; the sandbox user's home stays clean and container-local.
+Agents run `--dangerously-skip-permissions` by default — inside disposable Docker containers. The host-side `oh` supervisor does the minimum possible: validate Docker, create managed git worktrees under `.worktrees/`, and launch sandboxes from those worktrees. User sandboxes can `rm -rf`, install packages, and spawn processes without touching your host system. Each sandbox mounts its managed worktree directly at `~`.
 
 #### 2. **Zero-to-Agent in Minutes**
 One provisioning script (`setup/install/setup.sh`) installs Node.js, Bun, uv, Docker CLI, GitHub CLI, ripgrep, tmux, and whichever agents you choose — interactively or fully unattended with `--non-interactive`. No more "install 15 things" friction.
@@ -80,7 +78,7 @@ Not a wrapper for one tool. The same sandbox runs Claude Code, Codex, and Pi Age
 The heartbeat system (`setup/install/heartbeat.sh` + `heartbeats.conf` + `heartbeats/*.md`) lets agents wake on a timer, perform tasks from a user-authored checklist, and go back to sleep — turning reactive tools into proactive workers that can monitor, maintain, and report without human presence.
 
 #### 6. **Multi-Sandbox Parallelism**
-Named sandboxes (`NAME=research`, `NAME=frontend`) run simultaneously, each with its own container, mounted project root, and agent sessions — enabling parallel workstreams or agent-per-project setups.
+Named sandboxes (`NAME=research`, `NAME=frontend`) run simultaneously, each with its own container, managed git worktree, and agent session — enabling parallel workstreams or agent-per-project setups.
 
 ---
 
@@ -88,9 +86,9 @@ Named sandboxes (`NAME=research`, `NAME=frontend`) run simultaneously, each with
 
 | Benefit | Details |
 |---------|---------|
-| 🔒 **Host protection** | Agents run in a disposable Debian container; the full project is bind-mounted at `/workspace` while `~/` remains container-local |
+| 🔒 **Host protection** | Agents run in a disposable Debian container; only a managed git worktree is bind-mounted, directly at `~` inside the sandbox |
 | 🔄 **Reproducibility** | `setup/docker/Dockerfile` + setup script = identical environment every time, on any machine |
-| 🐳 **Docker-in-Docker** | The supervisor mounts the host Docker socket by default; user sandboxes can also get it with `oh create --docker` |
+| 🐳 **Docker-in-Docker** | The host supervisor uses Docker directly; user sandboxes can optionally get Docker socket access with `oh create --docker` |
 | 🚀 **CI/CD ready** | GitHub Actions builds and pushes to `ghcr.io/ryaneggz/open-harness` on tagged releases |
 | 🧠 **Agent memory** | SOUL / MEMORY / daily-log system gives agents durable state across restarts and sessions |
 | ⏰ **Unattended operation** | Cron-scheduled heartbeats with multiple files/intervals, active-hours gating, cost-saving empty-file detection, and auto-rotating logs |
@@ -107,12 +105,12 @@ Named sandboxes (`NAME=research`, `NAME=frontend`) run simultaneously, each with
 
 ```bash
 ./setup/oh install
-oh bootstrap                   # optional; `oh create` will do this automatically if needed
+oh bootstrap                   # optional; validates Docker + ensures .worktrees/ exists
 oh create my-sandbox -i
 oh shell my-sandbox
 ```
 
-By default, `oh create <name>` uses a git worktree under `.worktrees/<name>`. If you pass `-w /some/path` (or choose one in `-i` mode), that host path is mounted at `/workspace` instead.
+By default, `oh create <name>` uses a managed git worktree under `.worktrees/<name>`, and mounts it directly at `~` inside the sandbox. External workspaces are intentionally rejected.
 
 **User sandbox with Docker access**:
 
@@ -133,11 +131,10 @@ oh list
 
 ```bash
 oh supervisor status
-oh supervisor shell
-oh supervisor down
+oh bootstrap
 ```
 
-**Advanced / low-level make flow** (mainly for debugging; normally the supervisor calls these):
+**Advanced / low-level make flow** (mainly for debugging; normally the host supervisor calls these):
 
 ```bash
 make NAME=my-sandbox quickstart
@@ -171,11 +168,11 @@ sudo bash setup.sh --non-interactive
 ├── ...                      # your actual project files live here too
 ├── Makefile                 # thin entrypoint that includes setup/Makefile
 └── setup/
-    ├── oh                   # host bootstrap/proxy CLI (`oh`)
-    ├── Makefile             # lower-level build/run/shell/clean targets used by the supervisor
+    ├── oh                   # host supervisor CLI (`oh`)
+    ├── Makefile             # lower-level build/run/shell/clean targets used by the host supervisor
     ├── docker/
     │   ├── Dockerfile           # base image: Debian Bookworm slim + sandbox user
-    │   ├── docker-compose.yml   # base compose: mounts the full project at /workspace
+    │   ├── docker-compose.yml   # base compose: mounts the managed worktree at ~
     │   └── docker-compose.docker.yml # Docker override: mounts socket + host networking
     └── install/
         ├── setup.sh             # provisioning script source (copied into image)
@@ -187,19 +184,17 @@ sudo bash setup.sh --non-interactive
 
 ## ⚙️ How It Works
 
-1. **`setup/oh`** is a tiny host-side shim. It installs the CLI, bootstraps the supervisor sandbox, and proxies sandbox lifecycle commands into that supervisor.
+1. **`setup/oh`** is the host supervisor. It installs the CLI, validates Docker, creates managed git worktrees under `.worktrees/`, and orchestrates sandbox lifecycle commands directly from the host.
 
-2. **The supervisor sandbox** mounts the repo at the same absolute host path plus the Docker socket, so it can create worktrees, build images, and orchestrate user sandboxes without running project logic directly on the host.
-
-3. **`setup/docker/Dockerfile`** creates a minimal Debian image with a `sandbox` user (passwordless sudo) and bakes in:
+2. **`setup/docker/Dockerfile`** creates a minimal Debian image with a `sandbox` user (passwordless sudo) and bakes in:
    - `setup/install/` copied to `/opt/open-harness/install/` for runtime use
    - Agent aliases in `.bashrc` (`claude`, `codex`, `pi`)
    - Docker group membership for the sandbox user
-   - Clean `~/` for user state, with the project mounted separately at `/workspace`
+   - A default project location at `~`, where the managed worktree is mounted
 
-4. **`setup/docker/docker-compose.yml`** bind-mounts the selected host workspace to `/workspace`. By default that is the sandbox worktree; the `oh` CLI can also point it at an external path. When `DOCKER=true`, the override file (`setup/docker/docker-compose.docker.yml`) additionally mounts the Docker socket and configures `host.docker.internal` for the user sandbox.
+3. **`setup/docker/docker-compose.yml`** bind-mounts the managed host worktree directly to `~` inside the container. When `DOCKER=true`, the override file (`setup/docker/docker-compose.docker.yml`) additionally mounts the Docker socket and configures `host.docker.internal` for the user sandbox.
 
-5. **`setup/install/setup.sh`** provisions all tools system-wide (as root):
+4. **`setup/install/setup.sh`** provisions all tools system-wide (as root):
    - Node.js 22.x, npm, tmux, nano, ripgrep, jq, make, openssh-client (always)
    - Docker CLI + Compose plugin (always)
    - GitHub CLI (always)
@@ -210,13 +205,13 @@ sudo bash setup.sh --non-interactive
    - AgentMail CLI (opt-in)
    - agent-browser + Chromium (default yes)
 
-6. **`AGENTS.md`** in the project root provides default context to all coding agents. `CLAUDE.md` is a symlink to it — editing either updates both.
+5. **`AGENTS.md`** in the project root provides default context to all coding agents. `CLAUDE.md` is a symlink to it — editing either updates both.
 
 ---
 
 ## 🔧 Configuration
 
-In the normal `oh create ...` workflow, provisioning happens automatically inside the sandbox. The setup script below is the lower-level provisioning entrypoint used by the image and supervisor.
+In the normal `oh create ...` workflow, provisioning happens automatically inside the sandbox. The setup script below is the lower-level provisioning entrypoint used by the image and host supervisor.
 
 ```bash
 # Interactive (prompts for each option)
@@ -328,16 +323,16 @@ This triggers the CI workflow which builds and pushes:
 
 ## 🛠️ Appendix: Internal / Debugging Make Targets
 
-Most users should use `oh ...`. The Makefile is an implementation detail and low-level debugging layer. The real user/supervisor interface is `oh`, and the host simply forwards the same sandbox commands into the supervisor.
+Most users should use `oh ...`. The Makefile is an implementation detail and low-level debugging layer. The real user/supervisor interface is `oh`, which runs directly on the host and manages sandbox lifecycle there.
 
 | Target | Description |
 |--------|-------------|
 | `make install-cli` | Install the `oh` CLI (global if possible, otherwise user-local) |
-| `make quickstart` | Internal sandbox build/provision target used by the supervisor |
+| `make quickstart` | Internal sandbox build/provision target used by the host supervisor |
 | `make build` | Build the Docker image |
 | `make rebuild` | Full no-cache rebuild + restart |
 | `make run` | Start the container (detached) |
-| `make shell` | Open a login shell as `sandbox` in `/workspace` |
+| `make shell` | Open a login shell as `sandbox` in `~` |
 | `make stop` | Stop the container |
 | `make clean` | Stop and remove the local image |
 | `make push` | Push image to ghcr.io/ryaneggz |
@@ -348,4 +343,4 @@ Most users should use `oh ...`. The Makefile is an implementation detail and low
 | `make heartbeat-status` | Show heartbeat schedules and recent logs |
 | `make heartbeat-migrate` | Convert legacy `HEARTBEAT_INTERVAL` to `heartbeats.conf` |
 
-`NAME` is required for all sandbox targets. Pass `DOCKER=true` to enable Docker socket access in the user sandbox. Pass `WORKSPACE=/host/path` to mount an external workspace instead of creating a git worktree. In normal use, prefer `oh ...`; think of `make` as internal plumbing and debugging escape hatches, not the primary interface.
+`NAME` is required for all sandbox targets. Pass `DOCKER=true` to enable Docker socket access in the user sandbox. Sandboxes always use managed git worktrees under `.worktrees/<NAME>`. In normal use, prefer `oh ...`; think of `make` as internal plumbing and debugging escape hatches, not the primary interface.
