@@ -1,0 +1,27 @@
+{
+  "versions": [
+    {
+      "id": "v1",
+      "date": "2026-03-29",
+      "action": "Initial allocation - 13F-adjusted All Weather + BTC",
+      "allocation": {
+        "SPY": 0.3,
+        "NVDA": 0.0333,
+        "AMZN": 0.0333,
+        "GOOGL": 0.0333,
+        "TLT": 0.22,
+        "IEF": 0.08,
+        "BTC-USD": 0.1,
+        "IEMG": 0.05,
+        "GLD": 0.05,
+        "DBC": 0.05
+      },
+      "metrics_at_entry": null,
+      "metrics_forward": {
+        "sharpe_since_entry": null,
+        "return_since_entry": null,
+        "max_drawdown_since_entry": null
+      }
+    }
+  ]
+}
