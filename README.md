@@ -22,10 +22,10 @@ claude                          # start coding with AI
 
 ## 🤖 Example Agents
 
-Start Claude (or Codex) at the project root and ask it to set up an agent. It handles provisioning, configuration, and verification — then gives you the command to enter the sandbox.
+Start Claude (or Codex) at the project root **in plan mode**. Tell it which agent to set up — it will ask you questions to nail down the details before provisioning anything.
 
 ```bash
-claude    # start the orchestrator at project root
+claude --plan    # start the orchestrator in plan mode
 ```
 
 Try any of these:
@@ -36,7 +36,7 @@ Try any of these:
 | _"Set up a portfolio-mgr agent"_ | Builds a mock $100K portfolio using Ray Dalio's All Weather strategy with yfinance data and web search sentiment analysis |
 | _"Set up an uptime-monitor agent"_ | Checks your URLs every 30 minutes for availability and response time, files GitHub issues on downtime, generates weekly SLA reports |
 
-The orchestrator will create a GitHub issue, provision a Docker sandbox, install tools, and report back with access commands like:
+The orchestrator will ask you about the agent's role, tools, heartbeat schedule, and any customizations before presenting a plan. Once you approve, it provisions the sandbox end-to-end and reports back with:
 
 ```
 make NAME=blog-writer shell    # enter the sandbox
