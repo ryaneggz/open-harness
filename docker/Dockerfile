@@ -12,7 +12,9 @@ RUN useradd -m -s /bin/bash sandbox \
  && echo "alias pi='pi'" >> /home/sandbox/.bashrc
 
 COPY install/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 COPY --chown=sandbox:sandbox install/ /home/sandbox/install/
+RUN chmod +x /home/sandbox/install/*.sh
 COPY --chown=sandbox:sandbox workspace/ /home/sandbox/workspace/
 
 WORKDIR /home/sandbox/workspace

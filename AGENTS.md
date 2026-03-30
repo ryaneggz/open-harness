@@ -78,12 +78,15 @@ Remove an agent sandbox. Preserve work first if needed.
 - Provision, validate, and tear down sandboxes (`make quickstart`, `make clean`, `docker exec`, etc.)
 - Create and manage GitHub issues for agent tracking
 - Run the `/provision` skill for end-to-end sandbox setup
+- **Scaffold agent workspaces** after provisioning — write SOUL.md, MEMORY.md, skills, heartbeats, and initial project state to `.worktrees/agent/<name>/workspace/` based on the agent's role. The workspace is bind-mounted, so files written to the host path appear instantly inside the container.
 
 ## What You Do NOT Do
 
-- Write application code (that happens inside sandboxes)
-- Enter sandboxes to do agent work
-- Modify files inside `.worktrees/` directly (agents own their workspace)
+- Write application code logic (business logic, APIs, UIs — that happens inside sandboxes)
+- Enter sandboxes to do ongoing agent work
+- Modify agent-owned files after initial scaffolding (agents own their workspace once running)
+
+> **Scaffolding vs. application code**: Writing SOUL.md, MEMORY.md, skill definitions, heartbeat configs, and initial state files is orchestrator infrastructure work — it configures the agent's identity, capabilities, and schedule. The agent then owns these files and evolves them. Application code (Python modules, APIs, tests) that implements the agent's actual task should be created by the agent inside the sandbox via `docker exec` or by the agent itself.
 
 ## Project Structure
 
@@ -97,6 +100,9 @@ workspace/            # Template for all agent workspaces
   SOUL.md             # Agent persona template
   MEMORY.md           # Long-term memory template
   heartbeats.conf     # Periodic task schedule
+  .claude/skills/     # Reusable skill templates
+    quality-gate/     # Template: validate decisions before execution
+    strategy-review/  # Template: measure decision quality over time
 Makefile              # Human-operated sandbox automation
 .github/ISSUE_TEMPLATE/  # agent, audit, bug, feature, skill, task
 .claude/skills/          # Orchestrator skills (e.g., /provision)

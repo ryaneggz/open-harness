@@ -153,9 +153,84 @@ git -C .worktrees/agent/<NAME> branch --show-current
 
 If any verification fails, report the specific failure and suggest remediation.
 
-## 5. Report Access Steps
+## 5. Scaffold the Workspace
 
-After successful provisioning, tell the user:
+After provisioning, scaffold the agent's workspace based on the role/purpose gathered in step 1. Write files directly to the host worktree path (bind-mounted into the container):
+
+```
+WORKSPACE=".worktrees/agent/<NAME>/workspace"
+```
+
+> **Important**: Use the host Write/Edit tools on `$WORKSPACE/` paths — NOT `docker exec` with heredocs (shell escaping breaks on markdown content). Only use `docker exec` for commands that need the container runtime (`uv init`, `uv add`, `heartbeat.sh sync`).
+
+### 5a. SOUL.md — Agent Persona
+
+Write `$WORKSPACE/SOUL.md` with:
+- **Identity**: Who the agent is, what it does, framed around the role from step 1
+- **Core Truths**: Sandbox context, mock/educational framing if applicable
+- **Personality**: Communication style appropriate to the role
+- **Boundaries**: What the agent should and shouldn't do
+- **Continuity**: Pointers to MEMORY.md, state files, and daily logs
+
+### 5b. MEMORY.md — Seeded Context
+
+Write `$WORKSPACE/MEMORY.md` with:
+- **Decisions & Preferences**: Strategy details, key parameters, data sources
+- **Lessons Learned**: Empty section (populated by the agent over time)
+- **Project Context**: Domain knowledge, research findings, reference links
+
+If the agent's role benefits from research (market data, API docs, competitor analysis), use WebSearch to gather current information and seed it here.
+
+### 5c. Skills (Optional)
+
+If the agent's role involves consequential decisions, create quality gate skills in `$WORKSPACE/.claude/skills/`. Common patterns:
+
+| Skill Pattern | When to Use |
+|---|---|
+| **risk-metrics** | Agent manages resources, budgets, or portfolios |
+| **allocation-check** | Agent distributes resources with constraints |
+| **sentiment-score** | Agent needs external signal aggregation |
+| **strategy-review** | Agent needs to measure its own decision quality over time |
+
+Each skill goes in its own directory with a `SKILL.md` file containing frontmatter (name, description, trigger conditions) and instructions.
+
+### 5d. Heartbeats (Optional)
+
+If heartbeats were requested, write:
+- `$WORKSPACE/heartbeats.conf` — cron schedule mapping files to schedules
+- `$WORKSPACE/heartbeats/<task>.md` — one file per scheduled task with detailed instructions
+
+Then sync inside the container:
+```bash
+docker exec --user sandbox <NAME> bash -c '~/install/heartbeat.sh sync'
+```
+
+### 5e. Project Initialization (Optional)
+
+If the agent needs a Python or Node.js project, initialize it inside the container:
+```bash
+# Python
+docker exec --user sandbox <NAME> bash -c 'cd ~/workspace && uv init <project> && cd <project> && uv add <packages>'
+
+# Node.js
+docker exec --user sandbox <NAME> bash -c 'cd ~/workspace && bun init <project>'
+```
+
+Then write initial state/config files to `$WORKSPACE/<project>/` from the host.
+
+### 5f. README.md — Standalone Artifact
+
+Write a new `README.md` at the worktree root (`.worktrees/agent/<NAME>/README.md`) that describes this specific agent — not the generic Open Harness README. Include:
+- Agent title and purpose
+- Strategy/approach
+- Skills and heartbeats
+- Data sources
+- Getting started commands
+- Fork notice: "Forked from [Open Harness](https://github.com/ryaneggz/open-harness)"
+
+## 6. Report Access Steps
+
+After successful provisioning and scaffolding, tell the user:
 
 ```
 Sandbox '<NAME>' is ready!
