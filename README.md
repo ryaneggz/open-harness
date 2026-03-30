@@ -6,48 +6,47 @@ Isolated, pre-configured sandbox images for AI coding agents — [Claude Code](h
 
 ## ⚡ Quickstart
 
-1. [**Fork this repo**](https://github.com/ryaneggz/open-harness/fork)
-2. Clone, build, go:
+1. [**Fork this repo**](https://github.com/ryaneggz/open-harness/fork) and clone it:
 
 ```bash
 git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
-make NAME=dev quickstart        # builds, provisions, done
-make NAME=dev shell             # drop into the sandbox
-claude                          # start coding with AI
+```
+
+2. Start Claude at the project root **in plan mode**:
+
+```bash
+claude --permission-mode plan
+```
+
+3. Tell it which agent to build. Try the **portfolio manager**:
+
+```
+Set up a portfolio-mgr agent that creates a mock $100K portfolio using Ray Dalio's All Weather strategy with yfinance data and web search sentiment analysis
+```
+
+Claude will ask about the agent's role, tools, heartbeat schedule, and any customizations. Once you approve the plan, it provisions the sandbox end-to-end.
+
+4. Enter the sandbox and start working:
+
+```bash
+make NAME=portfolio-mgr shell    # enter the sandbox
+claude                           # start working
 ```
 
 > **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [Make](https://www.gnu.org/software/make/). That's all you need on your host.
 
----
-
-## 🤖 Example Agents
-
-Start Claude (or Codex) at the project root **in plan mode**. Tell it which agent to set up — it will ask you questions to nail down the details before provisioning anything.
-
-```bash
-claude --plan    # start the orchestrator in plan mode
-```
-
-Try any of these:
+### More example agents
 
 | Prompt | What it builds |
 |--------|---------------|
 | _"Set up a blog-writer agent"_ | Writes blog posts for your website, creates PRs with drafts, and generates LinkedIn & X.com posts for manual promotion |
-| _"Set up a portfolio-mgr agent"_ | Builds a mock $100K portfolio using Ray Dalio's All Weather strategy with yfinance data and web search sentiment analysis |
 | _"Set up an uptime-monitor agent"_ | Checks your URLs every 30 minutes for availability and response time, files GitHub issues on downtime, generates weekly SLA reports |
 
-The orchestrator will ask you about the agent's role, tools, heartbeat schedule, and any customizations before presenting a plan. Once you approve, it provisions the sandbox end-to-end and reports back with:
-
-```
-make NAME=blog-writer shell    # enter the sandbox
-claude                         # start working
-```
-
-When you're done, clean up:
+### Cleanup
 
 ```bash
-make NAME=blog-writer clean    # full teardown (container + image + worktree)
-make list                      # see what's still running
+make NAME=portfolio-mgr clean    # full teardown (container + image + worktree)
+make list                        # see what's still running
 ```
 
 ---
