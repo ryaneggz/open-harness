@@ -13,7 +13,7 @@ HEARTBEAT_AGENT        ?= claude
 ifdef NAME
   IMAGE = $(REGISTRY)/$(NAME):$(TAG)
   export NAME
-  WORKTREE = .worktrees/$(NAME)
+  WORKTREE = .worktrees/$(BRANCH)
   # Use worktree if it exists, otherwise fall back to repo root
   PROJECT_ROOT = $(if $(wildcard $(WORKTREE)/Makefile),$(WORKTREE),.)
   COMPOSE_FILES = -f $(PROJECT_ROOT)/docker/docker-compose.yml
@@ -104,7 +104,7 @@ run:
 
 shell:
 	@$(assert-name)
-	@docker exec -it $(NAME) bash 2>/dev/null \
+	@docker exec --user sandbox -e HOME=/home/sandbox -w /home/sandbox/workspace -it $(NAME) bash --login 2>/dev/null \
 		|| (echo "Error: container '$(NAME)' is not running. Start it with: make NAME=$(NAME) run" >&2; exit 1)
 
 stop:
