@@ -1,0 +1,136 @@
+{
+  "inception_date": "2026-03-29",
+  "starting_capital": 100000,
+  "cash": 5000,
+  "positions": {
+    "SPY": {
+      "asset_class": "US Equities (broad)",
+      "target_pct": 0.3,
+      "shares": 47.311894,
+      "cost_basis": 634.09,
+      "cost_total": 30000.0
+    },
+    "NVDA": {
+      "asset_class": "Tech/Growth",
+      "target_pct": 0.0333,
+      "shares": 19.896131,
+      "cost_basis": 167.52,
+      "cost_total": 3333.0
+    },
+    "AMZN": {
+      "asset_class": "Tech/Growth",
+      "target_pct": 0.0333,
+      "shares": 16.720177,
+      "cost_basis": 199.34,
+      "cost_total": 3333.0
+    },
+    "GOOGL": {
+      "asset_class": "Tech/Growth",
+      "target_pct": 0.0333,
+      "shares": 12.152803,
+      "cost_basis": 274.34,
+      "cost_total": 3334.0
+    },
+    "TLT": {
+      "asset_class": "Long-Term US Bonds",
+      "target_pct": 0.22,
+      "shares": 256.889306,
+      "cost_basis": 85.64,
+      "cost_total": 22000.0
+    },
+    "IEF": {
+      "asset_class": "Intermediate US Bonds",
+      "target_pct": 0.08,
+      "shares": 84.566598,
+      "cost_basis": 94.6,
+      "cost_total": 8000.0
+    },
+    "BTC-USD": {
+      "asset_class": "Bitcoin (cycle-out)",
+      "target_pct": 0.1,
+      "shares": 0.148435,
+      "cost_basis": 67369.6406,
+      "cost_total": 10000.01
+    },
+    "IEMG": {
+      "asset_class": "Emerging Markets",
+      "target_pct": 0.05,
+      "shares": 73.681108,
+      "cost_basis": 67.86,
+      "cost_total": 5000.0
+    },
+    "GLD": {
+      "asset_class": "Gold",
+      "target_pct": 0.05,
+      "shares": 12.056908,
+      "cost_basis": 414.7,
+      "cost_total": 5000.0
+    },
+    "DBC": {
+      "asset_class": "Commodities",
+      "target_pct": 0.05,
+      "shares": 171.821304,
+      "cost_basis": 29.1,
+      "cost_total": 5000.0
+    }
+  },
+  "transactions": [
+    {
+      "date": "2026-03-29",
+      "type": "initial_allocation",
+      "description": "13F-adjusted All Weather initial allocation",
+      "details": {
+        "SPY": {
+          "action": "buy",
+          "shares": 47.311894,
+          "price": 634.09
+        },
+        "NVDA": {
+          "action": "buy",
+          "shares": 19.896131,
+          "price": 167.52
+        },
+        "AMZN": {
+          "action": "buy",
+          "shares": 16.720177,
+          "price": 199.34
+        },
+        "GOOGL": {
+          "action": "buy",
+          "shares": 12.152803,
+          "price": 274.34
+        },
+        "TLT": {
+          "action": "buy",
+          "shares": 256.889306,
+          "price": 85.64
+        },
+        "IEF": {
+          "action": "buy",
+          "shares": 84.566598,
+          "price": 94.6
+        },
+        "BTC-USD": {
+          "action": "buy",
+          "shares": 0.148435,
+          "price": 67369.6406
+        },
+        "IEMG": {
+          "action": "buy",
+          "shares": 73.681108,
+          "price": 67.86
+        },
+        "GLD": {
+          "action": "buy",
+          "shares": 12.056908,
+          "price": 414.7
+        },
+        "DBC": {
+          "action": "buy",
+          "shares": 171.821304,
+          "price": 29.1
+        }
+      }
+    }
+  ]
+}

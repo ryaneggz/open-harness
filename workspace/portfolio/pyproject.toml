@@ -1,0 +1,11 @@
+[project]
+name = "portfolio"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.4.4",
+    "pandas>=3.0.1",
+    "yfinance>=1.2.0",
+]
