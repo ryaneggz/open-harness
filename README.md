@@ -1,314 +1,89 @@
-# 🏗️ Open Harness
+# Portfolio Manager Agent -- 13F-Informed All Weather Strategy
 
-Isolated, pre-configured sandbox images for AI coding agents — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenAI Codex](https://github.com/openai/codex), [Pi Agent](https://shittycodingagent.ai), and more.
+A quantitative portfolio management agent running a mock $100K portfolio informed by **Bridgewater Associates' Q4 2025 13F filing** and Ray Dalio's All Weather strategy.
 
-> **Spin up isolated, fully-provisioned Docker sandboxes where AI coding agents can operate with full permissions, persistent memory, and autonomous background tasks — without touching your host system.**
+> Forked from [Open Harness](https://github.com/ryaneggz/open-harness) -- an isolated sandbox framework for AI coding agents.
 
-## ⚡ Quickstart
+## Strategy
 
-1. [**Fork this repo**](https://github.com/ryaneggz/open-harness/fork)
-2. Clone, build, go:
+Blends the classic All Weather diversification framework with signals from Bridgewater's latest 13F filing. The 13F shows a pro-growth, risk-on tilt -- massive SPY bet (22% of portfolio), heavy tech conviction, consumer defensives gutted, gold exited.
 
-```bash
-git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
-make NAME=dev quickstart        # builds, provisions, done
-make NAME=dev shell             # drop into the sandbox
-claude                          # start coding with AI
-```
+### Allocation ($100K)
 
-> **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [Make](https://www.gnu.org/software/make/). That's all you need on your host.
+| Asset Class | % | Amount | Vehicle |
+|---|---|---|---|
+| US Equities (broad) | 30% | $30,000 | SPY |
+| Tech/Growth Overweight | 10% | $10,000 | NVDA, AMZN, GOOGL |
+| Long-Term US Bonds | 22% | $22,000 | TLT |
+| Intermediate US Bonds | 8% | $8,000 | IEF |
+| Bitcoin (cycle-out) | 10% | $10,000 | BTC-USD |
+| Emerging Markets | 5% | $5,000 | IEMG |
+| Gold | 5% | $5,000 | GLD |
+| Commodities | 5% | $5,000 | DBC |
+| Cash Reserve | 5% | $5,000 | -- |
 
----
+### BTC Cycle-Out
 
-## 🤖 Example Agents
+BTC starts at 10% and is systematically reduced over time. Proceeds rotate into the All Weather core (bonds, gold, commodities). Each rotation must maintain or improve the portfolio Sharpe ratio.
 
-Start Claude (or Codex) at the project root **in plan mode**. Tell it which agent to set up — it will ask you questions to nail down the details before provisioning anything.
+## Quality Gate Skills
 
-```bash
-claude --plan    # start the orchestrator in plan mode
-```
+| Skill | Purpose |
+|---|---|
+| `risk-metrics` | Sharpe (>0.5), Sortino (>0.7), max drawdown (<20%), beta, volatility (<15%), Calmar ratio, BTC vol contribution |
+| `allocation-check` | Concentration limits, diversification floor (bonds+gold+commodities >= 25%), individual stock cap (10%), cash reserve (2-8%) |
+| `sentiment-score` | WebSearch macro sentiment aggregated into quantitative signal (-2 to +2). Gates equity increases if bearish (<-1.0) |
+| `strategy-review` | Performance ledger, rolling Sharpe trends, benchmark comparison (All Weather, SPY, 60/40), BTC cycle-out scorecard |
 
-Try any of these:
+## Heartbeats
 
-| Prompt | What it builds |
-|--------|---------------|
-| _"Set up a blog-writer agent"_ | Writes blog posts for your website, creates PRs with drafts, and generates LinkedIn & X.com posts for manual promotion |
-| _"Set up a portfolio-mgr agent"_ | Builds a mock $100K portfolio using Ray Dalio's All Weather strategy with yfinance data and web search sentiment analysis |
-| _"Set up an uptime-monitor agent"_ | Checks your URLs every 30 minutes for availability and response time, files GitHub issues on downtime, generates weekly SLA reports |
+| Schedule | File | Purpose |
+|---|---|---|
+| Weekdays 2:30pm MT | `market-check.md` | Daily prices, drift, risk metrics, sentiment |
+| Friday 5pm MT | `rebalance-review.md` | Weekly performance, all gate checks, rebalance decisions |
+| 1st of month 10am MT | `monthly-retro.md` | Full strategy review, benchmarks, state of portfolio |
+| Sunday 8pm MT | `memory-distill.md` | Distill daily logs into MEMORY.md |
 
-The orchestrator will ask you about the agent's role, tools, heartbeat schedule, and any customizations before presenting a plan. Once you approve, it provisions the sandbox end-to-end and reports back with:
+## Data Sources
 
-```
-make NAME=blog-writer shell    # enter the sandbox
-claude                         # start working
-```
+- **yfinance** -- real-time and historical prices for all tickers
+- **WebSearch** -- market sentiment, macro indicators, 13F filing updates (quarterly)
+- **portfolio/state.json** -- current holdings and transaction history
+- **portfolio/ledger.json** -- strategy version history with forward-fill metrics
+- **portfolio/scorecard.md** -- rolling performance report card
 
-When you're done, clean up:
-
-```bash
-make NAME=blog-writer clean    # full teardown (container + image + worktree)
-make list                      # see what's still running
-```
-
----
-
-## 🎯 Why Open Harness?
-
-AI coding agents are powerful — but they run with broad system permissions, execute arbitrary code, and need a full development toolchain. Open Harness solves the tension between giving agents the freedom they need and keeping your host machine safe.
-
-### Core Intentions
-
-#### 1. **Isolation & Safety**
-Agents run `--dangerously-skip-permissions` by default — inside a disposable Docker container. They can `rm -rf`, install packages, and spawn processes without any risk to your host machine. The workspace directory is the only thing bind-mounted; everything else is ephemeral.
-
-#### 2. **Zero-to-Agent in Minutes**
-One provisioning script (`install/setup.sh`) installs Node.js, Bun, uv, Docker CLI, GitHub CLI, ripgrep, tmux, and whichever agents you choose — interactively or fully unattended with `--non-interactive`. No more "install 15 things" friction.
-
-#### 3. **Agent-Agnostic**
-Not a wrapper for one tool. The same sandbox runs Claude Code, Codex, and Pi Agent side by side, sharing workspace files and context. `AGENTS.md` is symlinked to `CLAUDE.md` so every agent reads the same instructions.
-
-#### 4. **Persistent Identity**
-`SOUL.md`, `MEMORY.md`, and daily logs (`memory/YYYY-MM-DD.md`) give agents continuity across sessions — not ephemeral chat windows, but persistent collaborators that remember decisions, preferences, and lessons learned.
-
-#### 5. **Autonomous Background Work**
-The heartbeat system (`install/heartbeat.sh` + `HEARTBEAT.md`) lets agents wake on a timer, perform tasks from a user-authored checklist, and go back to sleep — turning reactive tools into proactive workers that can monitor, maintain, and report without human presence.
-
-#### 6. **Multi-Sandbox Parallelism**
-Named sandboxes (`NAME=research`, `NAME=frontend`) run simultaneously, each with its own container, workspace, and agent sessions — enabling parallel workstreams or agent-per-project setups.
-
----
-
-### Key Benefits
-
-| Benefit | Details |
-|---------|---------|
-| 🔒 **Host protection** | Agents run in a disposable Debian container; only the workspace directory is bind-mounted |
-| 🔄 **Reproducibility** | `docker/Dockerfile` + setup script = identical environment every time, on any machine |
-| 🐳 **Docker-in-Docker** | `DOCKER=true` mounts the host socket so agents can build and manage containers from inside |
-| 🚀 **CI/CD ready** | GitHub Actions builds and pushes to `ghcr.io/ryaneggz/open-harness` on tagged releases |
-| 🧠 **Agent memory** | SOUL / MEMORY / daily-log system gives agents durable state across restarts and sessions |
-| ⏰ **Unattended operation** | Cron-scheduled heartbeats with multiple files/intervals, active-hours gating, cost-saving empty-file detection, and auto-rotating logs |
-| ⚙️ **Flexible provisioning** | Interactive mode prompts for SSH keys, Git identity, and per-agent installs; non-interactive mode uses sane defaults |
-| 🔧 **Entrypoint correctness** | `entrypoint.sh` dynamically matches the container's `docker` GID to the host socket's GID, avoiding "permission denied on /var/run/docker.sock" |
-| 🧩 **Per-project extensibility** | `.pi/extensions/`, `.claude/`, and `.codex/` directories live in the workspace — agents are customized per-project |
-| 📦 **Shareable** | Published as a container image — teams `docker pull` a pre-provisioned sandbox instead of each developer running setup |
-
----
-
-## 🚀 More Ways to Run
-
-**Step-by-step** (if you want control over each stage):
+## Getting Started
 
 ```bash
-make NAME=my-sandbox build                      # build the image
-make NAME=my-sandbox run                        # start the container
-make NAME=my-sandbox shell                      # open a shell as sandbox user
-sudo bash ~/install/setup.sh                    # provision tools (interactive)
-cd ~/workspace && claude                        # launch an agent
+# From the host (project root)
+make NAME=portfolio-mgr shell    # enter the sandbox
+claude                           # start the agent
+
+# Management
+make NAME=portfolio-mgr heartbeat-status   # check schedules
+make NAME=portfolio-mgr stop               # stop
+make NAME=portfolio-mgr clean              # full teardown
 ```
 
-**Standalone** (no Docker, direct on any Ubuntu/Debian machine):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/install/setup.sh -o setup.sh
-sudo bash setup.sh --non-interactive
-```
-
-**Docker-in-Docker** (agents can build and manage containers):
-
-```bash
-make NAME=my-sandbox DOCKER=true quickstart     # sandbox with Docker access
-```
-
-**Multiple sandboxes** (parallel workstreams):
-
-```bash
-make NAME=research quickstart
-make NAME=frontend DOCKER=true quickstart       # this one gets Docker
-make list                                       # see all running sandboxes
-```
-
-`make rebuild` does a full no-cache build and restart. `NAME` is required for all targets.
-
----
-
-## 📁 Structure
+## Files
 
 ```
-├── docker/
-│   ├── Dockerfile           # base image: Debian Bookworm slim + sandbox user
-│   ├── docker-compose.yml   # base compose: mounts workspace/
-│   └── docker-compose.docker.yml # Docker override: mounts socket + host networking
-├── Makefile                 # build, run, shell, stop, rebuild, clean, push, list
-├── install/
-│   ├── setup.sh             # provisioning script (runs as root)
-│   ├── heartbeat.sh         # cron-based heartbeat runner (sync/run/stop/status)
-│   └── entrypoint.sh        # container entrypoint (Docker GID matching + cron start)
-└── workspace/
-    ├── AGENTS.md            # default instructions for all coding agents
-    ├── CLAUDE.md            # symlink → AGENTS.md
-    ├── heartbeats.conf      # heartbeat schedule config (cron expressions)
-    ├── heartbeats/          # heartbeat task .md files (default.md, etc.)
-    ├── SOUL.md              # agent persona, tone, and boundaries
-    ├── MEMORY.md            # curated long-term memory
-    ├── memory/              # daily append-only logs (YYYY-MM-DD.md)
-    ├── .claude/             # Claude Code config directory
-    └── .codex/              # Codex config directory
+workspace/
+  portfolio/
+    state.json              # Current holdings + transactions
+    ledger.json             # Strategy version history
+    scorecard.md            # Rolling performance report
+  heartbeats/
+    market-check.md         # Daily market check instructions
+    rebalance-review.md     # Weekly rebalance review
+    monthly-retro.md        # Monthly retrospective
+    memory-distill.md       # Weekly memory distillation
+  .claude/skills/
+    risk-metrics/           # Sharpe, Sortino, drawdown, beta, vol
+    allocation-check/       # Position limits, diversification floor
+    sentiment-score/        # WebSearch macro sentiment scoring
+    strategy-review/        # Performance ledger + benchmarks
+  SOUL.md                   # Agent persona
+  MEMORY.md                 # Long-term memory (13F macro read, strategy)
+  AGENTS.md                 # Sandbox environment docs
 ```
-
----
-
-## ⚙️ How It Works
-
-1. **`docker/Dockerfile`** creates a minimal Debian image with a `sandbox` user (passwordless sudo) and bakes in:
-   - `install/` copied to `/home/sandbox/install/`
-   - `workspace/` copied to `/home/sandbox/workspace/`
-   - Agent aliases in `.bashrc` (`claude`, `codex`, `pi`)
-   - Docker group membership for the sandbox user
-   - Default shell drops into `/home/sandbox/workspace`
-
-2. **`docker/docker-compose.yml`** bind-mounts `./workspace`. When `DOCKER=true`, the override file (`docker/docker-compose.docker.yml`) additionally mounts the Docker socket and configures `host.docker.internal`.
-
-3. **`install/setup.sh`** provisions all tools system-wide (as root):
-   - Node.js 22.x, npm, tmux, nano, ripgrep, jq (always)
-   - Docker CLI + Compose plugin (always)
-   - GitHub CLI (always)
-   - Bun, uv (always)
-   - Claude Code CLI (default yes)
-   - OpenAI Codex, Pi Agent, AgentMail CLI (opt-in)
-   - agent-browser + Chromium (default yes)
-
-4. **`workspace/AGENTS.md`** provides default context to all coding agents. `CLAUDE.md` is a symlink to it — editing either updates both.
-
----
-
-## 🛠️ Makefile Targets
-
-| Target | Description |
-|--------|-------------|
-| `make quickstart` | Build, provision, and prepare sandbox (one command) |
-| `make build` | Build the Docker image |
-| `make rebuild` | Full no-cache rebuild + restart |
-| `make run` | Start the container (detached) |
-| `make shell` | Open a bash shell as `sandbox` user |
-| `make stop` | Stop the container |
-| `make clean` | Stop and remove the local image |
-| `make push` | Push image to ghcr.io/ryaneggz |
-| `make list` | List all running sandboxes |
-| `make all` | Build + push |
-| `make heartbeat` | Sync heartbeat cron schedules from `heartbeats.conf` |
-| `make heartbeat-stop` | Remove all heartbeat cron schedules |
-| `make heartbeat-status` | Show heartbeat schedules and recent logs |
-| `make heartbeat-migrate` | Convert legacy `HEARTBEAT_INTERVAL` to `heartbeats.conf` |
-
-`NAME` is required for all targets. Pass `DOCKER=true` to enable Docker socket access.
-
----
-
-## 🔧 Configuration
-
-The setup script supports interactive and non-interactive modes:
-
-```bash
-# Interactive (prompts for each option)
-sudo bash ~/install/setup.sh
-
-# Non-interactive (installs everything with defaults)
-sudo bash ~/install/setup.sh --non-interactive
-```
-
-Interactive mode prompts for: SSH public key, Git identity, GitHub token, Claude Code, Codex, Pi Agent, AgentMail (with API key), agent-browser.
-
----
-
-## 🧠 Heartbeat, Soul & Memory
-
-Three workspace files give agents persistent identity and periodic task execution:
-
-| File | Purpose | Authored by |
-|------|---------|-------------|
-| `SOUL.md` | Agent persona, tone, boundaries | User (seeded with template) |
-| `MEMORY.md` | Curated long-term memory | Agent (distilled from daily logs) |
-| `heartbeats.conf` | Heartbeat schedule config (cron → file mapping) | User |
-| `heartbeats/*.md` | Heartbeat task files (`default.md`, etc.) | User |
-| `memory/YYYY-MM-DD.md` | Daily append-only logs | Agent |
-
-### 📝 How Memory Works
-
-Agents are instructed to:
-1. **Read `MEMORY.md` at session start** for accumulated context
-2. **Append to `memory/YYYY-MM-DD.md`** during work (notable events, decisions, learnings)
-3. **Distill daily logs into `MEMORY.md`** periodically (during heartbeats or when asked)
-4. **Write to `MEMORY.md` immediately** when the user says "remember this"
-
-`SOUL.md` defines the agent's persona and boundaries. The agent may evolve it over time but must tell the user when it does.
-
-### 💓 Heartbeat
-
-Heartbeats are cron-scheduled tasks. Each heartbeat is a `.md` file with instructions for the agent, mapped to a cron schedule in `heartbeats.conf`.
-
-```bash
-make NAME=my-sandbox heartbeat                              # sync schedules from heartbeats.conf
-make NAME=my-sandbox heartbeat-status                       # show schedules + recent logs
-make NAME=my-sandbox heartbeat-stop                         # remove all schedules
-make NAME=my-sandbox heartbeat-migrate                      # convert legacy HEARTBEAT_INTERVAL to conf
-```
-
-**Schedule config** (`workspace/heartbeats.conf`):
-
-```
-# Format: <cron> | <file> | [agent] | [active_start-active_end]
-*/30 * * * * | heartbeats/default.md
-*/15 * * * * | heartbeats/check-deployments.md | claude | 9-18
-0 */4 * * *  | heartbeats/memory-distill.md
-0 20 * * *   | heartbeats/daily-summary.md
-```
-
-Schedules auto-sync on container startup. Edit `heartbeats.conf`, then run `make heartbeat` to apply changes.
-
-**Global defaults** (env vars, set at `make run` or in `docker/docker-compose.yml`):
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `HEARTBEAT_ACTIVE_START` | _(unset)_ | Default active hour start (0-23) |
-| `HEARTBEAT_ACTIVE_END` | _(unset)_ | Default active hour end (0-23) |
-| `HEARTBEAT_AGENT` | `claude` | Default agent CLI to invoke |
-
-Per-entry overrides for agent and active hours can be set in `heartbeats.conf`.
-
-If a heartbeat file contains only headers or comments, that execution is skipped (saves API costs). If the agent has nothing to report, it replies `HEARTBEAT_OK` and the response is suppressed.
-
----
-
-## 💻 Usage Examples
-
-Once inside the sandbox (`make shell`), use any installed coding agent:
-
-```bash
-# Claude Code
-claude -p "Create a Python CLI app with click that fetches weather data"
-
-# OpenAI Codex
-codex "Write a bash script that finds all files larger than 10MB"
-
-# Pi Agent
-pi -p "Refactor main.py to use async/await"
-
-# Claude Code loop tasks
-/loop 2m append the current system time to output.txt
-```
-
----
-
-## 📦 Releases
-
-Tag format: `oh-v<version>` (e.g. `oh-v1.0.0`)
-
-```bash
-git tag oh-v1.0.0
-git push origin oh-v1.0.0
-```
-
-This triggers the CI workflow which builds and pushes:
-- `ghcr.io/ryaneggz/open-harness:v1.0.0`
-- `ghcr.io/ryaneggz/open-harness:latest`
