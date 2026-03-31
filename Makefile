@@ -166,6 +166,7 @@ heartbeat-migrate:
 mom-start:
 	@$(assert-name)
 	@docker exec --user sandbox $(NAME) bash -c '\
+		[ -f ~/config/.env ] && set -a && . ~/config/.env && set +a; \
 		if pgrep -f "mom --sandbox" >/dev/null 2>&1; then \
 			echo "Mom is already running"; \
 		else \

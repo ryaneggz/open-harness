@@ -31,7 +31,7 @@ If `$ARGUMENTS` is empty or NAME is missing, enter interactive mode. Ask the use
 3. **What is this agent's role/purpose?** (shapes the GitHub issue description)
 4. **Docker-in-Docker access?** (default: no)
 5. **Enable heartbeat?** (default: no)
-6. **Slack access via Mom?** (default: no — requires `MOM_SLACK_APP_TOKEN` and `MOM_SLACK_BOT_TOKEN` env vars to be set before `make run`)
+6. **Slack access via Mom?** (default: no — tokens go in `config/.env`, use `/setup:slack` to configure after provisioning)
 7. **Base branch?** (default: `main` — use `main` unless explicitly told otherwise; `development` has a different project structure)
 
 ## 2. Create GitHub Issue

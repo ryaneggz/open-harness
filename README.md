@@ -134,9 +134,12 @@ make list                                       # see all running sandboxes
 ## 📁 Structure
 
 ```
+├── config/
+│   ├── .env                 # sandbox env vars (tokens, heartbeat config) — gitignored
+│   └── .example.env         # template showing available variables
 ├── docker/
 │   ├── Dockerfile           # base image: Debian Bookworm slim + sandbox user
-│   ├── docker-compose.yml   # base compose: mounts workspace/
+│   ├── docker-compose.yml   # base compose: mounts workspace/ + config/
 │   └── docker-compose.docker.yml # Docker override: mounts socket + host networking
 ├── Makefile                 # build, run, shell, stop, rebuild, clean, push, list
 ├── install/
@@ -288,27 +291,43 @@ If a heartbeat file contains only headers or comments, that execution is skipped
 
 ### Slack App Setup
 
-1. Create a Slack app at [api.slack.com/apps](https://api.slack.com/apps)
-2. Enable **Socket Mode** and generate an app-level token (`xapp-...`)
-3. Add bot scopes: `app_mentions:read`, `channels:history`, `chat:write`, `files:read`, `files:write`, `im:history`, `im:read`, `im:write`, `users:read`
-4. Subscribe to bot events: `app_mention`, `message.channels`, `message.groups`, `message.im`
-5. Install to your workspace and copy the Bot User OAuth Token (`xoxb-...`)
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From a manifest**
+2. Select your workspace, paste the contents of [`slack-manifest.json`](.claude/skills/setup/slack/slack-manifest.json), and create the app
+3. **Settings → Socket Mode** → generate an App-Level Token with `connections:write` scope → copy the token (`xapp-...`)
+4. **Install App** → Install to workspace → copy the Bot User OAuth Token (`xoxb-...`)
+
+### AI Authentication
+
+Mom uses Claude (via pi-coding-agent) to respond. Choose one:
+
+**OAuth (recommended):**
+```bash
+make NAME=my-sandbox shell
+pi --login                                    # authenticate via browser
+cp ~/.pi/agent/auth.json ~/.pi/mom/auth.json  # link auth to Mom
+exit
+```
+
+**API Key:** Add `ANTHROPIC_API_KEY=sk-ant-...` to `config/.env`.
 
 ### Usage
 
 ```bash
-# Set tokens and start sandbox — mom auto-starts if tokens are set
-export MOM_SLACK_APP_TOKEN=xapp-...
-export MOM_SLACK_BOT_TOKEN=xoxb-...
-make NAME=my-sandbox run
+# Write Slack tokens to config/.env (persists across restarts, no re-export needed)
+cat > .worktrees/agent/my-sandbox/config/.env << 'EOF'
+MOM_SLACK_APP_TOKEN=xapp-...
+MOM_SLACK_BOT_TOKEN=xoxb-...
+EOF
 
-# Manual control
-make NAME=my-sandbox mom-start              # start mom
+# Start mom (sources config/.env automatically — no container restart needed)
+make NAME=my-sandbox mom-start
+
+# Management
 make NAME=my-sandbox mom-stop               # stop mom
 make NAME=my-sandbox mom-status             # check status + recent logs
 ```
 
-Mom's data (conversations, memory, skills) persists in `workspace/mom-data/`.
+Mom's data (conversations, memory, skills) persists in `workspace/mom-data/`. Tokens persist in `config/.env`.
 
 ---
 

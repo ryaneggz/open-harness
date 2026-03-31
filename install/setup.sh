@@ -200,7 +200,11 @@ fi
 if [[ "$INSTALL_MOM" == true ]]; then
   banner "Installing Mom (Slack Bot)"
   npm install -g @mariozechner/pi-mom
-  # Store Slack tokens in sandbox user's .bashrc if provided
+  # Store Slack tokens in config/.env (bind-mounted, persists across recreates)
+  ENV_FILE="/home/${SANDBOX_USER}/config/.env"
+  mkdir -p "$(dirname "$ENV_FILE")"
+  touch "$ENV_FILE"
+  chown "$SANDBOX_USER:$SANDBOX_USER" "$ENV_FILE"
   for var in MOM_SLACK_APP_TOKEN MOM_SLACK_BOT_TOKEN; do
     val=""
     if [[ "$var" == "MOM_SLACK_APP_TOKEN" && -n "$MOM_SLACK_APP_TOKEN_VAL" ]]; then
@@ -211,11 +215,9 @@ if [[ "$INSTALL_MOM" == true ]]; then
       val="${!var}"
     fi
     if [[ -n "$val" ]]; then
-      su - "$SANDBOX_USER" -c "
-        grep -q '${var}' \$HOME/.bashrc 2>/dev/null \
-          && sed -i 's|^export ${var}=.*|export ${var}=${val}|' \$HOME/.bashrc \
-          || echo 'export ${var}=${val}' >> \$HOME/.bashrc
-      "
+      grep -q "^${var}=" "$ENV_FILE" 2>/dev/null \
+        && sed -i "s|^${var}=.*|${var}=${val}|" "$ENV_FILE" \
+        || echo "${var}=${val}" >> "$ENV_FILE"
     fi
   done
   ok "Mom installed"
@@ -275,6 +277,11 @@ if [[ -n "$GH_TOKEN" ]]; then
 fi
 
 # ─── 16. Cleanup ─────────────────────────────────────────────────
+# ─── Source config/.env from .bashrc ────────────────────────────────
+if ! grep -q 'config/.env' "/home/${SANDBOX_USER}/.bashrc" 2>/dev/null; then
+  echo '[ -f ~/config/.env ] && set -a && . ~/config/.env && set +a' >> "/home/${SANDBOX_USER}/.bashrc"
+fi
+
 banner "Cleaning up APT cache"
 rm -rf /var/lib/apt/lists/*
 ok "Done"

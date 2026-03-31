@@ -93,6 +93,7 @@ Remove an agent sandbox. Preserve work first if needed.
 ```
 .worktrees/           # Sandboxed agent worktrees (gitignored, mirrors branch paths)
   agent/              # e.g., .worktrees/agent/zoho-crm → branch agent/zoho-crm
+config/               # Sandbox env config (.env for tokens, etc.) — bind-mounted
 docker/               # Dockerfile and compose files
 install/              # Provisioning scripts (setup.sh, heartbeat.sh, entrypoint.sh)
 workspace/            # Template for all agent workspaces
