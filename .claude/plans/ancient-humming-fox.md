@@ -1,8 +1,81 @@
-# Plan: Provision `portfolio-mgr` Agent Sandbox
+# Plan: Scaffold blog-writer + Blog Post / LinkedIn / X Promotion for Open Harness
 
 ## Context
 
-Provision a new agent sandbox that builds a mock $100K portfolio informed by **Bridgewater's latest 13F filing (Q4 2025)** and the All Weather framework. The agent uses yfinance for market data and Claude's WebSearch for sentiment analysis. The orchestrator provisions the sandbox; the agent inside does all the coding.
+Promote the Open Harness repo on LinkedIn using the portfolio-mgr agent branch as a concrete example. The blog-writer agent (running in Docker) will produce a blog post first, then derive LinkedIn and X posts from it. However, the blog-writer workspace was set up before the scaffolding improvements — it's missing the website repo clone, skills, README, and has uncommitted changes. This is a training run to identify and fill gaps.
+
+## Steps
+
+### Phase A: Scaffold blog-writer (orchestrator)
+
+#### A1. Clone ruska-ai/website into the container (CRITICAL)
+
+The blog-writer heartbeat assumes `~/workspace/website/` exists but it's not cloned.
+
+```bash
+docker exec --user sandbox blog-writer bash -c 'cd ~/workspace && git clone https://github.com/ruska-ai/website.git website'
+```
+
+#### A2. Create blog-writing skill
+
+Write `.worktrees/agent/blog-writer/workspace/.claude/skills/blog-writing/SKILL.md` — encapsulates blog workflow, frontmatter conventions, PR format, and social post derivation. Triggered when writing blog posts or social content.
+
+#### A3. Move post templates into workspace
+
+The existing LinkedIn and X templates are at `.claude/posts/` (outside workspace). Create `workspace/.claude/posts/` with:
+- `linkedin-template.md` — reference format for LinkedIn posts
+- `x-template.md` — reference format for X posts
+- `frontmatter-template.md` — blog post frontmatter reference
+
+#### A4. Rewrite README.md as standalone artifact
+
+Replace the generic Open Harness README at `.worktrees/agent/blog-writer/README.md` with a blog-writer-specific README (purpose, workflow, heartbeats, how to interact, fork notice).
+
+#### A5. Commit and push workspace to agent/blog-writer branch
+
+Stage all changes (SOUL.md, MEMORY.md, heartbeats.conf, heartbeat files, new skills, README) and commit.
+
+### Phase B: Send blog post task to blog-writer
+
+#### B1. Send task via docker exec
+
+```bash
+docker exec --user sandbox blog-writer bash -c 'cd /home/sandbox/workspace && claude -p "<prompt>"'
+```
+
+**Prompt contents:**
+- **Content pillar**: "Behind the Build"
+- **Topic**: How we use Open Harness to spin up autonomous AI agents — showcasing portfolio-mgr as a real example
+- **Key points**:
+  - Problem: AI agents need full system access but that's risky on your host
+  - Solution: Open Harness — isolated Docker sandboxes with persistent memory, heartbeats, multi-agent support
+  - Example: portfolio-mgr agent managing a mock $100K portfolio using Bridgewater's 13F data, yfinance, quality gate skills (Sharpe, Sortino, max drawdown), and autonomous heartbeats
+  - Link to branch: https://github.com/ryaneggz/open-harness/tree/agent/portfolio-mgr
+  - Link to repo: https://github.com/ryaneggz/open-harness
+  - Quickstart: `make NAME=portfolio-mgr BASE_BRANCH=main quickstart`
+  - Highlights: skills as quality gates, strategy performance ledger, heartbeat-driven autonomous operation
+- **Blog first**: Write the full blog post, then derive LinkedIn + X posts from it
+- **CTA**: Star the repo, fork it, try building your own agent
+- Follow all blog-writer conventions (frontmatter, PR format, ruska-ai/website, master branch)
+
+#### B2. Monitor and relay PR URL
+
+Blog-writer reports back with a PR URL → orchestrator relays to user.
+
+## Verification
+
+- Website repo cloned: `docker exec --user sandbox blog-writer bash -c 'ls ~/workspace/website/posts/'`
+- Skill exists: `ls .worktrees/agent/blog-writer/workspace/.claude/skills/blog-writing/SKILL.md`
+- Branch committed: `git -C .worktrees/agent/blog-writer log --oneline -3`
+- Blog post PR created in ruska-ai/website with LinkedIn + X posts in description
+
+## Critical Files
+
+- `.worktrees/agent/blog-writer/workspace/` — all scaffolding writes here (bind-mounted)
+- `.worktrees/agent/blog-writer/workspace/SOUL.md` — agent persona (already customized)
+- `.worktrees/agent/blog-writer/workspace/MEMORY.md` — seeded context (already customized)
+- `.worktrees/agent/blog-writer/workspace/heartbeats/blog-writer.md` — blog post workflow template
+- `.worktrees/agent/blog-writer/.claude/posts/linkedin.md` — existing LinkedIn template (move to workspace)
 
 ### Bridgewater Q4 2025 13F — Macro Read
 
