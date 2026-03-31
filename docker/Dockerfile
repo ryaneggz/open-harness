@@ -9,7 +9,8 @@ RUN useradd -m -s /bin/bash sandbox \
  && groupadd -f docker && usermod -aG docker sandbox \
  && echo "alias claude='claude --dangerously-skip-permissions'" >> /home/sandbox/.bashrc \
  && echo "alias codex='codex --full-auto'" >> /home/sandbox/.bashrc \
- && echo "alias pi='pi'" >> /home/sandbox/.bashrc
+ && echo "alias pi='pi'" >> /home/sandbox/.bashrc \
+ && echo "alias mom='mom --sandbox=host ~/workspace/mom-data'" >> /home/sandbox/.bashrc
 
 COPY install/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

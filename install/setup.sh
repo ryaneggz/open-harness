@@ -25,7 +25,10 @@ INSTALL_BROWSER=true
 INSTALL_CLAUDE_CODE=true
 INSTALL_CODEX=true
 INSTALL_PI_AGENT=true
+INSTALL_MOM=true
 INSTALL_AGENTMAIL=false
+MOM_SLACK_APP_TOKEN_VAL=""
+MOM_SLACK_BOT_TOKEN_VAL=""
 SSH_PUBKEY=""
 GH_TOKEN=""
 AGENTMAIL_KEY=""
@@ -56,6 +59,17 @@ if [[ "$NON_INTERACTIVE" == false ]]; then
   printf "\n  Install Pi Coding Agent? (https://shittycodingagent.ai)\n"
   read -rp "  Install Pi Agent? [Y/n]: " answer
   [[ "$answer" =~ ^[Nn]$ ]] && INSTALL_PI_AGENT=false
+
+  printf "\n  Install Mom Slack bot? (https://github.com/badlogic/pi-mono/tree/main/packages/mom)\n"
+  read -rp "  Install Mom? [y/N]: " answer
+  if [[ "$answer" =~ ^[Yy]$ ]]; then
+    INSTALL_MOM=true
+    printf "\n  Slack tokens for Mom (blank to skip, configure later)\n"
+    read -rsp "  MOM_SLACK_APP_TOKEN: " MOM_SLACK_APP_TOKEN_VAL; echo
+    read -rsp "  MOM_SLACK_BOT_TOKEN: " MOM_SLACK_BOT_TOKEN_VAL; echo
+  else
+    INSTALL_MOM=false
+  fi
 
   printf "\n  Install AgentMail CLI? (https://docs.agentmail.to/integrations/cli)\n"
   read -rp "  Install AgentMail? [y/N]: " answer
@@ -182,7 +196,35 @@ else
   ok "Skipped"
 fi
 
-# ─── 12. AgentMail CLI (optional) ─────────────────────────────────
+# ─── 12. Mom Slack Bot (optional) ─────────────────────────────────
+if [[ "$INSTALL_MOM" == true ]]; then
+  banner "Installing Mom (Slack Bot)"
+  npm install -g @mariozechner/pi-mom
+  # Store Slack tokens in sandbox user's .bashrc if provided
+  for var in MOM_SLACK_APP_TOKEN MOM_SLACK_BOT_TOKEN; do
+    val=""
+    if [[ "$var" == "MOM_SLACK_APP_TOKEN" && -n "$MOM_SLACK_APP_TOKEN_VAL" ]]; then
+      val="$MOM_SLACK_APP_TOKEN_VAL"
+    elif [[ "$var" == "MOM_SLACK_BOT_TOKEN" && -n "$MOM_SLACK_BOT_TOKEN_VAL" ]]; then
+      val="$MOM_SLACK_BOT_TOKEN_VAL"
+    elif [[ -n "${!var:-}" ]]; then
+      val="${!var}"
+    fi
+    if [[ -n "$val" ]]; then
+      su - "$SANDBOX_USER" -c "
+        grep -q '${var}' \$HOME/.bashrc 2>/dev/null \
+          && sed -i 's|^export ${var}=.*|export ${var}=${val}|' \$HOME/.bashrc \
+          || echo 'export ${var}=${val}' >> \$HOME/.bashrc
+      "
+    fi
+  done
+  ok "Mom installed"
+else
+  banner "Skipping Mom"
+  ok "Skipped"
+fi
+
+# ─── 13. AgentMail CLI (optional) ─────────────────────────────────
 if [[ "$INSTALL_AGENTMAIL" == true ]]; then
   banner "Installing AgentMail CLI"
   npm install -g agentmail-cli
@@ -264,6 +306,9 @@ fi
 if [[ "$INSTALL_PI_AGENT" == true ]]; then
   printf "  pi       : %s\n" "$(pi --version 2>/dev/null || echo 'installed')"
 fi
+if [[ "$INSTALL_MOM" == true ]]; then
+  printf "  mom      : %s\n" "$(mom --version 2>/dev/null || echo 'installed')"
+fi
 if [[ "$INSTALL_AGENTMAIL" == true ]]; then
   printf "  agentmail: %s\n" "$(agentmail --version 2>/dev/null || echo 'installed')"
 fi
@@ -281,5 +326,8 @@ if [[ "$INSTALL_CODEX" == true ]]; then
 fi
 if [[ "$INSTALL_PI_AGENT" == true ]]; then
   printf "  pi                        # Pi Coding Agent\n"
+fi
+if [[ "$INSTALL_MOM" == true ]]; then
+  printf "  mom                       # Mom Slack bot\n"
 fi
 printf "\n"

@@ -113,7 +113,7 @@ generate_env() {
     echo "export PATH='${PATH}'"
     echo "export USER='${USER:-sandbox}'"
     # Capture API keys and relevant env vars
-    env | grep -E '^(ANTHROPIC_|OPENAI_|HEARTBEAT_|GH_|GITHUB_|AGENTMAIL_|NODE_|NPM_|BUN_)' \
+    env | grep -E '^(ANTHROPIC_|OPENAI_|HEARTBEAT_|GH_|GITHUB_|AGENTMAIL_|MOM_|NODE_|NPM_|BUN_)' \
       | sed "s/'/'\\\\''/g" \
       | sed "s/^\\([^=]*\\)=\\(.*\\)$/export \\1='\\2'/" \
       || true

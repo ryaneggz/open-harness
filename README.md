@@ -162,7 +162,7 @@ make list                                       # see all running sandboxes
 1. **`docker/Dockerfile`** creates a minimal Debian image with a `sandbox` user (passwordless sudo) and bakes in:
    - `install/` copied to `/home/sandbox/install/`
    - `workspace/` copied to `/home/sandbox/workspace/`
-   - Agent aliases in `.bashrc` (`claude`, `codex`, `pi`)
+   - Agent aliases in `.bashrc` (`claude`, `codex`, `pi`, `mom`)
    - Docker group membership for the sandbox user
    - Default shell drops into `/home/sandbox/workspace`
 
@@ -174,7 +174,7 @@ make list                                       # see all running sandboxes
    - GitHub CLI (always)
    - Bun, uv (always)
    - Claude Code CLI (default yes)
-   - OpenAI Codex, Pi Agent, AgentMail CLI (opt-in)
+   - OpenAI Codex, Pi Agent, Mom Slack bot, AgentMail CLI (opt-in)
    - agent-browser + Chromium (default yes)
 
 4. **`workspace/AGENTS.md`** provides default context to all coding agents. `CLAUDE.md` is a symlink to it — editing either updates both.
@@ -199,6 +199,9 @@ make list                                       # see all running sandboxes
 | `make heartbeat-stop` | Remove all heartbeat cron schedules |
 | `make heartbeat-status` | Show heartbeat schedules and recent logs |
 | `make heartbeat-migrate` | Convert legacy `HEARTBEAT_INTERVAL` to `heartbeats.conf` |
+| `make mom-start` | Start Mom Slack bot in background |
+| `make mom-stop` | Stop Mom Slack bot |
+| `make mom-status` | Check Mom status and recent logs |
 
 `NAME` is required for all targets. Pass `DOCKER=true` to enable Docker socket access.
 
@@ -216,7 +219,7 @@ sudo bash ~/install/setup.sh
 sudo bash ~/install/setup.sh --non-interactive
 ```
 
-Interactive mode prompts for: SSH public key, Git identity, GitHub token, Claude Code, Codex, Pi Agent, AgentMail (with API key), agent-browser.
+Interactive mode prompts for: SSH public key, Git identity, GitHub token, Claude Code, Codex, Pi Agent, Mom (with Slack tokens), AgentMail (with API key), agent-browser.
 
 ---
 
@@ -276,6 +279,36 @@ Schedules auto-sync on container startup. Edit `heartbeats.conf`, then run `make
 Per-entry overrides for agent and active hours can be set in `heartbeats.conf`.
 
 If a heartbeat file contains only headers or comments, that execution is skipped (saves API costs). If the agent has nothing to report, it replies `HEARTBEAT_OK` and the response is suppressed.
+
+---
+
+## 💬 Slack Integration (Mom)
+
+[Mom](https://github.com/badlogic/pi-mono/tree/main/packages/mom) is an LLM-powered Slack bot that connects your sandbox to Slack. Mention `@mom` in a channel and she executes commands inside the sandbox container.
+
+### Slack App Setup
+
+1. Create a Slack app at [api.slack.com/apps](https://api.slack.com/apps)
+2. Enable **Socket Mode** and generate an app-level token (`xapp-...`)
+3. Add bot scopes: `app_mentions:read`, `channels:history`, `chat:write`, `files:read`, `files:write`, `im:history`, `im:read`, `im:write`, `users:read`
+4. Subscribe to bot events: `app_mention`, `message.channels`, `message.groups`, `message.im`
+5. Install to your workspace and copy the Bot User OAuth Token (`xoxb-...`)
+
+### Usage
+
+```bash
+# Set tokens and start sandbox — mom auto-starts if tokens are set
+export MOM_SLACK_APP_TOKEN=xapp-...
+export MOM_SLACK_BOT_TOKEN=xoxb-...
+make NAME=my-sandbox run
+
+# Manual control
+make NAME=my-sandbox mom-start              # start mom
+make NAME=my-sandbox mom-stop               # stop mom
+make NAME=my-sandbox mom-status             # check status + recent logs
+```
+
+Mom's data (conversations, memory, skills) persists in `workspace/mom-data/`.
 
 ---
 
