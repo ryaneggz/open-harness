@@ -22,4 +22,17 @@ if [ -f "/home/sandbox/workspace/heartbeats.conf" ]; then
   gosu sandbox /home/sandbox/install/heartbeat.sh sync 2>/dev/null || true
 fi
 
+# Source persistent env config if present
+[ -f /home/sandbox/config/.env ] && set -a && . /home/sandbox/config/.env && set +a
+
+# Auto-start Mom Slack bot if tokens are present
+if [[ -n "${MOM_SLACK_APP_TOKEN:-}" && -n "${MOM_SLACK_BOT_TOKEN:-}" ]]; then
+  MOM_DATA="/home/sandbox/workspace/mom-data"
+  mkdir -p "$MOM_DATA"
+  chown sandbox:sandbox "$MOM_DATA"
+  if command -v mom &>/dev/null; then
+    gosu sandbox bash -c "nohup mom --sandbox=host $MOM_DATA >> $MOM_DATA/mom.log 2>&1 &"
+  fi
+fi
+
 exec gosu sandbox "$@"

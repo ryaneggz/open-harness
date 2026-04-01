@@ -31,7 +31,8 @@ If `$ARGUMENTS` is empty or NAME is missing, enter interactive mode. Ask the use
 3. **What is this agent's role/purpose?** (shapes the GitHub issue description)
 4. **Docker-in-Docker access?** (default: no)
 5. **Enable heartbeat?** (default: no)
-6. **Base branch?** (default: `main` — use `main` unless explicitly told otherwise; `development` has a different project structure)
+6. **Slack access via Mom?** (default: no — tokens go in `config/.env`, use `/setup:slack` to configure after provisioning)
+7. **Base branch?** (default: `main` — use `main` unless explicitly told otherwise; `development` has a different project structure)
 
 ## 2. Create GitHub Issue
 
@@ -252,4 +253,9 @@ Sandbox '<NAME>' is ready!
     make NAME=<NAME> stop     # stop the sandbox
     make NAME=<NAME> run      # restart the sandbox
     make NAME=<NAME> clean    # full teardown (container + image + worktree)
+
+  Slack (if Mom enabled):
+    make NAME=<NAME> mom-start    # start Mom Slack bot
+    make NAME=<NAME> mom-stop     # stop Mom Slack bot
+    make NAME=<NAME> mom-status   # check Mom status + logs
 ```

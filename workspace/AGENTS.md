@@ -34,6 +34,7 @@ All tools are installed system-wide in `/usr/local/bin` or via apt:
 | Claude Code | `claude` | https://docs.anthropic.com/en/docs/claude-code |
 | OpenAI Codex | `codex` | https://github.com/openai/codex |
 | Pi Agent | `pi` | https://shittycodingagent.ai |
+| Mom (Slack) | `mom` | https://github.com/badlogic/pi-mono/tree/main/packages/mom |
 | AgentMail | `agentmail` | https://docs.agentmail.to/integrations/cli |
 
 ## Guidelines
@@ -76,3 +77,19 @@ Heartbeats are periodic tasks executed on cron schedules. Each heartbeat is a `.
 - Schedules auto-sync on container startup from `heartbeats.conf`
 - If a heartbeat file is empty (only headers/comments), that execution is skipped to save API costs
 - If nothing needs attention, reply `HEARTBEAT_OK`
+
+## Mom (Slack Bot)
+
+Mom is a Slack bot that lets you interact with this sandbox from Slack. When configured:
+
+- **Data directory**: `~/workspace/mom-data/` (persisted via bind mount)
+- **Auto-start**: Mom starts automatically on container boot if `MOM_SLACK_APP_TOKEN` and `MOM_SLACK_BOT_TOKEN` are set
+- **Manual control**: From the host, use `make mom-start`, `make mom-stop`, `make mom-status`
+- **Mode**: Runs in `--sandbox=host` mode -- commands execute directly in this container
+- **Logs**: `~/workspace/mom-data/mom.log`
+
+To start manually inside the sandbox:
+
+```bash
+mom --sandbox=host ~/workspace/mom-data
+```

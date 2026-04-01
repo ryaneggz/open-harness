@@ -26,7 +26,7 @@ endif
 # Macro to assert NAME is provided before running a target
 assert-name = $(if $(NAME),,$(error NAME is required. Usage: make NAME=my-sandbox $@))
 
-.PHONY: help quickstart worktree build rebuild run shell stop push all clean list heartbeat heartbeat-stop heartbeat-status heartbeat-migrate
+.PHONY: help quickstart worktree build rebuild run shell stop push all clean list heartbeat heartbeat-stop heartbeat-status heartbeat-migrate mom-start mom-stop mom-status
 
 .DEFAULT_GOAL := help
 
@@ -53,6 +53,9 @@ help:
 	@echo "    heartbeat-stop    Remove all heartbeat cron schedules"
 	@echo "    heartbeat-status  Show heartbeat schedules and recent logs"
 	@echo "    heartbeat-migrate Convert legacy HEARTBEAT_INTERVAL to heartbeats.conf"
+	@echo "    mom-start         Start Mom Slack bot in background"
+	@echo "    mom-stop          Stop Mom Slack bot"
+	@echo "    mom-status        Check Mom status and recent logs"
 	@echo ""
 	@echo "  Options:"
 	@echo "    NAME=<name>       (required) Sandbox name"
@@ -60,6 +63,10 @@ help:
 	@echo "    BASE_BRANCH=<b>   Base branch for worktree (default: development)"
 	@echo "    DOCKER=true       Use Docker-in-Docker compose override"
 	@echo "    TAG=<tag>         Image tag (default: latest)"
+	@echo ""
+	@echo "  Environment variables (set before 'make run'):"
+	@echo "    MOM_SLACK_APP_TOKEN   Slack app token for Mom (xapp-...)"
+	@echo "    MOM_SLACK_BOT_TOKEN   Slack bot token for Mom (xoxb-...)"
 	@echo ""
 
 worktree:
@@ -154,4 +161,39 @@ heartbeat-status:
 heartbeat-migrate:
 	@$(assert-name)
 	@docker exec --user sandbox $(NAME) bash -c '/home/sandbox/install/heartbeat.sh migrate' 2>/dev/null \
+		|| (echo "Error: container '$(NAME)' is not running." >&2; exit 1)
+
+mom-start:
+	@$(assert-name)
+	@docker exec --user sandbox $(NAME) bash -c '\
+		[ -f ~/config/.env ] && set -a && . ~/config/.env && set +a; \
+		if pgrep -f "mom --sandbox" >/dev/null 2>&1; then \
+			echo "Mom is already running"; \
+		else \
+			mkdir -p ~/workspace/mom-data && \
+			nohup mom --sandbox=host ~/workspace/mom-data >> ~/workspace/mom-data/mom.log 2>&1 & \
+			echo "Mom started (PID: $$!)"; \
+		fi' 2>/dev/null \
+		|| (echo "Error: container '$(NAME)' is not running. Start it with: make NAME=$(NAME) run" >&2; exit 1)
+
+mom-stop:
+	@$(assert-name)
+	@docker exec --user sandbox $(NAME) bash -c '\
+		pkill -f "mom --sandbox" 2>/dev/null && echo "Mom stopped" \
+		|| echo "Mom is not running"' 2>/dev/null \
+		|| (echo "Error: container '$(NAME)' is not running." >&2; exit 1)
+
+mom-status:
+	@$(assert-name)
+	@docker exec --user sandbox $(NAME) bash -c '\
+		if pgrep -f "mom --sandbox" >/dev/null 2>&1; then \
+			echo "Mom: running (PID: $$(pgrep -f "mom --sandbox"))"; \
+			echo ""; \
+			if [ -f ~/workspace/mom-data/mom.log ]; then \
+				echo "Recent log:"; \
+				tail -n 10 ~/workspace/mom-data/mom.log; \
+			fi; \
+		else \
+			echo "Mom: not running"; \
+		fi' 2>/dev/null \
 		|| (echo "Error: container '$(NAME)' is not running." >&2; exit 1)
