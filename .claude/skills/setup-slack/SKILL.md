@@ -1,5 +1,5 @@
 ---
-name: setup:slack
+name: setup-slack
 description: Configure Mom Slack bot on an existing sandbox. Sets up Slack tokens, AI auth (OAuth or API key), and verifies Mom is running.
 argument-hint: "[sandbox-name]"
 ---
