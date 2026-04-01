@@ -1,3 +1,4 @@
 **/.env*
 .worktrees/*
 !.worktrees/.gitkeep
+**/mom-data
