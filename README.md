@@ -89,7 +89,7 @@ Named sandboxes (`NAME=research`, `NAME=frontend`) run simultaneously, each with
 | ⏰ **Unattended operation** | Cron-scheduled heartbeats with multiple files/intervals, active-hours gating, cost-saving empty-file detection, and auto-rotating logs |
 | ⚙️ **Flexible provisioning** | Interactive mode prompts for SSH keys, Git identity, and per-agent installs; non-interactive mode uses sane defaults |
 | 🔧 **Entrypoint correctness** | `entrypoint.sh` dynamically matches the container's `docker` GID to the host socket's GID, avoiding "permission denied on /var/run/docker.sock" |
-| 🧩 **Per-project extensibility** | `.pi/extensions/`, `.claude/`, and `.codex/` directories live in the workspace — agents are customized per-project |
+| 🧩 **Per-project extensibility** | `.openharness/extensions/`, `.claude/`, and `.codex/` directories live in the workspace — agents are customized per-project |
 | 📦 **Shareable** | Published as a container image — teams `docker pull` a pre-provisioned sandbox instead of each developer running setup |
 
 ---

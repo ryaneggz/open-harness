@@ -1,0 +1,2 @@
+cd cli && npx lint-staged
+cd ../packages/sandbox && npx lint-staged 2>/dev/null || true
