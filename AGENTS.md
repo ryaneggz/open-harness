@@ -1,109 +1,105 @@
-# Open Harness — Orchestrator
+# dc-designer — Datacenter Design Engineer
 
-You are the harness orchestrator. You run at the project root. You do NOT write application code. Your sole purpose is to manage sandboxed agent workspaces in `.worktrees/`.
+You are the setup and management agent for the `dc-designer` sandbox. You run at the root of the `agent/dc-designer` branch on the host machine. Your job is to provision and maintain the sandboxed environment where the datacenter design agent operates.
 
-## Permissions
+## Project
 
-Your primary operations are git (`git add`, `git commit`, `git push`) and sandbox lifecycle management. You may run `make`, `docker`, and `gh` commands for provisioning, validating, and tearing down sandboxes. All application coding, building, and testing happens INSIDE sandboxes, never at root.
+This branch provisions an agent sandbox for [shpeedle/ai-datacenter-designer](https://github.com/shpeedle/ai-datacenter-designer) — a 50MW→200MW hyperscale AI datacenter facility design with:
+
+- **14 plan documents** covering power, cooling, network, compute, storage, layout, redundancy, security, sustainability, cost, 3D visualization, and phased rollout
+- **model_datacenter.py** — FreeCAD parametric 3D model (~700 lines)
+- **viewer.html** — interactive web-based plan viewer (served on port 8200)
+
+## Setup
+
+Run `/setup` to provision the sandbox end-to-end. This builds the Docker image, starts the container, installs tools, clones the target repo, syncs heartbeats, and starts the viewer.
+
+If you need to do it manually, the steps are:
+
+```bash
+# Build and start
+docker build -f docker/Dockerfile -t dc-designer:latest .
+NAME=dc-designer docker compose -f docker/docker-compose.yml -p dc-designer up -d
+
+# Install tools
+docker exec --user root dc-designer bash -c 'chmod +x /home/sandbox/install/*.sh && /home/sandbox/install/setup.sh --non-interactive'
+
+# Clone target project (into bind-mounted workspace)
+git clone https://github.com/shpeedle/ai-datacenter-designer.git workspace/ai-datacenter-designer
+
+# Sync heartbeats
+docker exec --user sandbox dc-designer bash -c '/home/sandbox/install/heartbeat.sh sync'
+
+# Start viewer
+docker exec --user sandbox dc-designer bash --login -c 'cd ~/workspace/ai-datacenter-designer && nohup python3 -m http.server 8200 > /tmp/http-server.log 2>&1 &'
+```
+
+## Branch Structure
+
+```
+agent/dc-designer/
+├── docker/
+│   ├── Dockerfile                    # Debian Bookworm sandbox image
+│   ├── docker-compose.yml            # Container config (port 8200 exposed)
+│   └── docker-compose.docker.yml     # Docker-in-Docker override
+├── install/
+│   ├── setup.sh                      # Tool installation (Node, gh, Docker CLI, uv, Claude, etc.)
+│   ├── entrypoint.sh                 # Container startup (cron, GID fix)
+│   └── heartbeat.sh                  # Cron-based task scheduler
+├── workspace/                        # Bind-mounted into container at /home/sandbox/workspace/
+│   ├── CLAUDE.md → AGENTS.md         # In-sandbox agent instructions
+│   ├── SOUL.md                       # DC engineer persona
+│   ├── MEMORY.md                     # Seeded design parameters and constraints
+│   ├── heartbeats.conf               # Wed design review + Sun memory distill
+│   ├── heartbeats/
+│   │   ├── design-review.md          # Weekly consistency + model review
+│   │   └── memory-distill.md         # Weekly log distillation
+│   ├── .claude/skills/
+│   │   ├── design-consistency/       # 7-gate cross-document validation
+│   │   └── model-review/             # Code quality + plan alignment audit
+│   └── ai-datacenter-designer/       # Cloned target project (gitignored)
+├── .claude/skills/
+│   ├── provision/                    # Generic sandbox provisioning
+│   └── setup/                        # This agent's setup skill
+├── CLAUDE.md → AGENTS.md             # This file (host-side instructions)
+└── README.md                         # User-facing setup guide
+```
+
+## Container Access
+
+```bash
+# Enter the sandbox
+docker exec -it --user sandbox dc-designer bash --login
+
+# Start the agent inside
+cd workspace && claude
+
+# Viewer
+open http://localhost:8200/viewer.html
+```
 
 ## Lifecycle
 
-### Setup
+```bash
+# Stop (preserves workspace)
+docker compose -f docker/docker-compose.yml -p dc-designer down
 
-Provision a new agent sandbox. The human runs all host commands.
+# Restart
+NAME=dc-designer docker compose -f docker/docker-compose.yml -p dc-designer up -d
+docker exec --user root dc-designer bash -c 'chmod +x /home/sandbox/install/*.sh && /home/sandbox/install/setup.sh --non-interactive'
 
-1. Create a GitHub issue using the `[AGENT]` template to define identity and role
-2. Provision the sandbox:
-   ```bash
-   make NAME=<agent-name> BASE_BRANCH=main quickstart
-   ```
-   Creates: git worktree at `.worktrees/agent/<agent-name>` on branch `agent/<agent-name>` (from `main`), Docker image, running container, provisioned environment. Worktree paths mirror branch paths (e.g., branch `agent/foo` → `.worktrees/agent/foo`).
+# Full teardown
+docker compose -f docker/docker-compose.yml -p dc-designer down --rmi local
+```
 
-   > **Note**: The root Makefile expects `main` branch layout (`docker/`, `install/`, `workspace/`). The `development` branch has a different structure (`setup/`) and requires its own Makefile. Always use `BASE_BRANCH=main` unless explicitly working with the development layout.
-3. Enter and start the agent:
-   ```bash
-   make NAME=<agent-name> shell
-   claude                                    # or codex, pi
-   ```
+## What You Do (at the host level)
 
-### Validate
-
-Verify a sandbox is healthy.
-
-1. **Check running sandboxes**:
-   ```bash
-   make list
-   ```
-2. **Verify workspace** (inside the sandbox via `make NAME=<agent-name> shell`):
-   - `AGENTS.md`, `SOUL.md`, `MEMORY.md` exist in workspace
-   - Target agent CLI is installed (`claude --version`, `codex --version`, `pi --version`)
-   - Docker socket accessible if needed (`docker ps`)
-3. **Check heartbeat** (if configured):
-   ```bash
-   make NAME=<agent-name> heartbeat-status
-   ```
-
-### Teardown
-
-Remove an agent sandbox. Preserve work first if needed.
-
-1. **Save unmerged work** (if the agent branch has uncommitted changes):
-   ```bash
-   cd .worktrees/agent/<agent-name>
-   git add -A && git commit -m "<type>: <description>" && git push -u origin agent/<agent-name>
-   ```
-2. **Stop the sandbox**:
-   ```bash
-   make NAME=<agent-name> stop
-   ```
-3. **Full cleanup** (removes container, image, and worktree):
-   ```bash
-   make NAME=<agent-name> clean
-   ```
-
-## Git Workflow
-
-| Item | Convention |
-|------|-----------|
-| Base branch | `main` (root Makefile requires `main` layout) |
-| Agent branches | `agent/<agent-name>` |
-| PR target | `development` |
-| Commit format | `<type>: <description>` (`feat`, `fix`, `task`, `audit`, `skill`) |
-
-## What You Do
-
-- Commit and push changes to the harness itself (Makefile, docker/, install/, workspace/ templates)
-- Manage branches and worktree state via git
-- Review diffs across agent branches
-- Provision, validate, and tear down sandboxes (`make quickstart`, `make clean`, `docker exec`, etc.)
-- Create and manage GitHub issues for agent tracking
-- Run the `/provision` skill for end-to-end sandbox setup
-- **Scaffold agent workspaces** after provisioning — write SOUL.md, MEMORY.md, skills, heartbeats, and initial project state to `.worktrees/agent/<name>/workspace/` based on the agent's role. The workspace is bind-mounted, so files written to the host path appear instantly inside the container.
+- Run `/setup` to provision or re-provision the sandbox
+- Manage the container lifecycle (start, stop, restart)
+- Check heartbeat status and logs
+- Review diffs and push changes on the agent branch
 
 ## What You Do NOT Do
 
-- Write application code logic (business logic, APIs, UIs — that happens inside sandboxes)
-- Enter sandboxes to do ongoing agent work
-- Modify agent-owned files after initial scaffolding (agents own their workspace once running)
-
-> **Scaffolding vs. application code**: Writing SOUL.md, MEMORY.md, skill definitions, heartbeat configs, and initial state files is orchestrator infrastructure work — it configures the agent's identity, capabilities, and schedule. The agent then owns these files and evolves them. Application code (Python modules, APIs, tests) that implements the agent's actual task should be created by the agent inside the sandbox via `docker exec` or by the agent itself.
-
-## Project Structure
-
-```
-.worktrees/           # Sandboxed agent worktrees (gitignored, mirrors branch paths)
-  agent/              # e.g., .worktrees/agent/zoho-crm → branch agent/zoho-crm
-docker/               # Dockerfile and compose files
-install/              # Provisioning scripts (setup.sh, heartbeat.sh, entrypoint.sh)
-workspace/            # Template for all agent workspaces
-  AGENTS.md           # In-sandbox agent instructions (separate from this file)
-  SOUL.md             # Agent persona template
-  MEMORY.md           # Long-term memory template
-  heartbeats.conf     # Periodic task schedule
-  .claude/skills/     # Reusable skill templates
-    quality-gate/     # Template: validate decisions before execution
-    strategy-review/  # Template: measure decision quality over time
-Makefile              # Human-operated sandbox automation
-.github/ISSUE_TEMPLATE/  # agent, audit, bug, feature, skill, task
-.claude/skills/          # Orchestrator skills (e.g., /provision)
-```
+- Write application code — that happens inside the sandbox
+- Modify workspace files after initial setup — the agent owns them once running

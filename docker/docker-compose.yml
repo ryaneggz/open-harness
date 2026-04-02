@@ -6,6 +6,8 @@ services:
       dockerfile: docker/Dockerfile
     volumes:
       - ../workspace:/home/sandbox/workspace
+    ports:
+      - "8200:8200"
     stdin_open: true
     tty: true
     environment:
