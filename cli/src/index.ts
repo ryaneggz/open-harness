@@ -3,8 +3,8 @@
 /**
  * openharness — Open Harness CLI
  *
- * A custom Pi Agent CLI with sandbox management tools built-in.
- * Direct CLI subcommands for sandbox lifecycle + Pi TUI for AI agent mode.
+ * Core agent built on Pi SDK. Sandbox tools are an optional package
+ * installed via: openharness install @openharness/sandbox
  */
 
 import { main, VERSION, type ToolDefinition } from "@mariozechner/pi-coding-agent";
@@ -28,14 +28,14 @@ const SUBCOMMANDS = new Set([
   "worktree",
 ]);
 
+const INSTALL_HINT = "Sandbox tools not installed. Run: openharness install @openharness/sandbox";
+
 const args = process.argv.slice(2);
 const firstArg = args[0];
 
-if (firstArg === "--help" || firstArg === "-h" || (!firstArg && process.stdin.isTTY)) {
-  if (firstArg === "--help" || firstArg === "-h") {
-    printHelp();
-    process.exit(0);
-  }
+if (firstArg === "--help" || firstArg === "-h") {
+  printHelp();
+  process.exit(0);
 }
 
 if (firstArg === "--version" || firstArg === "-v") {
@@ -56,6 +56,17 @@ if (firstArg && SUBCOMMANDS.has(firstArg)) {
     console.error(err);
     process.exit(1);
   });
+}
+
+/**
+ * Try to import the sandbox package. Returns null if not installed.
+ */
+async function loadSandbox(): Promise<typeof import("@openharness/sandbox") | null> {
+  try {
+    return await import("@openharness/sandbox");
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -88,10 +99,20 @@ function parseToolArgs(args: string[]): Record<string, string | boolean> {
   return params;
 }
 
+interface ToolResult {
+  content: Array<{ type: string; text?: string }>;
+}
+
 /**
- * Execute a subcommand by importing and calling its tool directly.
+ * Execute a subcommand by importing from @openharness/sandbox.
  */
 async function runSubcommand(command: string, args: string[]) {
+  const sandbox = await loadSandbox();
+  if (!sandbox) {
+    console.error(INSTALL_HINT);
+    process.exit(1);
+  }
+
   // For heartbeat, first positional is action, second is name
   if (command === "heartbeat") {
     const action = args[0];
@@ -100,8 +121,7 @@ async function runSubcommand(command: string, args: string[]) {
       console.error("Usage: openharness heartbeat <sync|stop|status|migrate> <name>");
       process.exit(1);
     }
-    const { heartbeatTool } = await import("./tools/heartbeat.js");
-    const result = await heartbeatTool.execute(
+    const result = await sandbox.heartbeatTool.execute(
       "cli",
       { name, action } as unknown,
       undefined,
@@ -114,8 +134,7 @@ async function runSubcommand(command: string, args: string[]) {
 
   // For list, no name needed
   if (command === "list") {
-    const { listTool } = await import("./tools/list.js");
-    const result = await listTool.execute(
+    const result = await sandbox.listTool.execute(
       "cli",
       {} as unknown,
       undefined,
@@ -133,19 +152,23 @@ async function runSubcommand(command: string, args: string[]) {
     process.exit(1);
   }
 
-  const toolMap: Record<string, () => Promise<ToolDefinition>> = {
-    quickstart: async () => (await import("./tools/quickstart.js")).quickstartTool,
-    build: async () => (await import("./tools/build.js")).buildTool,
-    rebuild: async () => (await import("./tools/rebuild.js")).rebuildTool,
-    run: async () => (await import("./tools/run.js")).runTool,
-    shell: async () => (await import("./tools/shell.js")).shellTool,
-    stop: async () => (await import("./tools/stop.js")).stopTool,
-    clean: async () => (await import("./tools/clean.js")).cleanTool,
-    push: async () => (await import("./tools/push.js")).pushTool,
-    worktree: async () => (await import("./tools/worktree.js")).worktreeTool,
+  const toolMap: Record<string, ToolDefinition | undefined> = {
+    quickstart: sandbox.quickstartTool,
+    build: sandbox.buildTool,
+    rebuild: sandbox.rebuildTool,
+    run: sandbox.runTool,
+    shell: sandbox.shellTool,
+    stop: sandbox.stopTool,
+    clean: sandbox.cleanTool,
+    push: sandbox.pushTool,
+    worktree: sandbox.worktreeTool,
   };
 
-  const tool = await toolMap[command]();
+  const tool = toolMap[command];
+  if (!tool) {
+    console.error(`Unknown command: ${command}`);
+    process.exit(1);
+  }
   const result = await tool.execute(
     "cli",
     params as unknown,
@@ -154,10 +177,6 @@ async function runSubcommand(command: string, args: string[]) {
     undefined as never,
   );
   printResult(result);
-}
-
-interface ToolResult {
-  content: Array<{ type: string; text?: string }>;
 }
 
 function printResult(result: ToolResult) {
@@ -179,7 +198,7 @@ ${b}Usage:${r}
   openharness <command> [options]
   openharness [pi-options] [messages...]     ${d}Launch AI agent mode${r}
 
-${b}Commands:${r}
+${b}Commands:${r} ${d}(requires: openharness install @openharness/sandbox)${r}
   ${b}list${r}                              List running sandboxes and worktrees
   ${b}quickstart${r} <name> [options]       Full setup: worktree + build + run + setup
   ${b}build${r} <name>                      Build Docker image
@@ -214,6 +233,9 @@ ${b}Agent Options:${r}
   --version, -v                  Show version
 
 ${b}Examples:${r}
+  ${d}# Install sandbox tools${r}
+  openharness install @openharness/sandbox
+
   ${d}# Provision a new sandbox${r}
   openharness quickstart my-agent --base-branch main
 

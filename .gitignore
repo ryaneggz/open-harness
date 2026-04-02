@@ -2,10 +2,9 @@
 .worktrees/*
 !.worktrees/.gitkeep
 
-# CLI build artifacts
+# Build artifacts
 node_modules/
 dist/
-cli/dist/
 *.tsbuildinfo
 
 # IDE
