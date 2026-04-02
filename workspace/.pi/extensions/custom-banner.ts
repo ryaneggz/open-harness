@@ -1,7 +1,7 @@
 /**
  * Custom Banner Extension
  *
- * Replaces the built-in pi startup header with a user-configurable banner.
+ * Replaces the built-in startup header with a user-configurable banner.
  * Configuration is read from `.pi/banner.json` (project) or
  * `~/.pi/agent/banner.json` (global).
  *
@@ -33,19 +33,19 @@ interface BannerConfig {
 // ---------------------------------------------------------------------------
 
 const PROJECT_CONFIG = ".pi/banner.json";
-const GLOBAL_CONFIG_DIR = process.env.PI_CODING_AGENT_DIR || join(process.env.HOME!, ".pi", "agent");
+const GLOBAL_CONFIG_DIR = process.env.OPENHARNESS_CODING_AGENT_DIR || process.env.PI_CODING_AGENT_DIR || join(process.env.HOME!, ".pi", "agent");
 const GLOBAL_CONFIG = join(GLOBAL_CONFIG_DIR, "banner.json");
 
 const DEFAULT_CONFIG: BannerConfig = {
 	enabled: true,
 	lines: [
-		"┌─────────────────────────────────┐",
-		"│     🚀  Sandboxes Project  🚀    │",
-		"└─────────────────────────────────┘",
+		"┌───────────────────────────────────┐",
+		"│      ⚙  Open Harness  ⚙          │",
+		"└───────────────────────────────────┘",
 	],
 	color: "accent",
 	bold: true,
-	subtitle: "Ruska AI Development Environment",
+	subtitle: "AI-Powered Sandbox Orchestrator",
 	subtitleColor: "muted",
 };
 

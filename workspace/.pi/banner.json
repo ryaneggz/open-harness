@@ -1,12 +1,12 @@
 {
   "enabled": true,
   "lines": [
-    "┌─────────────────────────────────┐",
-    "│     🚀  Sandboxes Project  🚀   │",
-    "└─────────────────────────────────┘"
+    "┌───────────────────────────────────┐",
+    "│      ⚙  Open Harness  ⚙          │",
+    "└───────────────────────────────────┘"
   ],
   "color": "accent",
   "bold": true,
-  "subtitle": "Ruska AI Development Environment",
+  "subtitle": "AI-Powered Sandbox Orchestrator",
   "subtitleColor": "muted"
 }
