@@ -34,7 +34,7 @@ workspace/                    # Agent harness (SOUL.md, MEMORY.md, heartbeats)
 ### 1. Enter the sandbox
 
 ```bash
-make NAME=next-postgres-shadcn shell
+openharness shell next-postgres-shadcn
 ```
 
 ### 2. Post-provisioning setup (one-time, requires user auth)
@@ -85,8 +85,8 @@ claude                        # Claude Code
 
 ```bash
 # From orchestrator
-make NAME=next-postgres-shadcn shell     # Enter sandbox
-make NAME=next-postgres-shadcn stop      # Stop
-make NAME=next-postgres-shadcn run       # Restart
-make NAME=next-postgres-shadcn clean     # Full teardown
+openharness shell next-postgres-shadcn     # Enter sandbox
+openharness stop next-postgres-shadcn      # Stop
+openharness run next-postgres-shadcn       # Restart
+openharness clean next-postgres-shadcn     # Full teardown
 ```

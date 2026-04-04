@@ -46,7 +46,7 @@ pull_request: "FROM agent/next-postgres-shadcn TO development"
 
 ```bash
 # Enter the sandbox
-make NAME=next-postgres-shadcn shell
+openharness shell next-postgres-shadcn
 claude
 
 # When complete — PR from agent branch to development
