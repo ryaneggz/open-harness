@@ -1,0 +1,15 @@
+{
+  "name": "Open Harness Orchestrator",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "orchestrator",
+  "workspaceFolder": "/home/orchestrator/project",
+  "remoteUser": "orchestrator",
+  "forwardPorts": [2222],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}
