@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ${NAME}-postgres
+    environment:
+      POSTGRES_USER: sandbox
+      POSTGRES_PASSWORD: sandbox
+      POSTGRES_DB: sandbox
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sandbox"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - devnet
+
+  sandbox:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://sandbox:sandbox@postgres:5432/sandbox
+      - PGHOST=postgres
+      - PGUSER=sandbox
+      - PGPASSWORD=sandbox
+      - PGDATABASE=sandbox
+    ports:
+      - "${PORT:-3000}:3000"
+    networks:
+      - devnet
+
+networks:
+  devnet:
+    name: ${NAME}-devnet
+    driver: bridge
+
+volumes:
+  pgdata:

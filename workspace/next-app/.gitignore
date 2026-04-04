@@ -1,0 +1,20 @@
+# Ralph working files (generated during runs)
+prd.json
+.ralph/prd.json
+progress.txt
+.ralph/progress.txt
+.ralph/.last-branch
+
+# Archives
+!.ralph/archive/.gitkeep
+.ralph/archive/
+
+# OS files
+.DS_Store
+
+# Claude
+**/.env*
+
+# Defensive patterns
+**/node_modules/
+**/.next/
