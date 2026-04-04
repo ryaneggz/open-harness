@@ -1,0 +1,16 @@
+services:
+  orchestrator:
+    container_name: orchestrator
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    ports:
+      - "2222:22"
+    volumes:
+      - ..:/home/orchestrator/project
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    entrypoint: /usr/local/bin/entrypoint.sh
+    command: /usr/sbin/sshd -D
+    restart: unless-stopped

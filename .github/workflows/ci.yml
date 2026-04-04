@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI — ${{ matrix.package.name }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - name: cli
+            path: cli
+          - name: sandbox
+            path: packages/sandbox
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: ${{ matrix.package.path }}/node_modules
+          key: node-modules-${{ matrix.package.name }}-${{ hashFiles(format('{0}/package-lock.json', matrix.package.path)) }}
+          restore-keys: |
+            node-modules-${{ matrix.package.name }}-
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.package.path }}
+        run: npm ci
+
+      - name: Lint
+        working-directory: ${{ matrix.package.path }}
+        run: npm run lint
+
+      - name: Format check
+        working-directory: ${{ matrix.package.path }}
+        run: npm run format:check
+
+      - name: Build
+        working-directory: ${{ matrix.package.path }}
+        run: npm run build
+
+      - name: Test
+        working-directory: ${{ matrix.package.path }}
+        run: npm run test

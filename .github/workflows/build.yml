@@ -7,7 +7,7 @@ permissions:
 on:
     push:
         tags:
-            - "oh-v*"
+            - "[0-9][0-9][0-9][0-9].[0-9]*.[0-9]*"
 
 jobs:
     build:
@@ -23,9 +23,9 @@ jobs:
             - name: Parse tag
               id: parse
               run: |
-                  # Expected tag format: oh-v<version>
-                  # e.g. oh-v1.0.0
-                  VERSION=${GITHUB_REF#refs/tags/oh-}
+                  # Expected tag format: YYYY.M.D or YYYY.M.D-N
+                  # e.g. 2026.4.4, 2026.4.4-1
+                  VERSION=${GITHUB_REF#refs/tags/}
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
                   echo "Version: $VERSION"
 

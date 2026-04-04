@@ -21,7 +21,7 @@ SANDBOX_USER="sandbox"
 SANDBOX_HOME="/home/$SANDBOX_USER"
 
 # ─── Collect all options upfront ─────────────────────────────────────
-INSTALL_BROWSER=true
+INSTALL_BROWSER=false
 INSTALL_CLAUDE_CODE=true
 INSTALL_CODEX=true
 INSTALL_PI_AGENT=true
