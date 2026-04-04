@@ -36,6 +36,12 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env INSTALLER_NO_MODIFY_PATH=1 
  && cp /root/.local/bin/uv /usr/local/bin/uv \
  && cp /root/.local/bin/uvx /usr/local/bin/uvx
 
+# ─── Claude Code CLI ────────────────────────────────────────────────
+RUN npm install -g @anthropic-ai/claude-code
+
+# ─── OpenAI Codex CLI ──────────────────────────────────────────────
+RUN npm install -g @openai/codex
+
 # ─── Orchestrator user ─────────────────────────────────────────────
 RUN useradd -m -s /bin/bash orchestrator \
  && echo "orchestrator:test1234" | chpasswd \
