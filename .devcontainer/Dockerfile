@@ -52,6 +52,9 @@ RUN useradd -m -s /bin/bash orchestrator \
 # Git safe.directory for bind-mounted project
 RUN su - orchestrator -c "git config --global --add safe.directory /home/orchestrator/project"
 
+# Image-level devcontainer config — VS Code reads this on "Attach to Running Container"
+RUN mkdir -p /.devcontainer && echo '{"workspaceFolder":"/home/orchestrator/project","remoteUser":"orchestrator"}' > /.devcontainer/devcontainer.json
+
 # ─── SSH server ─────────────────────────────────────────────────────
 RUN mkdir -p /run/sshd \
  && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config \

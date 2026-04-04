@@ -1,4 +1,4 @@
-# Coding Agent Sandbox
+# OpenHarness Agent Sandbox
 
 You are running inside an isolated Docker container provisioned for AI coding agents.
 
@@ -39,13 +39,14 @@ All tools are installed system-wide in `/usr/local/bin` or via apt:
 ## Guidelines
 
 - Work within this `workspace/` directory -- it is bind-mounted and persists across container restarts
+- `.openharness/` is available in the workspace root as a symlink to the project-level Open Harness config
 - Use `uv` for Python projects (e.g. `uv init`, `uv add`, `uv run`)
 - Use `bun` or `npm` for JavaScript/TypeScript projects
 - The `install/` directory at `~/install/` contains the provisioning script -- do not modify it
 - You have full sudo access if you need to install additional system packages
 - Use `docker compose` to manage services; the sandbox can reach host containers via `host.docker.internal`
 - `CLAUDE.md` and `AGENTS.md` are symlinked -- editing either updates both
-- Agent config directories (`.claude/`, `.codex/`) are in the workspace root
+- Agent config directories (`.openharness/`, `.claude/`, `.codex/`) are in the workspace root
 
 ## Soul
 

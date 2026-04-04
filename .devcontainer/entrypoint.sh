@@ -12,4 +12,9 @@ if [ -S "$SOCK" ]; then
   fi
 fi
 
+# Fix ownership of mounted .claude auth directory
+if [ -d /home/orchestrator/.claude ]; then
+  chown -R orchestrator:orchestrator /home/orchestrator/.claude 2>/dev/null || true
+fi
+
 exec "$@"

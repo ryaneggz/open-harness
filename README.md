@@ -66,7 +66,7 @@ AI coding agents are powerful — but they run with broad system permissions, ex
 ### Core Intentions
 
 #### 1. **Isolation & Safety**
-Agents run `--dangerously-skip-permissions` by default — inside a disposable Docker container. They can `rm -rf`, install packages, and spawn processes without any risk to your host machine. The workspace directory is the only thing bind-mounted; everything else is ephemeral.
+Agents run `--dangerously-skip-permissions` by default — inside a disposable Docker container. They can `rm -rf`, install packages, and spawn processes without any risk to your host machine. The workspace is bind-mounted, and the project-level `.openharness/` config is mounted behind `workspace/.openharness`; everything else is ephemeral.
 
 #### 2. **Zero-to-Agent in Minutes**
 One provisioning script (`install/setup.sh`) installs Node.js, Bun, uv, Docker CLI, GitHub CLI, ripgrep, tmux, and whichever agents you choose — interactively or fully unattended with `--non-interactive`. No more "install 15 things" friction.
@@ -89,7 +89,7 @@ Named sandboxes (`research`, `frontend`) run simultaneously, each with its own c
 
 | Benefit | Details |
 |---------|---------|
-| 🔒 **Host protection** | Agents run in a disposable Debian container; only the workspace directory is bind-mounted |
+| 🔒 **Host protection** | Agents run in a disposable Debian container; the workspace is bind-mounted, with `.openharness/` exposed through `workspace/.openharness` |
 | 🔄 **Reproducibility** | `docker/Dockerfile` + setup script = identical environment every time, on any machine |
 | 🐳 **Docker-in-Docker** | `--docker` flag mounts the host socket so agents can build and manage containers from inside |
 | 🚀 **CI/CD ready** | GitHub Actions builds and pushes to `ghcr.io/ryaneggz/open-harness` on tagged releases |
@@ -218,6 +218,7 @@ docker compose -f .devcontainer/docker-compose.yml down
 └── workspace/
     ├── AGENTS.md            # default instructions for all coding agents
     ├── CLAUDE.md            # symlink → AGENTS.md
+    ├── .openharness         # symlink → ../.openharness
     ├── heartbeats.conf      # heartbeat schedule config (cron expressions)
     ├── heartbeats/          # heartbeat task .md files (default.md, etc.)
     ├── SOUL.md              # agent persona, tone, and boundaries
@@ -233,12 +234,13 @@ docker compose -f .devcontainer/docker-compose.yml down
 
 1. **`docker/Dockerfile`** creates a minimal Debian image with a `sandbox` user (passwordless sudo) and bakes in:
    - `install/` copied to `/home/sandbox/install/`
+   - `.openharness/` copied to `/home/sandbox/.openharness/`
    - `workspace/` copied to `/home/sandbox/workspace/`
    - Agent aliases in `.bashrc` (`claude`, `codex`, `pi`)
    - Docker group membership for the sandbox user
    - Default shell drops into `/home/sandbox/workspace`
 
-2. **`docker/docker-compose.yml`** bind-mounts `./workspace`. When `DOCKER=true`, the override file (`docker/docker-compose.docker.yml`) additionally mounts the Docker socket and configures `host.docker.internal`.
+2. **`docker/docker-compose.yml`** bind-mounts `./workspace` and the project-level `.openharness/` config (so `workspace/.openharness` resolves correctly). When `DOCKER=true`, the override file (`docker/docker-compose.docker.yml`) additionally mounts the Docker socket and configures `host.docker.internal`.
 
 3. **`install/setup.sh`** provisions all tools system-wide (as root):
    - Node.js 22.x, npm, tmux, nano, ripgrep, jq (always)
@@ -249,7 +251,7 @@ docker compose -f .devcontainer/docker-compose.yml down
    - OpenAI Codex, Pi Agent, AgentMail CLI (opt-in)
    - agent-browser + Chromium (default yes)
 
-4. **`workspace/AGENTS.md`** provides default context to all coding agents. `CLAUDE.md` is a symlink to it — editing either updates both.
+4. **`workspace/AGENTS.md`** provides default context to all coding agents. `CLAUDE.md` is a symlink to it, and `workspace/.openharness` is a symlink to the project-level `.openharness/` config.
 
 ---
 
