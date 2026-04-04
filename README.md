@@ -374,13 +374,13 @@ pi -p "Refactor main.py to use async/await"
 
 ## 📦 Releases
 
-Tag format: `oh-v<version>` (e.g. `oh-v1.0.0`)
+Tag format: `YYYY.M.D` (e.g. `2026.4.4`). For multiple releases on the same day, append an increment key: `2026.4.4-1`, `2026.4.4-2`.
 
 ```bash
-git tag oh-v1.0.0
-git push origin oh-v1.0.0
+git tag 2026.4.4
+git push origin 2026.4.4
 ```
 
-This triggers the CI workflow which builds and pushes:
-- `ghcr.io/ryaneggz/open-harness:v1.0.0`
+This triggers the build workflow which builds and pushes:
+- `ghcr.io/ryaneggz/open-harness:2026.4.4`
 - `ghcr.io/ryaneggz/open-harness:latest`
