@@ -1,284 +1,161 @@
-# Plan: Provision Full Stack Developer Agent Sandbox
+# Plan: Ralph CLI Workflow — Plan to PR Pipeline
 
 ## Context
 
-Scaffold a Full Stack Developer agent workspace via the `/provision` skill. The agent builds Next.js + TypeScript + PostgreSQL + shadcn/ui applications with a professional development workflow including testing, linting, pre-commit hooks, CI pipeline, cloudflared tunnel for external access, and agent-browser for QA.
+Ralph needs a complete workflow in the `cli/` that orchestrates: plan → PRD → prd.json → tmux loop → finalize PR. The draft PR is created when plans are committed before code changes begin. When Ralph completes all stories, the PR is taken out of draft.
 
-## Agent Identity
+## Workflow
 
-- **Name**: `next-postgres-shadcn`
-- **Role**: Full Stack Developer — Next.js + TypeScript + PostgreSQL + shadcn/ui
-- **Base branch**: `main`
-- **Docker-in-Docker**: yes (Postgres via compose, potential service containers)
-- **Heartbeat**: yes (build health checks)
-
-## Stack & Tooling
-
-### Core Stack
-- Next.js 15+ (App Router, `src/` directory)
-- TypeScript (strict mode)
-- PostgreSQL 16 (via Docker compose)
-- Prisma ORM (migrations, client generation, studio)
-- shadcn/ui + Tailwind CSS
-
-### Testing
-- **Vitest** — unit/integration tests (frontend components + backend API routes)
-- **React Testing Library** — component testing
-- **Playwright** — E2E browser testing
-- Test scripts: `npm test`, `npm run test:e2e`
-
-### Linting & Formatting
-- **ESLint** (Next.js config + strict TypeScript rules)
-- **Prettier** (consistent formatting)
-- **lint-staged** — run linters only on staged files
-
-### Pre-commit Hooks (Husky)
-- **Pre-commit**: `lint-staged` runs:
-  - ESLint (`--fix`) on `*.{ts,tsx}`
-  - Prettier (`--write`) on `*.{ts,tsx,css,json,md}`
-  - `tsc --noEmit` (type-check)
-- **Pre-push**: `npm test` (run full test suite)
-
-### CI Pipeline (GitHub Actions)
-Mirrors pre-commit steps — runs on every push:
-1. **Lint** — `npm run lint`
-2. **Format check** — `npm run format:check`
-3. **Type check** — `npm run type-check` (`tsc --noEmit`)
-4. **Build** — `npm run build`
-5. **Test** — `npm test` (Vitest)
-6. **E2E** — `npx playwright test` (with Postgres service container)
-
-Workflow file: `.github/workflows/ci.yml` in the agent's worktree.
-
-### Infrastructure
-- **Cloudflared tunnel** — named tunnel exposing Next.js dev server at `next-postgres-shadcn.ruska.dev` (routes `https://next-postgres-shadcn.ruska.dev` → `http://localhost:3000`)
-- **agent-browser + Chromium** — QA tests hit the public URL (`next-postgres-shadcn.ruska.dev`) and work backward to diagnose issues
-- **PostgreSQL client** — `psql` for direct DB access
-
-## Scaffolding Details
-
-### Docker Infrastructure (`docker/` in worktree)
-
-**docker-compose.nextjs.yml** (new compose override):
-```yaml
-services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: ${NAME}-postgres
-    environment:
-      POSTGRES_USER: sandbox
-      POSTGRES_PASSWORD: sandbox
-      POSTGRES_DB: sandbox
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sandbox"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - devnet
-
-  sandbox:
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      - DATABASE_URL=postgresql://sandbox:sandbox@postgres:5432/sandbox
-      - PGHOST=postgres
-      - PGUSER=sandbox
-      - PGPASSWORD=sandbox
-      - PGDATABASE=sandbox
-    ports:
-      - "${PORT:-3000}:3000"
-    networks:
-      - devnet
-
-networks:
-  devnet:
-    name: ${NAME}-devnet
-    driver: bridge
-
-volumes:
-  pgdata:
+```
+openharness ralph prd <name>       # 1. Generate PRD from plan
+openharness ralph setup <name>     # 2. Convert PRD → prd.json + create draft PR
+openharness ralph run <name>       # 3. Start Ralph loop in tmux
+openharness ralph status <name>    # 4. Check progress
+openharness ralph reflect <name>   # 5. Update MEMORY.md + daily log from session
+openharness ralph cleanup <name>   # 6. Lint, format, test, commit cleanup
+openharness ralph pr <name>        # 7. Archive prd.json, take PR out of draft
 ```
 
-**Network isolation**: Each agent's dev environment gets its own Docker bridge network (`${NAME}-devnet`). The sandbox and postgres containers communicate over this private network. Other agent sandboxes on the host cannot reach this agent's Postgres or dev server unless explicitly connected. The `devnet` network name is scoped by the agent name to prevent collisions.
+### Design Principles
 
-### Workspace Files
+- **Phased approach with tight feedback loops**: Each Ralph iteration works on ONE story, commits, and validates. Stories are small enough for one context window. This prevents large, risky changes.
+- **Context window management**: Ralph clears its session after each iteration (fresh spawn per loop). The `.ralph/progress.txt` Codebase Patterns section carries forward critical learnings without bloating context. If context reaches ~50% of the window, the iteration should wrap up its current work, commit, and exit cleanly — staying in the "smart zone" where the model reasons most effectively.
+- **Reflect to improve future work**: The `reflect` step focuses on encoding actionable intelligence — not summarizing what happened, but identifying what would make the next session faster and better. Patterns, approaches, gotchas, and codebase insights go to MEMORY.md; factual session logs go to `memory/YYYY-MM-DD.md`.
+- **Cleanup before PR**: The `cleanup` step runs a comprehensive quality pass (lint, format, type-check, tests) before the PR is finalized. This catches anything individual iterations missed.
+- **Archive by branch**: Archives are named by branch (`ralph/<feature>` → `.ralph/archive/<feature>/`) so they map to the work done, not when it was done. The memory system handles temporal tracking.
 
-**SOUL.md** — Full Stack Developer persona:
-- Expert in Next.js App Router, TypeScript, PostgreSQL, Prisma, shadcn/ui, Tailwind
-- Practices: type-safe code, tested features, accessible UI, clean Git history
-- QA workflow: uses agent-browser to verify features via the public URL (`next-postgres-shadcn.ruska.dev`) and works backward from user-facing behavior to diagnose issues
-- Quality bar: all code passes lint + type-check + tests before commit
+### Detailed flow:
 
-**MEMORY.md** — Seeded context:
-- Stack decisions: App Router, Prisma, shadcn/ui, Tailwind, Vitest + Playwright
-- Dev workflow: lint-staged on commit, type-check on commit, tests on push, CI on every push
-- Infrastructure: Postgres on `postgres:5432`, cloudflared for external access
-- Component library: shadcn/ui (`npx shadcn@latest add <component>`)
+1. **Agent enters plan mode** → creates plan → commits plans
+2. **`ralph prd`** — Runs the `/prd` skill inside the container, taking the plan as context. Generates `tasks/prd-<feature>.md` in the workspace.
+3. **`ralph setup`** — Runs the `/ralph` skill to convert PRD → `.ralph/prd.json`. Then commits the PRD + prd.json and creates a **draft PR** so reviewers can see the plan and requirements before code begins.
+4. **`ralph run`** — Starts `.ralph/ralph.sh --tool claude <iterations>` inside a **tmux session** in the container. Runs autonomously in the background. Each iteration implements one story, commits, and validates.
+5. **`ralph status`** — Shows `.ralph/progress.txt` and current story completion from `.ralph/prd.json`.
+6. **`ralph reflect`** — Reflects over the session: updates `MEMORY.md` with decisions, lessons learned, and patterns discovered. Appends a session summary to `memory/YYYY-MM-DD.md`. This preserves institutional knowledge for future sessions.
+7. **`ralph cleanup`** — Runs lint, format, type-check, tests. Commits any fixes. Ensures the branch is CI-green.
+8. **`ralph pr`** — Archives `.ralph/prd.json` and `.ralph/progress.txt` into `.ralph/archive/<branch-name>/` (named by branch, not date — memory handles daily records). Then runs `gh pr ready` to take the PR out of draft.
 
-**AGENTS.md** — Stack-specific section appended with:
-- Services table (Postgres, Next.js dev server, Prisma Studio, cloudflared)
-- Database commands (psql, prisma migrate, prisma studio)
-- Testing commands (vitest, playwright)
-- Linting/formatting commands
-- shadcn component workflow
-- Cloudflared tunnel usage
-- agent-browser QA workflow
-- CI pipeline description
+## Changes
 
-### Project Initialization (inside container)
+### 1. Delete `workspace/next-app/Makefile`
 
-1. `npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --use-npm --yes`
-2. `npx shadcn@latest init -y --defaults`
-3. `npm install prisma @prisma/client && npx prisma init`
-4. Testing: `npm install -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom playwright @playwright/test`
-5. Linting: `npm install -D prettier eslint-config-prettier lint-staged`
-6. Hooks: `npx husky init && npm install -D husky`
-   - `.husky/pre-commit`: `npx lint-staged`
-   - `.husky/pre-push`: `npm test`
-7. Config files:
-   - `vitest.config.ts` — Vitest with React plugin, jsdom environment
-   - `playwright.config.ts` — Playwright with webServer config
-   - `.prettierrc` — Prettier config
-   - `lint-staged` section in package.json
-   - package.json scripts: `test`, `test:e2e`, `lint`, `format`, `format:check`, `type-check`
-8. `sudo apt-get install -y cloudflared postgresql-client`
-9. agent-browser enabled during setup.sh
-10. Cloudflared tunnel config:
-    - Create `~/.cloudflared/config.yml` with named tunnel routing `next-postgres-shadcn.ruska.dev` → `http://localhost:3000`
-    - Tunnel credentials will need to be provided (CLOUDFLARE_TUNNEL_TOKEN env var or credentials file)
-    - Start tunnel: `cloudflared tunnel run next-postgres-shadcn`
-    - Or quick tunnel: `cloudflared tunnel --hostname next-postgres-shadcn.ruska.dev --url http://localhost:3000`
+### 2. Create `packages/sandbox/src/tools/ralph.ts`
 
-### CI Workflow (`.github/workflows/ci.yml` in worktree)
+New tool with actions:
 
-```yaml
-name: CI
-
-on:
-  push:
-
-permissions:
-  contents: read
-
-jobs:
-  ci:
-    runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: sandbox
-          POSTGRES_PASSWORD: sandbox
-          POSTGRES_DB: sandbox
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U sandbox"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      DATABASE_URL: postgresql://sandbox:sandbox@localhost:5432/sandbox
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ hashFiles('package-lock.json') }}
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Format check
-        run: npm run format:check
-
-      - name: Type check
-        run: npm run type-check
-
-      - name: Build
-        run: npm run build
-
-      - name: Test
-        run: npm test
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: E2E tests
-        run: npm run test:e2e
+```typescript
+export const RALPH_ACTIONS = ["prd", "setup", "run", "status", "reflect", "cleanup", "pr"] as const;
 ```
 
-### GitHub Issue Templates (`.github/ISSUE_TEMPLATE/` in worktree)
+Each action maps to a `docker exec` command:
 
-**feature.md** — Feature request template:
-- Summary, motivation, proposed implementation
-- Stack context: Next.js App Router, Prisma migrations, shadcn components
-- Acceptance criteria: feature works, tests pass (Vitest + Playwright), lint/type-check clean, PR targets `development`
+- **`prd`**: Runs claude inside container with the /prd skill prompt. Reads plan files from workspace and generates PRD.
+  ```
+  docker exec --user sandbox <name> bash -c 'cd ~/workspace && claude --dangerously-skip-permissions -p "Read the plan files and generate a PRD using the /prd skill. Save to tasks/"'
+  ```
 
-**bug.md** — Bug report template:
-- Description, steps to reproduce, expected vs actual behavior
-- Environment section: Node.js version, Next.js version, PostgreSQL version, browser
-- Acceptance criteria: bug fixed, tests added, no regressions, PR targets `development`
+- **`setup`**: Runs claude inside container with the /ralph skill to convert PRD to prd.json. Then commits PRD + prd.json and creates a **draft PR**.
+  ```
+  docker exec --user sandbox <name> bash -c 'cd ~/workspace && claude --dangerously-skip-permissions -p "Convert the latest PRD in tasks/ to .ralph/prd.json using the /ralph skill"'
+  docker exec --user sandbox <name> bash -c 'cd ~/workspace && git add tasks/ .ralph/prd.json && git commit -m "task: add PRD and prd.json for ralph" && git push -u origin HEAD && gh pr create --draft --base development --title "feat: <feature>" --body "PRD and prd.json ready for Ralph execution"'
+  ```
 
-Both templates include the agent assignment metadata block and workflow commands consistent with the harness conventions.
+- **`run`**: Starts Ralph loop in a tmux session inside the container. Accepts `--iterations` flag (default 200).
+  ```
+  docker exec --user sandbox <name> bash -c 'tmux new-session -d -s ralph "cd ~/workspace && .ralph/ralph.sh --tool claude <iterations>"'
+  ```
 
-### Heartbeats
+- **`status`**: Shows progress from prd.json (stories completed vs total) and tail of progress.txt.
+  ```
+  docker exec --user sandbox <name> bash -c 'cd ~/workspace && echo "=== Stories ===" && jq ".userStories[] | {id, title, passes}" .ralph/prd.json && echo "=== Progress ===" && tail -20 .ralph/progress.txt'
+  ```
 
-- `heartbeats/build-health.md` — periodic `npm run build && npm test` to catch regressions
-- Schedule: every 30 minutes during active hours
+- **`reflect`**: Reflects on the session with a focus on **improving future iterations and tasks**. Reads progress.txt and prd.json, then updates harness memory:
+  - **MEMORY.md**: Add patterns that will make the NEXT session faster/better — what worked, what didn't, which approaches to reuse or avoid, codebase patterns discovered, dependency gotchas, testing strategies that caught real bugs.
+  - **memory/YYYY-MM-DD.md**: Append a factual session log (stories completed, files changed, time spent, blockers hit).
+  - The goal is NOT to summarize what was done — it's to encode **actionable intelligence** for future iterations.
+  ```
+  docker exec --user sandbox <name> bash -c 'cd ~/workspace && claude --dangerously-skip-permissions -p "Read .ralph/progress.txt and .ralph/prd.json. Focus on: what would make the NEXT session better? Update MEMORY.md with actionable patterns, approaches to reuse, mistakes to avoid, and codebase insights. Append a session log to memory/$(date +%Y-%m-%d).md. Commit memory updates."'
+  ```
 
-### Setup README (`README.md` at worktree root)
+- **`cleanup`**: Runs a cleanup pass — lint, format, type-check, test, ensure all files committed.
+  ```
+  docker exec --user sandbox <name> bash -c 'cd ~/workspace/next-app && npm run lint:fix && npm run format && npm run type-check && npm test && git add -A && git diff --cached --quiet || git commit -m "task: cleanup before PR submission"'
+  ```
 
-A standalone `README.md` at `.worktrees/agent/next-postgres-shadcn/README.md` documenting any steps that require manual user authentication or configuration after initial provisioning. This includes:
+- **`pr`**: Archives prd.json + progress.txt into `.ralph/archive/<branch-name>/` (branch-named, not date — memory handles daily records). Then validates all stories pass and runs `gh pr ready` to undraft the PR.
+  ```
+  docker exec --user sandbox <name> bash -c 'cd ~/workspace && BRANCH=$(jq -r .branchName .ralph/prd.json | sed "s|ralph/||") && mkdir -p .ralph/archive/$BRANCH && cp .ralph/prd.json .ralph/progress.txt .ralph/archive/$BRANCH/ && git add .ralph/archive/ && git commit -m "task: archive ralph run for $BRANCH"'
+  docker exec --user sandbox <name> bash -c 'cd ~/workspace && ALL_PASS=$(jq "[.userStories[].passes] | all" .ralph/prd.json) && if [ "$ALL_PASS" = "true" ]; then git push && gh pr ready; else echo "Not all stories pass yet"; exit 1; fi'
+  ```
 
-- **Cloudflare tunnel auth**: `cloudflared tunnel login` (opens browser for Cloudflare account auth), then `cloudflared tunnel create next-postgres-shadcn` to generate credentials
-- **GitHub CLI auth**: `gh auth login` if not pre-configured with a token
-- **Prisma Studio**: No auth, but note that it runs on port 5555 and is only accessible locally
-- **agent-browser**: May need `ANTHROPIC_API_KEY` or other API keys for browser automation services
-- **Environment variables**: Document all required env vars (`DATABASE_URL`, `CLOUDFLARE_TUNNEL_TOKEN`, API keys) and where to set them (`.env.local`, container env, `.bashrc`)
-- **DNS setup**: If `next-postgres-shadcn.ruska.dev` DNS record doesn't exist yet, document how to create the CNAME pointing to the tunnel
+### 3. Register in `packages/sandbox/src/tools/index.ts`
 
-Any setup step that blocks on user interaction (OAuth flows, token generation, DNS configuration) gets documented here so the user knows what to do after provisioning.
+Export `ralphTool`.
 
-## Execution
+### 4. Add to `cli/src/cli.ts`
 
-1. Run `/provision` skill with agent parameters
-2. Scaffolding phase customizes workspace files for Full Stack Developer role
-3. Modify docker-compose in worktree to add PostgreSQL service
-4. Run project init commands inside container (Next.js, shadcn, Prisma, testing, linting, hooks)
-5. Write CI workflow to `.github/workflows/ci.yml`
-6. Write GitHub issue templates (feature.md, bug.md) to `.github/ISSUE_TEMPLATE/`
-7. Install cloudflared, enable agent-browser
-8. Verify everything works end-to-end
+- Add `"ralph"` to `SUBCOMMANDS`
+- Export `RALPH_ACTIONS`
+- Add ralph routing in `resolveSubcommand()` (same pattern as heartbeat)
+- Add to `SandboxModule` interface: `ralphTool`
+- Add to help text:
+  ```
+  ralph <action> <name>            Ralph workflow (prd|setup|run|status|reflect|cleanup|pr)
+  ```
+- Add `--iterations` flag parsing for ralph run
+
+### 5. Update `cli/src/types/openharness-sandbox.d.ts`
+
+Add `ralphTool` to type declarations.
+
+### 6. Create `workspace/.claude/skills/prd/SKILL.md`
+
+PRD generator skill (content already fetched from ryaneggz/ralph).
+
+### 7. Create `workspace/.claude/skills/ralph/SKILL.md`
+
+Ralph PRD converter skill (content already fetched from ryaneggz/ralph).
+
+### 8. Add Ralph section to `workspace/AGENTS.md`
+
+Document the full workflow and all commands.
+
+### 9. Configure Slack hooks
+
+The hooks are already installed at `workspace/.claude/hooks/notify_slack.sh` and configured in `workspace/.claude/settings.local.json` (Stop + Notification events). Need to create the env file with the Slack webhook URL:
+
+Create `workspace/.claude/.env.claude`:
+```
+SLACK_WEBHOOK_URL=<your-slack-webhook-url>
+```
+
+The hook script loads from `~/.env/.claude/.env.claude` or falls back to `.claude/.env.claude` in the project.
+
+### 10. Update `cli/src/__tests__/cli.test.ts`
+
+Tests for ralph subcommand routing, RALPH_ACTIONS, help text.
+
+### 11. Commit & push
+
+## Critical Files
+
+| File | Action |
+|------|--------|
+| `workspace/next-app/Makefile` | Delete |
+| `packages/sandbox/src/tools/ralph.ts` | Create |
+| `packages/sandbox/src/tools/index.ts` | Edit (register) |
+| `cli/src/cli.ts` | Edit (subcommand + help) |
+| `cli/src/types/openharness-sandbox.d.ts` | Edit (types) |
+| `cli/src/__tests__/cli.test.ts` | Edit (tests) |
+| `workspace/.claude/skills/prd/SKILL.md` | Create |
+| `workspace/.claude/skills/ralph/SKILL.md` | Create |
+| `workspace/AGENTS.md` | Edit (Ralph docs) |
+| `workspace/.claude/.env.claude` | Create (Slack webhook URL) |
 
 ## Verification
 
-- `docker ps` — sandbox + postgres containers running
-- `psql -c "SELECT 1"` inside container — DB reachable
-- `npm run build` — Next.js builds clean
-- `npm run lint` — no lint errors
-- `npm run format:check` — formatting consistent
-- `npm run type-check` — TypeScript clean
-- `npm test` — Vitest passes
-- `npx playwright test` — E2E passes (with agent-browser/Chromium)
-- `cloudflared tunnel run` — `next-postgres-shadcn.ruska.dev` resolves and serves the app
-- agent-browser navigates to `https://next-postgres-shadcn.ruska.dev` — page loads correctly
-- Git commit triggers lint-staged (lint + format + type-check)
-- Git push triggers test suite
-- GitHub Actions CI runs all checks on push
+- `cd cli && npx vitest run` — all tests pass
+- `cd packages/sandbox && npx tsc --noEmit` — type check clean
+- `openharness ralph status next-postgres-shadcn` — shows progress
+- `/prd` and `/ralph` available as skills inside sandbox

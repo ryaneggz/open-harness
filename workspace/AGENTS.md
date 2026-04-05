@@ -72,7 +72,7 @@ Heartbeats are periodic tasks executed on cron schedules. Each heartbeat is a `.
 - **Schedule config**: `heartbeats.conf` in workspace root — maps files to cron expressions
 - **Format**: `<cron> | <file> | [agent] | [active_start-active_end]` (pipe-delimited)
 - **Heartbeat files**: `.md` files in `heartbeats/` (default: `heartbeats/default.md`)
-- **Manage from host**: `make heartbeat` (sync), `make heartbeat-stop`, `make heartbeat-status`
+- **Manage from host**: `openharness heartbeat sync <name>`, `openharness heartbeat stop <name>`, `openharness heartbeat status <name>`
 - **Logs**: `~/.heartbeat/heartbeat.log` inside the container
 - Schedules auto-sync on container startup from `heartbeats.conf`
 - If a heartbeat file is empty (only headers/comments), that execution is skipped to save API costs

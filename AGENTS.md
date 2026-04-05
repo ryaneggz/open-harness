@@ -4,7 +4,7 @@ You are the harness orchestrator. You run at the project root. You do NOT write 
 
 ## Permissions
 
-Your primary operations are git (`git add`, `git commit`, `git push`) and sandbox lifecycle management. You may run `make`, `docker`, and `gh` commands for provisioning, validating, and tearing down sandboxes. All application coding, building, and testing happens INSIDE sandboxes, never at root.
+Your primary operations are git (`git add`, `git commit`, `git push`) and sandbox lifecycle management. You may run `openharness`, `docker`, and `gh` commands for provisioning, validating, and tearing down sandboxes. All application coding, building, and testing happens INSIDE sandboxes, never at root.
 
 ## Lifecycle
 
@@ -15,14 +15,14 @@ Provision a new agent sandbox. The human runs all host commands.
 1. Create a GitHub issue using the `[AGENT]` template to define identity and role
 2. Provision the sandbox:
    ```bash
-   make NAME=<agent-name> BASE_BRANCH=main quickstart
+   openharness quickstart <agent-name> --base-branch development
    ```
-   Creates: git worktree at `.worktrees/agent/<agent-name>` on branch `agent/<agent-name>` (from `main`), Docker image, running container, provisioned environment. Worktree paths mirror branch paths (e.g., branch `agent/foo` → `.worktrees/agent/foo`).
+   Creates: git worktree at `.worktrees/agent/<agent-name>` on branch `agent/<agent-name>`, Docker image, running container, provisioned environment. Worktree paths mirror branch paths (e.g., branch `agent/foo` → `.worktrees/agent/foo`).
 
-   > **Note**: The root Makefile expects `main` branch layout (`docker/`, `install/`, `workspace/`). The `development` branch has a different structure (`setup/`) and requires its own Makefile. Always use `BASE_BRANCH=main` unless explicitly working with the development layout.
+   Add `--docker` for Docker-in-Docker access.
 3. Enter and start the agent:
    ```bash
-   make NAME=<agent-name> shell
+   openharness shell <agent-name>
    claude                                    # or codex, pi
    ```
 
@@ -32,15 +32,15 @@ Verify a sandbox is healthy.
 
 1. **Check running sandboxes**:
    ```bash
-   make list
+   openharness list
    ```
-2. **Verify workspace** (inside the sandbox via `make NAME=<agent-name> shell`):
+2. **Verify workspace** (inside the sandbox via `openharness shell <agent-name>`):
    - `AGENTS.md`, `SOUL.md`, `MEMORY.md` exist in workspace
    - Target agent CLI is installed (`claude --version`, `codex --version`, `pi --version`)
    - Docker socket accessible if needed (`docker ps`)
 3. **Check heartbeat** (if configured):
    ```bash
-   make NAME=<agent-name> heartbeat-status
+   openharness heartbeat status <agent-name>
    ```
 
 ### Teardown
@@ -54,28 +54,28 @@ Remove an agent sandbox. Preserve work first if needed.
    ```
 2. **Stop the sandbox**:
    ```bash
-   make NAME=<agent-name> stop
+   openharness stop <agent-name>
    ```
 3. **Full cleanup** (removes container, image, and worktree):
    ```bash
-   make NAME=<agent-name> clean
+   openharness clean <agent-name>
    ```
 
 ## Git Workflow
 
 | Item | Convention |
 |------|-----------|
-| Base branch | `main` (root Makefile requires `main` layout) |
+| Base branch | `development` |
 | Agent branches | `agent/<agent-name>` |
 | PR target | `development` |
 | Commit format | `<type>: <description>` (`feat`, `fix`, `task`, `audit`, `skill`) |
 
 ## What You Do
 
-- Commit and push changes to the harness itself (Makefile, docker/, install/, workspace/ templates)
+- Commit and push changes to the harness itself (docker/, install/, workspace/ templates)
 - Manage branches and worktree state via git
 - Review diffs across agent branches
-- Provision, validate, and tear down sandboxes (`make quickstart`, `make clean`, `docker exec`, etc.)
+- Provision, validate, and tear down sandboxes (`openharness quickstart`, `openharness clean`, `docker exec`, etc.)
 - Create and manage GitHub issues for agent tracking
 - Run the `/provision` skill for end-to-end sandbox setup
 - **Scaffold agent workspaces** after provisioning — write SOUL.md, MEMORY.md, skills, heartbeats, and initial project state to `.worktrees/agent/<name>/workspace/` based on the agent's role. The workspace is bind-mounted, so files written to the host path appear instantly inside the container.
@@ -103,7 +103,8 @@ workspace/            # Template for all agent workspaces
   .claude/skills/     # Reusable skill templates
     quality-gate/     # Template: validate decisions before execution
     strategy-review/  # Template: measure decision quality over time
-Makefile              # Human-operated sandbox automation
+cli/                  # openharness CLI (sandbox orchestration)
+packages/sandbox/     # @openharness/sandbox (Docker + worktree tools)
 .github/ISSUE_TEMPLATE/  # agent, audit, bug, feature, skill, task
 .claude/skills/          # Orchestrator skills (e.g., /provision)
 ```

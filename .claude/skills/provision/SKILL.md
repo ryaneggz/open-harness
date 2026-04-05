@@ -49,17 +49,22 @@ The issue body should include:
 - Provisioning commands for reference
 - Acceptance criteria checkboxes
 
-## 3. Provision via `make quickstart`
+## 3. Provision
 
-**Preferred method** — use `make quickstart` with the correct BASE_BRANCH:
+**Preferred method** — use the `openharness` CLI:
 
 ```bash
-make NAME=<NAME> BASE_BRANCH=<BASE_BRANCH> quickstart
+openharness quickstart <NAME> --base-branch <BASE_BRANCH>
 ```
 
-This creates the worktree at `.worktrees/agent/<NAME>` (mirroring the branch `agent/<NAME>`).
+If `--docker` is needed, add the flag:
+```bash
+openharness quickstart <NAME> --base-branch <BASE_BRANCH> --docker
+```
 
-### If `make quickstart` fails
+This creates the worktree at `.worktrees/agent/<NAME>` (mirroring the branch `agent/<NAME>`), builds the Docker image, starts the container, and runs setup.
+
+### If `openharness quickstart` fails
 
 Fall back to running steps manually. Common failure modes:
 - **Path mismatch**: `main` uses `docker/Dockerfile`, `development` uses `setup/docker/Dockerfile`
@@ -240,16 +245,16 @@ Sandbox '<NAME>' is ready!
   Worktree: .worktrees/agent/<NAME>
 
   Access:
-    make NAME=<NAME> shell    # enter the sandbox as 'sandbox' user
-    claude                    # start Claude Code
-    pi                        # start Pi Agent
+    openharness shell <NAME>    # enter the sandbox as 'sandbox' user
+    claude                      # start Claude Code
+    pi                          # start Pi Agent
 
   Validate:
     docker ps --filter "name=<NAME>"
-    make list
+    openharness list
 
   Manage:
-    make NAME=<NAME> stop     # stop the sandbox
-    make NAME=<NAME> run      # restart the sandbox
-    make NAME=<NAME> clean    # full teardown (container + image + worktree)
+    openharness stop <NAME>     # stop the sandbox
+    openharness run <NAME>      # restart the sandbox
+    openharness clean <NAME>    # full teardown (container + image + worktree)
 ```
