@@ -15,9 +15,7 @@ git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
 2. Install the `openharness` CLI:
 
 ```bash
-cd cli && npm install && npm run build && npm link && cd ..
-cd packages/sandbox && npm install && npm run build && cd ..
-openharness install @openharness/sandbox
+npm run setup
 ```
 
 3. Start Claude at the project root **in plan mode**:
