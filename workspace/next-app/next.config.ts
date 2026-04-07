@@ -8,6 +8,7 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  allowedDevOrigins: ["next-postgres-shadcn.ruska.dev"],
 };
 
 export default withPWA(nextConfig);
