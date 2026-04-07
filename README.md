@@ -1,10 +1,10 @@
-# OpenHarness: Next + Postgres + shadcn
+# 🏗️ OpenHarness: Next + Postgres + shadcn
 
 A fully-provisioned Next.js + PostgreSQL + shadcn/ui development environment running inside an isolated [Open Harness](https://github.com/ryaneggz/open-harness) Docker sandbox for AI coding agents.
 
 **Live Demo:** [next-postgres-shadcn.ruska.dev](https://next-postgres-shadcn.ruska.dev)
 
-## Stack
+## 🧱 Stack
 
 - **Next.js 16** (App Router, TypeScript strict, Turbopack)
 - **PostgreSQL 16** (Docker Compose, isolated network)
@@ -17,7 +17,7 @@ A fully-provisioned Next.js + PostgreSQL + shadcn/ui development environment run
 
 ---
 
-## Quick Start
+## ⚡ Quick Start
 
 ```bash
 # Clone the harness
@@ -39,7 +39,7 @@ The agent will:
 3. Pause for auth: `cloudflared login`, `gh auth login`
 4. After you confirm, configure the tunnel and start the dev server
 
-### Dev Container (Optional)
+### 🖥️ Dev Container (Optional)
 
 This repo can also be used as a standalone Dev Container without the orchestrator:
 
@@ -69,7 +69,7 @@ ssh orchestrator@localhost -p 2222   # password: test1234
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 ├── .devcontainer/                # Dev Container config (Dockerfile, compose, SSH)
@@ -95,11 +95,11 @@ ssh orchestrator@localhost -p 2222   # password: test1234
 
 ---
 
-## Post-Provisioning Setup (One-Time)
+## 🔧 Post-Provisioning Setup (One-Time)
 
 These steps require manual authentication regardless of how you started the environment:
 
-### Cloudflare Tunnel
+### ☁️ Cloudflare Tunnel
 
 Exposes the dev server at `next-postgres-shadcn.ruska.dev`:
 
@@ -109,13 +109,13 @@ cloudflared login                                                         # Open
 cloudflared tunnel --config ~/.cloudflared/config-next-postgres-shadcn.yml run next-postgres-shadcn  # Start the tunnel
 ```
 
-### GitHub CLI
+### 🔑 GitHub CLI
 
 ```bash
 gh auth login
 ```
 
-### Environment Variables
+### ⚙️ Environment Variables
 
 Set in `next-app/.env` or container env:
 
@@ -126,7 +126,7 @@ Set in `next-app/.env` or container env:
 
 ---
 
-## Services
+## 🐳 Services
 
 | Service | Host | Port | Credentials |
 |---------|------|------|-------------|
@@ -137,9 +137,9 @@ Set in `next-app/.env` or container env:
 
 ---
 
-## Development
+## 💻 Development
 
-### Start Developing
+### 🚀 Start Developing
 
 ```bash
 cd workspace/next-app
@@ -148,7 +148,7 @@ cloudflared tunnel --config ~/.cloudflared/config-next-postgres-shadcn.yml run n
 claude                                                # Start AI agent
 ```
 
-### Common Commands
+### 🛠️ Common Commands
 
 ```bash
 # shadcn components
@@ -170,7 +170,7 @@ npm run format                                        # Prettier
 npm run type-check                                    # tsc --noEmit
 ```
 
-### Development Workflow
+### 🔄 Development Workflow
 
 | Step | Command | When |
 |------|---------|------|
@@ -181,7 +181,7 @@ npm run type-check                                    # tsc --noEmit
 
 ---
 
-## Ralph (Autonomous Agent Loop)
+## 🤖 Ralph (Autonomous Agent Loop)
 
 Ralph works through a PRD, implementing user stories one at a time in a loop:
 
@@ -198,7 +198,7 @@ openharness ralph pr next-postgres-shadcn                     # Archive run + un
 
 ---
 
-## Agent Identity & Memory
+## 🧠 Agent Identity & Memory
 
 | File | Purpose | Authored by |
 |------|---------|-------------|
@@ -210,7 +210,7 @@ openharness ralph pr next-postgres-shadcn                     # Archive run + un
 
 ---
 
-## Sandbox Management
+## 🔒 Sandbox Management
 
 ```bash
 # From the orchestrator
@@ -234,7 +234,7 @@ docker compose -f .devcontainer/docker-compose.yml down
 
 ---
 
-## Versioning
+## 📦 Versioning
 
 This project uses **calendar versioning** (`YYYY.M.D`), matching the [Open Harness](https://github.com/ryaneggz/open-harness) convention.
 
@@ -243,7 +243,7 @@ This project uses **calendar versioning** (`YYYY.M.D`), matching the [Open Harne
 | `development` | Active development (default branch) |
 | `master` | Stable releases |
 
-### Creating a release
+### 🏷️ Creating a release
 
 ```bash
 # Tag from master after merging stable changes
