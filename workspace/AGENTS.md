@@ -1,79 +1,59 @@
-# OpenHarness Agent Sandbox
+# Operating Procedures
 
-You are running inside an isolated Docker container provisioned for AI coding agents.
+## Rules
 
-## Environment
+1. Read IDENTITY.md, USER.md, and MEMORY.md at session start
+2. Work within `workspace/` — it persists across container restarts
+3. Do not modify `~/install/` — those are provisioning scripts
+4. Coding standards live in `.claude/rules/` — they load automatically
+5. `CLAUDE.md` and `AGENTS.md` are symlinked — editing either updates both
+6. Memory protocol runs at the end of every task (see below)
+7. `.openharness/` is available in the workspace root as a symlink to the project-level Open Harness config
 
-- **OS**: Debian Bookworm (slim)
-- **User**: `sandbox` (passwordless sudo)
-- **Working directory**: `/home/sandbox/workspace` (persisted via bind mount)
-- **Docker**: CLI + Compose available; host Docker socket mounted for container management
-- **Permissions**: `--dangerously-skip-permissions` is the default for Claude Code (aliased in `.bashrc`)
+## File Responsibilities
 
-## Installed Tools
+| File | Owns | Does NOT contain |
+|------|------|-----------------|
+| IDENTITY.md | Name, role, mission, stack, URLs | Procedures, personality |
+| USER.md | Owner prefs, constraints, goals | Stack details, procedures |
+| SOUL.md | Personality, tone, values, guardrails | Coding standards, procedures |
+| AGENTS.md | Operating procedures, decision rules | Environment details, tool reference |
+| TOOLS.md | Environment, tools, services, workflows | Personality, procedures |
+| HEARTBEAT.md | Meta-maintenance routines | Task heartbeats (those are in `heartbeats/`) |
+| MEMORY.md | Learned decisions, lessons | Static stack info (that's in IDENTITY.md) |
 
-All tools are installed system-wide in `/usr/local/bin` or via apt:
+## Decision Rules
 
-| Tool | Version | Usage |
-|------|---------|-------|
-| Node.js | 22.x | `node`, `npm`, `npx` |
-| Bun | latest | `bun` |
-| uv | latest | `uv` (Python package manager) |
-| GitHub CLI | latest | `gh` |
-| Docker | latest | `docker`, `docker compose` |
-| tmux | latest | `tmux` |
-| nano | latest | `nano` |
-| ripgrep | latest | `rg` |
-| git | latest | `git` |
-| jq | latest | `jq` |
+- New personality/tone insight -> SOUL.md
+- New user preference or constraint -> USER.md
+- New tool, service, or workflow -> TOOLS.md
+- New operating rule or procedure -> AGENTS.md
+- New learned fact or recurring pattern -> MEMORY.md
+- New maintenance check -> HEARTBEAT.md
+- New coding standard -> `.claude/rules/`
 
-### Optional Agents (installed if selected)
+## Response Style
 
-| Agent | Command | Docs |
-|-------|---------|------|
-| Claude Code | `claude` | https://docs.anthropic.com/en/docs/claude-code |
-| OpenAI Codex | `codex` | https://github.com/openai/codex |
-| Pi Agent | `pi` | https://shittycodingagent.ai |
-| AgentMail | `agentmail` | https://docs.agentmail.to/integrations/cli |
+- Lead with working code, not explanations
+- Direct and concise
+- Keep commits small and focused
 
-## Guidelines
+## Memory Protocol
 
-- Work within this `workspace/` directory -- it is bind-mounted and persists across container restarts
-- `.openharness/` is available in the workspace root as a symlink to the project-level Open Harness config
-- Use `uv` for Python projects (e.g. `uv init`, `uv add`, `uv run`)
-- Use `bun` or `npm` for JavaScript/TypeScript projects
-- The `install/` directory at `~/install/` contains the provisioning script -- do not modify it
-- You have full sudo access if you need to install additional system packages
-- Use `docker compose` to manage services; the sandbox can reach host containers via `host.docker.internal`
-- `CLAUDE.md` and `AGENTS.md` are symlinked -- editing either updates both
-- Agent config directories (`.openharness/`, `.claude/`, `.codex/`) are in the workspace root
+At the end of every task (heartbeat, skill, or interactive session):
 
-## Soul
+1. **Log**: Append a structured entry to `memory/YYYY-MM-DD.md` with result, action, and one observation
+2. **Qualify**: Ask — did I learn something durable? Is there a recurring pattern? Can I improve a skill?
+3. **Improve**: If yes, update `MEMORY.md` (Lessons Learned or relevant section). If no, move on.
+4. **Never skip**: Even no-ops get logged.
 
-`SOUL.md` defines your persona, tone, and behavioral boundaries. Read it to understand who you are. You may update it over time, but always tell the user when you do.
+## Heartbeats
 
-## Memory
-
-Your long-term memory lives in two places:
-
-- **`MEMORY.md`** -- curated, durable memories (decisions, preferences, lessons learned). Read this at session start.
-- **`memory/YYYY-MM-DD.md`** -- daily append-only logs. Write notable events, decisions, and learnings here during work.
-
-Workflow:
-- At session start, read `MEMORY.md` for context
-- During work, append to `memory/YYYY-MM-DD.md` (today's date)
-- Periodically (during heartbeats or when asked), distill daily logs into `MEMORY.md`
-- If the user says "remember this", write it to `MEMORY.md` immediately
-
-## Heartbeat
-
-Heartbeats are periodic tasks executed on cron schedules. Each heartbeat is a `.md` file containing instructions for the agent.
-
-- **Schedule config**: `heartbeats.conf` in workspace root — maps files to cron expressions
+- **Schedule config**: `heartbeats.conf` — maps `.md` files to cron expressions
 - **Format**: `<cron> | <file> | [agent] | [active_start-active_end]` (pipe-delimited)
-- **Heartbeat files**: `.md` files in `heartbeats/` (default: `heartbeats/default.md`)
+- **Task files**: `heartbeats/` directory (default: `heartbeats/default.md`)
 - **Manage from host**: `openharness heartbeat sync <name>`, `openharness heartbeat stop <name>`, `openharness heartbeat status <name>`
-- **Logs**: `~/.heartbeat/heartbeat.log` inside the container
+- **Logs**: `~/.heartbeat/heartbeat.log`
 - Schedules auto-sync on container startup from `heartbeats.conf`
 - If a heartbeat file is empty (only headers/comments), that execution is skipped to save API costs
 - If nothing needs attention, reply `HEARTBEAT_OK`
