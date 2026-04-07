@@ -21,9 +21,7 @@ A fully-provisioned Next.js + PostgreSQL + shadcn/ui development environment run
 
 ```bash
 # Clone the harness
-git clone -b agent/next-postgres-shadcn \
-  https://github.com/ryaneggz/open-harness.git \
-  next-postgres-shadcn
+git clone https://github.com/ryaneggz/next-postgres-shadcn.git
 cd next-postgres-shadcn
 
 # Install the CLI
@@ -43,12 +41,12 @@ The agent will:
 
 ### Dev Container (Optional)
 
-This branch can also be used as a standalone Dev Container without the orchestrator:
+This repo can also be used as a standalone Dev Container without the orchestrator:
 
-1. **Clone the branch**:
+1. **Clone the repo**:
 
 ```bash
-git clone -b agent/next-postgres-shadcn https://github.com/ryaneggz/open-harness.git next-postgres-shadcn
+git clone https://github.com/ryaneggz/next-postgres-shadcn.git
 cd next-postgres-shadcn
 ```
 
@@ -233,3 +231,27 @@ openharness heartbeat stop next-postgres-shadcn     # Remove all schedules
 ```bash
 docker compose -f .devcontainer/docker-compose.yml down
 ```
+
+---
+
+## Versioning
+
+This project uses **calendar versioning** (`YYYY.M.D`), matching the [Open Harness](https://github.com/ryaneggz/open-harness) convention.
+
+| Branch | Purpose |
+|--------|---------|
+| `development` | Active development (default branch) |
+| `master` | Stable releases |
+
+### Creating a release
+
+```bash
+# Tag from master after merging stable changes
+git tag 2026.4.6
+git push origin 2026.4.6
+```
+
+Pushing a calver tag triggers the release workflow which:
+1. Runs the full CI pipeline (lint, format, type-check, build, test, E2E)
+2. Builds and pushes a Docker image to `ghcr.io/ryaneggz/next-postgres-shadcn:<version>`
+3. Creates a GitHub Release with auto-generated release notes

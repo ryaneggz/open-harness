@@ -1,0 +1,105 @@
+name: Release
+
+permissions:
+  contents: write
+  packages: write
+
+on:
+  push:
+    tags:
+      - "[0-9][0-9][0-9][0-9].[0-9]*.[0-9]*"
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sandbox
+          POSTGRES_PASSWORD: sandbox
+          POSTGRES_DB: sandbox
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://sandbox:sandbox@localhost:5432/sandbox
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse tag
+        id: parse
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        working-directory: workspace/next-app
+        run: npm ci
+
+      - name: Lint
+        working-directory: workspace/next-app
+        run: npm run lint
+
+      - name: Format check
+        working-directory: workspace/next-app
+        run: npm run format:check
+
+      - name: Type check
+        working-directory: workspace/next-app
+        run: npm run type-check
+
+      - name: Generate Prisma client
+        working-directory: workspace/next-app
+        run: npx prisma generate
+
+      - name: Run migrations
+        working-directory: workspace/next-app
+        run: npx prisma migrate deploy
+
+      - name: Build
+        working-directory: workspace/next-app
+        run: npm run build
+
+      - name: Test
+        working-directory: workspace/next-app
+        run: npm test
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE=ghcr.io/ryaneggz/next-postgres-shadcn:${{ steps.parse.outputs.version }}
+          LATEST=ghcr.io/ryaneggz/next-postgres-shadcn:latest
+
+          docker build -f docker/Dockerfile -t $IMAGE -t $LATEST .
+          docker push $IMAGE
+          docker push $LATEST
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: v${{ steps.parse.outputs.version }}
+          generate_release_notes: true

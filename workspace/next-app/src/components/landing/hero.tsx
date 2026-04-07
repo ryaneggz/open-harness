@@ -29,7 +29,7 @@ export function Hero() {
           Live Demo
         </Link>
         <Link
-          href="https://github.com/ryaneggz/open-harness/tree/agent/next-postgres-shadcn"
+          href="https://github.com/ryaneggz/next-postgres-shadcn"
           target="_blank"
           rel="noopener noreferrer"
           className={buttonVariants({ variant: "outline", size: "lg" })}
