@@ -125,28 +125,20 @@ const steps = [
 
 export function QuickStart() {
   return (
-    <section className="mx-auto max-w-5xl px-4 py-16">
-      <h2 className="mb-2 text-center text-2xl font-bold tracking-tight sm:text-3xl">
-        Quick Start
-      </h2>
-      <p className="mb-8 text-center text-muted-foreground">
-        Three commands. The agent handles the rest — you only authenticate.
-      </p>
-      <div className="mx-auto flex max-w-3xl flex-col gap-6">
-        <TerminalBlock code={setupCode} label="terminal" />
+    <div className="flex flex-col gap-4">
+      <TerminalBlock code={setupCode} label="terminal" />
 
-        <div className="rounded-lg border border-border/50 p-4">
-          <p className="mb-3 text-sm font-medium">The agent will:</p>
-          <ol className="space-y-1.5 text-sm text-muted-foreground">
-            {steps.map((step, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="font-mono text-xs text-foreground">{i + 1}.</span>
-                {step}
-              </li>
-            ))}
-          </ol>
-        </div>
+      <div className="rounded-lg border border-border/50 p-4">
+        <p className="mb-3 text-sm font-medium">The agent will:</p>
+        <ol className="space-y-1.5 text-sm text-muted-foreground">
+          {steps.map((step, i) => (
+            <li key={i} className="flex gap-2">
+              <span className="font-mono text-xs text-foreground">{i + 1}.</span>
+              {step}
+            </li>
+          ))}
+        </ol>
       </div>
-    </section>
+    </div>
   );
 }

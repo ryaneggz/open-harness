@@ -10,8 +10,12 @@ export default function Home() {
     <>
       <Navbar />
       <main className="flex-1">
-        <Hero />
-        <QuickStart />
+        <section className="mx-auto max-w-6xl px-4 py-16 sm:py-24">
+          <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16">
+            <Hero />
+            <QuickStart />
+          </div>
+        </section>
         <Features />
         <TechStack />
       </main>
