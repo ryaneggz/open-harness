@@ -11,12 +11,13 @@ export function Hero() {
         Built on Open Harness
       </p>
       <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-        OpenHarness: <span className="text-muted-foreground">Next + Postgres + shadcn</span>
+        Give your AI agents{" "}
+        <span className="text-muted-foreground">a real dev environment</span>
       </h1>
       <p className="mt-6 max-w-lg text-lg leading-8 text-muted-foreground">
-        A fully-provisioned Next.js + PostgreSQL + shadcn/ui development environment running inside
-        an isolated Docker sandbox — with persistent memory, autonomous heartbeats, and a public
-        tunnel.
+        This harness gives AI coding agents an isolated, fully-wired Next.js + PostgreSQL +
+        shadcn/ui sandbox — scaffolded with identity, memory, and skills for their task — so they
+        can build, test, and deploy real web features, not just generate code.
       </p>
       <div className="mt-8 flex items-center gap-4">
         <Link

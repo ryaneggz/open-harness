@@ -43,8 +43,8 @@ function highlightLine(line: string, index: number): ReactNode {
       {tokens.map((token, i) => {
         if (/^\s+$/.test(token)) return token;
 
-        if (token.includes('"')) inString = !inString;
-        if (inString || token.startsWith('"')) {
+        if (inString || token.includes('"')) {
+          if (token.includes('"')) inString = !inString;
           return (
             <span key={i} className="text-amber-600 dark:text-amber-400">
               {token}

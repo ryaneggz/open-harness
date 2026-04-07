@@ -4,38 +4,39 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 const features = [
   {
     icon: Layers,
-    title: "Full Stack Ready",
+    title: "Zero to Full Stack",
     description:
-      "Next.js 16 + PostgreSQL 16 + Prisma 7 + shadcn/ui, pre-wired and running out of the box.",
+      "Stop hand-wiring Next.js, PostgreSQL, Prisma, and shadcn/ui. This harness gives agents a production-grade web stack, pre-configured and running — so they build features, not boilerplate.",
   },
   {
     icon: Zap,
-    title: "One Command Setup",
+    title: "Minutes, Not Hours",
     description:
-      "npm run setup + openharness quickstart provisions the entire environment in minutes.",
+      "No Dockerfile tweaking, env var juggling, or dependency debugging. openharness quickstart provisions the entire sandbox — Docker, database, tunnel, agent CLI — in one shot.",
   },
   {
     icon: Globe,
-    title: "Public Tunnel",
+    title: "Instant Feedback Loop",
     description:
-      "Cloudflared tunnel at next-postgres-shadcn.ruska.dev for instant QA and live demos.",
+      "Agents write frontend code but you need to see the result. A Cloudflare tunnel gives you a public URL to verify UI changes in a real browser — or let the agent verify with agent-browser.",
   },
   {
     icon: Bot,
-    title: "AI Agent Native",
+    title: "Bring Any Agent",
     description:
-      "Claude Code, Codex, and Pi Agent pre-installed with full permissions in an isolated sandbox.",
+      "Run multiple agents in the same harness — each in its own isolated container with its own heartbeats, memory, and skills. Claude Code, Codex, Pi Agent, or your own. Switch or add agents without reconfiguring anything.",
   },
   {
     icon: Brain,
-    title: "Persistent Memory",
+    title: "Agents That Remember",
     description:
-      "SOUL.md, MEMORY.md, and daily logs survive across sessions — agents remember context.",
+      "AI agents forget everything between sessions. This harness gives them structured memory — identity, long-term decisions, and daily logs — that persists across container restarts.",
   },
   {
     icon: HeartPulse,
-    title: "Autonomous Heartbeats",
-    description: "Cron-scheduled tasks let agents monitor, maintain, and report while you sleep.",
+    title: "Work While You Sleep",
+    description:
+      "Each agent gets its own cron-scheduled heartbeats — monitoring, auditing, and reporting independently. Multiple agents can work in parallel, each on their own schedule, with no human in the loop.",
   },
 ];
 
@@ -46,11 +47,11 @@ export function Features() {
         What&apos;s in the box
       </h2>
       <p className="mb-12 text-center text-muted-foreground">
-        Everything you need to go from zero to shipping with AI agents.
+        Everything an AI agent needs to ship full-stack web features end-to-end.
       </p>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {features.map((feature) => (
-          <Card key={feature.title} className="border-border/50">
+          <Card key={feature.title}>
             <CardHeader>
               <feature.icon className="mb-2 h-6 w-6 text-muted-foreground" />
               <CardTitle className="text-lg">{feature.title}</CardTitle>

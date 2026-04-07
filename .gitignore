@@ -10,3 +10,7 @@ dist/
 # IDE
 .vscode/
 .idea/
+
+# Screenshots (keep dir, ignore contents)
+**/.claude/screenshots/*
+!**/.claude/screenshots/.gitkeep

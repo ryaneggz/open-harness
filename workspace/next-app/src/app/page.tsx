@@ -3,6 +3,7 @@ import { Hero } from "@/components/landing/hero";
 import { Features } from "@/components/landing/features";
 import { QuickStart } from "@/components/landing/quick-start";
 import { TechStack } from "@/components/landing/tech-stack";
+import { FAQ } from "@/components/landing/faq";
 import { Footer } from "@/components/landing/footer";
 
 export default function Home() {
@@ -18,6 +19,7 @@ export default function Home() {
         </section>
         <Features />
         <TechStack />
+        <FAQ />
       </main>
       <Footer />
     </>
