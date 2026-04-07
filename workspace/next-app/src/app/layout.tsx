@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next.js App",
-  description: "Full Stack Next.js + PostgreSQL + shadcn/ui Application",
+  title: "OpenHarness: Next + Postgres + shadcn",
+  description:
+    "A fully-provisioned Next.js + PostgreSQL + shadcn/ui development environment running inside an isolated Docker sandbox for AI coding agents.",
   manifest: "/manifest.json",
   themeColor: "#000000",
 };
