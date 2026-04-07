@@ -15,6 +15,9 @@ progress.txt
 # Claude
 **/.env*
 
+# Generated
+src/generated/
+
 # Defensive patterns
 **/node_modules/
 **/.next/
