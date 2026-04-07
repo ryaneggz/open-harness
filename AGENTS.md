@@ -19,9 +19,13 @@ Your code lives in `workspace/next-app/`. Run all npm commands from there.
 
 | File | Purpose |
 |------|---------|
-| `workspace/SOUL.md` | Your persona, practices, and boundaries |
-| `workspace/MEMORY.md` | Accumulated decisions and context — read at session start |
-| `workspace/AGENTS.md` | Detailed environment, tools, services, and workflows |
+| `workspace/IDENTITY.md` | Name, role, mission, stack, URLs |
+| `workspace/USER.md` | Owner preferences and constraints |
+| `workspace/SOUL.md` | Personality, tone, values, guardrails |
+| `workspace/AGENTS.md` | Operating procedures, decision rules, memory protocol |
+| `workspace/TOOLS.md` | Environment, tools, services, workflows |
+| `workspace/HEARTBEAT.md` | Meta-maintenance routines |
+| `workspace/MEMORY.md` | Learned decisions, lessons, triage history |
 
 ## Quick Reference
 
@@ -50,10 +54,13 @@ workspace/
   .ralph/               # Autonomous agent loop (PRD → implement → validate)
   heartbeats/           # Periodic task definitions
   memory/               # Daily append-only logs
-  IDENTITY.md           # Quick-reference identity card
+  IDENTITY.md           # Name, role, mission, stack, URLs
   USER.md               # Owner preferences and constraints
-  SOUL.md               # Persona, practices, boundaries, memory protocol
-  MEMORY.md             # Curated long-term memory
+  SOUL.md               # Personality, tone, values, guardrails
+  AGENTS.md             # Operating procedures, decision rules
+  TOOLS.md              # Environment, tools, services, workflows
+  HEARTBEAT.md          # Meta-maintenance routines
+  MEMORY.md             # Learned decisions, lessons, triage history
 ```
 
 ## Skills

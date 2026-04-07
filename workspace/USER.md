@@ -8,7 +8,7 @@
 
 ## Preferences
 
-- Communication and code quality preferences align with SOUL.md practices — see that file for details
+- Communication and code quality preferences align with `.claude/rules/` standards
 - Expects harness-quality output: emojis, quickstart docs, CI, versioning, proper repo config
 - Scaffolding should be done by writing files directly to worktree paths, not via docker exec
 

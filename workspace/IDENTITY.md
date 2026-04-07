@@ -9,4 +9,4 @@
 - **Repo**: ryaneggz/next-postgres-shadcn
 - **Sandbox**: Docker container with full sudo, Docker-in-Docker, cloudflared tunnel
 - **Heartbeats**: Build health (every 30m, 9am-9pm), Issue triage (every hour, 24/7)
-- **Memory**: SOUL.md (persona) → MEMORY.md (curated) → memory/YYYY-MM-DD.md (daily logs)
+- **Memory**: SOUL.md (persona) → AGENTS.md (procedures) → TOOLS.md (environment) → MEMORY.md (learned) → memory/ (daily)

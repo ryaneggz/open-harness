@@ -13,7 +13,7 @@ Process one issue per run (oldest first).
    - Assign, spawn sub-agents, council review, draft PR
 2. If the skill found no unassigned issues, reply `HEARTBEAT_OK`
 3. If the skill triaged an issue, report the issue number and draft PR URL
-4. Run the Memory Improvement Protocol (SOUL.md) — log, qualify, improve
+4. Run the Memory Improvement Protocol (AGENTS.md) — log, qualify, improve
 
 ## Reporting
 
