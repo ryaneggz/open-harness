@@ -28,28 +28,12 @@ If `$ARGUMENTS` is empty or NAME is missing, enter interactive mode. Ask the use
 
 1. **Agent name?** (used for worktree, branch, container, and image name)
 2. **Which AI agent CLIs?** (claude, codex, pi — all installed by default via `--non-interactive`, ask if they want to note which they'll primarily use)
-3. **What is this agent's role/purpose?** (shapes the GitHub issue description)
+3. **What is this agent's role/purpose?** (shapes the workspace scaffolding)
 4. **Docker-in-Docker access?** (default: no)
 5. **Enable heartbeat?** (default: no)
 6. **Base branch?** (default: `main` — use `main` unless explicitly told otherwise; `development` has a different project structure)
 
-## 2. Create GitHub Issue
-
-Create a GitHub issue to track this agent. Note: the `agent` label may not exist yet — create the issue without labels if it fails:
-
-```bash
-gh issue create \
-  --title "[AGENT] <NAME> — <short role description>" \
-  --body "<issue body>"
-```
-
-The issue body should include:
-- Agent Identity table (name, branch `agent/<NAME>`, worktree `.worktrees/agent/<NAME>`, CLIs, docker, heartbeat)
-- Role description from user input
-- Provisioning commands for reference
-- Acceptance criteria checkboxes
-
-## 3. Provision
+## 2. Provision
 
 **Preferred method** — use the `openharness` CLI:
 
@@ -70,7 +54,7 @@ Fall back to running steps manually. Common failure modes:
 - **Path mismatch**: `main` uses `docker/Dockerfile`, `development` uses `setup/docker/Dockerfile`
 - **Permission denied on setup.sh**: the `main` branch Dockerfile may not set execute permissions on install scripts
 
-#### 3a. Create Worktree
+#### 2a. Create Worktree
 
 ```bash
 git fetch origin <BASE_BRANCH> 2>/dev/null || true
@@ -88,7 +72,7 @@ Otherwise:
 git worktree add .worktrees/agent/<NAME> -b agent/<NAME> origin/<BASE_BRANCH>
 ```
 
-#### 3b. Detect Layout and Build
+#### 2b. Detect Layout and Build
 
 The project has two known layouts. Detect which one the worktree uses:
 
@@ -117,7 +101,7 @@ fi
 docker build -f "$DOCKERFILE" -t ghcr.io/ryaneggz/<NAME>:latest "$WTREE"
 ```
 
-#### 3c. Start Container
+#### 2c. Start Container
 
 ```bash
 WORKTREE_ABS=$(realpath .worktrees/agent/<NAME>)
@@ -127,7 +111,7 @@ NAME=<NAME> HARNESS_ROOT="$WORKTREE_ABS" HOST_WORKSPACE="$WORKTREE_ABS" \
 
 If DOCKER is true, also include the docker-in-docker override compose file (same directory, `docker-compose.docker.yml`).
 
-#### 3d. Run Setup
+#### 2d. Run Setup
 
 **Important**: Fix execute permissions first — the `main` branch Dockerfile may not set them:
 
@@ -135,7 +119,7 @@ If DOCKER is true, also include the docker-in-docker override compose file (same
 docker exec --user root <NAME> bash -c "chmod +x ${SETUP_PATH%/*}/*.sh && bash $SETUP_PATH --non-interactive"
 ```
 
-## 4. Verify
+## 3. Verify
 
 Run health checks. The workspace path differs by layout:
 
@@ -158,7 +142,7 @@ git -C .worktrees/agent/<NAME> branch --show-current
 
 If any verification fails, report the specific failure and suggest remediation.
 
-## 5. Scaffold the Workspace
+## 4. Scaffold the Workspace
 
 After provisioning, scaffold the agent's workspace based on the role/purpose gathered in step 1. Write files directly to the host worktree path (bind-mounted into the container):
 
@@ -168,7 +152,7 @@ WORKSPACE=".worktrees/agent/<NAME>/workspace"
 
 > **Important**: Use the host Write/Edit tools on `$WORKSPACE/` paths — NOT `docker exec` with heredocs (shell escaping breaks on markdown content). Only use `docker exec` for commands that need the container runtime (`uv init`, `uv add`, `heartbeat.sh sync`).
 
-### 5a. SOUL.md — Agent Persona
+### 4a. SOUL.md — Agent Persona
 
 Write `$WORKSPACE/SOUL.md` with:
 - **Identity**: Who the agent is, what it does, framed around the role from step 1
@@ -177,7 +161,7 @@ Write `$WORKSPACE/SOUL.md` with:
 - **Boundaries**: What the agent should and shouldn't do
 - **Continuity**: Pointers to MEMORY.md, state files, and daily logs
 
-### 5b. MEMORY.md — Seeded Context
+### 4b. MEMORY.md — Seeded Context
 
 Write `$WORKSPACE/MEMORY.md` with:
 - **Decisions & Preferences**: Strategy details, key parameters, data sources
@@ -186,7 +170,7 @@ Write `$WORKSPACE/MEMORY.md` with:
 
 If the agent's role benefits from research (market data, API docs, competitor analysis), use WebSearch to gather current information and seed it here.
 
-### 5c. Skills (Optional)
+### 4c. Skills (Optional)
 
 If the agent's role involves consequential decisions, create quality gate skills in `$WORKSPACE/.claude/skills/`. Common patterns:
 
@@ -199,7 +183,7 @@ If the agent's role involves consequential decisions, create quality gate skills
 
 Each skill goes in its own directory with a `SKILL.md` file containing frontmatter (name, description, trigger conditions) and instructions.
 
-### 5d. Heartbeats (Optional)
+### 4d. Heartbeats (Optional)
 
 If heartbeats were requested, write:
 - `$WORKSPACE/heartbeats.conf` — cron schedule mapping files to schedules
@@ -210,7 +194,7 @@ Then sync inside the container:
 docker exec --user sandbox <NAME> bash -c '~/install/heartbeat.sh sync'
 ```
 
-### 5e. Project Initialization (Optional)
+### 4e. Project Initialization (Optional)
 
 If the agent needs a Python or Node.js project, initialize it inside the container:
 ```bash
@@ -223,7 +207,7 @@ docker exec --user sandbox <NAME> bash -c 'cd ~/workspace && bun init <project>'
 
 Then write initial state/config files to `$WORKSPACE/<project>/` from the host.
 
-### 5f. README.md — Standalone Artifact
+### 4f. README.md — Standalone Artifact
 
 Write a new `README.md` at the worktree root (`.worktrees/agent/<NAME>/README.md`) that describes this specific agent — not the generic Open Harness README. Include:
 - Agent title and purpose
@@ -233,14 +217,13 @@ Write a new `README.md` at the worktree root (`.worktrees/agent/<NAME>/README.md
 - Getting started commands
 - Fork notice: "Forked from [Open Harness](https://github.com/ryaneggz/open-harness)"
 
-## 6. Report Access Steps
+## 5. Report Access Steps
 
 After successful provisioning and scaffolding, tell the user:
 
 ```
 Sandbox '<NAME>' is ready!
 
-  Issue:    <github issue URL>
   Branch:   agent/<NAME> (from <BASE_BRANCH>)
   Worktree: .worktrees/agent/<NAME>
 
