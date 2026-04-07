@@ -1,19 +1,20 @@
 import { CopyButton } from "./copy-button";
 
-const quickStartCode = `git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
+const quickStartCode = `# Clone the Next + Postgres + shadcn harness
+git clone -b agent/next-postgres-shadcn \\
+  https://github.com/ryaneggz/open-harness.git \\
+  next-postgres-shadcn && cd next-postgres-shadcn
+
+# Install the OpenHarness CLI
 npm run setup
-openharness quickstart next-postgres-shadcn --base-branch main
 
-# Start with compose overrides for PostgreSQL + port 3000
-WTREE=".worktrees/agent/next-postgres-shadcn"
-NAME=next-postgres-shadcn \\
-  HARNESS_ROOT="$(realpath $WTREE)" \\
-  HOST_WORKSPACE="$(realpath $WTREE)" \\
-  docker compose \\
-    -f "$WTREE/docker/docker-compose.yml" \\
-    -f "$WTREE/docker/docker-compose.nextjs.yml" \\
-    -p next-postgres-shadcn up -d
+# Start PostgreSQL + sandbox container
+docker compose \\
+  -f docker/docker-compose.yml \\
+  -f docker/docker-compose.nextjs.yml \\
+  -p next-postgres-shadcn up -d
 
+# Enter the sandbox and start developing
 openharness shell next-postgres-shadcn
 cd workspace/next-app && npm install && npm run dev`;
 
