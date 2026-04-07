@@ -26,6 +26,7 @@ INSTALL_CLAUDE_CODE=true
 INSTALL_CODEX=true
 INSTALL_PI_AGENT=true
 INSTALL_AGENTMAIL=false
+INSTALL_CLOUDFLARED=false
 SSH_PUBKEY=""
 GH_TOKEN=""
 AGENTMAIL_KEY=""
@@ -67,6 +68,10 @@ if [[ "$NON_INTERACTIVE" == false ]]; then
 
   read -rp "  Install agent-browser + Chromium? [Y/n]: " answer
   [[ "$answer" =~ ^[Nn]$ ]] && INSTALL_BROWSER=false
+
+  printf "\n  Install cloudflared for Cloudflare Tunnels? (https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)\n"
+  read -rp "  Install cloudflared? [y/N]: " answer
+  [[ "$answer" =~ ^[Yy]$ ]] && INSTALL_CLOUDFLARED=true
 
   printf "\n${GREEN}  All set — installing now (no more prompts).${NC}\n"
 fi
@@ -202,6 +207,21 @@ else
   ok "Skipped"
 fi
 
+# ─── 12b. Cloudflared (optional) ──────────────────────────────────
+if [[ "$INSTALL_CLOUDFLARED" == true ]]; then
+  banner "Installing cloudflared"
+  curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg \
+    -o /usr/share/keyrings/cloudflare-main.gpg
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared $(lsb_release -cs) main" \
+    > /etc/apt/sources.list.d/cloudflared.list
+  apt-get update
+  apt-get install -y --no-install-recommends cloudflared
+  ok "cloudflared $(cloudflared --version | head -1) installed"
+else
+  banner "Skipping cloudflared"
+  ok "Skipped"
+fi
+
 # ─── 13. Git global config (for sandbox user) ────────────────────
 if [[ -n "$GIT_USER_NAME" ]]; then
   su - "$SANDBOX_USER" -c "git config --global user.name '${GIT_USER_NAME}'"
@@ -266,6 +286,9 @@ if [[ "$INSTALL_PI_AGENT" == true ]]; then
 fi
 if [[ "$INSTALL_AGENTMAIL" == true ]]; then
   printf "  agentmail: %s\n" "$(agentmail --version 2>/dev/null || echo 'installed')"
+fi
+if [[ "$INSTALL_CLOUDFLARED" == true ]]; then
+  printf "  cflared  : %s\n" "$(cloudflared --version 2>/dev/null | head -1 || echo 'installed')"
 fi
 printf "\n"
 

@@ -10,3 +10,5 @@ dist/
 # IDE
 .vscode/
 .idea/
+
+.claude/screenshots/
