@@ -8,7 +8,7 @@ export function Footer() {
         <p className="text-sm text-muted-foreground">
           Built with{" "}
           <Link
-            href="https://github.com/ryaneggz/open-harness"
+            href="https://github.com/ryaneggz/open-harness/tree/agent/next-postgres-shadcn"
             className="font-medium text-foreground underline-offset-4 hover:underline"
             target="_blank"
             rel="noopener noreferrer"
@@ -17,7 +17,7 @@ export function Footer() {
           </Link>
         </p>
         <Link
-          href="https://github.com/ryaneggz/open-harness"
+          href="https://github.com/ryaneggz/open-harness/tree/agent/next-postgres-shadcn"
           className="text-muted-foreground hover:text-foreground"
           target="_blank"
           rel="noopener noreferrer"

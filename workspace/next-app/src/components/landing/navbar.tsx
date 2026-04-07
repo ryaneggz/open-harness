@@ -14,7 +14,7 @@ export function Navbar() {
         </Link>
         <div className="flex items-center gap-1">
           <Link
-            href="https://github.com/ryaneggz/open-harness"
+            href="https://github.com/ryaneggz/open-harness/tree/agent/next-postgres-shadcn"
             target="_blank"
             rel="noopener noreferrer"
             className={buttonVariants({ variant: "ghost", size: "sm" })}
