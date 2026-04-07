@@ -41,7 +41,7 @@ const COMMANDS = new Set(["git", "npm", "docker", "openharness", "cd"]);
 function highlightLine(line: string, index: number): ReactNode {
   if (line.startsWith("#")) {
     return (
-      <span key={index} className="text-muted-foreground/60 italic">
+      <span key={index} className="text-emerald-600 dark:text-emerald-400 italic">
         {line}
       </span>
     );
@@ -66,7 +66,7 @@ function highlightLine(line: string, index: number): ReactNode {
 
         if (token.startsWith("-")) {
           return (
-            <span key={i} className="text-chart-1">
+            <span key={i} className="text-sky-600 dark:text-sky-400">
               {token}
             </span>
           );
@@ -82,7 +82,7 @@ function highlightLine(line: string, index: number): ReactNode {
 
         if (token.includes("/") || token.includes(".") || token.startsWith("https:")) {
           return (
-            <span key={i} className="text-chart-2">
+            <span key={i} className="text-amber-600 dark:text-amber-400">
               {token}
             </span>
           );
