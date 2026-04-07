@@ -11,8 +11,8 @@ export default function Home() {
       <Navbar />
       <main className="flex-1">
         <Hero />
-        <Features />
         <QuickStart />
+        <Features />
         <TechStack />
       </main>
       <Footer />

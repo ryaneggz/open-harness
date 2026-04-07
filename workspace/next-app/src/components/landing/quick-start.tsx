@@ -5,9 +5,10 @@ const setupCode = `git clone -b agent/next-postgres-shadcn \\
   https://github.com/ryaneggz/open-harness.git \\
   next-postgres-shadcn && cd next-postgres-shadcn
 npm run setup
-claude --permission-mode plan`;
-
-const exampleQuery = `Provision this harness. Generate an SSH key and return the public key for me to add to GitHub. Configure gh CLI auth. Set up the cloudflared tunnel. Pause whenever you need me to authenticate.`;
+claude --permission-mode plan -p "Provision this harness. \\
+  Generate an SSH key and return the pub key for me to add \\
+  to GitHub. Configure gh CLI. Set up the cloudflared tunnel. \\
+  Pause whenever you need me to authenticate."`;
 
 const COMMANDS = new Set(["git", "npm", "claude"]);
 
@@ -102,16 +103,6 @@ export function QuickStart() {
       </p>
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <TerminalBlock code={setupCode} label="terminal" />
-
-        <div className="relative overflow-hidden rounded-lg border border-border/50 bg-muted/30">
-          <div className="flex items-center gap-2 border-b border-border/50 px-4 py-2">
-            <span className="text-xs font-medium text-muted-foreground">Example prompt</span>
-          </div>
-          <CopyButton text={exampleQuery} />
-          <p className="p-4 text-sm leading-relaxed italic text-muted-foreground">
-            &ldquo;{exampleQuery}&rdquo;
-          </p>
-        </div>
 
         <div className="rounded-lg border border-border/50 p-4">
           <p className="mb-3 text-sm font-medium">The agent will:</p>
