@@ -1,15 +1,25 @@
 FROM debian:bookworm-slim
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates cron curl wget sudo gosu \
+ && apt-get install -y --no-install-recommends ca-certificates cron curl wget sudo gosu gnupg procps \
  && rm -rf /var/lib/apt/lists/*
+
+ENV TZ=America/Denver
+
+# Node.js 22.x
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+ && apt-get install -y --no-install-recommends nodejs \
+ && rm -rf /var/lib/apt/lists/*
+
+# Agent CLIs
+RUN npm install -g @anthropic-ai/claude-code @openai/codex @mariozechner/pi-coding-agent
 
 RUN useradd -m -s /bin/bash sandbox \
  && echo "sandbox ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/sandbox \
  && groupadd -f docker && usermod -aG docker sandbox \
- && echo "alias claude='/home/sandbox/install/tmux-agent.sh claude claude --dangerously-skip-permissions'" >> /home/sandbox/.bashrc \
- && echo "alias codex='/home/sandbox/install/tmux-agent.sh codex codex --full-auto'" >> /home/sandbox/.bashrc \
- && echo "alias pi='/home/sandbox/install/tmux-agent.sh pi pi'" >> /home/sandbox/.bashrc
+ && echo "alias claude='claude --dangerously-skip-permissions'" >> /home/sandbox/.bashrc \
+ && echo "alias codex='codex --full-auto'" >> /home/sandbox/.bashrc \
+ && echo "alias pi='pi'" >> /home/sandbox/.bashrc
 
 COPY install/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

@@ -18,6 +18,8 @@
 
 <!-- Populated by the agent over time via Memory Improvement Protocol -->
 
+- **gh auth blocks issue triage** (2026-04-07 → 2026-04-08): Sandbox lacks GH_TOKEN / gh auth. Issue triage has skipped 4 consecutive runs. Fix: provision GH_TOKEN in environment or run `gh auth login` once. This is a setup gap, not transient.
+
 ## Triage History
 
 <!-- Populated by issue-triage skill. Track patterns: issue types, planner quality, recurring themes. -->

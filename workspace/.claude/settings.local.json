@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ./.claude/hooks/notify_slack.sh"
+            "command": "bash ~/workspace/.claude/hooks/notify_slack.sh"
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ./.claude/hooks/notify_slack.sh"
+            "command": "bash ~/workspace/.claude/hooks/notify_slack.sh"
           }
         ]
       },
@@ -25,13 +25,26 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ./.claude/hooks/notify_slack.sh"
+            "command": "bash ~/workspace/.claude/hooks/notify_slack.sh"
           }
         ]
       }
     ]
   },
   "permissions": {
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "bypassPermissions",
+    "deny": [
+      "Read(file_path=**/.env*)",
+      "Read(file_path=**/*.pem)",
+      "Read(file_path=**/*.key)",
+      "Read(file_path=**/*.cert)",
+      "Read(file_path=**/*.p12)",
+      "Read(file_path=**/*id_rsa*)",
+      "Read(file_path=**/*id_ed25519*)",
+      "Read(file_path=**/docker-compose*.yml)",
+      "Bash(command=*cat*.env*)",
+      "Bash(command=*printenv*)",
+      "Bash(command=*docker inspect*)"
+    ]
   }
 }

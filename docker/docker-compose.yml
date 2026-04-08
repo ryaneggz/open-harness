@@ -7,9 +7,11 @@ services:
     volumes:
       - ../workspace:/home/sandbox/workspace
       - ../.openharness:/home/sandbox/.openharness
+      - ${HOME}/.claude:/home/sandbox/.claude
     stdin_open: true
     tty: true
     environment:
+      - TZ=${TZ:-America/Denver}
       - HEARTBEAT_ACTIVE_START=${HEARTBEAT_ACTIVE_START:-}
       - HEARTBEAT_ACTIVE_END=${HEARTBEAT_ACTIVE_END:-}
       - HEARTBEAT_AGENT=${HEARTBEAT_AGENT:-claude}

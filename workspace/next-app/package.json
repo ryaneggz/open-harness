@@ -13,6 +13,7 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:setup": "vitest run --config vitest.setup.config.ts",
     "test:e2e": "playwright test",
     "prepare": "husky"
   },

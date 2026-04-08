@@ -5,13 +5,10 @@ const setupCode = `# Clone the harness
 git clone https://github.com/ryaneggz/next-postgres-shadcn.git
 cd next-postgres-shadcn
 
-# Install the CLI
-npm run setup
-
 # Provision — the agent handles everything
-claude --permission-mode plan -p "Provision this harness"`;
+claude "/provision"`;
 
-const COMMANDS = new Set(["git", "npm", "claude"]);
+const COMMANDS = new Set(["git", "claude"]);
 
 function highlightLine(line: string, index: number): ReactNode {
   const trimmed = line.trimStart();
@@ -115,10 +112,10 @@ function TerminalBlock({ code, label }: { code: string; label: string }) {
 }
 
 const steps = [
-  "Builds Docker image, starts PostgreSQL + sandbox container",
-  "Generates SSH key — gives you the public key to add to GitHub",
-  "Pauses for auth: cloudflared login, gh auth login",
-  "After you confirm, configures tunnel + starts dev server",
+  "Builds Docker image with Node.js 22, agent CLIs, and dev tools",
+  "Starts PostgreSQL + sandbox container with compose overlays",
+  "Installs dependencies, generates Prisma client, runs migrations",
+  "Launches dev server + Cloudflare tunnel, then runs test:setup to validate",
 ];
 
 export function QuickStart() {

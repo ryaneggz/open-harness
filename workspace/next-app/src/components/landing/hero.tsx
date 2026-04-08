@@ -6,14 +6,14 @@ import { buttonVariants } from "@/components/ui/button";
 
 export function Hero() {
   return (
-    <div className="flex flex-col justify-center">
+    <div className="flex min-w-0 flex-col justify-center overflow-hidden">
       <p className="mb-4 text-sm font-medium uppercase tracking-widest text-muted-foreground">
         Built on Open Harness
       </p>
-      <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+      <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">
         Give your AI agents <span className="text-muted-foreground">a real dev environment</span>
       </h1>
-      <p className="mt-6 max-w-lg text-lg leading-8 text-muted-foreground">
+      <p className="mt-6 text-base leading-8 text-muted-foreground sm:text-lg">
         This harness gives AI coding agents an isolated, fully-wired Next.js + PostgreSQL +
         shadcn/ui sandbox — scaffolded with identity, memory, and skills for their task — so they
         can build, test, and deploy real web features, not just generate code.

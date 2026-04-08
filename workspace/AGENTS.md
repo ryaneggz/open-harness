@@ -68,6 +68,9 @@ Available as slash commands (`.claude/skills/`):
 | Skill | When to Use |
 |-------|-------------|
 | `/ci-status` | After `git push` — poll CI, report pass/fail, fetch failure logs |
+| `/diagnose` | Diagnose and fix the full stack — run tests, auto-remediate, re-verify (`npm run test:setup`) |
+| `/release` | Cut a CalVer release — branch `release/YYYY.M.D-N`, tag, push, CI builds + pushes to GHCR |
+| `/destroy` | Tear down sandbox — stop containers, remove volumes, optionally prune image |
 | `/agent-browser` | QA features, take screenshots, debug UI at `next-postgres-shadcn.ruska.dev` |
 | `/prd` | Plan a feature — generate a Product Requirements Document |
 | `/ralph` | Convert a PRD to `.ralph/prd.json` for the autonomous agent loop |
