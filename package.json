@@ -1,0 +1,17 @@
+{
+  "name": "next-postgres-shadcn",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenHarness: Next + Postgres + shadcn — AI Agent Sandbox",
+  "workspaces": ["cli", "packages/sandbox"],
+  "scripts": {
+    "setup": "npm install && npm run build && npm link --workspace=cli",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "format": "npm run format --workspaces"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

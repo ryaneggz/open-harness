@@ -117,7 +117,20 @@ Check logs and remediate:
 
 Re-run `npm run test:setup` after fixing. Do not loop more than once.
 
-## 7. Report
+## 7. Retrieve SSH public key
+
+The sandbox generates an ED25519 keypair on first boot (persisted in the `ssh-keys` volume).
+Read the public key so the user can add it to GitHub / GitLab:
+
+```bash
+docker exec -u sandbox next-postgres-shadcn cat ~/.ssh/id_ed25519.pub
+```
+
+Save this value for the report.
+
+## 8. Report
+
+Include the SSH public key so the user can paste it directly into their git platform:
 
 ```
 Sandbox 'next-postgres-shadcn' is ready!
@@ -126,9 +139,23 @@ Sandbox 'next-postgres-shadcn' is ready!
   URL:     https://next-postgres-shadcn.ruska.dev
   Tests:   8/8 passed
 
-  Access:
-    docker exec -u sandbox -it next-postgres-shadcn bash
-    claude                  # start Claude Code inside sandbox
+  SSH public key (add to GitHub → Settings → SSH keys):
+    <paste id_ed25519.pub contents here>
+
+  Finish setup (one-time, inside the sandbox):
+    openharness shell next-postgres-shadcn
+    gh auth login                           # authenticate GitHub CLI
+    claude                                  # authenticate Claude Code (OAuth)
+
+  CLI (openharness):
+    openharness list                            # list running sandboxes
+    openharness shell next-postgres-shadcn      # enter sandbox shell
+    openharness stop next-postgres-shadcn       # stop container
+    openharness run next-postgres-shadcn        # start/restart container
+    openharness clean next-postgres-shadcn      # full teardown
+    openharness quickstart next-postgres-shadcn # one-shot provision
+    openharness heartbeat sync next-postgres-shadcn   # install heartbeat crons
+    openharness heartbeat status next-postgres-shadcn # check heartbeat logs
 
   Validate:
     /diagnose               # diagnose and fix issues anytime

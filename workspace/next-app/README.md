@@ -11,6 +11,9 @@ A fully-provisioned Next.js + PostgreSQL + shadcn/ui harness for AI coding agent
 git clone https://github.com/ryaneggz/next-postgres-shadcn.git
 cd next-postgres-shadcn
 
+# Install dependencies and link the openharness CLI
+npm run setup
+
 # Provision — the agent handles everything
 claude "/provision"
 ```

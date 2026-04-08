@@ -18,24 +18,18 @@ Cut a CalVer release: branch, tag, push, and let CI build + push to GHCR.
 
 ### Step 1 — Determine the version
 
-Format: `YYYY.M.D-N` where N is a sequential build number for the day (starting at 1).
+Format: `YYYY.M.D` for the first release of the day. If that tag already exists, append `-N` starting at 2.
 
 ```bash
 TODAY=$(date '+%Y.%-m.%-d')
-# Find existing tags for today and compute next N
-LAST_N=$(git tag --list "${TODAY}-*" --sort=-v:refname | head -1 | grep -oP '\d+$' || echo "0")
-NEXT_N=$((LAST_N + 1))
 
-# Check if a bare date tag exists (no -N suffix)
-if git tag --list "$TODAY" | grep -q .; then
-  VERSION="${TODAY}-${NEXT_N}"
+if ! git tag --list "$TODAY" | grep -q .; then
+  # First release of the day
+  VERSION="$TODAY"
 else
-  # First release of the day — check if any N suffixed tags exist
-  if [ "$LAST_N" -gt 0 ]; then
-    VERSION="${TODAY}-${NEXT_N}"
-  else
-    VERSION="${TODAY}-1"
-  fi
+  # Date tag exists — find highest -N suffix and increment
+  LAST_N=$(git tag --list "${TODAY}-*" --sort=-v:refname | head -1 | grep -oP '\d+$' || echo "1")
+  VERSION="${TODAY}-$((LAST_N + 1))"
 fi
 
 echo "Version: $VERSION"

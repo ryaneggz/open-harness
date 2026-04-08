@@ -24,6 +24,9 @@ A fully-provisioned Next.js + PostgreSQL + shadcn/ui development environment run
 git clone https://github.com/ryaneggz/next-postgres-shadcn.git
 cd next-postgres-shadcn
 
+# Install dependencies and link the openharness CLI
+npm run setup
+
 # Provision — the agent handles everything
 claude "/provision"
 ```
@@ -178,6 +181,31 @@ npm run type-check                                    # tsc --noEmit
 
 ---
 
+## 🧩 Skills (Slash Commands)
+
+Host-level skills run from the orchestrator (outside the container):
+
+| Skill | Description |
+|-------|-------------|
+| `/provision` | Build + start the sandbox with all compose overlays, wait for startup, validate with `test:setup` |
+| `/provision --rebuild` | Full teardown (volumes included) then provision from scratch |
+| `/diagnose` | Run 8 health checks (env, deps, Prisma, DB, dev server, tunnel, public URL), auto-fix failures |
+| `/release` | Cut a CalVer release — create `release/YYYY.M.D-N` branch, tag, push to trigger CI + GHCR build |
+| `/release --dry-run` | Pre-flight checks only — show version and test results without releasing |
+| `/destroy` | Tear down containers + volumes, optionally prune Docker image |
+
+Workspace-level skills run inside the sandbox container:
+
+| Skill | Description |
+|-------|-------------|
+| `/ci-status` | Poll GitHub Actions CI for current branch, report pass/fail with failure details |
+| `/agent-browser` | Navigate, interact with, and screenshot the app via headless Chromium |
+| `/prd` | Generate a Product Requirements Document for a new feature |
+| `/ralph` | Convert a PRD to `.ralph/prd.json` for the autonomous agent loop |
+| `/issue-triage` | Triage unassigned GitHub issues with parallel sub-agents + AI council |
+
+---
+
 ## 🤖 Ralph (Autonomous Agent Loop)
 
 Ralph works through a PRD, implementing user stories one at a time in a loop:
@@ -243,12 +271,15 @@ This project uses **calendar versioning** (`YYYY.M.D`), matching the [Open Harne
 ### 🏷️ Creating a release
 
 ```bash
-# Tag from master after merging stable changes
-git tag 2026.4.6
-git push origin 2026.4.6
+# Using the /release skill (recommended)
+claude "/release"
+
+# Or manually
+git tag 2026.4.7
+git push origin 2026.4.7
 ```
 
-Pushing a calver tag triggers the release workflow which:
+Pushing a CalVer tag triggers the release workflow which:
 1. Runs the full CI pipeline (lint, format, type-check, build, test, E2E)
 2. Builds and pushes a Docker image to `ghcr.io/ryaneggz/next-postgres-shadcn:<version>`
 3. Creates a GitHub Release with auto-generated release notes
