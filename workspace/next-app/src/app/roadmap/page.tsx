@@ -5,10 +5,23 @@ import { Footer } from "@/components/landing/footer";
 import { RoadmapCard } from "@/components/roadmap/roadmap-card";
 import { roadmap } from "@/data/roadmap";
 
+const roadmapTitle = "Roadmap | OpenHarness";
+const roadmapDescription =
+  "See what we're building next for Open Harness. Vote on features you want by reacting to GitHub issues.";
+
 export const metadata: Metadata = {
-  title: "Roadmap | OpenHarness",
-  description:
-    "See what we're building next for Open Harness. Vote on features you want by reacting to GitHub issues.",
+  title: roadmapTitle,
+  description: roadmapDescription,
+  openGraph: {
+    title: roadmapTitle,
+    description: roadmapDescription,
+    url: "https://next-postgres-shadcn.ruska.dev/roadmap",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: roadmapTitle,
+    description: roadmapDescription,
+  },
 };
 
 const phases = [
