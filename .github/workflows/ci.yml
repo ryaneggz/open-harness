@@ -66,6 +66,14 @@ jobs:
         working-directory: workspace/next-app
         run: npm ci
 
+      - name: Generate Prisma client
+        working-directory: workspace/next-app
+        run: npx prisma generate
+
+      - name: Run migrations
+        working-directory: workspace/next-app
+        run: npx prisma migrate deploy
+
       - name: Lint
         working-directory: workspace/next-app
         run: npm run lint
@@ -77,14 +85,6 @@ jobs:
       - name: Type check
         working-directory: workspace/next-app
         run: npm run type-check
-
-      - name: Generate Prisma client
-        working-directory: workspace/next-app
-        run: npx prisma generate
-
-      - name: Run migrations
-        working-directory: workspace/next-app
-        run: npx prisma migrate deploy
 
       - name: Build
         working-directory: workspace/next-app
