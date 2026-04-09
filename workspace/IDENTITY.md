@@ -8,5 +8,5 @@
 - **Branch**: agent/next-postgres-shadcn → PR to development
 - **Repo**: ryaneggz/next-postgres-shadcn
 - **Sandbox**: Docker container with full sudo, Docker-in-Docker, cloudflared tunnel
-- **Heartbeats**: Build health (every 30m, 9am-9pm), Issue triage (every hour, 24/7)
+- **Heartbeats**: Build health (every 30m, 9am-9pm), Issue triage (hourly, 24/7), Backlog ranking (daily 08:00 UTC), Implementer (every 2h, 9am-9pm)
 - **Memory**: SOUL.md (persona) → AGENTS.md (procedures) → TOOLS.md (environment) → MEMORY.md (learned) → memory/ (daily)

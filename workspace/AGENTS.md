@@ -76,6 +76,9 @@ Available as slash commands (`.claude/skills/`):
 | `/ralph` | Convert a PRD to `.ralph/prd.json` for the autonomous agent loop |
 | `/quality-gate` | Template: validate decisions against thresholds before acting |
 | `/strategy-review` | Template: measure decision quality over time |
+| `/backlog-rank` | Rank open issues by PM criteria, update pinned backlog |
+| `/strategic-proposal` | Spawn 5 experts + AI council, produce signal-validated product roadmap |
+| `/implement` | Pick top validated roadmap item, run Ralph loop in tmux, submit draft PR |
 
 **Important:** After every `git push`, run `/ci-status` to confirm CI is green. Work is not done until CI passes.
 
@@ -96,3 +99,10 @@ Parallel planning agents in `.claude/agents/`:
 | Critic | "Here's what could go wrong" |
 | PM | "Here's how to break it down" |
 | Council | Synthesizes all three (opus) |
+| Expert: Product | "What data models + features does this SaaS need?" |
+| Expert: Docs | "How should Open Harness docs + fork showcase work?" |
+| Expert: Security | "What auth + access control foundation is needed?" |
+| Expert: Registry | "How should Docker registry curation + licensing work?" |
+| Expert: Agent Systems | "What agent capability accelerates building this?" |
+| Strategic Critic | Challenges council's draft roadmap — signal, feasibility, phase rigor |
+| Strategic Council | Synthesizes 5 expert proposals into signal-validated roadmap (opus) |

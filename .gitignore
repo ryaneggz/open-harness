@@ -14,3 +14,6 @@ dist/
 # Screenshots (keep dir, ignore contents)
 **/.claude/screenshots/*
 !**/.claude/screenshots/.gitkeep
+
+# Heartbeat logs (local runtime logs)
+workspace/heartbeats/heartbeat.log

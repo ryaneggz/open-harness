@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, GitFork } from "lucide-react";
+import { ExternalLink, GitFork, Map } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -13,6 +13,10 @@ export function Navbar() {
           OpenHarness
         </Link>
         <div className="flex items-center gap-1">
+          <Link href="/roadmap" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+            <Map className="mr-1.5 h-4 w-4" />
+            Roadmap
+          </Link>
           <Link
             href="https://github.com/ryaneggz/next-postgres-shadcn"
             target="_blank"
