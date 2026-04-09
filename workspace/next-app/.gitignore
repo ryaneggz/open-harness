@@ -1,23 +1,43 @@
-# Ralph working files (generated during runs)
-prd.json
-.ralph/prd.json
-progress.txt
-.ralph/progress.txt
-.ralph/.last-branch
-
-# Archives
-!.ralph/archive/.gitkeep
-.ralph/archive/
-
-# OS files
-.DS_Store
-
-# Claude
 **/.env*
+.worktrees/*
+!.worktrees/.gitkeep
 
-# Generated
+# Build artifacts
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+
+# Screenshots (keep dir, ignore contents)
+**/.claude/screenshots/*
+!**/.claude/screenshots/.gitkeep
+
+# Heartbeat logs (local runtime logs)
+workspace/heartbeats/heartbeat.log
+
+# Generated Prisma client
 src/generated/
 
-# Defensive patterns
-**/node_modules/
-**/.next/
+# Ralph repo-clone artifacts (Ralph may copy repo structure into next-app/)
+.claude/
+.devcontainer/
+.dockerignore
+.github/ISSUE_TEMPLATE/agent.md
+.github/ISSUE_TEMPLATE/audit.md
+.github/ISSUE_TEMPLATE/skill.md
+.github/workflows/
+.nvmrc
+.openharness/
+.ralph/
+AGENTS.md
+CLAUDE.md
+LICENSE
+cli/
+docker/
+install/
+packages/
+workspace/

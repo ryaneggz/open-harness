@@ -172,12 +172,15 @@ Read the current `.ralph/prd.json`, find the highest priority number, then appen
 ```json
 {
   "id": "US-FINAL",
-  "title": "Archive Ralph run, submit draft PR, and verify CI green",
-  "description": "As the agent, I archive the Ralph run, submit all work as a draft PR with review docs, and confirm CI passes.",
+  "title": "Archive Ralph run, validate app, submit draft PR, and verify CI green",
+  "description": "As the agent, I archive the Ralph run, validate the app is serving, submit all work as a draft PR with review docs, and confirm CI passes.",
   "acceptanceCriteria": [
     "All previous stories have passes: true",
-    "Archive .ralph/prd.json and .ralph/progress.txt to .ralph/archive/YYYY-MM-DD-<feature>/ before PR creation",
-    "Create feature branch: feat/<N>-<shortdesc> from agent/next-postgres-shadcn",
+    "Archive .ralph/prd.json and .ralph/progress.txt to .ralph/archives/YYYY-MM-DD/<feature>/ (plural archives, date and feature as SEPARATE directories)",
+    "Verify archive exists: ls .ralph/archives/YYYY-MM-DD/<feature>/prd.json must succeed",
+    "Verify dev server: curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ must return 200 — if not running, start with npm run dev and wait",
+    "Verify public URL: curl -s -o /dev/null -w '%{http_code}' https://next-postgres-shadcn.ruska.dev/ must return 200 — if 502/000, this is a BLOCKER",
+    "Create feature branch: git checkout -b feat/<N>-<shortdesc> from agent/next-postgres-shadcn (NEVER git clone)",
     "Push all commits to the feature branch",
     "Create draft PR to development with body containing: Closes #<N> (MUST be on its own line so GitHub auto-closes the issue on merge), ## Roadmap Context (rank, category, phase, complexity, signal — copied from the roadmap to maintain traceability), ## What (summary of all changes made across stories), ## Why (motivation — link to roadmap item and GitHub issue, explain the user signal that justified building this), ## How (implementation approach, key architecture decisions, tradeoffs), ## Manual Review Steps (numbered checklist: specific pages to visit, interactions to test, edge cases to verify — written for a human reviewer who has NOT seen the code), ## Acceptance Criteria (consolidated from all user stories)",
     "PR body MUST include 'Closes #<N>' where N is the GitHub issue number — this auto-closes the issue when the PR merges",
@@ -185,11 +188,11 @@ Read the current `.ralph/prd.json`, find the highest priority number, then appen
     "PR title follows format: feat(#<N>): <description>",
     "Run /ci-status after push — poll until CI completes",
     "If CI fails: read failure logs, fix the issue, push again, re-poll until GREEN",
-    "This story is NOT complete until CI pipeline is GREEN — do not mark passes: true with red CI"
+    "This story is NOT complete until CI pipeline is GREEN AND public URL returns 200 — do not mark passes: true otherwise"
   ],
   "priority": 999,
   "passes": false,
-  "notes": "ALWAYS the last story. Archive MUST happen before PR. CI MUST be green before passes: true. PR body MUST have 'Closes #N' and Roadmap Context section."
+  "notes": "ALWAYS the last story. Archive to .ralph/archives/YYYY-MM-DD/<feature>/. Dev server + public URL MUST be verified. CI MUST be green. PR body MUST have Closes #N and Roadmap Context."
 }
 ```
 
@@ -197,9 +200,11 @@ Set its priority to `max(existing priorities) + 100` to ensure it's always last.
 
 ### 9. Launch Ralph in tmux
 
+Run this from within the container (via `docker exec`), using `gosu sandbox` to drop from root to the sandbox user — Claude Code refuses `--dangerously-skip-permissions` when running as root:
+
 ```bash
 tmux new-session -d -s ralph -c /home/sandbox/workspace \
-  "cd .ralph && ./ralph.sh --tool claude 15 2>&1 | tee ralph-$(date +%Y%m%d-%H%M).log; echo 'Ralph session complete. Press any key to close.'; read"
+  "gosu sandbox bash -c 'cd .ralph && HOME=/home/sandbox ./ralph.sh --tool claude 15 2>&1 | tee ralph-\$(date +%Y%m%d-%H%M).log'"
 ```
 
 Log `[implement] OP: Launched Ralph in tmux for issue #<N> "<title>"`.

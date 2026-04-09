@@ -3,6 +3,7 @@ import {
   validatePrdHasFinalStory,
   validateUiStoriesHaveBrowserQa,
   validateStoriesHaveTypecheck,
+  validateArchivePath,
 } from "@/lib/implement-guards";
 
 describe("Ralph PRD validation", () => {
@@ -11,7 +12,7 @@ describe("Ralph PRD validation", () => {
     title: "Archive Ralph run, submit draft PR, and verify CI green",
     acceptanceCriteria: [
       "All previous stories have passes: true",
-      "Archive .ralph/prd.json and .ralph/progress.txt",
+      "Archive .ralph/prd.json and .ralph/progress.txt to .ralph/archives/2026-04-09/api-health/",
       "Create draft PR to development",
       "PR body MUST include 'Closes #N' where N is the GitHub issue number",
       "PR body MUST include a Roadmap Context section with: Rank, Category, Phase, Complexity, Signal",
@@ -186,6 +187,50 @@ describe("Ralph PRD validation", () => {
       ]);
       expect(result.valid).toBe(false);
       expect(result.missingTypecheck).toContain("Add feature");
+    });
+  });
+
+  describe("validateArchivePath", () => {
+    it("passes with correct archive path format", () => {
+      const result = validateArchivePath([
+        {
+          acceptanceCriteria: [
+            "Archive to .ralph/archives/2026-04-09/api-health/",
+          ],
+        },
+      ]);
+      expect(result.valid).toBe(true);
+    });
+
+    it("fails with singular 'archive' instead of 'archives'", () => {
+      const result = validateArchivePath([
+        {
+          acceptanceCriteria: [
+            "Archive to .ralph/archive/2026-04-09/api-health/",
+          ],
+        },
+      ]);
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("archives");
+    });
+
+    it("fails with date-feature joined by hyphen instead of separate dirs", () => {
+      const result = validateArchivePath([
+        {
+          acceptanceCriteria: [
+            "Archive to .ralph/archives/2026-04-09-api-health/",
+          ],
+        },
+      ]);
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("separate dirs");
+    });
+
+    it("passes when no archive path is mentioned", () => {
+      const result = validateArchivePath([
+        { acceptanceCriteria: ["Typecheck passes"] },
+      ]);
+      expect(result.valid).toBe(true);
     });
   });
 });

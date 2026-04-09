@@ -39,9 +39,10 @@ describe("roadmap page", () => {
     expect(screen.getByText("How to influence the roadmap")).toBeDefined();
   });
 
-  it("shows empty state when roadmap is empty", () => {
+  it("renders phase sections when roadmap has items", () => {
     render(<RoadmapPage />);
-    expect(screen.getByText("Roadmap initializing")).toBeDefined();
+    // With items in "now" phase, the "Building Now" section should appear
+    expect(screen.getByText("Building Now")).toBeDefined();
   });
 
   it("links to GitHub issues for voting", () => {
