@@ -13,11 +13,35 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = "https://next-postgres-shadcn.ruska.dev";
+const siteTitle = "OpenHarness: Next + Postgres + shadcn";
+const siteDescription =
+  "A fully-provisioned Next.js + PostgreSQL + shadcn/ui development environment running inside an isolated Docker sandbox for AI coding agents.";
+
 export const metadata: Metadata = {
-  title: "OpenHarness: Next + Postgres + shadcn",
-  description:
-    "A fully-provisioned Next.js + PostgreSQL + shadcn/ui development environment running inside an isolated Docker sandbox for AI coding agents.",
+  title: siteTitle,
+  description: siteDescription,
   manifest: "/manifest.json",
+  openGraph: {
+    title: siteTitle,
+    description: siteDescription,
+    url: siteUrl,
+    siteName: "OpenHarness",
+    type: "website",
+    images: [
+      {
+        url: `${siteUrl}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "OpenHarness - Next.js + PostgreSQL + shadcn/ui development environment",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteTitle,
+    description: siteDescription,
+  },
 };
 
 export default function RootLayout({
