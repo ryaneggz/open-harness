@@ -86,6 +86,6 @@ This project's CI (`CI: next-postgres-shadcn`) runs these steps in order:
 Before pushing, you can run the same checks locally to catch issues early:
 
 ```bash
-cd workspace/next-app
+cd workspace/projects/next-app
 npm run lint && npm run format:check && npm run type-check && npx prisma generate && npm run build && npm test
 ```

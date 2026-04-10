@@ -3,7 +3,7 @@
 # and at end of setup.sh on fresh provision
 set -euo pipefail
 
-APP_DIR="$HOME/workspace/next-app"
+APP_DIR="$HOME/harness/workspace/projects/next-app"
 LOG_PREFIX="[startup]"
 MAX_RETRIES=30
 RETRY_INTERVAL=2

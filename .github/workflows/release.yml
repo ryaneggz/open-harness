@@ -48,35 +48,35 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npm ci
 
       - name: Lint
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npm run lint
 
       - name: Format check
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npm run format:check
 
       - name: Type check
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npm run type-check
 
       - name: Generate Prisma client
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npx prisma generate
 
       - name: Run migrations
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npx prisma migrate deploy
 
       - name: Build
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npm run build
 
       - name: Test
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npm test
 
       - name: Set up Docker Buildx
@@ -94,7 +94,7 @@ jobs:
           IMAGE=ghcr.io/ryaneggz/next-postgres-shadcn:${{ steps.parse.outputs.version }}
           LATEST=ghcr.io/ryaneggz/next-postgres-shadcn:latest
 
-          docker build -f docker/Dockerfile -t $IMAGE -t $LATEST .
+          docker build -f .devcontainer/Dockerfile -t $IMAGE -t $LATEST .
           docker push $IMAGE
           docker push $LATEST
 

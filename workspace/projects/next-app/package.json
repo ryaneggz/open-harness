@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "prisma generate",
     "dev": "next dev -H 0.0.0.0",
+    "prebuild": "prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .ts,.tsx",
@@ -15,6 +17,7 @@
     "test:watch": "vitest",
     "test:setup": "vitest run --config vitest.setup.config.ts",
     "test:e2e": "playwright test",
+    "prisma:generate": "prisma generate",
     "prepare": "husky"
   },
   "lint-staged": {

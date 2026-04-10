@@ -288,7 +288,7 @@ ok "Done"
 banner "Setup complete"
 printf "\n"
 printf "  ${CYAN}Sandbox user${NC}: $SANDBOX_USER\n"
-printf "  ${CYAN}Workspace${NC}: $SANDBOX_HOME/workspace\n"
+printf "  ${CYAN}Workspace${NC}: $SANDBOX_HOME/harness/workspace\n"
 printf "\n"
 printf "  ${CYAN}Installed tools${NC}\n"
 printf "  ──────────────────────────────────────\n"
@@ -335,7 +335,7 @@ fi
 printf "\n"
 
 # ─── 18. Run workspace startup script ───────────────────────────
-STARTUP="$SANDBOX_HOME/workspace/startup.sh"
+STARTUP="$SANDBOX_HOME/harness/workspace/startup.sh"
 if [ -f "$STARTUP" ]; then
   banner "Running workspace startup"
   su - "$SANDBOX_USER" -c "bash $STARTUP"

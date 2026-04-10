@@ -1,6 +1,6 @@
 ---
 paths:
-  - "next-app/src/app/api/**/*"
+  - "projects/next-app/src/app/api/**/*"
 ---
 
 # API Routes

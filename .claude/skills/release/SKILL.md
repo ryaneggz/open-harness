@@ -47,7 +47,7 @@ git branch --show-current
 git status --porcelain
 
 # Run lint + type check + tests locally
-cd workspace/next-app
+cd workspace/projects/next-app
 npm run lint && npm run format:check && npm run type-check && npm test
 ```
 

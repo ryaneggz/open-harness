@@ -107,16 +107,16 @@ If there are still stories with `passes: false`, end your response normally (ano
 
 - You are working in an EXISTING git checkout. NEVER run `git clone`. NEVER run `git init`.
 - To create a feature branch: `git checkout -b feat/<N>-<shortdesc>` from the current branch
-- NEVER change the working directory above `workspace/next-app/` for git operations
-- If you see files like `cli/`, `docker/`, `install/`, `packages/` appearing in `workspace/next-app/`, STOP — something has gone wrong with your git operations
-- All source code changes happen under `workspace/next-app/src/` — never write files outside this path
-- The git root is the monorepo root, NOT `workspace/next-app/` — be aware of this when running git commands
+- NEVER change the working directory above `workspace/projects/next-app/` for git operations
+- If you see files like `cli/`, `docker/`, `install/`, `packages/` appearing in `workspace/projects/next-app/`, STOP — something has gone wrong with your git operations
+- All source code changes happen under `workspace/projects/next-app/src/` — never write files outside this path
+- The git root is the monorepo root, NOT `workspace/projects/next-app/` — be aware of this when running git commands
 
 ## Pre-Submit Validation
 
 Before marking US-FINAL as `passes: true`, you MUST verify ALL of these:
 
-1. `npm run build` succeeds from `workspace/next-app/` (full Next.js build, not just type-check)
+1. `npm run build` succeeds from `workspace/projects/next-app/` (full Next.js build, not just type-check)
 2. Dev server is running: `curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/` returns `200`. If not running, start with `npm run dev &` and wait for ready.
 3. Public URL: `curl -s -o /dev/null -w '%{http_code}' https://next-postgres-shadcn.ruska.dev/` returns `200`. If tunnel is down, this is a BLOCKER — do not mark passes: true.
 4. Archive exists: `ls .ralph/archives/YYYY-MM-DD/<feature>/prd.json` succeeds. If not, create the archive now: `mkdir -p .ralph/archives/$(date +%Y-%m-%d)/<feature> && mv prd.json progress.txt .ralph/archives/$(date +%Y-%m-%d)/<feature>/`

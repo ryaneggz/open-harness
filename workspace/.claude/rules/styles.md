@@ -1,7 +1,7 @@
 ---
 paths:
-  - "next-app/src/**/*.css"
-  - "next-app/postcss.config.mjs"
+  - "projects/next-app/src/**/*.css"
+  - "projects/next-app/postcss.config.mjs"
 ---
 
 # Styles & Theming

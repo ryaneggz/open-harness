@@ -1,10 +1,10 @@
 ---
 paths:
-  - "next-app/src/**/*.test.{ts,tsx}"
-  - "next-app/src/**/*.spec.{ts,tsx}"
-  - "next-app/src/e2e/**/*"
-  - "next-app/vitest.config.ts"
-  - "next-app/playwright.config.ts"
+  - "projects/next-app/src/**/*.test.{ts,tsx}"
+  - "projects/next-app/src/**/*.spec.{ts,tsx}"
+  - "projects/next-app/src/e2e/**/*"
+  - "projects/next-app/vitest.config.ts"
+  - "projects/next-app/playwright.config.ts"
 ---
 
 # Testing

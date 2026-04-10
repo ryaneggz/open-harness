@@ -4,7 +4,7 @@
 
 1. Read IDENTITY.md, USER.md, and MEMORY.md at session start
 2. Work within `workspace/` — it persists across container restarts
-3. The Next.js project lives in `next-app/` — run all npm commands from there
+3. The Next.js project lives in `projects/next-app/` — run all npm commands from there
 4. Do not modify `~/install/` — those are provisioning scripts
 5. Coding standards live in `.claude/rules/` — they load automatically
 6. After every `git push`, run `/ci-status` to confirm CI is green
@@ -72,6 +72,7 @@ Available as slash commands (`.claude/skills/`):
 | `/diagnose` | Diagnose and fix the full stack — run tests, auto-remediate, re-verify (`npm run test:setup`) |
 | `/release` | Cut a CalVer release — branch `release/YYYY.M.D-N`, tag, push, CI builds + pushes to GHCR |
 | `/destroy` | Tear down sandbox — stop containers, remove volumes, optionally prune image |
+| `/delegate` | Decompose plan into tasks, spawn parallel worker agents in waves |
 | `/agent-browser` | QA features, take screenshots, debug UI at `next-postgres-shadcn.ruska.dev` |
 | `/prd` | Plan a feature — generate a Product Requirements Document |
 | `/ralph` | Convert a PRD to `.ralph/prd.json` for the autonomous agent loop |
@@ -80,6 +81,7 @@ Available as slash commands (`.claude/skills/`):
 | `/backlog-rank` | Rank open issues by PM criteria, update pinned backlog |
 | `/strategic-proposal` | Spawn 5 experts + AI council, produce signal-validated product roadmap |
 | `/implement` | Pick top validated roadmap item, run Ralph loop in tmux, submit draft PR |
+| `/issue-triage` | Triage unassigned GitHub issues with parallel sub-agents + council |
 
 **Important:** After every `git push`, run `/ci-status` to confirm CI is green. Work is not done until CI passes.
 

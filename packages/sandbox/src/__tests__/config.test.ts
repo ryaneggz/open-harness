@@ -86,8 +86,8 @@ describe("SandboxConfig", () => {
   it("derives dockerfile and compose paths from projectRoot", () => {
     const config = new SandboxConfig({ name: "test" });
     const root = config.projectRoot;
-    expect(config.dockerfilePath).toBe(`${root}/docker/Dockerfile`);
-    expect(config.composeFile).toBe(`${root}/docker/docker-compose.yml`);
-    expect(config.composeDockerFile).toBe(`${root}/docker/docker-compose.docker.yml`);
+    expect(config.dockerfilePath).toBe(`${root}/.devcontainer/Dockerfile`);
+    expect(config.composeFile).toBe(`${root}/.devcontainer/docker-compose.yml`);
+    expect(config.composeDockerFile).toBe(`${root}/.devcontainer/docker-compose.docker.yml`);
   });
 });

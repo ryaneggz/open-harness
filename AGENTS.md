@@ -13,7 +13,7 @@ A Next.js + TypeScript + PostgreSQL + shadcn/ui development workspace running in
 
 ## Working Directory
 
-Your code lives in `workspace/next-app/`. Run all npm commands from there.
+Your code lives in `workspace/projects/next-app/`. Run all npm commands from there.
 
 ## Identity & Context
 
@@ -34,8 +34,8 @@ Your code lives in `workspace/next-app/`. Run all npm commands from there.
 | Dev server | `npm run dev` (port 3000, binds `0.0.0.0`) |
 | Public URL | `https://next-postgres-shadcn.ruska.dev` |
 | Database | PostgreSQL 16 — `sandbox:sandbox@postgres:5432/sandbox` |
-| Prisma schema | `workspace/next-app/prisma/schema.prisma` |
-| UI components | `workspace/next-app/src/components/ui/` (shadcn) |
+| Prisma schema | `workspace/projects/next-app/prisma/schema.prisma` |
+| UI components | `workspace/projects/next-app/src/components/ui/` (shadcn) |
 | Tests | `npm test` (Vitest) / `npm run test:e2e` (Playwright) |
 | Tunnel start | `cloudflared tunnel --config ~/.cloudflared/config-next-postgres-shadcn.yml run next-postgres-shadcn` |
 
@@ -43,11 +43,12 @@ Your code lives in `workspace/next-app/`. Run all npm commands from there.
 
 ```
 workspace/
-  next-app/             # Next.js project
-    src/app/            # App Router routes
-    src/components/     # React components (ui/ for shadcn)
-    src/lib/            # Utilities
-    prisma/             # Database schema & migrations
+  projects/
+    next-app/           # Next.js project
+      src/app/          # App Router routes
+      src/components/   # React components (ui/ for shadcn)
+      src/lib/          # Utilities
+      prisma/           # Database schema & migrations
   .claude/skills/       # Slash command skills (see below)
   .claude/agents/       # Sub-agent definitions (implementer, critic, pm, council)
   .claude/rules/        # Coding standards + workflow rules
@@ -65,7 +66,17 @@ workspace/
 
 ## Skills
 
-Available as slash commands inside the workspace:
+### Host-level skills (`.claude/skills/`)
+
+| Skill | Trigger | Purpose |
+|-------|---------|---------|
+| `/delegate` | Decomposing a plan into parallel tasks | Decompose plan into tasks, spawn parallel worker agents in waves |
+| `/diagnose` | After crashes, failed builds, broken stack | Diagnose and fix the full stack (container, deps, Prisma, DB, dev server, tunnel) |
+| `/release` | Cutting a new version | Cut a CalVer release (branch, tag, push, CI builds + pushes to GHCR) |
+| `/destroy` | Tearing down the sandbox | Tear down sandbox (stop containers, remove volumes) |
+| `/provision` | Provisioning or rebuilding the sandbox | Build image, start services, validate with test:setup |
+
+### Workspace-level skills (`workspace/.claude/skills/`)
 
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
@@ -73,18 +84,20 @@ Available as slash commands inside the workspace:
 | `/agent-browser` | QA, verifying UI, taking screenshots | Navigate, interact with, and screenshot the app via headless browser |
 | `/prd` | Planning a feature, writing requirements | Generate a Product Requirements Document |
 | `/ralph` | Converting a PRD for autonomous loop | Convert PRD to `.ralph/prd.json` format |
-| `/issue-triage` | Heartbeat (hourly) or manual triage | Check for unassigned issues, spawn sub-agents, council review, draft PR |
+| `/issue-triage` | Heartbeat (hourly) or manual triage | Triage unassigned GitHub issues with parallel sub-agents + council, draft PR |
 | `/quality-gate` | Before consequential actions | Template: validate decisions against thresholds |
 | `/strategy-review` | Periodic self-assessment | Template: measure decision quality over time |
+| `/backlog-rank` | Prioritizing open issues | Rank open issues by PM criteria, update pinned backlog tracking issue |
+| `/strategic-proposal` | Building or refreshing the product roadmap | Spawn 5 experts + AI council, produce signal-validated product roadmap |
+| `/implement` | Picking up the next roadmap item | Pick top validated roadmap item, run Ralph loop in tmux, submit draft PR |
 
 ## Infrastructure (do not modify)
 
 | Directory | Purpose |
 |-----------|---------|
-| `docker/` | Dockerfile + compose files (base + nextjs overlay for PostgreSQL + port 3000) |
+| `.devcontainer/` | Dockerfile, compose files (base + cloudflared/docker overlays), entrypoint |
 | `install/` | Provisioning scripts (setup.sh, heartbeat.sh, cloudflared-tunnel.sh) |
 | `.openharness/` | Compose overrides config (`config.json`) |
-| `.devcontainer/` | Optional VS Code Dev Container |
 
 ## Git Workflow
 

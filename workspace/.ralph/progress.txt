@@ -9,8 +9,8 @@ Started: Wed Apr  8 22:33:27 MDT 2026
 - **Learnings for future iterations:**
   - Next.js Metadata API merges page-level metadata with layout metadata — only override what's different
   - OG image URL must be absolute (include full domain) for social platforms to fetch it
-  - The git root is the monorepo root, not workspace/next-app/ — npm commands run from nested dir
-  - Dependencies must be installed in workspace/next-app/ (nested) not the monorepo root
+  - The git root is the monorepo root, not workspace/projects/next-app/ — npm commands run from nested dir
+  - Dependencies must be installed in workspace/projects/next-app/ (nested) not the monorepo root
   - Chrome/agent-browser not available in this sandbox — use curl to verify HTML output instead
 ---
 

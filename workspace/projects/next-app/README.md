@@ -39,7 +39,7 @@ The agent will:
 ## Development
 
 ```bash
-cd workspace/next-app
+cd workspace/projects/next-app
 npm run dev                    # Dev server on 0.0.0.0:3000
 npm test                       # Vitest (unit/integration)
 npm run test:e2e               # Playwright E2E

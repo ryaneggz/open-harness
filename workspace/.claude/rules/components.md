@@ -1,6 +1,6 @@
 ---
 paths:
-  - "next-app/src/components/**/*.tsx"
+  - "projects/next-app/src/components/**/*.tsx"
 ---
 
 # Components

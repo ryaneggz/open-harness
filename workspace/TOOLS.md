@@ -4,7 +4,7 @@
 
 - **OS**: Debian Bookworm (slim)
 - **User**: `sandbox` (passwordless sudo)
-- **Working directory**: `/home/sandbox/workspace` (persisted via bind mount)
+- **Working directory**: `/home/sandbox/harness/workspace` (persisted via bind mount)
 - **Docker**: CLI + Compose available; host Docker socket mounted for container management
 - **Node.js**: 22.x required (enforced via `.nvmrc` and `engines`)
 - **Permissions**: `--dangerously-skip-permissions` is the default for Claude Code (aliased in `.bashrc`)
@@ -55,7 +55,7 @@
 ## Common Workflows
 
 ```bash
-cd next-app
+cd projects/next-app
 
 npm run dev                                   # Dev server (port 3000, 0.0.0.0)
 npx shadcn@latest add button                  # Add shadcn component

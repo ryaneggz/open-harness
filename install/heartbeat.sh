@@ -9,7 +9,7 @@ set -euo pipefail
 HEARTBEAT_DIR="${HOME}/.heartbeat"
 LOG_FILE="${HEARTBEAT_DIR}/heartbeat.log"
 ENV_FILE="${HEARTBEAT_DIR}/env.sh"
-WORKSPACE="${HOME}/workspace"
+WORKSPACE="${HOME}/harness/workspace"
 CONFIG_FILE="${WORKSPACE}/heartbeats.conf"
 LEGACY_FILE="${WORKSPACE}/HEARTBEAT.md"  # backward compat for users who haven't migrated
 SOUL_FILE="${SOUL_FILE:-${WORKSPACE}/SOUL.md}"
@@ -422,7 +422,7 @@ cmd_migrate() {
 # Format: <cron-expression> | <file-path> | [agent] | [active_start-active_end]
 #
 # - cron-expression: Standard 5-field cron (min hour dom mon dow)
-# - file-path: Relative to ~/workspace/
+# - file-path: Relative to ~/harness/workspace/
 # - agent: (optional) Override HEARTBEAT_AGENT env var. Default: ${HEARTBEAT_AGENT}
 # - active_start-active_end: (optional) Hours (0-23). Only run during this window.
 #

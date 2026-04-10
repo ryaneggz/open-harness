@@ -23,7 +23,7 @@ if command -v cron &>/dev/null; then
 fi
 
 # Auto-sync heartbeat schedules from persistent config
-if [ -f "/home/sandbox/workspace/heartbeats.conf" ]; then
+if [ -f "/home/sandbox/harness/workspace/heartbeats.conf" ]; then
   gosu sandbox /home/sandbox/install/heartbeat.sh sync 2>/dev/null || true
 fi
 
@@ -55,7 +55,7 @@ if [ "${INSTALL_BROWSER:-false}" = "true" ] && ! command -v agent-browser &>/dev
 fi
 
 # Run workspace startup (dev server + tunnel) as sandbox user
-STARTUP="/home/sandbox/workspace/startup.sh"
+STARTUP="/home/sandbox/harness/workspace/startup.sh"
 if [ -f "$STARTUP" ]; then
   gosu sandbox bash "$STARTUP" 2>&1 | sed 's/^/  /' || true
 fi

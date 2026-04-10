@@ -6,17 +6,17 @@ on:
       - development
       - agent/next-postgres-shadcn
     paths:
-      - "workspace/next-app/src/**"
-      - "workspace/next-app/prisma/**"
-      - "workspace/next-app/public/**"
-      - "workspace/next-app/package.json"
-      - "workspace/next-app/package-lock.json"
-      - "workspace/next-app/tsconfig.json"
-      - "workspace/next-app/next.config.*"
-      - "workspace/next-app/tailwind.config.*"
-      - "workspace/next-app/postcss.config.*"
-      - "workspace/next-app/vitest.config.*"
-      - "workspace/next-app/playwright.config.*"
+      - "workspace/projects/next-app/src/**"
+      - "workspace/projects/next-app/prisma/**"
+      - "workspace/projects/next-app/public/**"
+      - "workspace/projects/next-app/package.json"
+      - "workspace/projects/next-app/package-lock.json"
+      - "workspace/projects/next-app/tsconfig.json"
+      - "workspace/projects/next-app/next.config.*"
+      - "workspace/projects/next-app/tailwind.config.*"
+      - "workspace/projects/next-app/postcss.config.*"
+      - "workspace/projects/next-app/vitest.config.*"
+      - "workspace/projects/next-app/playwright.config.*"
       - ".github/workflows/ci.yml"
 
 permissions:
@@ -57,47 +57,47 @@ jobs:
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
-          path: workspace/next-app/node_modules
-          key: node-modules-${{ hashFiles('workspace/next-app/package-lock.json') }}
+          path: workspace/projects/next-app/node_modules
+          key: node-modules-${{ hashFiles('workspace/projects/next-app/package-lock.json') }}
           restore-keys: |
             node-modules-
 
       - name: Install dependencies
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npm ci
 
       - name: Generate Prisma client
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npx prisma generate
 
       - name: Run migrations
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npx prisma migrate deploy
 
       - name: Lint
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npm run lint
 
       - name: Format check
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npm run format:check
 
       - name: Type check
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npm run type-check
 
       - name: Build
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npm run build
 
       - name: Test
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npm test
 
       - name: Install Playwright browsers
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npx playwright install --with-deps chromium
 
       - name: E2E tests
-        working-directory: workspace/next-app
+        working-directory: workspace/projects/next-app
         run: npm run test:e2e

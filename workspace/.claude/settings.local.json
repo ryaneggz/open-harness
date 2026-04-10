@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/workspace/.claude/hooks/notify_slack.sh"
+            "command": "bash $CLAUDE_CODE_PROJECT_DIR/.claude/hooks/notify_slack.sh"
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/workspace/.claude/hooks/notify_slack.sh"
+            "command": "bash $CLAUDE_CODE_PROJECT_DIR/.claude/hooks/notify_slack.sh"
           }
         ]
       },
@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/workspace/.claude/hooks/notify_slack.sh"
+            "command": "bash $CLAUDE_CODE_PROJECT_DIR/.claude/hooks/notify_slack.sh"
           }
         ]
       }

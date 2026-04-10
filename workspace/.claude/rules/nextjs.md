@@ -1,7 +1,7 @@
 ---
 paths:
-  - "next-app/**/*.{ts,tsx}"
-  - "next-app/next.config.ts"
+  - "projects/next-app/**/*.{ts,tsx}"
+  - "projects/next-app/next.config.ts"
 ---
 
 # Next.js + Vercel Best Practices

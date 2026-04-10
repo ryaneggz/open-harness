@@ -24,7 +24,11 @@ Arguments received: `$ARGUMENTS`
 ### Step 2 — Detect compose overlays
 
 ```bash
-COMPOSE_FILES="-f docker/docker-compose.yml"
+# Resolve SANDBOX_NAME from git remote or folder name
+bash .devcontainer/init-env.sh
+source .devcontainer/.env
+
+COMPOSE_FILES="-f .devcontainer/docker-compose.yml"
 
 CONFIG=".openharness/config.json"
 if [ -f "$CONFIG" ]; then
@@ -36,15 +40,17 @@ if [ -f "$CONFIG" ]; then
 fi
 ```
 
+Use `$SANDBOX_NAME` (resolved above) in all subsequent `docker` commands.
+
 ### Step 3 — Confirm with user
 
 **Before executing**, show what will be destroyed and ask for confirmation:
 
 ```
 This will destroy:
-  - Containers: next-postgres-shadcn, next-postgres-shadcn-postgres
+  - Containers: $SANDBOX_NAME, $SANDBOX_NAME-postgres
   - Volumes:    pgdata, cloudflared, gh-config, ssh-keys  (if --volumes)
-  - Image:      docker-sandbox                            (if --image)
+  - Image:      $SANDBOX_NAME-sandbox                     (if --image)
 
 Proceed? [y/N]
 ```
@@ -56,9 +62,9 @@ Do NOT proceed without explicit user confirmation.
 ```bash
 # Stop and remove containers (+ volumes if flagged)
 if [ "$VOLUMES" = true ]; then
-  NAME=next-postgres-shadcn docker compose $COMPOSE_FILES down -v
+  docker compose --env-file .devcontainer/.env $COMPOSE_FILES down -v
 else
-  NAME=next-postgres-shadcn docker compose $COMPOSE_FILES down
+  docker compose --env-file .devcontainer/.env $COMPOSE_FILES down
 fi
 ```
 
@@ -66,7 +72,7 @@ fi
 
 ```bash
 if [ "$IMAGE" = true ]; then
-  docker rmi docker-sandbox 2>/dev/null || true
+  docker rmi "${SANDBOX_NAME}-sandbox" 2>/dev/null || true
 fi
 ```
 
@@ -74,16 +80,16 @@ fi
 
 ```bash
 # No containers remain
-docker ps -a --filter "name=next-postgres-shadcn" --format "{{.Names}}" | grep . && echo "WARNING: containers still exist" || echo "Containers: clean"
+docker ps -a --filter "name=$SANDBOX_NAME" --format "{{.Names}}" | grep . && echo "WARNING: containers still exist" || echo "Containers: clean"
 
 # No volumes remain (if --volumes)
-docker volume ls --filter "name=docker_" --format "{{.Name}}" | grep . && echo "WARNING: volumes still exist" || echo "Volumes: clean"
+docker volume ls --filter "name=${SANDBOX_NAME}_" --format "{{.Name}}" | grep . && echo "WARNING: volumes still exist" || echo "Volumes: clean"
 ```
 
 ### Step 7 — Report
 
 ```
-Sandbox 'next-postgres-shadcn' destroyed.
+Sandbox '$SANDBOX_NAME' destroyed.
 
   Containers: removed
   Volumes:    removed / kept

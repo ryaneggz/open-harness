@@ -99,9 +99,9 @@ describe("docker command builders", () => {
     });
 
     it("adds -w workdir flag", () => {
-      const cmd = execCmd("my-sandbox", ["ls"], { workdir: "/home/sandbox/workspace" });
+      const cmd = execCmd("my-sandbox", ["ls"], { workdir: "/home/sandbox/harness/workspace" });
       expect(cmd).toContain("-w");
-      expect(cmd).toContain("/home/sandbox/workspace");
+      expect(cmd).toContain("/home/sandbox/harness/workspace");
     });
 
     it("adds -e env flags", () => {

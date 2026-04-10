@@ -78,14 +78,15 @@ ssh orchestrator@localhost -p 2222   # password: test1234
 ├── cli/                          # openharness CLI
 ├── packages/sandbox/             # @openharness/sandbox tools
 └── workspace/                    # Agent harness (persisted via bind mount)
-    ├── next-app/                 # Next.js project
-    │   ├── src/app/              # App Router routes (/, /roadmap)
-    │   ├── src/components/       # React components (ui/, landing/, roadmap/)
-    │   ├── src/data/             # Typed data (roadmap.ts)
-    │   ├── src/lib/              # Utilities + guard helpers
-    │   ├── src/test/             # Vitest tests (35 tests)
-    │   ├── prisma/               # Database schema & migrations
-    │   └── public/               # Static assets + PWA manifest
+    ├── projects/
+    │   └── next-app/             # Next.js project
+    │       ├── src/app/          # App Router routes (/, /roadmap)
+    │       ├── src/components/   # React components (ui/, landing/, roadmap/)
+    │       ├── src/data/         # Typed data (roadmap.ts)
+    │       ├── src/lib/          # Utilities + guard helpers
+    │       ├── src/test/         # Vitest tests (35 tests)
+    │       ├── prisma/           # Database schema & migrations
+    │       └── public/           # Static assets + PWA manifest
     ├── .claude/                  # Agent config
     │   ├── skills/               # 12 skills (slash commands)
     │   ├── agents/               # 11 sub-agents (experts, council, critic)
@@ -122,7 +123,7 @@ gh auth login
 
 ### ⚙️ Environment Variables
 
-Set in `next-app/.env` or container env:
+Set in `projects/next-app/.env` or container env:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -147,7 +148,7 @@ Set in `next-app/.env` or container env:
 ### 🚀 Start Developing
 
 ```bash
-cd workspace/next-app
+cd workspace/projects/next-app
 npm run dev                                           # Dev server on port 3000
 cloudflared tunnel --config ~/.cloudflared/config-next-postgres-shadcn.yml run next-postgres-shadcn  # Expose publicly (optional)
 claude                                                # Start AI agent
@@ -199,6 +200,7 @@ Host-level skills run from the orchestrator (outside the container):
 | `/provision` | Build + start the sandbox with all compose overlays, wait for startup, validate with `test:setup` |
 | `/provision --rebuild` | Full teardown (volumes included) then provision from scratch |
 | `/diagnose` | Run 8 health checks (env, deps, Prisma, DB, dev server, tunnel, public URL), auto-fix failures |
+| `/delegate` | Decompose plan into tasks, spawn parallel worker agents in waves |
 | `/release` | Cut a CalVer release — create `release/YYYY.M.D-N` branch, tag, push to trigger CI + GHCR build |
 | `/release --dry-run` | Pre-flight checks only — show version and test results without releasing |
 | `/destroy` | Tear down containers + volumes, optionally prune Docker image |

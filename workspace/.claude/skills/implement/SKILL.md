@@ -203,7 +203,7 @@ Set its priority to `max(existing priorities) + 100` to ensure it's always last.
 Run this from within the container (via `docker exec`), using `gosu sandbox` to drop from root to the sandbox user — Claude Code refuses `--dangerously-skip-permissions` when running as root:
 
 ```bash
-tmux new-session -d -s ralph -c /home/sandbox/workspace \
+tmux new-session -d -s ralph -c /home/sandbox/harness/workspace \
   "gosu sandbox bash -c 'cd .ralph && HOME=/home/sandbox ./ralph.sh --tool claude 15 2>&1 | tee ralph-\$(date +%Y%m%d-%H%M).log'"
 ```
 

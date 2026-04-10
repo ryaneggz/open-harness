@@ -1,7 +1,7 @@
 ---
 paths:
-  - "next-app/prisma/**/*"
-  - "next-app/prisma.config.ts"
+  - "projects/next-app/prisma/**/*"
+  - "projects/next-app/prisma.config.ts"
 ---
 
 # Prisma & Database

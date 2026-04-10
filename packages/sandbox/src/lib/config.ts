@@ -45,7 +45,7 @@ export class SandboxConfig {
 
   get projectRoot(): string {
     const worktree = this.worktreePath;
-    if (existsSync(resolve(process.cwd(), worktree, "docker", "Dockerfile"))) {
+    if (existsSync(resolve(process.cwd(), worktree, ".devcontainer", "Dockerfile"))) {
       return worktree;
     }
     return ".";
@@ -56,14 +56,14 @@ export class SandboxConfig {
   }
 
   get dockerfilePath(): string {
-    return `${this.projectRoot}/docker/Dockerfile`;
+    return `${this.projectRoot}/.devcontainer/Dockerfile`;
   }
 
   get composeFile(): string {
-    return `${this.projectRoot}/docker/docker-compose.yml`;
+    return `${this.projectRoot}/.devcontainer/docker-compose.yml`;
   }
 
   get composeDockerFile(): string {
-    return `${this.projectRoot}/docker/docker-compose.docker.yml`;
+    return `${this.projectRoot}/.devcontainer/docker-compose.docker.yml`;
   }
 }

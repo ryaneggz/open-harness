@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: ${NAME}-postgres
+    container_name: ${SANDBOX_NAME:-sandbox}-postgres
     environment:
       POSTGRES_USER: sandbox
       POSTGRES_PASSWORD: sandbox
@@ -20,20 +20,20 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    ports:
+      - "${PORT:-3000}:3000"
     environment:
       - DATABASE_URL=postgresql://sandbox:sandbox@postgres:5432/sandbox
       - PGHOST=postgres
       - PGUSER=sandbox
       - PGPASSWORD=sandbox
       - PGDATABASE=sandbox
-    ports:
-      - "${PORT:-3000}:3000"
     networks:
       - devnet
 
 networks:
   devnet:
-    name: ${NAME}-devnet
+    name: ${SANDBOX_NAME:-sandbox}-devnet
     driver: bridge
 
 volumes:

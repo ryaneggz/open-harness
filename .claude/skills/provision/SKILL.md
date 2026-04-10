@@ -16,15 +16,43 @@ Provision (or rebuild) the next-postgres-shadcn sandbox. One skill, zero manual 
 
 Arguments received: `$ARGUMENTS`
 
-- **NAME**: `next-postgres-shadcn`
 - **REBUILD**: `true` if `--rebuild` flag is present, otherwise `false`
 
-## 2. Detect Compose Overlays
+## 2. Resolve Name and Confirm Overlays
 
-Read `.openharness/config.json` for the full compose file list:
+### 2a. Resolve sandbox name
 
 ```bash
-COMPOSE_FILES="-f docker/docker-compose.yml"
+bash .devcontainer/init-env.sh
+source .devcontainer/.env
+echo "SANDBOX_NAME=$SANDBOX_NAME"
+```
+
+Use `$SANDBOX_NAME` in all subsequent `docker` commands.
+
+### 2b. Prompt user for compose overlays
+
+List all available overlay files (everything matching `.devcontainer/docker-compose.*.yml`)
+and show which are currently enabled in `.openharness/config.json`.
+
+Present a checklist to the user **before proceeding**:
+
+```
+Available compose overlays:
+  [x] docker-compose.postgres.yml    — PostgreSQL 16 + devnet
+  [x] docker-compose.cloudflared.yml — Cloudflare tunnel env vars
+  [x] docker-compose.docker.yml      — Docker socket mount (DinD)
+  [ ] (any new overlays found)
+
+Enable/disable any overlays?
+```
+
+If the user changes selections, update `.openharness/config.json` accordingly.
+
+### 2c. Build compose file list
+
+```bash
+COMPOSE_FILES="-f .devcontainer/docker-compose.yml"
 
 CONFIG=".openharness/config.json"
 if [ -f "$CONFIG" ]; then
@@ -43,20 +71,20 @@ echo "Compose files: $COMPOSE_FILES"
 **Only if `--rebuild` was passed.** Skip this step on initial provision.
 
 ```bash
-NAME=next-postgres-shadcn docker compose $COMPOSE_FILES down -v 2>&1
+docker compose --env-file .devcontainer/.env $COMPOSE_FILES down -v 2>&1
 ```
 
 ## 4. Build and Start
 
 ```bash
-NAME=next-postgres-shadcn docker compose $COMPOSE_FILES up -d --build
+docker compose --env-file .devcontainer/.env $COMPOSE_FILES up -d --build
 ```
 
 This will:
 - Build the Docker image (Node.js 22, agent CLIs, procps)
 - Start PostgreSQL 16 (waits for healthcheck)
 - Start the sandbox container
-- `entrypoint.sh` runs as root: installs cloudflared + agent-browser if env vars request it
+- `entrypoint.sh` runs as root: starts cron, syncs heartbeats
 - `startup.sh` runs as sandbox: npm install, prisma generate, prisma migrate deploy, starts Next.js dev server + cloudflared tunnel, health-checks port 3000
 
 ## 5. Wait for Startup
@@ -65,13 +93,13 @@ Poll logs until `startup.sh` reports completion (up to 3 minutes):
 
 ```bash
 for i in $(seq 1 36); do
-  if docker logs next-postgres-shadcn 2>&1 | grep -q "Startup complete"; then
+  if docker logs "$SANDBOX_NAME" 2>&1 | grep -q "Startup complete"; then
     echo "Startup complete"
     break
   fi
   if [ "$i" -eq 36 ]; then
     echo "WARNING: Startup did not complete within 3 minutes"
-    docker logs next-postgres-shadcn 2>&1 | grep '\[startup\]\|\[entrypoint\]' | tail -10
+    docker logs "$SANDBOX_NAME" 2>&1 | grep '\[startup\]\|\[entrypoint\]' | tail -10
   fi
   sleep 5
 done
@@ -82,17 +110,17 @@ done
 ### 6a. Container Health
 
 ```bash
-docker ps --filter "name=next-postgres-shadcn" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+docker ps --filter "name=$SANDBOX_NAME" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 ```
 
-Both `next-postgres-shadcn` and `next-postgres-shadcn-postgres` should be running.
+Both `$SANDBOX_NAME` and `$SANDBOX_NAME-postgres` should be running.
 
 ### 6b. Run test:setup
 
 This runs 8 TypeScript tests (vitest) that validate the full stack:
 
 ```bash
-docker exec -u sandbox next-postgres-shadcn bash -c 'cd ~/workspace/next-app && npm run test:setup'
+docker exec -u sandbox "$SANDBOX_NAME" bash -c 'cd ~/harness/workspace/projects/next-app && npm run test:setup'
 ```
 
 **All 8 tests must pass:**
@@ -113,7 +141,7 @@ docker exec -u sandbox next-postgres-shadcn bash -c 'cd ~/workspace/next-app && 
 Check logs and remediate:
 - `/tmp/next-dev.log` — Next.js dev server
 - `/tmp/cloudflared.log` — Cloudflare tunnel
-- `docker logs next-postgres-shadcn` — entrypoint + startup
+- `docker logs $SANDBOX_NAME` — entrypoint + startup
 
 Re-run `npm run test:setup` after fixing. Do not loop more than once.
 
@@ -123,7 +151,7 @@ The sandbox generates an ED25519 keypair on first boot (persisted in the `ssh-ke
 Read the public key so the user can add it to GitHub / GitLab:
 
 ```bash
-docker exec -u sandbox next-postgres-shadcn cat ~/.ssh/id_ed25519.pub
+docker exec -u sandbox "$SANDBOX_NAME" cat ~/.ssh/id_ed25519.pub
 ```
 
 Save this value for the report.
