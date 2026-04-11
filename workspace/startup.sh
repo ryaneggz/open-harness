@@ -151,9 +151,11 @@ else
 fi
 
 # ─── 8. Start cloudflared tunnel ────────────────────────────────────
-TUNNEL_TOKEN="***REMOVED***"
+TUNNEL_TOKEN="${TUNNEL_TOKEN:-${CLOUDFLARE_TUNNEL_TOKEN:-}}"
 if command -v cloudflared &>/dev/null; then
-  if ! is_running "cloudflared tunnel"; then
+  if [ -z "$TUNNEL_TOKEN" ]; then
+    log "cloudflared token missing — skipping tunnel"
+  elif ! is_running "cloudflared tunnel"; then
     log "Starting cloudflared tunnel..."
     nohup cloudflared tunnel --url http://localhost:3000 run --token "$TUNNEL_TOKEN" > /tmp/cloudflared.log 2>&1 &
     log "cloudflared started (PID: $!)"
