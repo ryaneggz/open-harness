@@ -1,5 +1,4 @@
 **/.env*
-docker/Dockerfile*
 .claude/
 .devcontainer/
 !.devcontainer/entrypoint.sh

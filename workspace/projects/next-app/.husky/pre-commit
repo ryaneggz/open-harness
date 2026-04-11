@@ -1,0 +1,4 @@
+npx lint-staged
+npx tsc --noEmit
+npm test
+npm run test:setup

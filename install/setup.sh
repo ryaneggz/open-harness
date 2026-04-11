@@ -21,17 +21,18 @@ SANDBOX_USER="sandbox"
 SANDBOX_HOME="/home/$SANDBOX_USER"
 
 # ─── Collect all options upfront ─────────────────────────────────────
-INSTALL_BROWSER=false
-INSTALL_CLAUDE_CODE=true
-INSTALL_CODEX=true
-INSTALL_PI_AGENT=true
-INSTALL_AGENTMAIL=false
-INSTALL_CLOUDFLARED=false
-SSH_PUBKEY=""
-GH_TOKEN=""
-AGENTMAIL_KEY=""
-GIT_USER_NAME=""
-GIT_USER_EMAIL=""
+INSTALL_BROWSER="${INSTALL_BROWSER:-false}"
+INSTALL_CLAUDE_CODE="${INSTALL_CLAUDE_CODE:-true}"
+INSTALL_CODEX="${INSTALL_CODEX:-true}"
+INSTALL_PI_AGENT="${INSTALL_PI_AGENT:-true}"
+INSTALL_MOM="${INSTALL_MOM:-false}"
+INSTALL_AGENTMAIL="${INSTALL_AGENTMAIL:-false}"
+INSTALL_CLOUDFLARED="${INSTALL_CLOUDFLARED:-false}"
+SSH_PUBKEY="${SSH_PUBKEY:-}"
+GH_TOKEN="${GH_TOKEN:-}"
+AGENTMAIL_KEY="${AGENTMAIL_KEY:-}"
+GIT_USER_NAME="${GIT_USER_NAME:-}"
+GIT_USER_EMAIL="${GIT_USER_EMAIL:-}"
 
 if [[ "$NON_INTERACTIVE" == false ]]; then
   banner "Configuration"
@@ -57,6 +58,10 @@ if [[ "$NON_INTERACTIVE" == false ]]; then
   printf "\n  Install Pi Coding Agent? (https://shittycodingagent.ai)\n"
   read -rp "  Install Pi Agent? [Y/n]: " answer
   [[ "$answer" =~ ^[Nn]$ ]] && INSTALL_PI_AGENT=false
+
+  printf "\n  Install Mom Slack Bot? (https://github.com/badlogic/pi-mono/tree/main/packages/mom)\n"
+  read -rp "  Install Mom? [y/N]: " answer
+  [[ "$answer" =~ ^[Yy]$ ]] && INSTALL_MOM=true
 
   printf "\n  Install AgentMail CLI? (https://docs.agentmail.to/integrations/cli)\n"
   read -rp "  Install AgentMail? [y/N]: " answer
@@ -88,6 +93,7 @@ apt-get install -y --no-install-recommends \
   gnupg \
   lsb-release \
   nano \
+  openssh-client \
   ripgrep \
   tmux \
   unzip
@@ -105,10 +111,15 @@ else
 fi
 
 # ─── 3. Node.js 22.x ────────────────────────────────────────────────
-banner "Installing Node.js 22.x"
-curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-apt-get install -y --no-install-recommends nodejs
-ok "Node.js $(node --version) installed"
+if command -v node &>/dev/null; then
+  banner "Node.js already installed"
+  ok "Node.js $(node --version) — skipped"
+else
+  banner "Installing Node.js 22.x"
+  curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  apt-get install -y --no-install-recommends nodejs
+  ok "Node.js $(node --version) installed"
+fi
 
 # ─── 4. GitHub CLI ──────────────────────────────────────────────────
 banner "Installing GitHub CLI"
@@ -148,8 +159,16 @@ ok "uv $(uv --version) installed"
 
 # ─── 8. agent-browser + Chromium (optional) ──────────────────────
 if [[ "$INSTALL_BROWSER" == true ]]; then
+  banner "Installing Chromium system dependencies"
+  apt-get install -y --no-install-recommends \
+    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+    libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 \
+    libpango-1.0-0 libcairo2 libasound2 libxshmfence1 libx11-xcb1 \
+    fonts-liberation xdg-utils
+  ok "Chromium system dependencies installed"
+
   banner "Installing agent-browser and Chromium"
-  npm install -g agent-browser
+  npm install -g agent-browser@0.8.5
   agent-browser install --with-deps
   ok "agent-browser + Chromium installed"
 else
@@ -158,7 +177,10 @@ else
 fi
 
 # ─── 9. Claude Code (system-wide) ────────────────────────────────
-if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
+if command -v claude &>/dev/null; then
+  banner "Claude Code already installed"
+  ok "claude $(claude --version 2>/dev/null || echo 'present') — skipped"
+elif [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
   banner "Installing Claude Code CLI"
   npm install -g @anthropic-ai/claude-code
   ok "Claude Code CLI installed"
@@ -168,7 +190,10 @@ else
 fi
 
 # ─── 10. Codex CLI (optional) ─────────────────────────────────────
-if [[ "$INSTALL_CODEX" == true ]]; then
+if command -v codex &>/dev/null; then
+  banner "Codex already installed"
+  ok "codex $(codex --version 2>/dev/null || echo 'present') — skipped"
+elif [[ "$INSTALL_CODEX" == true ]]; then
   banner "Installing OpenAI Codex CLI"
   npm install -g @openai/codex
   ok "Codex CLI installed"
@@ -178,12 +203,28 @@ else
 fi
 
 # ─── 11. Pi Coding Agent (optional) ──────────────────────────────
-if [[ "$INSTALL_PI_AGENT" == true ]]; then
+if command -v pi &>/dev/null; then
+  banner "Pi Coding Agent already installed"
+  ok "pi $(pi --version 2>/dev/null || echo 'present') — skipped"
+elif [[ "$INSTALL_PI_AGENT" == true ]]; then
   banner "Installing Pi Coding Agent"
   npm install -g @mariozechner/pi-coding-agent
   ok "Pi Coding Agent installed"
 else
   banner "Skipping Pi Agent"
+  ok "Skipped"
+fi
+
+# ─── 11b. Mom Slack Bot (optional) ───────────────────────────────────
+if command -v mom &>/dev/null; then
+  banner "Mom already installed"
+  ok "mom $(mom --version 2>/dev/null || echo 'present') — skipped"
+elif [[ "$INSTALL_MOM" == true ]]; then
+  banner "Installing Mom (Slack Bot)"
+  npm install -g @mariozechner/pi-mom
+  ok "Mom installed"
+else
+  banner "Skipping Mom"
   ok "Skipped"
 fi
 
@@ -245,6 +286,18 @@ if [[ -n "$SSH_PUBKEY" ]]; then
   ok "SSH public key added for $SANDBOX_USER"
 fi
 
+# ─── 14b. Generate SSH keypair if none exists ────────────────────
+SSHDIR="$SANDBOX_HOME/.ssh"
+if [ ! -f "$SSHDIR/id_ed25519" ] && [ -z "$SSH_PUBKEY" ]; then
+  banner "Generating SSH keypair"
+  mkdir -p "$SSHDIR"
+  ssh-keygen -t ed25519 -f "$SSHDIR/id_ed25519" -N "" -C "sandbox@$(hostname)"
+  chmod 700 "$SSHDIR"
+  chmod 600 "$SSHDIR/id_ed25519"
+  chown -R "$SANDBOX_USER:$SANDBOX_USER" "$SSHDIR"
+  ok "SSH keypair generated"
+fi
+
 # ─── 15. GitHub CLI auth (for sandbox user) ──────────────────────
 if [[ -n "$GH_TOKEN" ]]; then
   banner "Authenticating GitHub CLI"
@@ -261,7 +314,7 @@ ok "Done"
 banner "Setup complete"
 printf "\n"
 printf "  ${CYAN}Sandbox user${NC}: $SANDBOX_USER\n"
-printf "  ${CYAN}Workspace${NC}: $SANDBOX_HOME/workspace\n"
+printf "  ${CYAN}Workspace${NC}: $SANDBOX_HOME/harness/workspace\n"
 printf "\n"
 printf "  ${CYAN}Installed tools${NC}\n"
 printf "  ──────────────────────────────────────\n"
@@ -283,6 +336,9 @@ if [[ "$INSTALL_CODEX" == true ]]; then
 fi
 if [[ "$INSTALL_PI_AGENT" == true ]]; then
   printf "  pi       : %s\n" "$(pi --version 2>/dev/null || echo 'installed')"
+fi
+if [[ "$INSTALL_MOM" == true ]]; then
+  printf "  mom    : %s\n" "$(mom --version 2>/dev/null || echo 'installed')"
 fi
 if [[ "$INSTALL_AGENTMAIL" == true ]]; then
   printf "  agentmail: %s\n" "$(agentmail --version 2>/dev/null || echo 'installed')"
@@ -306,3 +362,11 @@ if [[ "$INSTALL_PI_AGENT" == true ]]; then
   printf "  pi                        # Pi Coding Agent\n"
 fi
 printf "\n"
+
+# ─── 18. Run workspace startup script ───────────────────────────
+STARTUP="$SANDBOX_HOME/harness/workspace/startup.sh"
+if [ -f "$STARTUP" ]; then
+  banner "Running workspace startup"
+  su - "$SANDBOX_USER" -c "bash $STARTUP"
+  ok "Startup complete"
+fi

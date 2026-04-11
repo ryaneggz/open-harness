@@ -1,9 +1,9 @@
 {
-  "name": "Open Harness Orchestrator",
+  "name": "Open Harness Sandbox",
   "dockerComposeFile": "docker-compose.yml",
-  "service": "orchestrator",
-  "workspaceFolder": "/home/orchestrator/project",
-  "remoteUser": "orchestrator",
+  "service": "sandbox",
+  "workspaceFolder": "/home/sandbox/harness",
+  "remoteUser": "sandbox",
   "forwardPorts": [2222],
   "customizations": {
     "vscode": {

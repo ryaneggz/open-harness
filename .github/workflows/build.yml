@@ -45,6 +45,6 @@ jobs:
                   LATEST=ghcr.io/ryaneggz/open-harness:latest
 
                   echo "Building: $IMAGE and $LATEST"
-                  docker build -f docker/Dockerfile -t $IMAGE -t $LATEST .
+                  docker build -f .devcontainer/Dockerfile -t $IMAGE -t $LATEST .
                   docker push $IMAGE
                   docker push $LATEST

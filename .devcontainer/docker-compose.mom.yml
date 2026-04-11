@@ -1,0 +1,5 @@
+services:
+  sandbox:
+    environment:
+      - MOM_SLACK_APP_TOKEN=${MOM_SLACK_APP_TOKEN:-}
+      - MOM_SLACK_BOT_TOKEN=${MOM_SLACK_BOT_TOKEN:-}
