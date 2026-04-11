@@ -98,7 +98,7 @@ git push -u origin feat/<N>-<shortdesc>
 
 ## Acceptance Criteria
 - [ ] <!-- derived from PM's acceptance criteria -->
-- [ ] Tests pass (`npm test`)
+- [ ] Tests pass (`pnpm test`)
 - [ ] CI green (`/ci-status`)
 - [ ] PR targets `development` branch
 ```

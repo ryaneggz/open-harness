@@ -213,7 +213,7 @@ Use a fenced code block starting with `!` for multi-command output:
 Environment status:
 ```!
 node --version
-npm --version
+pnpm --version
 git status --short
 ```
 ````

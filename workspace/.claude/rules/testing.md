@@ -15,5 +15,5 @@ paths:
 - Use `screen.getByRole` over `getByTestId` — tests should mirror how users interact
 - Mock external dependencies (APIs, third-party services), not internal modules
 - Each test file should be self-contained — no shared mutable state between tests
-- Run `npm test` for Vitest, `npm run test:e2e` for Playwright
+- Run `pnpm test` for Vitest, `pnpm run test:e2e` for Playwright
 - `passWithNoTests: true` is set in vitest config — CI won't fail on missing tests

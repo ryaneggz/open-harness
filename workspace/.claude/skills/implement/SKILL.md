@@ -131,9 +131,9 @@ After implementing API routes, server actions, or database changes:
 
 ### Quality Gate Per Story
 Before marking ANY story as `passes: true`:
-1. Run `npm run type-check` — must pass
-2. Run `npm run lint` — must pass
-3. Run `npm test` — must pass
+1. Run `pnpm run type-check` — must pass
+2. Run `pnpm run lint` — must pass
+3. Run `pnpm test` — must pass
 4. If any check fails, fix in the SAME iteration
 ```
 
@@ -178,7 +178,7 @@ Read the current `.ralph/prd.json`, find the highest priority number, then appen
     "All previous stories have passes: true",
     "Archive .ralph/prd.json and .ralph/progress.txt to .ralph/archives/YYYY-MM-DD/<feature>/ (plural archives, date and feature as SEPARATE directories)",
     "Verify archive exists: ls .ralph/archives/YYYY-MM-DD/<feature>/prd.json must succeed",
-    "Verify dev server: curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ must return 200 — if not running, start with npm run dev and wait",
+    "Verify dev server: curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ must return 200 — if not running, start with pnpm run dev and wait",
     "Verify public URL: curl -s -o /dev/null -w '%{http_code}' https://next-postgres-shadcn.ruska.dev/ must return 200 — if 502/000, this is a BLOCKER",
     "Create feature branch: git checkout -b feat/<N>-<shortdesc> from agent/next-postgres-shadcn (NEVER git clone)",
     "Push all commits to the feature branch",

@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "description": "Open Harness — AI Agent Sandbox Orchestrator",
-  "workspaces": ["cli", "packages/sandbox"],
+  "packageManager": "pnpm@10.12.1",
   "scripts": {
-    "setup": "npm install && npm run build && npm link --workspace=cli",
-    "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces",
-    "lint": "npm run lint --workspaces",
-    "format": "npm run format --workspaces"
+    "setup": "pnpm install && pnpm -r run build && pnpm link --global ./cli",
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "format:check": "pnpm -r run format:check",
+    "format": "pnpm -r run format"
   },
   "engines": {
     "node": ">=20.0.0"

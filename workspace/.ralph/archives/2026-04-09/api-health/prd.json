@@ -13,7 +13,7 @@
                 "GET /api/health returns 200 with JSON: { status: 'ok', timestamp: ISO-8601 string, uptime: number (seconds since process start), services: { nextjs: 'ok' } }",
                 "Response Content-Type is application/json",
                 "Endpoint responds in < 500ms",
-                "Typecheck passes (npm run type-check)"
+                "Typecheck passes (pnpm run type-check)"
             ],
             "priority": 1,
             "passes": true,
@@ -28,7 +28,7 @@
                 "On success: services.database = 'ok', overall status = 'ok', HTTP 200",
                 "On failure: services.database = 'error', overall status = 'degraded', HTTP 503",
                 "Database check has a timeout so it does not hang indefinitely (< 500ms total response)",
-                "Typecheck passes (npm run type-check)"
+                "Typecheck passes (pnpm run type-check)"
             ],
             "priority": 2,
             "passes": true,
@@ -45,8 +45,8 @@
                 "Test: GET returns 503 with status 'degraded' when database query throws",
                 "Test: services.database is 'error' when database is unreachable",
                 "Mock Prisma client to simulate both success and failure cases",
-                "All tests pass (npm test)",
-                "Typecheck passes (npm run type-check)"
+                "All tests pass (pnpm test)",
+                "Typecheck passes (pnpm run type-check)"
             ],
             "priority": 3,
             "passes": true,

@@ -107,7 +107,7 @@ This will:
 - Start PostgreSQL 16 (waits for healthcheck)
 - Start the sandbox container
 - `entrypoint.sh` runs as root: starts cron, syncs heartbeats
-- `startup.sh` runs as sandbox: npm install, prisma generate, prisma migrate deploy, starts Next.js dev server + cloudflared tunnel, health-checks port 3000
+- `startup.sh` runs as sandbox: pnpm install, prisma generate, prisma migrate deploy, starts Next.js dev server + cloudflared tunnel, health-checks port 3000
 
 ## 5. Wait for Startup
 
@@ -142,7 +142,7 @@ Both `$SANDBOX_NAME` and `$SANDBOX_NAME-postgres` should be running.
 This runs 8 TypeScript tests (vitest) that validate the full stack:
 
 ```bash
-docker exec -u sandbox "$SANDBOX_NAME" bash -c 'cd ~/harness/workspace/projects/next-app && npm run test:setup'
+docker exec -u sandbox "$SANDBOX_NAME" bash -c 'cd ~/harness/workspace/projects/next-app && pnpm run test:setup'
 ```
 
 **All 8 tests must pass:**
@@ -151,8 +151,8 @@ docker exec -u sandbox "$SANDBOX_NAME" bash -c 'cd ~/harness/workspace/projects/
 |------|----------------|
 | DATABASE_URL set | Compose env var injected |
 | Node.js >= 22 | Correct runtime |
-| node_modules installed | npm install ran |
-| package-lock.json in sync | Dependencies consistent |
+| node_modules installed | pnpm install ran |
+| pnpm-lock.yaml in sync | Dependencies consistent |
 | Prisma client generated | `src/generated/prisma/` exists |
 | PostgreSQL TCP | Database reachable on devnet |
 | Next.js port 3000 | Dev server responding |
@@ -165,7 +165,7 @@ Check logs and remediate:
 - `/tmp/cloudflared.log` — Cloudflare tunnel
 - `docker logs $SANDBOX_NAME` — entrypoint + startup
 
-Re-run `npm run test:setup` after fixing. Do not loop more than once.
+Re-run `pnpm run test:setup` after fixing. Do not loop more than once.
 
 ## 7. Retrieve SSH public key
 

@@ -156,9 +156,9 @@ After all waves complete:
 2. If the plan involved code changes, run verification:
 
 ```bash
-cd ~/harness/workspace/projects/next-app && npm run type-check 2>&1 || true
-cd ~/harness/workspace/projects/next-app && npm run lint 2>&1 || true
-cd ~/harness/workspace/projects/next-app && npm test 2>&1 || true
+cd ~/harness/workspace/projects/next-app && pnpm run type-check 2>&1 || true
+cd ~/harness/workspace/projects/next-app && pnpm run lint 2>&1 || true
+cd ~/harness/workspace/projects/next-app && pnpm test 2>&1 || true
 ```
 
 3. If validation fails, note which tasks likely caused the failure

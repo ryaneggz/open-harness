@@ -10,7 +10,7 @@ on:
       - "workspace/projects/next-app/prisma/**"
       - "workspace/projects/next-app/public/**"
       - "workspace/projects/next-app/package.json"
-      - "workspace/projects/next-app/package-lock.json"
+      - "workspace/projects/next-app/pnpm-lock.yaml"
       - "workspace/projects/next-app/tsconfig.json"
       - "workspace/projects/next-app/next.config.*"
       - "workspace/projects/next-app/tailwind.config.*"
@@ -57,50 +57,53 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
           path: workspace/projects/next-app/node_modules
-          key: node-modules-${{ hashFiles('workspace/projects/next-app/package-lock.json') }}
+          key: node-modules-${{ hashFiles('workspace/projects/next-app/pnpm-lock.yaml') }}
           restore-keys: |
             node-modules-
 
       - name: Install dependencies
         working-directory: workspace/projects/next-app
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma client
         working-directory: workspace/projects/next-app
-        run: npx prisma generate
+        run: pnpm exec prisma generate
 
       - name: Run migrations
         working-directory: workspace/projects/next-app
-        run: npx prisma migrate deploy
+        run: pnpm exec prisma migrate deploy
 
       - name: Lint
         working-directory: workspace/projects/next-app
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Format check
         working-directory: workspace/projects/next-app
-        run: npm run format:check
+        run: pnpm run format:check
 
       - name: Type check
         working-directory: workspace/projects/next-app
-        run: npm run type-check
+        run: pnpm run type-check
 
       - name: Build
         working-directory: workspace/projects/next-app
-        run: npm run build
+        run: pnpm run build
 
       - name: Test
         working-directory: workspace/projects/next-app
-        run: npm test
+        run: pnpm test
 
       - name: Install Playwright browsers
         working-directory: workspace/projects/next-app
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: E2E tests
         working-directory: workspace/projects/next-app
-        run: npm run test:e2e
+        run: pnpm run test:e2e

@@ -14,7 +14,7 @@ All tools are installed system-wide in `/usr/local/bin` or via apt:
 
 | Tool | Version | Usage |
 |------|---------|-------|
-| Node.js | 22.x | `node`, `npm`, `npx` |
+| Node.js | 22.x | `node`, `pnpm`, `pnpm exec` |
 | Bun | latest | `bun` |
 | uv | latest | `uv` (Python package manager) |
 | GitHub CLI | latest | `gh` |
@@ -37,7 +37,7 @@ All tools are installed system-wide in `/usr/local/bin` or via apt:
 ## Tool Use Principles
 
 - Use `uv` for Python projects (e.g. `uv init`, `uv add`, `uv run`)
-- Use `bun` or `npm` for JavaScript/TypeScript projects
+- Use `pnpm` for JavaScript/TypeScript projects
 - Use `docker compose` to manage services; the sandbox can reach host containers via `host.docker.internal`
 - You have full sudo access if you need to install additional system packages
 - Agent config directories (`.openharness/`, `.claude/`, `.codex/`) are in the workspace root

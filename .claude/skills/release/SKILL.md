@@ -48,7 +48,7 @@ git status --porcelain
 
 # Run lint + type check + tests locally
 cd workspace/projects/next-app
-npm run lint && npm run format:check && npm run type-check && npm test
+pnpm run lint && pnpm run format:check && pnpm run type-check && pnpm test
 ```
 
 If any check fails, **stop and fix before releasing**. Do not skip.

@@ -1,2 +1,2 @@
-cd cli && npx lint-staged && npm run build && npm run test
-cd ../packages/sandbox && npx lint-staged && npm run build && npm run test
+cd cli && pnpm exec lint-staged && pnpm run build && pnpm run test
+cd ../packages/sandbox && pnpm exec lint-staged && pnpm run build && pnpm run test

@@ -48,7 +48,7 @@ fi
 # Install agent-browser + Chromium if requested but missing (requires root)
 if [ "${INSTALL_BROWSER:-false}" = "true" ] && ! command -v agent-browser &>/dev/null; then
   echo "[entrypoint] Installing agent-browser + Chromium..."
-  npm install -g agent-browser@0.8.5 && \
+  pnpm add -g agent-browser@0.8.5 && \
   agent-browser install --with-deps && \
   echo "[entrypoint] agent-browser installed" || \
   echo "[entrypoint] WARNING: agent-browser install failed"

@@ -565,7 +565,7 @@ model: sonnet  # Reasoning needed for debugging
 ## Testing Protocol
 
 When invoked:
-1. Run appropriate test suite (pytest for backend, npm test for frontend)
+1. Run appropriate test suite (pytest for backend, pnpm test for frontend)
 2. Capture full test output
 3. For failures: identify root cause
 4. Provide specific fix recommendations

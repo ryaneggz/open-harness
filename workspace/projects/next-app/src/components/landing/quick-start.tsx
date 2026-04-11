@@ -6,12 +6,12 @@ git clone https://github.com/ryaneggz/next-postgres-shadcn.git
 cd next-postgres-shadcn
 
 # Install dependencies and link the openharness CLI
-npm run setup
+pnpm run setup
 
 # Provision — the agent handles everything
 claude "/provision"`;
 
-const COMMANDS = new Set(["git", "claude", "npm"]);
+const COMMANDS = new Set(["git", "claude", "pnpm"]);
 
 function highlightLine(line: string, index: number): ReactNode {
   const trimmed = line.trimStart();

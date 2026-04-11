@@ -47,37 +47,40 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Install dependencies
         working-directory: workspace/projects/next-app
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
         working-directory: workspace/projects/next-app
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Format check
         working-directory: workspace/projects/next-app
-        run: npm run format:check
+        run: pnpm run format:check
 
       - name: Type check
         working-directory: workspace/projects/next-app
-        run: npm run type-check
+        run: pnpm run type-check
 
       - name: Generate Prisma client
         working-directory: workspace/projects/next-app
-        run: npx prisma generate
+        run: pnpm exec prisma generate
 
       - name: Run migrations
         working-directory: workspace/projects/next-app
-        run: npx prisma migrate deploy
+        run: pnpm exec prisma migrate deploy
 
       - name: Build
         working-directory: workspace/projects/next-app
-        run: npm run build
+        run: pnpm run build
 
       - name: Test
         working-directory: workspace/projects/next-app
-        run: npm test
+        run: pnpm test
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

@@ -35,7 +35,7 @@ If `ENVIRONMENT=host`, follow the **Host Path** (Steps 1h–4h).
 ### Step 1c — Run test:setup directly
 
 ```bash
-cd ~/harness/workspace/projects/next-app && npm run test:setup
+cd ~/harness/workspace/projects/next-app && pnpm run test:setup
 ```
 
 Capture the output. If all 8 tests pass, skip to **Step 5**.
@@ -48,16 +48,16 @@ For each failing test, apply the matching fix **in this order** (order matters �
 |---|---|
 | `has DATABASE_URL set` | Environment misconfigured. Cannot auto-fix — report to user. |
 | `has Node.js >= 22` | Wrong runtime. Cannot auto-fix — report to user. |
-| `has node_modules installed` or `package-lock.json in sync` | `cd ~/harness/workspace/projects/next-app && npm install` |
-| `has Prisma client generated` | `cd ~/harness/workspace/projects/next-app && npx prisma generate` |
+| `has node_modules installed` or `pnpm-lock.yaml in sync` | `cd ~/harness/workspace/projects/next-app && pnpm install` |
+| `has Prisma client generated` | `cd ~/harness/workspace/projects/next-app && pnpm exec prisma generate` |
 | `can connect via TCP` (PostgreSQL) | Check: `echo > /dev/tcp/${PGHOST:-postgres}/5432`. If unreachable, report to user. |
-| `responds on port 3000` (Next.js) | Check log: `tail -20 /tmp/next-dev.log`. Then restart: `cd ~/harness/workspace/projects/next-app && nohup npm run dev > /tmp/next-dev.log 2>&1 &`. Wait 15s. |
+| `responds on port 3000` (Next.js) | Check log: `tail -20 /tmp/next-dev.log`. Then restart: `cd ~/harness/workspace/projects/next-app && nohup pnpm run dev > /tmp/next-dev.log 2>&1 &`. Wait 15s. |
 | `public URL responds` (Cloudflare) | Check log: `tail -20 /tmp/cloudflared.log`. Then restart: `TUNNEL_TOKEN=$(grep 'TUNNEL_TOKEN=' ~/harness/workspace/startup.sh \| head -1 \| cut -d'"' -f2); kill $(pidof cloudflared) 2>/dev/null; sleep 1; nohup cloudflared tunnel --url http://localhost:3000 run --token "$TUNNEL_TOKEN" > /tmp/cloudflared.log 2>&1 &`. Wait 5s. |
 
 ### Step 3c — Re-run tests
 
 ```bash
-cd ~/harness/workspace/projects/next-app && npm run test:setup
+cd ~/harness/workspace/projects/next-app && pnpm run test:setup
 ```
 
 ### Step 4c — If still failing
@@ -101,7 +101,7 @@ Wait for startup (poll for "Startup complete" in logs, up to 3 minutes).
 ### Step 2h — Run test:setup via docker exec
 
 ```bash
-docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && npm run test:setup'
+docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && pnpm run test:setup'
 ```
 
 Capture the output. If all 8 tests pass, skip to **Step 5**.
@@ -114,16 +114,16 @@ For each failing test, apply the matching fix **in this order**:
 |---|---|
 | `has DATABASE_URL set` | Container missing compose overlay. Cannot auto-fix — report to user. |
 | `has Node.js >= 22` | Wrong container image. Cannot auto-fix — report to user. |
-| `has node_modules installed` or `package-lock.json in sync` | `docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && npm install'` |
-| `has Prisma client generated` | `docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && npx prisma generate'` |
+| `has node_modules installed` or `pnpm-lock.yaml in sync` | `docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && pnpm install'` |
+| `has Prisma client generated` | `docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && pnpm exec prisma generate'` |
 | `can connect via TCP` (PostgreSQL) | Check: `docker ps --filter name=$SANDBOX_NAME-postgres`. If down, report to user. |
-| `responds on port 3000` (Next.js) | Check log: `docker exec $SANDBOX_NAME bash -c 'tail -20 /tmp/next-dev.log'`. Then restart: `docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && nohup npm run dev > /tmp/next-dev.log 2>&1 &'`. Wait 15s. |
+| `responds on port 3000` (Next.js) | Check log: `docker exec $SANDBOX_NAME bash -c 'tail -20 /tmp/next-dev.log'`. Then restart: `docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && nohup pnpm run dev > /tmp/next-dev.log 2>&1 &'`. Wait 15s. |
 | `public URL responds` (Cloudflare) | Check log: `docker exec $SANDBOX_NAME bash -c 'tail -20 /tmp/cloudflared.log'`. Then restart: `docker exec -u sandbox $SANDBOX_NAME bash -c 'TUNNEL_TOKEN=$(grep "TUNNEL_TOKEN=" ~/harness/workspace/startup.sh \| head -1 \| cut -d"\"" -f2); kill $(pidof cloudflared) 2>/dev/null; sleep 1; nohup cloudflared tunnel --url http://localhost:3000 run --token "$TUNNEL_TOKEN" > /tmp/cloudflared.log 2>&1 &'`. Wait 5s. |
 
 ### Step 4h — Re-run tests and handle persistent failures
 
 ```bash
-docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && npm run test:setup'
+docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && pnpm run test:setup'
 ```
 
 If the same test fails twice after remediation, **stop and report** — do not loop.
@@ -139,7 +139,7 @@ Output a summary table:
 |--------------------|--------|---------------------|
 | DATABASE_URL       | OK     | —                   |
 | Node.js >= 22      | OK     | —                   |
-| node_modules       | FIXED  | Ran npm install     |
+| node_modules       | FIXED  | Ran pnpm install     |
 | Prisma client      | OK     | —                   |
 | PostgreSQL         | OK     | —                   |
 | Next.js dev server | OK     | —                   |

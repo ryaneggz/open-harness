@@ -7,7 +7,7 @@ Started: Wed Apr  8 20:54:00 MDT 2026
 - Prisma 7 requires `@prisma/adapter-pg` — cannot instantiate `PrismaClient()` without an adapter
 - Generated Prisma client is in `src/generated/prisma/` but gitignored — run `npx prisma generate` before type-checking
 - Import PrismaClient from `@/generated/prisma/client` (not `@/generated/prisma`)
-- Quality checks: `npm run type-check`, `npm run lint`, `npm test` from `workspace/next-app/`
+- Quality checks: `pnpm run type-check`, `pnpm run lint`, `pnpm test` from `workspace/next-app/`
 - Pre-commit hooks run lint-staged + build + tests for `cli/` and `packages/sandbox/` workspaces too
 - Run `npx tsc --noEmit` from `workspace/next-app/` (nested), NOT from git root — path aliases and types only resolve from nested tsconfig
 - Root `package.json` is monorepo config — install Next.js app deps in `workspace/next-app/package.json`

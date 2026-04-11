@@ -6,4 +6,4 @@
 - Keep commits small and focused — one logical change per commit
 - After every `git push`, run `/ci-status` to confirm CI passes. Work is not done until CI is green.
 - Never skip pre-commit hooks (`--no-verify`)
-- Pre-commit runs: lint-staged (ESLint + Prettier), `tsc --noEmit`, then `npm test`
+- Pre-commit runs: lint-staged (ESLint + Prettier), `tsc --noEmit`, then `pnpm test`

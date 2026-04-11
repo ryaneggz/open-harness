@@ -1,15 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(touch /home/ryaneggz/ruska-ai/sandboxes/.git/worktrees/next-postgres-shadcn/test_write)",
-      "Bash(rm -f /home/ryaneggz/ruska-ai/sandboxes/.git/worktrees/next-postgres-shadcn/test_write)",
-      "Bash(rm -f /home/sandbox/harness/workspace/.claude/.env.claude /home/sandbox/harness/workspace/.claude/.example.env.claude)",
-      "Bash(rm -rf /home/sandbox/harness/workspace/.claude/hooks/)",
-      "Bash(mkdir -p /home/sandbox/harness/workspace/.claude/identity)",
-      "Bash(mkdir -p /home/sandbox/harness/workspace/.claude/heartbeats)",
-      "Bash(mkdir -p .claude/screenshots)",
-      "Bash(docker exec:*)"
-    ],
     "deny": [
       "Read(file_path=**/.env*)",
       "Read(file_path=**/*.pem)",

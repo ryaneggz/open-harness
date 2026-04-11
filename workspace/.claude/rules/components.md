@@ -5,7 +5,7 @@ paths:
 
 # Components
 
-- Add shadcn components via `npx shadcn@latest add <component>` — never copy/paste from docs
+- Add shadcn components via `pnpm exec shadcn@latest add <component>` — never copy/paste from docs
 - shadcn components live in `src/components/ui/` — do not modify generated files unless customizing
 - Custom components go in `src/components/` (not in `ui/`)
 - Use `class-variance-authority` (cva) for component variants

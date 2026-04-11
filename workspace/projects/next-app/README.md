@@ -12,7 +12,7 @@ git clone https://github.com/ryaneggz/next-postgres-shadcn.git
 cd next-postgres-shadcn
 
 # Install dependencies and link the openharness CLI
-npm run setup
+pnpm run setup
 
 # Provision — the agent handles everything
 claude "/provision"
@@ -40,13 +40,13 @@ The agent will:
 
 ```bash
 cd workspace/projects/next-app
-npm run dev                    # Dev server on 0.0.0.0:3000
-npm test                       # Vitest (unit/integration)
-npm run test:e2e               # Playwright E2E
-npm run lint                   # ESLint
-npm run format                 # Prettier
-npm run type-check             # tsc --noEmit
-npx prisma studio              # Browse data (port 5555)
+pnpm run dev                   # Dev server on 0.0.0.0:3000
+pnpm test                      # Vitest (unit/integration)
+pnpm run test:e2e              # Playwright E2E
+pnpm run lint                  # ESLint
+pnpm run format                # Prettier
+pnpm run type-check            # tsc --noEmit
+pnpm exec prisma studio        # Browse data (port 5555)
 ```
 
 ## Learn More

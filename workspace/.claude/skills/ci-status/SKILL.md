@@ -72,14 +72,14 @@ gh api "repos/ryaneggz/open-harness/actions/jobs/$JOB_ID/logs" 2>&1 \
 
 This project's CI (`CI: next-postgres-shadcn`) runs these steps in order:
 
-1. Lint (`npm run lint`)
-2. Format check (`npm run format:check`)
-3. Type check (`npm run type-check`)
-4. Prisma generate (`npx prisma generate`)
+1. Lint (`pnpm run lint`)
+2. Format check (`pnpm run format:check`)
+3. Type check (`pnpm run type-check`)
+4. Prisma generate (`pnpm exec prisma generate`)
 5. Prisma migrate (`npx prisma migrate deploy`)
-6. Build (`npm run build`)
-7. Test (`npm test`)
-8. Playwright E2E (`npm run test:e2e`)
+6. Build (`pnpm run build`)
+7. Test (`pnpm test`)
+8. Playwright E2E (`pnpm run test:e2e`)
 
 ## Local Pre-flight
 
@@ -87,5 +87,5 @@ Before pushing, you can run the same checks locally to catch issues early:
 
 ```bash
 cd workspace/projects/next-app
-npm run lint && npm run format:check && npm run type-check && npx prisma generate && npm run build && npm test
+pnpm run lint && pnpm run format:check && pnpm run type-check && pnpm exec prisma generate && pnpm run build && pnpm test
 ```

@@ -15,7 +15,7 @@ git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
 2. Install the `openharness` CLI:
 
 ```bash
-npm run setup
+pnpm run setup
 ```
 
 3. Start Claude at the project root **in plan mode**:
@@ -39,7 +39,7 @@ openharness shell portfolio-mgr    # enter the sandbox
 claude                             # start working
 ```
 
-> **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [Node.js](https://nodejs.org/) (v20+). That's all you need on your host.
+> **Prerequisites:** [Docker](https://docs.docker.com/get-docker/), [Node.js](https://nodejs.org/) (v20+), and [pnpm](https://pnpm.io/) (`corepack enable`). That's all you need on your host.
 
 ### More example agents
 
@@ -241,7 +241,7 @@ docker compose -f .devcontainer/docker-compose.yml down
 2. **`docker/docker-compose.yml`** bind-mounts `./workspace` and the project-level `.openharness/` config (so `workspace/.openharness` resolves correctly). When `DOCKER=true`, the override file (`docker/docker-compose.docker.yml`) additionally mounts the Docker socket and configures `host.docker.internal`.
 
 3. **`install/setup.sh`** provisions all tools system-wide (as root):
-   - Node.js 22.x, npm, tmux, nano, ripgrep, jq (always)
+   - Node.js 22.x, pnpm (via corepack), tmux, nano, ripgrep, jq (always)
    - Docker CLI + Compose plugin (always)
    - GitHub CLI (always)
    - Bun, uv (always)

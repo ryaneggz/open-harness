@@ -243,9 +243,9 @@ BUILD_TARGET: $ARGUMENTS
    - RUN `cd backend && make format` to format code
    - RUN `cd backend && make test` to verify tests pass
 3. _IF_ building frontend or all:
-   - RUN `cd frontend && npm install` to install dependencies
-   - RUN `cd frontend && npm run build` to create production bundle
-   - RUN `cd frontend && npm run test` to verify tests pass
+   - RUN `cd frontend && pnpm install` to install dependencies
+   - RUN `cd frontend && pnpm run build` to create production bundle
+   - RUN `cd frontend && pnpm run test` to verify tests pass
 4. _REPORT_ any errors encountered during the build process.
 
 ## Report
@@ -481,10 +481,10 @@ For backend-focused skills, consider:
 ### Frontend Skills
 
 For frontend-focused skills, consider:
-- Dependencies: `cd frontend && npm install`
-- Build: `cd frontend && npm run build`
-- Testing: `cd frontend && npm run test`
-- Linting: `cd frontend && npm run lint`
+- Dependencies: `cd frontend && pnpm install`
+- Build: `cd frontend && pnpm run build`
+- Testing: `cd frontend && pnpm run test`
+- Linting: `cd frontend && pnpm run lint`
 
 ### Full-Stack Skills
 

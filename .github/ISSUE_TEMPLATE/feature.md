@@ -64,7 +64,7 @@ gh pr create --base development --title "feat(<issue#>): <shortdesc>" --body "Cl
 - [ ] TypeScript strict — no `any` types
 - [ ] Vitest tests added for new logic
 - [ ] Playwright E2E test covers the happy path
-- [ ] Lint + format + type-check pass (`npm run lint && npm run format:check && npm run type-check`)
+- [ ] Lint + format + type-check pass (`pnpm run lint && pnpm run format:check && pnpm run type-check`)
 - [ ] Verified via agent-browser at `https://next-postgres-shadcn.ruska.dev`
 - [ ] Prisma migration included if schema changed
 - [ ] PR targets `development` branch

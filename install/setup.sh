@@ -145,7 +145,13 @@ groupadd -f docker
 usermod -aG docker "$SANDBOX_USER"
 ok "Docker CLI $(docker --version) + Compose installed"
 
-# ─── 6. Bun (system-wide) ────────────────────────────────────────
+# ─── 6. pnpm (via corepack) ──────────────────────────────────────
+banner "Enabling pnpm via corepack"
+corepack enable
+corepack prepare pnpm@latest --activate
+ok "pnpm $(pnpm --version) installed"
+
+# ─── 6b. Bun (system-wide) ──────────────────────────────────────
 banner "Installing Bun"
 BUN_INSTALL=/usr/local curl -fsSL https://bun.sh/install | bash
 ok "Bun $(bun --version) installed"
@@ -168,7 +174,7 @@ if [[ "$INSTALL_BROWSER" == true ]]; then
   ok "Chromium system dependencies installed"
 
   banner "Installing agent-browser and Chromium"
-  npm install -g agent-browser@0.8.5
+  pnpm add -g agent-browser@0.8.5
   agent-browser install --with-deps
   ok "agent-browser + Chromium installed"
 else
@@ -182,7 +188,7 @@ if command -v claude &>/dev/null; then
   ok "claude $(claude --version 2>/dev/null || echo 'present') — skipped"
 elif [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
   banner "Installing Claude Code CLI"
-  npm install -g @anthropic-ai/claude-code
+  pnpm add -g @anthropic-ai/claude-code
   ok "Claude Code CLI installed"
 else
   banner "Skipping Claude Code"
@@ -195,7 +201,7 @@ if command -v codex &>/dev/null; then
   ok "codex $(codex --version 2>/dev/null || echo 'present') — skipped"
 elif [[ "$INSTALL_CODEX" == true ]]; then
   banner "Installing OpenAI Codex CLI"
-  npm install -g @openai/codex
+  pnpm add -g @openai/codex
   ok "Codex CLI installed"
 else
   banner "Skipping Codex"
@@ -208,7 +214,7 @@ if command -v pi &>/dev/null; then
   ok "pi $(pi --version 2>/dev/null || echo 'present') — skipped"
 elif [[ "$INSTALL_PI_AGENT" == true ]]; then
   banner "Installing Pi Coding Agent"
-  npm install -g @mariozechner/pi-coding-agent
+  pnpm add -g @mariozechner/pi-coding-agent
   ok "Pi Coding Agent installed"
 else
   banner "Skipping Pi Agent"
@@ -221,7 +227,7 @@ if command -v mom &>/dev/null; then
   ok "mom $(mom --version 2>/dev/null || echo 'present') — skipped"
 elif [[ "$INSTALL_MOM" == true ]]; then
   banner "Installing Mom (Slack Bot)"
-  npm install -g @mariozechner/pi-mom
+  pnpm add -g @mariozechner/pi-mom
   ok "Mom installed"
 else
   banner "Skipping Mom"
@@ -231,7 +237,7 @@ fi
 # ─── 12. AgentMail CLI (optional) ─────────────────────────────────
 if [[ "$INSTALL_AGENTMAIL" == true ]]; then
   banner "Installing AgentMail CLI"
-  npm install -g agentmail-cli
+  pnpm add -g agentmail-cli
   # Store API key in sandbox user's .bashrc if provided (not in shell history)
   if [[ -n "$AGENTMAIL_KEY" ]]; then
     su - "$SANDBOX_USER" -c "
@@ -319,7 +325,7 @@ printf "\n"
 printf "  ${CYAN}Installed tools${NC}\n"
 printf "  ──────────────────────────────────────\n"
 printf "  Node.js  : %s\n" "$(node --version)"
-printf "  npm      : %s\n" "$(npm --version)"
+printf "  pnpm     : %s\n" "$(pnpm --version)"
 printf "  Bun      : %s\n" "$(bun --version)"
 printf "  uv       : %s\n" "$(uv --version)"
 printf "  gh       : %s\n" "$(gh --version | head -1)"
