@@ -154,14 +154,14 @@ Open the project in VS Code and select **"Reopen in Container"** from the Comman
 
 ```bash
 docker compose -f .devcontainer/docker-compose.yml up -d
-ssh orchestrator@localhost -p 2222   # password: test1234
+ssh sandbox@localhost -p 2222   # password: test1234
 ```
 
 ### Credentials
 
 | Field | Value |
 |-------|-------|
-| User | `orchestrator` |
+| User | `sandbox` |
 | Password (SSH + sudo) | `test1234` |
 | SSH Port | `2222` |
 
@@ -170,13 +170,13 @@ ssh orchestrator@localhost -p 2222   # password: test1234
 Add to `~/.ssh/config` on your host:
 
 ```
-Host orchestrator
+Host sandbox
     HostName localhost
     Port 2222
-    User orchestrator
+    User sandbox
 ```
 
-Then connect via **Remote-SSH: Connect to Host...** → `orchestrator`.
+Then connect via **Remote-SSH: Connect to Host...** → `sandbox`.
 
 ### Usage Inside the Container
 
