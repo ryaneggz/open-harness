@@ -9,6 +9,7 @@
     "build": "pnpm -r run build",
     "test": "pnpm -r run test",
     "lint": "pnpm -r run lint",
+    "format:check": "pnpm -r run format:check",
     "format": "pnpm -r run format"
   },
   "engines": {
