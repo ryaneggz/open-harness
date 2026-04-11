@@ -34,3 +34,6 @@ workspace/.mom/settings.json
 
 # Pi project config (generated symlinks)
 workspace/.pi/
+
+# Startup script (contains runtime config, tokens sourced from env)
+workspace/startup.sh
