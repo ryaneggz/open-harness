@@ -1,3 +1,39 @@
 **/.env*
 .worktrees/*
 !.worktrees/.gitkeep
+
+# Build artifacts
+node_modules/
+dist/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+
+# Screenshots (keep dir, ignore contents)
+**/.claude/screenshots/*
+!**/.claude/screenshots/.gitkeep
+
+# Heartbeat logs (local runtime logs)
+workspace/heartbeats/heartbeat.log
+
+# Ralph runtime files (keep prd.json + progress.txt tracked for recovery)
+workspace/.ralph/.last-branch
+workspace/.ralph/ralph-*.log
+workspace/.ralph/.claude/
+
+**/.next
+**/.ralph/archives/
+**/src/generated/
+
+# Mom runtime data (channel logs, context, attachments — keep MEMORY.md tracked)
+workspace/.mom/*/
+workspace/.mom/events/
+workspace/.mom/settings.json
+
+# Pi project config (generated symlinks)
+workspace/.pi/
+
+# Startup script (contains runtime config, tokens sourced from env)
+workspace/startup.sh

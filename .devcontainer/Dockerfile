@@ -1,0 +1,99 @@
+FROM debian:bookworm-slim
+
+ENV TZ=America/Denver
+
+# ─── System packages ────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssh-server ca-certificates cron curl wget sudo gosu git jq gnupg \
+    lsb-release nano ripgrep tmux unzip bash-completion procps less \
+ && rm -rf /var/lib/apt/lists/*
+
+# ─── Node.js 22.x ──────────────────────────────────────────────────
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+ && apt-get install -y --no-install-recommends nodejs \
+ && rm -rf /var/lib/apt/lists/*
+
+# ─── GitHub CLI ─────────────────────────────────────────────────────
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+      -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+      > /etc/apt/sources.list.d/github-cli.list \
+ && apt-get update && apt-get install -y --no-install-recommends gh \
+ && rm -rf /var/lib/apt/lists/*
+
+# ─── Docker CLI + Compose ──────────────────────────────────────────
+RUN install -m 0755 -d /etc/apt/keyrings \
+ && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
+ && chmod a+r /etc/apt/keyrings/docker.asc \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" \
+      > /etc/apt/sources.list.d/docker.list \
+ && apt-get update && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin \
+ && rm -rf /var/lib/apt/lists/*
+
+# ─── Cloudflared ───────────────────────────────────────────────────
+RUN curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg \
+      -o /usr/share/keyrings/cloudflare-main.gpg \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared bookworm main" \
+      > /etc/apt/sources.list.d/cloudflared.list \
+ && apt-get update && apt-get install -y --no-install-recommends cloudflared \
+ && rm -rf /var/lib/apt/lists/*
+
+# ─── Bun ────────────────────────────────────────────────────────────
+RUN BUN_INSTALL=/usr/local curl -fsSL https://bun.sh/install | bash
+
+# ─── uv ─────────────────────────────────────────────────────────────
+RUN curl -LsSf https://astral.sh/uv/install.sh | env INSTALLER_NO_MODIFY_PATH=1 sh \
+ && cp /root/.local/bin/uv /usr/local/bin/uv \
+ && cp /root/.local/bin/uvx /usr/local/bin/uvx
+
+# ─── Agent CLIs ─────────────────────────────────────────────────────
+RUN npm install -g @anthropic-ai/claude-code @openai/codex @mariozechner/pi-coding-agent @mariozechner/pi-mom
+
+# ─── Agent Browser + Chromium ──────────────────────────────────────
+RUN npm install -g agent-browser@0.8.5 && agent-browser install --with-deps
+
+# ─── Sandbox user ──────────────────────────────────────────────────
+RUN useradd -m -s /bin/bash sandbox \
+ && echo "sandbox:test1234" | chpasswd \
+ && echo "sandbox ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/sandbox \
+ && chmod 0440 /etc/sudoers.d/sandbox \
+ && groupadd -f docker && usermod -aG docker sandbox
+
+# Shell aliases for agent CLIs
+RUN echo "alias claude='claude --dangerously-skip-permissions'" >> /home/sandbox/.bashrc \
+ && echo "alias codex='codex --full-auto'" >> /home/sandbox/.bashrc \
+ && echo "alias pi='pi'" >> /home/sandbox/.bashrc \
+ && echo "alias mom='mom --sandbox=host ~/harness/workspace/.mom'" >> /home/sandbox/.bashrc
+
+# Git safe.directory for bind-mounted project
+RUN su - sandbox -c "git config --global --add safe.directory /home/sandbox/harness"
+
+# Default working directory for interactive shells (SSH + terminal attach)
+RUN echo 'cd ~/harness 2>/dev/null' >> /home/sandbox/.bashrc
+
+# Image-level devcontainer config — VS Code reads this on "Attach to Running Container"
+RUN mkdir -p /.devcontainer && echo '{"workspaceFolder":"/home/sandbox/harness","remoteUser":"sandbox"}' > /.devcontainer/devcontainer.json
+
+# Labels for VS Code "Attach to Running Container"
+LABEL devcontainer.metadata='[{"remoteUser":"sandbox","workspaceFolder":"/home/sandbox/harness"}]'
+
+# ─── SSH server ─────────────────────────────────────────────────────
+RUN mkdir -p /run/sshd \
+ && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config \
+ && sed -i 's/#PermitUserEnvironment no/PermitUserEnvironment yes/' /etc/ssh/sshd_config
+
+# ─── Copy install scripts + workspace (for CI; bind mount overrides at runtime)
+COPY --chown=sandbox:sandbox install/ /home/sandbox/install/
+RUN chmod +x /home/sandbox/install/*.sh
+COPY --chown=sandbox:sandbox .openharness/ /home/sandbox/.openharness/
+COPY --chown=sandbox:sandbox workspace/ /home/sandbox/harness/workspace/
+
+# ─── Entrypoint ────────────────────────────────────────────────────
+COPY .devcontainer/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+WORKDIR /home/sandbox/harness
+EXPOSE 22
+
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["/usr/sbin/sshd", "-D"]

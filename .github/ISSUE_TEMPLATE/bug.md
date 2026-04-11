@@ -26,9 +26,10 @@ assignees: ""
 
 ## Environment
 
-- **OS**: <!-- e.g. Ubuntu 22.04, macOS 14 -->
-- **Docker**: <!-- docker --version -->
-- **Make**: <!-- make --version -->
+- **Node.js**: <!-- node --version -->
+- **Next.js**: <!-- from package.json -->
+- **PostgreSQL**: 16-alpine
+- **Browser**: <!-- e.g. Chrome 120, Firefox 121 -->
 
 ---
 
@@ -36,26 +37,26 @@ assignees: ""
 
 ### Metadata
 
-> **IMPORTANT**: The very first step should _ALWAYS_ be validating this metadata section to maintain a **CLEAN** development workflow.
+> **IMPORTANT**: Validate this metadata before starting work.
 
 ```yml
-agent: "<agent-name>"
-branch: "agent/<agent-name>"
-worktree_path: ".worktrees/<agent-name>"
-pull_request: "FROM agent/<agent-name> TO development"
+agent: "next-postgres-shadcn"
+branch: "agent/next-postgres-shadcn"
+worktree_path: ".worktrees/agent/next-postgres-shadcn"
+pull_request: "FROM agent/next-postgres-shadcn TO development"
 ```
 
 ### Workflow
 
 ```bash
-# Enter the assigned agent's sandbox
-make NAME=<agent-name> shell
+# Enter the sandbox
+openharness shell next-postgres-shadcn
 claude
 
 # When complete — PR from agent branch to development
-cd .worktrees/<agent-name>
+cd .worktrees/agent/next-postgres-shadcn
 git add -A && git commit -m "fix(<issue#>): <description>"
-git push -u origin agent/<agent-name>
+git push -u origin agent/next-postgres-shadcn
 gh pr create --base development --title "fix(<issue#>): <shortdesc>" --body "Closes #<issue#>"
 ```
 
@@ -64,5 +65,8 @@ gh pr create --base development --title "fix(<issue#>): <shortdesc>" --body "Clo
 ## Acceptance Criteria
 
 - [ ] Bug is fixed and no longer reproducible
+- [ ] Regression test added (Vitest or Playwright)
+- [ ] Lint + format + type-check pass
+- [ ] Verified via agent-browser at `https://next-postgres-shadcn.ruska.dev`
 - [ ] No regressions introduced
 - [ ] PR targets `development` branch

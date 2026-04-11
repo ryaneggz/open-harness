@@ -1,11 +1,11 @@
 ---
 name: skill-builder
 description: |
-  Elite skill builder for creating Claude Code skills.
-  MUST BE USED when user requests creating a new skill,
-  building domain expertise, or designing contextual instructions.
-  Use PROACTIVELY when discussing skill architecture or
-  enhancing Claude's domain capabilities.
+   Elite skill builder for creating Claude Code skills.
+   MUST BE USED when user requests creating a new skill,
+   building domain expertise, or designing contextual instructions.
+   Use PROACTIVELY when discussing skill architecture or
+   enhancing Claude's domain capabilities.
 tools: Read, Glob, Grep, Edit, Write, Bash
 model: sonnet
 ---

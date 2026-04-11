@@ -6,6 +6,7 @@ services:
       dockerfile: docker/Dockerfile
     volumes:
       - ../workspace:/home/sandbox/workspace
+      - ../.openharness:/home/sandbox/.openharness
     stdin_open: true
     tty: true
     environment:

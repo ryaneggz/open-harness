@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Propose a new feature for Open Harness
+about: Propose a new feature for the Next.js application
 title: "[FEAT] "
 labels: enhancement
 assignees: ""
@@ -8,7 +8,7 @@ assignees: ""
 
 ## Summary
 
-<!-- One-sentence description of what you want to add. -->
+<!-- One-sentence description of the feature. -->
 
 ## Motivation
 
@@ -16,7 +16,16 @@ assignees: ""
 
 ## Proposed Implementation
 
-<!-- Describe the approach at a high level. -->
+<!-- Describe the approach. Consider:
+  - Which Next.js routes/pages are affected? (src/app/)
+  - New shadcn/ui components needed? (npx shadcn@latest add ...)
+  - Database changes? (Prisma migration needed?)
+  - API routes? (src/app/api/)
+-->
+
+## Design
+
+<!-- Optional: mockups, wireframes, or ASCII sketches of the UI -->
 
 ---
 
@@ -24,26 +33,26 @@ assignees: ""
 
 ### Metadata
 
-> **IMPORTANT**: The very first step should _ALWAYS_ be validating this metadata section to maintain a **CLEAN** development workflow.
+> **IMPORTANT**: Validate this metadata before starting work.
 
 ```yml
-agent: "<agent-name>"
-branch: "agent/<agent-name>"
-worktree_path: ".worktrees/<agent-name>"
-pull_request: "FROM agent/<agent-name> TO development"
+agent: "next-postgres-shadcn"
+branch: "agent/next-postgres-shadcn"
+worktree_path: ".worktrees/agent/next-postgres-shadcn"
+pull_request: "FROM agent/next-postgres-shadcn TO development"
 ```
 
 ### Workflow
 
 ```bash
-# Enter the assigned agent's sandbox
-make NAME=<agent-name> shell
+# Enter the sandbox
+openharness shell next-postgres-shadcn
 claude
 
 # When complete — PR from agent branch to development
-cd .worktrees/<agent-name>
+cd .worktrees/agent/next-postgres-shadcn
 git add -A && git commit -m "feat(<issue#>): <description>"
-git push -u origin agent/<agent-name>
+git push -u origin agent/next-postgres-shadcn
 gh pr create --base development --title "feat(<issue#>): <shortdesc>" --body "Closes #<issue#>"
 ```
 
@@ -52,6 +61,10 @@ gh pr create --base development --title "feat(<issue#>): <shortdesc>" --body "Cl
 ## Acceptance Criteria
 
 - [ ] Feature works as described
-- [ ] No regressions to existing sandbox functionality
-- [ ] README updated if user-facing behavior changed
+- [ ] TypeScript strict — no `any` types
+- [ ] Vitest tests added for new logic
+- [ ] Playwright E2E test covers the happy path
+- [ ] Lint + format + type-check pass (`npm run lint && npm run format:check && npm run type-check`)
+- [ ] Verified via agent-browser at `https://next-postgres-shadcn.ruska.dev`
+- [ ] Prisma migration included if schema changed
 - [ ] PR targets `development` branch

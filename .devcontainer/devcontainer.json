@@ -1,0 +1,15 @@
+{
+  "name": "Open Harness Sandbox",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "sandbox",
+  "workspaceFolder": "/home/sandbox/harness",
+  "remoteUser": "sandbox",
+  "forwardPorts": [2222],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}

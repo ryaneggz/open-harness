@@ -53,5 +53,5 @@ claude
 ### 3. Verify
 
 - [ ] Container is running (`make list`)
-- [ ] Agent can access workspace (`ls ~/workspace`)
+- [ ] Agent can access workspace (`ls ~/harness/workspace`)
 - [ ] SOUL.md and MEMORY.md are present

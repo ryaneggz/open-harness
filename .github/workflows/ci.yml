@@ -1,0 +1,106 @@
+name: "CI: next-postgres-shadcn"
+
+on:
+  push:
+    branches:
+      - development
+      - agent/next-postgres-shadcn
+    paths:
+      - "workspace/projects/next-app/src/**"
+      - "workspace/projects/next-app/prisma/**"
+      - "workspace/projects/next-app/public/**"
+      - "workspace/projects/next-app/package.json"
+      - "workspace/projects/next-app/package-lock.json"
+      - "workspace/projects/next-app/tsconfig.json"
+      - "workspace/projects/next-app/next.config.*"
+      - "workspace/projects/next-app/tailwind.config.*"
+      - "workspace/projects/next-app/postcss.config.*"
+      - "workspace/projects/next-app/vitest.config.*"
+      - "workspace/projects/next-app/playwright.config.*"
+      - "workspace/projects/next-app/.prettierignore"
+      - "workspace/projects/next-app/.gitignore"
+      - "workspace/projects/next-app/.eslintrc*"
+      - ".github/workflows/ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Lint, Build & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sandbox
+          POSTGRES_PASSWORD: sandbox
+          POSTGRES_DB: sandbox
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://sandbox:sandbox@localhost:5432/sandbox
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: workspace/projects/next-app/node_modules
+          key: node-modules-${{ hashFiles('workspace/projects/next-app/package-lock.json') }}
+          restore-keys: |
+            node-modules-
+
+      - name: Install dependencies
+        working-directory: workspace/projects/next-app
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: workspace/projects/next-app
+        run: npx prisma generate
+
+      - name: Run migrations
+        working-directory: workspace/projects/next-app
+        run: npx prisma migrate deploy
+
+      - name: Lint
+        working-directory: workspace/projects/next-app
+        run: npm run lint
+
+      - name: Format check
+        working-directory: workspace/projects/next-app
+        run: npm run format:check
+
+      - name: Type check
+        working-directory: workspace/projects/next-app
+        run: npm run type-check
+
+      - name: Build
+        working-directory: workspace/projects/next-app
+        run: npm run build
+
+      - name: Test
+        working-directory: workspace/projects/next-app
+        run: npm test
+
+      - name: Install Playwright browsers
+        working-directory: workspace/projects/next-app
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests
+        working-directory: workspace/projects/next-app
+        run: npm run test:e2e
