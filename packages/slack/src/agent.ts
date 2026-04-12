@@ -339,7 +339,7 @@ function truncate(text: string, maxLen: number): string {
 	return `${text.substring(0, maxLen - 3)}...`;
 }
 
-function extractToolResultText(result: unknown): string {
+export function extractToolResultText(result: unknown): string {
 	if (typeof result === "string") {
 		return result;
 	}
@@ -365,7 +365,7 @@ function extractToolResultText(result: unknown): string {
 	return JSON.stringify(result);
 }
 
-function formatToolArgsForSlack(_toolName: string, args: Record<string, unknown>): string {
+export function formatToolArgsForSlack(_toolName: string, args: Record<string, unknown>): string {
 	const lines: string[] = [];
 
 	for (const [key, value] of Object.entries(args)) {
@@ -535,19 +535,21 @@ function createRunner(sandboxConfig: SandboxConfig, channelId: string, channelDi
 				log.logToolSuccess(logCtx, agentEvent.toolName, durationMs, resultStr);
 			}
 
-			// Post args + result to thread
-			const label = pending?.args ? (pending.args as { label?: string }).label : undefined;
-			const argsFormatted = pending
-				? formatToolArgsForSlack(agentEvent.toolName, pending.args as Record<string, unknown>)
-				: "(args not found)";
-			const duration = (durationMs / 1000).toFixed(1);
-			let threadMessage = `*${agentEvent.isError ? "✗" : "✓"} ${agentEvent.toolName}*`;
-			if (label) threadMessage += `: ${label}`;
-			threadMessage += ` (${duration}s)\n`;
-			if (argsFormatted) threadMessage += `\`\`\`\n${argsFormatted}\n\`\`\`\n`;
-			threadMessage += `*Result:*\n\`\`\`\n${resultStr}\n\`\`\``;
+			if (agentEvent.isError) {
+				// Post args + result to thread (errors only)
+				const label = pending?.args ? (pending.args as { label?: string }).label : undefined;
+				const argsFormatted = pending
+					? formatToolArgsForSlack(agentEvent.toolName, pending.args as Record<string, unknown>)
+					: "(args not found)";
+				const duration = (durationMs / 1000).toFixed(1);
+				let threadMessage = `*✗ ${agentEvent.toolName}*`;
+				if (label) threadMessage += `: ${label}`;
+				threadMessage += ` (${duration}s)\n`;
+				if (argsFormatted) threadMessage += `\`\`\`\n${argsFormatted}\n\`\`\`\n`;
+				threadMessage += `*Result:*\n\`\`\`\n${resultStr}\n\`\`\``;
 
-			queue.enqueueMessage(threadMessage, "thread", "tool result thread", false);
+				queue.enqueueMessage(threadMessage, "thread", "tool result thread", false);
+			}
 
 			if (agentEvent.isError) {
 				queue.enqueue(() => ctx.respond(`_Error: ${truncate(resultStr, 200)}_`, false), "tool error");
