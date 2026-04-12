@@ -1,0 +1,52 @@
+# Heartbeats
+
+Heartbeats are cron-scheduled tasks that let agents wake, perform work, and go back to sleep. Each heartbeat is a `.md` file mapped to a cron schedule in `heartbeats.conf`.
+
+## Managing heartbeats
+
+```bash
+openharness heartbeat sync my-sandbox     # sync schedules from heartbeats.conf
+openharness heartbeat status my-sandbox   # show schedules + recent logs
+openharness heartbeat stop my-sandbox     # remove all schedules
+openharness heartbeat migrate my-sandbox  # convert legacy HEARTBEAT_INTERVAL
+```
+
+## Schedule config
+
+Edit `workspace/heartbeats.conf`:
+
+```
+# Format: <cron> | <file> | [agent] | [active_start-active_end]
+*/30 * * * * | heartbeats/default.md
+*/15 * * * * | heartbeats/check-deployments.md | claude | 9-18
+0 */4 * * *  | heartbeats/memory-distill.md
+0 20 * * *   | heartbeats/daily-summary.md
+```
+
+Each line maps a cron expression to a heartbeat `.md` file. Optional fields:
+- **agent**: Which CLI to invoke (default: `claude`, set by `HEARTBEAT_AGENT` env var)
+- **active hours**: Only run during these hours (e.g., `9-18` = 9am–6pm)
+
+## How it works
+
+1. Schedules auto-sync on container startup via `entrypoint.sh`
+2. Cron calls `install/heartbeat.sh` at the scheduled time
+3. The script checks active hours (if set), then invokes the agent CLI on the `.md` file
+4. If the file is empty or contains only headers/comments, execution is skipped (saves API costs)
+5. If the agent has nothing to report, it replies `HEARTBEAT_OK` and the response is suppressed
+
+## Global defaults
+
+Set in `.devcontainer/docker-compose.yml`:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HEARTBEAT_ACTIVE_START` | _(unset)_ | Default active hour start (0-23) |
+| `HEARTBEAT_ACTIVE_END` | _(unset)_ | Default active hour end (0-23) |
+| `HEARTBEAT_AGENT` | `claude` | Default agent CLI to invoke |
+
+Per-entry overrides for agent and active hours can be set in `heartbeats.conf`.
+
+## Logs
+
+Heartbeat logs are written to `~/.heartbeat/heartbeat.log` inside the container.

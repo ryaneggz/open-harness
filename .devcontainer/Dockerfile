@@ -47,13 +47,18 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env INSTALLER_NO_MODIFY_PATH=1 
  && cp /root/.local/bin/uvx /usr/local/bin/uvx
 
 # ─── pnpm (via corepack) ───────────────────────────────────────────
-RUN corepack enable && corepack prepare pnpm@latest --activate
+ENV PNPM_HOME="/usr/local/share/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@latest --activate \
+ && pnpm setup --force 2>/dev/null || true
 
 # ─── Agent CLIs ─────────────────────────────────────────────────────
 RUN pnpm add -g @anthropic-ai/claude-code @openai/codex @mariozechner/pi-coding-agent @mariozechner/pi-mom
 
 # ─── Agent Browser + Chromium ──────────────────────────────────────
-RUN pnpm add -g agent-browser@0.8.5 && agent-browser install --with-deps
+RUN pnpm add -g agent-browser@0.8.5 \
+ && find $PNPM_HOME -name "agent-browser-linux-*" -exec chmod +x {} \; \
+ && agent-browser install --with-deps
 
 # ─── Sandbox user ──────────────────────────────────────────────────
 RUN useradd -m -s /bin/bash sandbox \

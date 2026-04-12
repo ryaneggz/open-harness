@@ -37,3 +37,4 @@ workspace/.pi/
 
 # Startup script (contains runtime config, tokens sourced from env)
 workspace/startup.sh
+**/.pnpm-store

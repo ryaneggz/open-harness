@@ -7,7 +7,6 @@ on:
       - agent/next-postgres-shadcn
     paths:
       - "workspace/projects/next-app/src/**"
-      - "workspace/projects/next-app/prisma/**"
       - "workspace/projects/next-app/public/**"
       - "workspace/projects/next-app/package.json"
       - "workspace/projects/next-app/pnpm-lock.yaml"
@@ -29,24 +28,6 @@ jobs:
   ci:
     name: Lint, Build & Test
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: sandbox
-          POSTGRES_PASSWORD: sandbox
-          POSTGRES_DB: sandbox
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U sandbox"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      DATABASE_URL: postgresql://sandbox:sandbox@localhost:5432/sandbox
 
     steps:
       - name: Checkout
@@ -71,14 +52,6 @@ jobs:
       - name: Install dependencies
         working-directory: workspace/projects/next-app
         run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma client
-        working-directory: workspace/projects/next-app
-        run: pnpm exec prisma generate
-
-      - name: Run migrations
-        working-directory: workspace/projects/next-app
-        run: pnpm exec prisma migrate deploy
 
       - name: Lint
         working-directory: workspace/projects/next-app

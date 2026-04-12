@@ -1,0 +1,32 @@
+# Installation
+
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [Node.js](https://nodejs.org/) (v20+). That's all you need on your host.
+
+## One-line install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/install.sh | bash
+```
+
+This installs the `openharness` CLI globally via pnpm.
+
+## Manual install
+
+```bash
+git clone https://github.com/ryaneggz/open-harness.git
+cd open-harness
+pnpm run setup
+```
+
+Or [fork the repo](https://github.com/ryaneggz/open-harness/fork) first for your own customizations.
+
+## What the installer does
+
+1. Checks for Node.js 20+ and git
+2. Ensures pnpm is available (detects existing install, corepack, or installs via npm)
+3. Clones the repo to `~/.openharness/`
+4. Builds and globally links the `openharness` CLI
+
+## Next step
+
+Once installed, [start a sandbox](/open-harness/getting-started/quickstart).

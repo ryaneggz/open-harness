@@ -13,15 +13,13 @@ import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
 export const SUBCOMMANDS = new Set([
   "list",
   "quickstart",
-  "build",
-  "rebuild",
   "run",
   "shell",
   "stop",
   "clean",
-  "push",
   "heartbeat",
   "worktree",
+  "onboard",
 ]);
 
 export const INSTALL_HINT =
@@ -38,15 +36,13 @@ export interface ToolResult {
 export interface SandboxModule {
   listTool: ToolDefinition;
   quickstartTool: ToolDefinition;
-  buildTool: ToolDefinition;
-  rebuildTool: ToolDefinition;
   runTool: ToolDefinition;
   shellTool: ToolDefinition;
   stopTool: ToolDefinition;
   cleanTool: ToolDefinition;
-  pushTool: ToolDefinition;
   heartbeatTool: ToolDefinition;
   worktreeTool: ToolDefinition;
+  onboardTool: ToolDefinition;
 }
 
 // ─── Argument parsing ──────────────────────────────────────────────
@@ -60,14 +56,10 @@ export function parseToolArgs(args: string[]): Record<string, string | boolean> 
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (arg === "--base-branch" && args[i + 1]) {
+    if (arg === "--force") {
+      params.force = true;
+    } else if (arg === "--base-branch" && args[i + 1]) {
       params.baseBranch = args[++i];
-    } else if (arg === "--tag" && args[i + 1]) {
-      params.tag = args[++i];
-    } else if (arg === "--branch" && args[i + 1]) {
-      params.branch = args[++i];
-    } else if (arg === "--docker") {
-      params.docker = true;
     } else if (!arg.startsWith("-")) {
       if (positionalIndex === 0) {
         params.name = arg;
@@ -128,21 +120,32 @@ export function resolveSubcommand(
     return { tool: sandbox.listTool, params: {} };
   }
 
-  // all other commands: name required
+  // onboard: name is optional
+  if (command === "onboard") {
+    const params = parseToolArgs(args);
+    return { tool: sandbox.onboardTool, params };
+  }
+
+  // quickstart, run, stop, clean: name is optional (auto-resolved)
+  if (command === "quickstart" || command === "run" || command === "stop" || command === "clean") {
+    const params = parseToolArgs(args);
+    const toolMap: Record<string, ToolDefinition> = {
+      quickstart: sandbox.quickstartTool,
+      run: sandbox.runTool,
+      stop: sandbox.stopTool,
+      clean: sandbox.cleanTool,
+    };
+    return { tool: toolMap[command], params };
+  }
+
+  // worktree, shell: name required
   const params = parseToolArgs(args);
   if (!params.name) {
     return { error: `Usage: openharness ${command} <name> [options]` };
   }
 
   const toolMap: Record<string, ToolDefinition | undefined> = {
-    quickstart: sandbox.quickstartTool,
-    build: sandbox.buildTool,
-    rebuild: sandbox.rebuildTool,
-    run: sandbox.runTool,
     shell: sandbox.shellTool,
-    stop: sandbox.stopTool,
-    clean: sandbox.cleanTool,
-    push: sandbox.pushTool,
     worktree: sandbox.worktreeTool,
   };
 
@@ -167,24 +170,18 @@ ${b}Usage:${r}
   openharness <command> [options]
   openharness [pi-options] [messages...]     ${d}Launch AI agent mode${r}
 
-${b}Commands:${r} ${d}(requires: openharness install @openharness/sandbox)${r}
-  ${b}list${r}                              List running sandboxes and worktrees
-  ${b}quickstart${r} <name> [options]       Full setup: worktree + build + run + setup
-  ${b}build${r} <name>                      Build Docker image
-  ${b}rebuild${r} <name>                    Rebuild (no cache)
-  ${b}run${r} <name>                        Start container
+${b}Commands:${r}
+  ${b}list${r}                              List running sandboxes
+  ${b}quickstart${r} [name]                 Build and start sandbox (.devcontainer)
+  ${b}run${r} [name]                        Start container
   ${b}shell${r} <name>                      Open interactive bash shell
-  ${b}stop${r} <name>                       Stop and remove container
-  ${b}clean${r} <name>                      Full cleanup (container + image + worktree)
-  ${b}push${r} <name>                       Push image to registry
-  ${b}worktree${r} <name> [options]         Create git worktree only
+  ${b}stop${r} [name]                       Stop and remove container
+  ${b}clean${r} [name]                      Full cleanup (containers + volumes)
+  ${b}onboard${r} [name] [--force]          Interactive first-time setup wizard
   ${b}heartbeat${r} <action> <name>         Manage heartbeats (sync|stop|status|migrate)
 
-${b}Command Options:${r}
-  --base-branch <branch>           Base branch (default: main)
-  --docker                         Enable Docker-in-Docker
-  --tag <tag>                      Image tag (default: latest)
-  --branch <branch>                Git branch (default: agent/<name>)
+${b}Advanced:${r}
+  ${b}worktree${r} <name> [--base-branch]   Create git worktree for branch isolation
 
 ${b}Agent Mode:${r}
   Run without a command to launch the interactive AI agent.
@@ -202,25 +199,22 @@ ${b}Agent Options:${r}
   --version, -v                  Show version
 
 ${b}Examples:${r}
-  ${d}# Install sandbox tools${r}
-  openharness install @openharness/sandbox
-
-  ${d}# Provision a new sandbox${r}
-  openharness quickstart my-agent --base-branch main
+  ${d}# Provision and start the sandbox${r}
+  openharness quickstart
 
   ${d}# Check what's running${r}
   openharness list
 
-  ${d}# Enter a sandbox${r}
-  openharness shell my-agent
+  ${d}# Enter the sandbox${r}
+  openharness shell my-sandbox
+
+  ${d}# One-time auth setup${r}
+  openharness onboard my-sandbox
 
   ${d}# Tear down${r}
-  openharness clean my-agent
+  openharness clean
 
   ${d}# Launch AI agent mode${r}
   openharness
-
-  ${d}# Ask the agent to do it${r}
-  openharness -p "provision a blog-writer agent with heartbeats"
 `;
 }

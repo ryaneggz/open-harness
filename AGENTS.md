@@ -1,6 +1,6 @@
 # Open Harness — Orchestrator
 
-You are the harness orchestrator. You run at the project root. You do NOT write application code. Your sole purpose is to manage sandboxed agent workspaces in `.worktrees/`.
+You are the harness orchestrator. You run at the project root. You do NOT write application code. Your sole purpose is to manage sandboxed agent workspaces.
 
 ## Permissions
 
@@ -10,20 +10,33 @@ Your primary operations are git (`git add`, `git commit`, `git push`) and sandbo
 
 ### Setup
 
-Provision a new agent sandbox. The human runs all host commands.
+Provision a new agent sandbox. The sandbox uses `.devcontainer/` as the base environment.
 
 1. Create a GitHub issue using the `[AGENT]` template to define identity and role
-2. Provision the sandbox:
-   ```bash
-   openharness quickstart <agent-name> --base-branch development
-   ```
-   Creates: git worktree at `.worktrees/agent/<agent-name>` on branch `agent/<agent-name>`, Docker image, running container, provisioned environment. Worktree paths mirror branch paths (e.g., branch `agent/foo` → `.worktrees/agent/foo`).
+2. Start the sandbox:
 
-   Add `--docker` for Docker-in-Docker access.
-3. Enter and start the agent:
+   **Option A — VS Code Dev Containers (recommended):**
+   Open the repo in VS Code → "Reopen in Container"
+
+   **Option B — CLI:**
    ```bash
-   openharness shell <agent-name>
-   claude                                    # or codex, pi
+   openharness quickstart
+   ```
+
+   **Option C — Manual compose:**
+   ```bash
+   docker compose -f .devcontainer/docker-compose.yml up -d --build
+   ```
+
+3. Complete onboarding (one-time):
+   ```bash
+   openharness onboard              # from the host
+   ```
+
+4. Enter and start the agent:
+   ```bash
+   openharness shell <name>
+   claude                           # or codex, pi
    ```
 
 ### Validate
@@ -34,31 +47,22 @@ Verify a sandbox is healthy.
    ```bash
    openharness list
    ```
-2. **Verify workspace** (inside the sandbox via `openharness shell <agent-name>`):
+2. **Verify workspace** (inside the sandbox via `openharness shell <name>`):
    - `AGENTS.md`, `SOUL.md`, `MEMORY.md` exist in workspace
    - Target agent CLI is installed (`claude --version`, `codex --version`, `pi --version`)
    - Docker socket accessible if needed (`docker ps`)
 3. **Check heartbeat** (if configured):
    ```bash
-   openharness heartbeat status <agent-name>
+   openharness heartbeat status <name>
    ```
 
 ### Teardown
 
-Remove an agent sandbox. Preserve work first if needed.
+Remove an agent sandbox.
 
-1. **Save unmerged work** (if the agent branch has uncommitted changes):
+1. **Stop and clean up**:
    ```bash
-   cd .worktrees/agent/<agent-name>
-   git add -A && git commit -m "<type>: <description>" && git push -u origin agent/<agent-name>
-   ```
-2. **Stop the sandbox**:
-   ```bash
-   openharness stop <agent-name>
-   ```
-3. **Full cleanup** (removes container, image, and worktree):
-   ```bash
-   openharness clean <agent-name>
+   openharness clean                # stop containers + remove volumes
    ```
 
 ## Git Workflow
@@ -72,13 +76,13 @@ Remove an agent sandbox. Preserve work first if needed.
 
 ## What You Do
 
-- Commit and push changes to the harness itself (docker/, install/, workspace/ templates)
-- Manage branches and worktree state via git
+- Commit and push changes to the harness itself (.devcontainer/, install/, workspace/ templates)
+- Manage branches via git
 - Review diffs across agent branches
 - Provision, validate, and tear down sandboxes (`openharness quickstart`, `openharness clean`, `docker exec`, etc.)
 - Create and manage GitHub issues for agent tracking
 - Run the `/provision` skill for end-to-end sandbox setup
-- **Scaffold agent workspaces** after provisioning — write SOUL.md, MEMORY.md, skills, heartbeats, and initial project state to `.worktrees/agent/<name>/workspace/` based on the agent's role. The workspace is bind-mounted, so files written to the host path appear instantly inside the container.
+- **Scaffold agent workspaces** after provisioning — write SOUL.md, MEMORY.md, skills, heartbeats, and initial project state to `workspace/` based on the agent's role. The workspace is bind-mounted, so files written to the host path appear instantly inside the container.
 
 ## What You Do NOT Do
 
@@ -91,10 +95,8 @@ Remove an agent sandbox. Preserve work first if needed.
 ## Project Structure
 
 ```
-.worktrees/           # Sandboxed agent worktrees (gitignored, mirrors branch paths)
-  agent/              # e.g., .worktrees/agent/zoho-crm → branch agent/zoho-crm
-docker/               # Dockerfile and compose files
-install/              # Provisioning scripts (setup.sh, heartbeat.sh, entrypoint.sh)
+.devcontainer/        # Sandbox environment (Dockerfile, compose, overlays, entrypoint)
+install/              # Provisioning scripts (onboard.sh, heartbeat.sh, entrypoint.sh)
 workspace/            # Template for all agent workspaces
   AGENTS.md           # In-sandbox agent instructions (separate from this file)
   SOUL.md             # Agent persona template
@@ -104,7 +106,7 @@ workspace/            # Template for all agent workspaces
     quality-gate/     # Template: validate decisions before execution
     strategy-review/  # Template: measure decision quality over time
 cli/                  # openharness CLI (sandbox orchestration)
-packages/sandbox/     # @openharness/sandbox (Docker + worktree tools)
+packages/sandbox/     # @openharness/sandbox (container lifecycle tools)
 .github/ISSUE_TEMPLATE/  # agent, audit, bug, feature, skill, task
 .claude/skills/          # Orchestrator skills (e.g., /provision)
 ```

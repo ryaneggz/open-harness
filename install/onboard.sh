@@ -1,0 +1,220 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ─── Colours / helpers ───────────────────────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; YELLOW='\033[0;33m'; NC='\033[0m'
+B='\033[1m'
+banner() { printf "\n${CYAN}==> %s${NC}\n" "$*"; }
+ok()     { printf "  ${GREEN}✓${NC} %s\n" "$*"; }
+skip()   { printf "  ${YELLOW}⊘${NC} %s\n" "$*"; }
+warn()   { printf "  ${YELLOW}!${NC} %s\n" "$*"; }
+fail()   { printf "  ${RED}✗${NC} %s\n" "$*"; }
+ask()    { printf "\n  ${B}%s${NC} " "$*"; }
+
+# ─── Config ─────────────────────────────────────────────────────────
+ONBOARD_MARKER="$HOME/.claude/.onboarded"
+FORCE=false
+[[ "${1:-}" == "--force" ]] && FORCE=true
+
+APP_DIR="$HOME/harness/workspace/projects/next-app"
+
+# ─── Already onboarded? ─────────────────────────────────────────────
+if [ -f "$ONBOARD_MARKER" ] && [ "$FORCE" = false ]; then
+  banner "Already onboarded"
+  printf "  Completed: %s\n" "$(jq -r '.completedAt // "unknown"' "$ONBOARD_MARKER" 2>/dev/null || echo 'unknown')"
+  printf "\n  Run with ${B}--force${NC} to re-verify all steps.\n\n"
+  exit 0
+fi
+
+# ─── Welcome ────────────────────────────────────────────────────────
+printf "\n"
+printf "  ${B}${CYAN}Open Harness — First-Time Setup${NC}\n"
+printf "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+printf "\n"
+printf "  This wizard walks you through one-time authentication\n"
+printf "  for all services used by this sandbox.\n"
+printf "\n"
+
+# Track step results
+declare -A STEPS
+
+# ─── Step 1: SSH Key ────────────────────────────────────────────────
+banner "Step 1/4 — SSH Key"
+
+if [ -f "$HOME/.ssh/id_ed25519.pub" ]; then
+  PUBKEY=$(cat "$HOME/.ssh/id_ed25519.pub")
+  ok "SSH key exists"
+  printf "\n  Public key:\n    ${CYAN}%s${NC}\n" "$PUBKEY"
+
+  # Verify GitHub access
+  if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+    ok "GitHub SSH access verified"
+    STEPS[ssh]="done"
+  else
+    warn "SSH key exists but GitHub access not verified"
+    printf "\n  Add this key to GitHub → Settings → SSH and GPG keys\n"
+    printf "  Then press Enter to continue...\n"
+    read -r
+    if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+      ok "GitHub SSH access verified"
+      STEPS[ssh]="done"
+    else
+      warn "Could not verify GitHub SSH access — continuing anyway"
+      STEPS[ssh]="unverified"
+    fi
+  fi
+else
+  warn "No SSH key found — generating one"
+  ssh-keygen -t ed25519 -f "$HOME/.ssh/id_ed25519" -N "" -C "sandbox@$(hostname)"
+  PUBKEY=$(cat "$HOME/.ssh/id_ed25519.pub")
+  printf "\n  Public key:\n    ${CYAN}%s${NC}\n" "$PUBKEY"
+  printf "\n  Add this key to GitHub → Settings → SSH and GPG keys\n"
+  printf "  Then press Enter to continue...\n"
+  read -r
+  STEPS[ssh]="done"
+fi
+
+# ─── Step 2: GitHub CLI ─────────────────────────────────────────────
+banner "Step 2/4 — GitHub CLI"
+
+if gh auth status &>/dev/null; then
+  ok "GitHub CLI already authenticated"
+  STEPS[github]="done"
+else
+  printf "  Running: ${CYAN}gh auth login${NC}\n\n"
+  if gh auth login; then
+    ok "GitHub CLI authenticated"
+    STEPS[github]="done"
+  else
+    fail "GitHub CLI authentication failed"
+    STEPS[github]="failed"
+  fi
+fi
+
+# ─── Step 3: Cloudflare Tunnel ──────────────────────────────────────
+banner "Step 3/4 — Cloudflare Tunnel"
+
+if ! command -v cloudflared &>/dev/null; then
+  skip "cloudflared not installed — skipping"
+  STEPS[cloudflare]="skipped"
+else
+  CFLARED_DIR="$HOME/.cloudflared"
+  TUNNEL_CONFIG=$(ls "$CFLARED_DIR"/config-*.yml 2>/dev/null | head -1)
+
+  if [ -n "$TUNNEL_CONFIG" ] && [ "$FORCE" = false ]; then
+    TUNNEL_NAME=$(basename "$TUNNEL_CONFIG" | sed 's/^config-//;s/\.yml$//')
+    ok "Tunnel '$TUNNEL_NAME' already configured"
+    STEPS[cloudflare]="done"
+  else
+    # Step 3a: Login
+    if [ ! -f "$CFLARED_DIR/cert.pem" ]; then
+      printf "  Running: ${CYAN}cloudflared login${NC}\n"
+      printf "  (This opens a browser for Cloudflare authentication)\n\n"
+      cloudflared login
+    fi
+
+    if [ -f "$CFLARED_DIR/cert.pem" ]; then
+      ok "Cloudflare authenticated"
+
+      # Step 3b: Tunnel setup
+      ask "Tunnel name (default: open-harness):"
+      read -r TUNNEL_NAME
+      TUNNEL_NAME="${TUNNEL_NAME:-open-harness}"
+
+      ask "Public hostname (default: ${TUNNEL_NAME}.ruska.dev):"
+      read -r TUNNEL_HOST
+      TUNNEL_HOST="${TUNNEL_HOST:-${TUNNEL_NAME}.ruska.dev}"
+
+      ask "Local port (default: 3000):"
+      read -r TUNNEL_PORT
+      TUNNEL_PORT="${TUNNEL_PORT:-3000}"
+
+      printf "\n"
+      bash "$HOME/install/cloudflared-tunnel.sh" "$TUNNEL_NAME" "$TUNNEL_HOST" "$TUNNEL_PORT"
+      STEPS[cloudflare]="done"
+    else
+      fail "Cloudflare login failed"
+      STEPS[cloudflare]="failed"
+    fi
+  fi
+fi
+
+# ─── Step 4: Claude Code ────────────────────────────────────────────
+banner "Step 4/4 — Claude Code"
+
+if [ -f "$HOME/.claude/.credentials.json" ] || [ -f "$HOME/.claude/credentials.json" ]; then
+  ok "Claude Code already authenticated"
+  STEPS[claude]="done"
+else
+  printf "  Claude Code requires authentication on first run.\n"
+  printf "  This will open a browser for Anthropic OAuth.\n\n"
+  ask "Authenticate now? [Y/n]:"
+  read -r answer
+  if [[ ! "$answer" =~ ^[Nn]$ ]]; then
+    printf "\n  Running: ${CYAN}claude --version${NC} (triggers auth check)\n\n"
+    claude --version 2>/dev/null && ok "Claude Code ready" || warn "Run 'claude' manually to complete auth"
+    STEPS[claude]="done"
+  else
+    skip "Skipped — run 'claude' later to authenticate"
+    STEPS[claude]="skipped"
+  fi
+fi
+
+# ─── Start Application ──────────────────────────────────────────────
+banner "Starting Application"
+
+printf "  Installing dependencies and starting dev server...\n\n"
+cd "$APP_DIR"
+pnpm install 2>&1 | tail -5
+
+# Start dev server
+pnpm dev > /tmp/next-dev.log 2>&1 &
+echo $! > /tmp/next-dev.pid
+
+# Start cloudflared tunnel if configured
+TUNNEL_CONFIG=$(ls "$HOME/.cloudflared"/config-*.yml 2>/dev/null | head -1)
+if [ -n "$TUNNEL_CONFIG" ]; then
+  TUNNEL_NAME=$(basename "$TUNNEL_CONFIG" | sed 's/^config-//;s/\.yml$//')
+  cloudflared tunnel --config "$TUNNEL_CONFIG" run "$TUNNEL_NAME" > /tmp/cloudflared.log 2>&1 &
+  echo $! > /tmp/cloudflared.pid
+fi
+
+# Wait for dev server
+for i in $(seq 1 30); do
+  if curl -sf http://localhost:3000 > /dev/null 2>&1; then
+    ok "Next.js dev server ready on port 3000"
+    break
+  fi
+  [ "$i" -eq 30 ] && warn "Dev server not responding after 30s (check /tmp/next-dev.log)"
+  sleep 1
+done
+
+# ─── Write Marker ───────────────────────────────────────────────────
+mkdir -p "$(dirname "$ONBOARD_MARKER")"
+cat > "$ONBOARD_MARKER" <<EOF
+{
+  "version": 1,
+  "completedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "steps": {
+    "ssh": { "status": "${STEPS[ssh]:-unknown}" },
+    "github": { "status": "${STEPS[github]:-unknown}" },
+    "cloudflare": { "status": "${STEPS[cloudflare]:-unknown}" },
+    "claude": { "status": "${STEPS[claude]:-unknown}" }
+  }
+}
+EOF
+
+# ─── Summary ────────────────────────────────────────────────────────
+banner "Onboarding Complete"
+printf "\n"
+printf "  ${GREEN}SSH${NC}:        %s\n" "${STEPS[ssh]:-unknown}"
+printf "  ${GREEN}GitHub${NC}:     %s\n" "${STEPS[github]:-unknown}"
+printf "  ${GREEN}Cloudflare${NC}: %s\n" "${STEPS[cloudflare]:-unknown}"
+printf "  ${GREEN}Claude${NC}:     %s\n" "${STEPS[claude]:-unknown}"
+printf "\n"
+printf "  The dev server is now running. On future restarts,\n"
+printf "  the application will start automatically.\n"
+printf "\n"
+printf "  ${CYAN}Verify${NC}: pnpm run test:setup\n"
+printf "  ${CYAN}Re-run${NC}: openharness onboard --force\n"
+printf "\n"

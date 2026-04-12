@@ -33,3 +33,13 @@ fi
 
 echo "Resolved SANDBOX_NAME=$SANDBOX_NAME"
 [ -n "$GIT_COMMON_DIR" ] && echo "Resolved GIT_COMMON_DIR=$GIT_COMMON_DIR (worktree)"
+
+# Warn if git overlay is configured but GIT_COMMON_DIR is empty (not a worktree)
+CONFIG="$REPO_ROOT/.openharness/config.json"
+if [ -f "$CONFIG" ] && [ -z "$GIT_COMMON_DIR" ]; then
+  if jq -r '.composeOverrides[]' "$CONFIG" 2>/dev/null | grep -q "docker-compose.git.yml"; then
+    echo "WARNING: docker-compose.git.yml is enabled but this is not a worktree."
+    echo "         The git overlay requires GIT_COMMON_DIR. Remove it from .openharness/config.json"
+    echo "         or run from a git worktree."
+  fi
+fi

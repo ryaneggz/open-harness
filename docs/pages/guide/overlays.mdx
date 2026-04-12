@@ -1,0 +1,57 @@
+# Compose Overlays
+
+All sandboxes are built from `.devcontainer/Dockerfile` — a Debian Bookworm image with Node.js 22, pnpm, agent CLIs (Claude Code, Codex, Pi Agent), and dev tools pre-installed.
+
+Compose overlays in `.devcontainer/` add optional services. Enable them in `.openharness/config.json`.
+
+## Available overlays
+
+| Overlay | Purpose |
+|---------|---------|
+| `docker-compose.postgres.yml` | PostgreSQL 16 + devnet |
+| `docker-compose.cloudflared.yml` | Cloudflare tunnel env vars |
+| `docker-compose.docker.yml` | Docker socket mount (DinD) |
+| `docker-compose.git.yml` | Git worktree mount (worktrees only) |
+| `docker-compose.ssh.yml` | Mount host `~/.ssh` read-only |
+| `docker-compose.ssh-generate.yml` | Generate keypair in persistent volume |
+| `docker-compose.mom.yml` | Mom Slack bot env vars |
+
+## Configuration
+
+Edit `.openharness/config.json` to enable or disable overlays:
+
+```json
+{
+  "composeOverrides": [
+    ".devcontainer/docker-compose.cloudflared.yml",
+    ".devcontainer/docker-compose.docker.yml",
+    ".devcontainer/docker-compose.mom.yml",
+    ".devcontainer/docker-compose.ssh-generate.yml"
+  ]
+}
+```
+
+Default enabled: `cloudflared`, `docker`, `mom`, `ssh-generate`.
+
+After editing, run `openharness quickstart` or `/provision` to apply changes.
+
+## SSH key strategy
+
+The SSH overlays are mutually exclusive — pick one:
+
+| Overlay | When to use |
+|---------|------------|
+| `docker-compose.ssh.yml` | Mount host `~/.ssh` read-only — no GitHub setup needed inside the container |
+| `docker-compose.ssh-generate.yml` | Generate a new keypair in a persistent volume — must add to GitHub |
+
+## Git worktree overlay
+
+`docker-compose.git.yml` requires `GIT_COMMON_DIR` (only valid when running inside a git worktree). If you're not in a worktree, do **not** include this overlay — it will produce an invalid mount path.
+
+## Adding PostgreSQL
+
+To add PostgreSQL to your sandbox:
+
+1. Add `".devcontainer/docker-compose.postgres.yml"` to `composeOverrides` in `.openharness/config.json`
+2. Run `openharness quickstart` or `/provision`
+3. The database is available at `postgresql://sandbox:sandbox@postgres:5432/sandbox`

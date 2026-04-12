@@ -38,7 +38,6 @@ paths:
 - Use `satisfies` for type narrowing with inference
 - Prefer interfaces for object shapes, type aliases for unions and intersections
 - Use `import type` for type-only imports to reduce bundle size
-- Generate types from schema (Prisma) — never hand-write database types
 
 ## Error Handling
 

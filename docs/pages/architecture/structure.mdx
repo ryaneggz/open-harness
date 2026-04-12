@@ -1,0 +1,49 @@
+# Project Structure
+
+```
+open-harness/
+├── .devcontainer/
+│   ├── Dockerfile              # sandbox image: Debian + Node 22 + agent CLIs + pnpm
+│   ├── docker-compose.yml      # base compose: SSH + workspace mount
+│   ├── docker-compose.*.yml    # overlays: postgres, cloudflared, docker, ssh, git, mom
+│   ├── entrypoint.sh           # Docker GID matching + cron + heartbeat sync
+│   └── init-env.sh             # resolve SANDBOX_NAME from git remote
+├── cli/                        # openharness CLI (TypeScript, pnpm workspace)
+│   ├── src/
+│   │   ├── cli.ts              # subcommand routing, arg parsing, help text
+│   │   └── index.ts            # entry point (argv, exit codes)
+│   └── dist/                   # compiled output
+├── packages/sandbox/           # @openharness/sandbox (container lifecycle tools)
+│   ├── src/
+│   │   ├── lib/
+│   │   │   ├── config.ts       # SandboxConfig: name, compose files, env
+│   │   │   ├── docker.ts       # compose command builders
+│   │   │   └── exec.ts         # run/runSafe/capture helpers
+│   │   └── tools/              # quickstart, run, stop, clean, shell, list, etc.
+│   └── extensions/
+│       └── sandbox.ts          # Pi Agent extension (tool + command registration)
+├── install/
+│   ├── onboard.sh              # interactive first-time setup wizard
+│   ├── heartbeat.sh            # cron-based heartbeat runner
+│   ├── cloudflared-tunnel.sh   # cloudflare tunnel configuration
+│   └── entrypoint.sh           # sandbox container entrypoint
+├── workspace/                  # template workspace for all agent sandboxes
+│   ├── AGENTS.md               # agent operating procedures (CLAUDE.md symlinks here)
+│   ├── SOUL.md                 # agent persona template
+│   ├── MEMORY.md               # long-term memory
+│   ├── heartbeats.conf         # heartbeat schedule config
+│   ├── heartbeats/             # heartbeat task .md files
+│   ├── .claude/
+│   │   ├── rules/              # coding standards (git, code-quality, nextjs, api, etc.)
+│   │   ├── skills/             # reusable skill templates
+│   │   └── agents/             # sub-agent personas (implementer, critic, pm, council)
+│   └── projects/
+│       └── next-app/           # Next.js project template
+├── docs/                       # Nextra documentation site (this site)
+├── .github/
+│   ├── workflows/              # CI, Build, Release, Docs
+│   └── ISSUE_TEMPLATE/         # agent, audit, bug, feature, skill, task
+├── .openharness/
+│   └── config.json             # compose overlay selection
+└── .claude/skills/             # orchestrator skills (/provision, /repair, /release, etc.)
+```

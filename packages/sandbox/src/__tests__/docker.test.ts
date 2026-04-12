@@ -1,68 +1,60 @@
-import { describe, it, expect } from "vitest";
-import { SandboxConfig } from "../lib/config.js";
-import {
-  composeCmd,
-  composeEnv,
-  buildCmd,
-  composeUp,
-  composeDown,
-  execCmd,
-  pushCmd,
-  psCmd,
-} from "../lib/docker.js";
+import { describe, it, expect, vi } from "vitest";
 
-function makeConfig(overrides: Partial<import("../lib/config.js").SandboxOptions> = {}) {
-  return new SandboxConfig({ name: "test-agent", ...overrides });
+// Mock fs and child_process before importing anything that uses config
+vi.mock("node:fs", () => ({
+  existsSync: vi.fn(() => false),
+  readFileSync: vi.fn(() => ""),
+}));
+
+vi.mock("node:child_process", () => ({
+  execSync: vi.fn(),
+}));
+
+const { SandboxConfig } = await import("../lib/config.js");
+const { composeCmd, composeEnv, composeUp, composeDown, execCmd, psCmd } =
+  await import("../lib/docker.js");
+
+function makeConfig(name = "test-agent") {
+  return new SandboxConfig({ name });
 }
 
 describe("docker command builders", () => {
   describe("composeCmd", () => {
-    it("builds base compose command", () => {
+    it("builds base compose command with env-file and project name", () => {
       const config = makeConfig();
       const cmd = composeCmd(config);
-      expect(cmd).toEqual(["docker", "compose", "-f", config.composeFile, "-p", "test-agent"]);
+      expect(cmd[0]).toBe("docker");
+      expect(cmd[1]).toBe("compose");
+      expect(cmd).toContain("--env-file");
+      expect(cmd).toContain(".devcontainer/.env");
+      expect(cmd).toContain("-f");
+      expect(cmd).toContain(".devcontainer/docker-compose.yml");
+      expect(cmd).toContain("-p");
+      expect(cmd).toContain("test-agent");
     });
 
-    it("includes docker-in-docker overlay when docker=true", () => {
-      const config = makeConfig({ docker: true });
+    it("includes all compose files from config", () => {
+      // Config with explicit name always has at least the base compose file
+      const config = makeConfig();
       const cmd = composeCmd(config);
-      expect(cmd).toContain("-f");
-      expect(cmd).toContain(config.composeDockerFile);
+      const fIndices = cmd.reduce<number[]>((acc, v, i) => (v === "-f" ? [...acc, i] : acc), []);
+      expect(fIndices.length).toBeGreaterThanOrEqual(1);
+      expect(cmd[fIndices[0] + 1]).toBe(".devcontainer/docker-compose.yml");
     });
   });
 
   describe("composeEnv", () => {
-    it("includes NAME", () => {
+    it("includes SANDBOX_NAME", () => {
       const config = makeConfig();
-      expect(composeEnv(config)).toEqual({ NAME: "test-agent" });
-    });
-  });
-
-  describe("buildCmd", () => {
-    it("builds docker build command", () => {
-      const config = makeConfig();
-      const cmd = buildCmd(config);
-      expect(cmd[0]).toBe("docker");
-      expect(cmd[1]).toBe("build");
-      expect(cmd).toContain("-f");
-      expect(cmd).toContain(config.dockerfilePath);
-      expect(cmd).toContain("-t");
-      expect(cmd).toContain(config.image);
-      expect(cmd[cmd.length - 1]).toBe(config.projectRoot);
-    });
-
-    it("adds --no-cache flag", () => {
-      const config = makeConfig();
-      const cmd = buildCmd(config, true);
-      expect(cmd).toContain("--no-cache");
+      expect(composeEnv(config)).toEqual({ SANDBOX_NAME: "test-agent" });
     });
   });
 
   describe("composeUp", () => {
-    it("appends up -d", () => {
+    it("appends up -d --build", () => {
       const config = makeConfig();
       const cmd = composeUp(config);
-      expect(cmd.slice(-2)).toEqual(["up", "-d"]);
+      expect(cmd.slice(-3)).toEqual(["up", "-d", "--build"]);
     });
   });
 
@@ -73,11 +65,16 @@ describe("docker command builders", () => {
       expect(cmd[cmd.length - 1]).toBe("down");
     });
 
-    it("adds --rmi local flag", () => {
+    it("adds -v flag for volume removal", () => {
       const config = makeConfig();
       const cmd = composeDown(config, true);
-      expect(cmd).toContain("--rmi");
-      expect(cmd).toContain("local");
+      expect(cmd).toContain("-v");
+    });
+
+    it("does not add -v flag by default", () => {
+      const config = makeConfig();
+      const cmd = composeDown(config);
+      expect(cmd).not.toContain("-v");
     });
   });
 
@@ -108,14 +105,6 @@ describe("docker command builders", () => {
       const cmd = execCmd("my-sandbox", ["bash"], { env: { HOME: "/home/sandbox" } });
       expect(cmd).toContain("-e");
       expect(cmd).toContain("HOME=/home/sandbox");
-    });
-  });
-
-  describe("pushCmd", () => {
-    it("builds docker push command", () => {
-      const config = makeConfig();
-      const cmd = pushCmd(config);
-      expect(cmd).toEqual(["docker", "push", config.image]);
     });
   });
 
