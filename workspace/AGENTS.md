@@ -11,7 +11,7 @@
 7. Never push to `main` or `development` directly — use feature branches and PRs
 8. Never skip pre-commit hooks (`--no-verify`)
 9. Memory protocol runs at the end of every task (see below)
-10. `CLAUDE.md` and `AGENTS.md` are symlinked; `MEMORY.md` symlinks to `.mom/MEMORY.md` — editing either updates both
+10. `CLAUDE.md` and `AGENTS.md` are symlinked; `MEMORY.md` symlinks to `.slack/MEMORY.md` — editing either updates both
 11. Run `/repair` at the end of every session to verify the stack is healthy (dev server, tunnel, DB, public URL)
 
 ## File Responsibilities
@@ -24,7 +24,7 @@
 | AGENTS.md | Operating procedures, decision rules | Environment details, tool reference |
 | TOOLS.md | Environment, tools, services, workflows | Personality, procedures |
 | HEARTBEAT.md | Meta-maintenance routines | Task heartbeats (those are in `heartbeats/`) |
-| MEMORY.md | Learned decisions, lessons, triage history (symlinked to .mom/MEMORY.md) | Static stack info (that's in IDENTITY.md) |
+| MEMORY.md | Learned decisions, lessons, triage history (symlinked to .slack/MEMORY.md) | Static stack info (that's in IDENTITY.md) |
 
 ## Decision Rules
 
@@ -110,8 +110,8 @@ Parallel planning agents in `.claude/agents/`:
 | Strategic Critic | Challenges council's draft roadmap — signal, feasibility, phase rigor |
 | Strategic Council | Synthesizes 5 expert proposals into signal-validated roadmap (opus) |
 
-## Mom (Slack Interface)
+## Slack Interface
 
-Mom runs as a tmux session (`tmux attach -t mom`) providing Slack-based access to this workspace.
-Shares the same skills (`.claude/skills/`), memory (`.mom/MEMORY.md`), and agent config as claude/codex/pi.
+The Slack bot runs as a tmux session (`tmux attach -t mom`) providing Slack-based access to this workspace.
+Shares the same skills (`.claude/skills/`), memory (`.slack/MEMORY.md`), and agent config as claude/codex/pi.
 Auto-starts on container boot when `MOM_SLACK_APP_TOKEN` and `MOM_SLACK_BOT_TOKEN` are set.

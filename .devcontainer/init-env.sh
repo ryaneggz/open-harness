@@ -29,6 +29,14 @@ fi
 {
   echo "SANDBOX_NAME=$SANDBOX_NAME"
   [ -n "$GIT_COMMON_DIR" ] && echo "GIT_COMMON_DIR=$GIT_COMMON_DIR"
+
+  # Forward vars from root .env (Slack tokens, provider config, etc.)
+  ROOT_ENV="$REPO_ROOT/.env"
+  if [ -f "$ROOT_ENV" ]; then
+    grep -v '^\s*#' "$ROOT_ENV" | grep -v '^\s*$' | while IFS= read -r line; do
+      echo "$line"
+    done
+  fi
 } > "$SCRIPT_DIR/.env"
 
 echo "Resolved SANDBOX_NAME=$SANDBOX_NAME"

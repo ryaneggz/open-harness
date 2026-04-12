@@ -13,7 +13,7 @@ if [ -S "$SOCK" ]; then
 fi
 
 # Fix ownership of mounted volumes (created as root by Docker)
-for dir in .claude .cloudflared .config/gh .ssh; do
+for dir in .claude .cloudflared .config/gh .ssh .pi; do
   if [ -d "/home/sandbox/$dir" ]; then
     chown -R sandbox:sandbox "/home/sandbox/$dir" 2>/dev/null || true
     [ "$dir" = ".ssh" ] && chmod 700 "/home/sandbox/$dir" 2>/dev/null || true
@@ -40,10 +40,42 @@ if [ -f "/home/sandbox/harness/workspace/heartbeats.conf" ]; then
   gosu sandbox /home/sandbox/install/heartbeat.sh sync 2>/dev/null || true
 fi
 
+# Build and link openharness CLI in background (from bind-mounted repo)
+HARNESS="/home/sandbox/harness"
+if [ -f "$HARNESS/cli/package.json" ] && ! command -v openharness &>/dev/null; then
+  (
+    cd "$HARNESS"
+    gosu sandbox pnpm install --frozen-lockfile 2>/dev/null || gosu sandbox pnpm install 2>/dev/null || true
+    gosu sandbox pnpm --filter openharness --filter @openharness/sandbox run build 2>/dev/null || true
+    ln -sf "$HARNESS/cli/dist/index.js" /usr/local/bin/openharness
+    chmod +x /usr/local/bin/openharness
+    echo "[entrypoint] openharness CLI installed"
+  ) &
+fi
+
 # Run workspace startup (dev server + tunnel) as sandbox user
 STARTUP="/home/sandbox/harness/workspace/startup.sh"
 if [ -f "$STARTUP" ]; then
   gosu sandbox bash "$STARTUP" 2>&1 | sed 's/^/  /' || true
+fi
+
+# Copy Pi agent auth to Mom if Mom auth is missing/empty
+if [ -d "/home/sandbox/.pi/agent" ] && [ -s "/home/sandbox/.pi/agent/auth.json" ]; then
+  MOMDIR="/home/sandbox/.pi/mom"
+  if [ ! -s "$MOMDIR/auth.json" ]; then
+    mkdir -p "$MOMDIR"
+    cp /home/sandbox/.pi/agent/auth.json "$MOMDIR/auth.json"
+    chown -R sandbox:sandbox "$MOMDIR"
+  fi
+fi
+
+# Auto-start Mom (Slack bot) if tokens are present
+if [ -n "${MOM_SLACK_APP_TOKEN:-}" ] && [ -n "${MOM_SLACK_BOT_TOKEN:-}" ]; then
+  if command -v mom &>/dev/null; then
+    gosu sandbox tmux new-session -d -s mom \
+      'mom --sandbox=host ~/harness/workspace/.slack' 2>/dev/null || true
+    echo "[entrypoint] Mom started (tmux attach -t mom)"
+  fi
 fi
 
 # First-boot message if onboarding not complete

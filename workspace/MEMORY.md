@@ -1,1 +1,1 @@
-.mom/MEMORY.md
+.slack/MEMORY.md

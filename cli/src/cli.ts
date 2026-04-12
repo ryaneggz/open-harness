@@ -6,7 +6,17 @@
  * routing, result formatting, and help text generation.
  */
 
+import { existsSync } from "node:fs";
 import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
+
+// ─── Environment ──────────────────────────────────────────────────
+
+export function isInsideContainer(): boolean {
+  return existsSync("/.dockerenv");
+}
+
+/** Commands that manage containers — only work from the host. */
+export const HOST_ONLY_COMMANDS = new Set(["sandbox", "run", "stop", "clean", "list", "shell"]);
 
 // ─── Constants ─────────────────────────────────────────────────────
 
@@ -163,26 +173,42 @@ export function helpText(version: string): string {
   const b = "\x1b[1m";
   const r = "\x1b[0m";
   const d = "\x1b[2m";
+  const y = "\x1b[33m"; // yellow
+  const inside = isInsideContainer();
 
-  return `${b}openharness${r} — AI-powered sandbox orchestrator ${d}(built on pi ${version})${r}
+  // Mark host-only commands as disabled when inside the container
+  const h = (cmd: string, desc: string) =>
+    inside ? `  ${d}${cmd}${r}  ${y}(host only)${r}` : `  ${b}${cmd}${r}  ${desc}`;
+
+  const pad = (cmd: string, width = 36) => cmd.padEnd(width);
+
+  let text = `${b}openharness${r} — AI-powered sandbox orchestrator ${d}(built on pi ${version})${r}
 
 ${b}Usage:${r}
   openharness <command> [options]
   openharness [pi-options] [messages...]     ${d}Launch AI agent mode${r}
 
 ${b}Commands:${r}
-  ${b}list${r}                              List running sandboxes
-  ${b}sandbox${r} [name]                    Build and start sandbox (.devcontainer)
-  ${b}run${r} [name]                        Start container
-  ${b}shell${r} <name>                      Open interactive bash shell
-  ${b}stop${r} [name]                       Stop and remove container
-  ${b}clean${r} [name]                      Full cleanup (containers + volumes)
-  ${b}onboard${r} [name] [--force]          Interactive first-time setup wizard
-  ${b}heartbeat${r} <action> <name>         Manage heartbeats (sync|stop|status|migrate)
+${h(pad("sandbox [name]"), "Build and start sandbox (.devcontainer)")}
+${h(pad("run [name]"), "Start container")}
+${h(pad("shell <name>"), "Open interactive bash shell")}
+${h(pad("stop [name]"), "Stop and remove container")}
+${h(pad("clean [name]"), "Full cleanup (containers + volumes)")}
+${h(pad("list"), "List running sandboxes")}
+  ${b}${pad("onboard [name] [--force]")}${r}Interactive first-time setup wizard
+  ${b}${pad("heartbeat <action> <name>")}${r}Manage heartbeats (sync|stop|status|migrate)
 
 ${b}Advanced:${r}
-  ${b}worktree${r} <name> [--base-branch]   Create git worktree for branch isolation
+  ${b}${pad("worktree <name> [--base-branch]")}${r}Create git worktree for branch isolation
+`;
 
+  if (inside) {
+    text += `
+${y}You are inside the sandbox.${r} Container management commands are disabled.
+Run them from the ${b}host${r} instead.\n`;
+  }
+
+  text += `
 ${b}Agent Mode:${r}
   Run without a command to launch the interactive AI agent.
   The agent can orchestrate sandbox workflows conversationally
@@ -202,14 +228,8 @@ ${b}Examples:${r}
   ${d}# Provision and start the sandbox${r}
   openharness sandbox
 
-  ${d}# Check what's running${r}
-  openharness list
-
-  ${d}# Enter the sandbox${r}
-  openharness shell my-sandbox
-
   ${d}# One-time auth setup${r}
-  openharness onboard my-sandbox
+  openharness onboard
 
   ${d}# Tear down${r}
   openharness clean
@@ -217,4 +237,6 @@ ${b}Examples:${r}
   ${d}# Launch AI agent mode${r}
   openharness
 `;
+
+  return text;
 }

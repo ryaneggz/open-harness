@@ -53,7 +53,11 @@ RUN corepack enable && corepack prepare pnpm@latest --activate \
  && pnpm setup --force 2>/dev/null || true
 
 # ─── Agent CLIs ─────────────────────────────────────────────────────
-RUN pnpm add -g @anthropic-ai/claude-code @openai/codex @mariozechner/pi-coding-agent @mariozechner/pi-mom
+RUN pnpm add -g @anthropic-ai/claude-code @openai/codex @mariozechner/pi-coding-agent
+
+# ─── Slack bot (forked pi-mom with configurable provider) ─────────
+COPY packages/slack/ /opt/slack/
+RUN cd /opt/slack && pnpm install --prod 2>/dev/null && pnpm link --global
 
 # ─── Agent Browser + Chromium ──────────────────────────────────────
 RUN pnpm add -g agent-browser@0.8.5 \
@@ -67,11 +71,15 @@ RUN useradd -m -s /bin/bash sandbox \
  && chmod 0440 /etc/sudoers.d/sandbox \
  && groupadd -f docker && usermod -aG docker sandbox
 
+# Ensure PNPM_HOME is on PATH for login shells (SSH, openharness shell)
+RUN echo 'export PNPM_HOME="/usr/local/share/pnpm"' >> /home/sandbox/.profile \
+ && echo 'export PATH="$PNPM_HOME:$PATH"' >> /home/sandbox/.profile
+
 # Shell aliases for agent CLIs
 RUN echo "alias claude='claude --dangerously-skip-permissions'" >> /home/sandbox/.bashrc \
  && echo "alias codex='codex --full-auto'" >> /home/sandbox/.bashrc \
  && echo "alias pi='pi'" >> /home/sandbox/.bashrc \
- && echo "alias mom='mom --sandbox=host ~/harness/workspace/.mom'" >> /home/sandbox/.bashrc
+ && echo "alias mom='mom --sandbox=host ~/harness/workspace/.slack'" >> /home/sandbox/.bashrc
 
 # Git safe.directory for bind-mounted project
 RUN su - sandbox -c "git config --global --add safe.directory /home/sandbox/harness"

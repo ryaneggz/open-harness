@@ -27,10 +27,10 @@ workspace/.ralph/.claude/
 **/.ralph/archives/
 **/src/generated/
 
-# Mom runtime data (channel logs, context, attachments — keep MEMORY.md tracked)
-workspace/.mom/*/
-workspace/.mom/events/
-workspace/.mom/settings.json
+# Slack runtime data (channel logs, context, attachments — keep MEMORY.md tracked)
+workspace/.slack/*/
+workspace/.slack/events/
+workspace/.slack/settings.json
 
 # Pi project config (generated symlinks)
 workspace/.pi/

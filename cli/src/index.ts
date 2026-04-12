@@ -10,7 +10,13 @@
 import { main, VERSION } from "@mariozechner/pi-coding-agent";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SUBCOMMANDS, parseToolArgs, helpText } from "./cli.js";
+import {
+  SUBCOMMANDS,
+  HOST_ONLY_COMMANDS,
+  isInsideContainer,
+  parseToolArgs,
+  helpText,
+} from "./cli.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const extensionPath = resolve(__dirname, "extension.js");
@@ -26,6 +32,13 @@ if (firstArg === "--help" || firstArg === "-h") {
 if (firstArg === "--version" || firstArg === "-v") {
   console.log(`openharness 0.1.0 (pi ${VERSION})`);
   process.exit(0);
+}
+
+// Block host-only commands inside the container
+if (firstArg && HOST_ONLY_COMMANDS.has(firstArg) && isInsideContainer()) {
+  console.error(`Error: 'openharness ${firstArg}' is a host-only command.`);
+  console.error("You are inside the sandbox. Run this from the host instead.");
+  process.exit(1);
 }
 
 // Subcommand dispatch — runs docker compose directly, no AI model
@@ -48,16 +61,8 @@ if (firstArg && SUBCOMMANDS.has(firstArg)) {
  * No Pi SDK, no AI model — just docker compose.
  */
 async function runSubcommand(command: string, cmdArgs: string[]) {
-  const {
-    SandboxConfig,
-    composeUp,
-    composeDown,
-    composeEnv,
-    execCmd,
-    psCmd,
-    run,
-    runSafe,
-  } = await import("@openharness/sandbox");
+  const { SandboxConfig, composeUp, composeDown, composeEnv, execCmd, psCmd, run, runSafe } =
+    await import("@openharness/sandbox");
 
   const params = parseToolArgs(cmdArgs);
 
@@ -73,10 +78,10 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
       const { execSync } = await import("node:child_process");
       let running = false;
       try {
-        const status = execSync(
-          `docker inspect -f '{{.State.Running}}' ${config.name}`,
-          { encoding: "utf-8", stdio: "pipe" },
-        ).trim();
+        const status = execSync(`docker inspect -f '{{.State.Running}}' ${config.name}`, {
+          encoding: "utf-8",
+          stdio: "pipe",
+        }).trim();
         running = status === "true";
       } catch {
         // container not found
@@ -92,10 +97,10 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
       let sshPort = "2222";
       let appPort = "3000";
       try {
-        const ports = execSync(
-          `docker port ${config.name}`,
-          { encoding: "utf-8", stdio: "pipe" },
-        ).trim();
+        const ports = execSync(`docker port ${config.name}`, {
+          encoding: "utf-8",
+          stdio: "pipe",
+        }).trim();
         const sshMatch = ports.match(/22\/tcp -> [\d.]+:(\d+)/);
         const appMatch = ports.match(/3000\/tcp -> [\d.]+:(\d+)/);
         if (sshMatch) sshPort = sshMatch[1];
@@ -184,7 +189,9 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
         const { spawnSync } = await import("node:child_process");
         const result = spawnSync(cmd[0], cmd.slice(1), { stdio: "inherit" });
         if (result.status !== 0) {
-          console.error(`Error: container '${name}' is not running. Start it first: openharness sandbox`);
+          console.error(
+            `Error: container '${name}' is not running. Start it first: openharness sandbox`,
+          );
           process.exit(1);
         }
       } else {
@@ -202,7 +209,7 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
 
     case "heartbeat": {
       const action = params.name; // first positional is action for heartbeat
-      const name = params.action;   // second positional is name
+      const name = params.action; // second positional is name
       if (!action || !name) {
         console.error("Usage: openharness heartbeat <sync|stop|status|migrate> <name>");
         process.exit(1);

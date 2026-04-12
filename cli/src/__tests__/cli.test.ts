@@ -356,8 +356,7 @@ describe("helpText", () => {
 
   it("includes usage examples", () => {
     expect(text).toContain("openharness sandbox");
-    expect(text).toContain("openharness list");
-    expect(text).toContain("openharness shell my-sandbox");
+    expect(text).toContain("openharness onboard");
     expect(text).toContain("openharness clean");
   });
 });
