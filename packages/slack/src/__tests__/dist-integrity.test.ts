@@ -71,48 +71,23 @@ describe("dist integrity", () => {
 		});
 	});
 
-	describe("tool output suppression (agent.js)", () => {
+	describe("tool status indicators (agent.js)", () => {
 		const agentPath = join(distDir, "agent.js");
 
-		it("contains isError guard before enqueueMessage for tool results", () => {
+		it("does NOT contain tool result thread posts", () => {
 			const content = readFileSync(agentPath, "utf-8");
-			// isError must appear in the file at all
+			expect(content).not.toContain("tool result thread");
+		});
+
+		it("contains Slack emoji shortcodes for status indicators", () => {
+			const content = readFileSync(agentPath, "utf-8");
+			expect(content).toContain(":white_check_mark:");
+			expect(content).toContain(":x:");
+		});
+
+		it("still uses isError for logging and icon selection", () => {
+			const content = readFileSync(agentPath, "utf-8");
 			expect(content).toContain("isError");
-		});
-
-		it('"tool result thread" string appears only within an isError-guarded block', () => {
-			const content = readFileSync(agentPath, "utf-8");
-
-			// The string must exist
-			const toolResultIdx = content.indexOf('"tool result thread"');
-			expect(toolResultIdx).toBeGreaterThan(-1);
-
-			// Walk backwards from "tool result thread" to find the nearest isError check
-			const beforeToolResult = content.substring(0, toolResultIdx);
-			const lastIsErrorIdx = beforeToolResult.lastIndexOf("isError");
-			expect(lastIsErrorIdx).toBeGreaterThan(-1);
-
-			// Verify there is no unguarded occurrence by checking that every
-			// occurrence of "tool result thread" is preceded by an isError check
-			// with no closing brace that would end the if block between them
-			let searchFrom = 0;
-			while (true) {
-				const occurrenceIdx = content.indexOf('"tool result thread"', searchFrom);
-				if (occurrenceIdx === -1) break;
-
-				const segment = content.substring(0, occurrenceIdx);
-				const nearestIsError = segment.lastIndexOf("isError");
-				expect(nearestIsError).toBeGreaterThan(-1);
-
-				searchFrom = occurrenceIdx + 1;
-			}
-		});
-
-		it('does NOT contain old ternary pattern `isError ? "✗" : "✓"` for thread messages', () => {
-			const content = readFileSync(agentPath, "utf-8");
-			// The old pattern used ternary for success/error icons in thread posts
-			expect(content).not.toContain('isError ? "✗" : "✓"');
-			expect(content).not.toContain("isError ? '✗' : '✓'");
 		});
 	});
 

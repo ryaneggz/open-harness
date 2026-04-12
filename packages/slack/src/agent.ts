@@ -535,25 +535,15 @@ function createRunner(sandboxConfig: SandboxConfig, channelId: string, channelDi
 				log.logToolSuccess(logCtx, agentEvent.toolName, durationMs, resultStr);
 			}
 
-			if (agentEvent.isError) {
-				// Post args + result to thread (errors only)
-				const label = pending?.args ? (pending.args as { label?: string }).label : undefined;
-				const argsFormatted = pending
-					? formatToolArgsForSlack(agentEvent.toolName, pending.args as Record<string, unknown>)
-					: "(args not found)";
-				const duration = (durationMs / 1000).toFixed(1);
-				let threadMessage = `*✗ ${agentEvent.toolName}*`;
-				if (label) threadMessage += `: ${label}`;
-				threadMessage += ` (${duration}s)\n`;
-				if (argsFormatted) threadMessage += `\`\`\`\n${argsFormatted}\n\`\`\`\n`;
-				threadMessage += `*Result:*\n\`\`\`\n${resultStr}\n\`\`\``;
-
-				queue.enqueueMessage(threadMessage, "thread", "tool result thread", false);
-			}
-
-			if (agentEvent.isError) {
-				queue.enqueue(() => ctx.respond(`_Error: ${truncate(resultStr, 200)}_`, false), "tool error");
-			}
+			// Post status indicator to main message (success and error)
+			const label = pending?.args ? (pending.args as { label?: string }).label : undefined;
+			const displayLabel = label || agentEvent.toolName;
+			const duration = (durationMs / 1000).toFixed(1);
+			const icon = agentEvent.isError ? ":x:" : ":white_check_mark:";
+			queue.enqueue(
+				() => ctx.respond(`_${icon} ${displayLabel} (${duration}s)_`, false),
+				"tool status"
+			);
 		} else if (event.type === "message_start") {
 			const agentEvent = event as AgentEvent & { type: "message_start" };
 			if (agentEvent.message.role === "assistant") {
