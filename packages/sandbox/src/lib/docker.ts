@@ -1,15 +1,16 @@
 import { SandboxConfig } from "./config.js";
 
 /**
- * Build the base `docker compose` command with project and file flags.
+ * Build the base `docker compose` command with env-file, project, and compose file flags.
  */
 export function composeCmd(config: SandboxConfig): string[] {
-  const cmd = ["docker", "compose", "-f", config.composeFile, "-p", config.name];
+  const cmd = ["docker", "compose", "--env-file", config.envFile];
 
-  if (config.docker) {
-    cmd.push("-f", config.composeDockerFile);
+  for (const file of config.composeFiles) {
+    cmd.push("-f", file);
   }
 
+  cmd.push("-p", config.name);
   return cmd;
 }
 
@@ -17,37 +18,23 @@ export function composeCmd(config: SandboxConfig): string[] {
  * Environment variables to pass to docker compose.
  */
 export function composeEnv(config: SandboxConfig): Record<string, string> {
-  return { NAME: config.name };
+  return { SANDBOX_NAME: config.name };
 }
 
 /**
- * Build the `docker build` command.
- */
-export function buildCmd(config: SandboxConfig, noCache = false): string[] {
-  const cmd = ["docker", "build", "-f", config.dockerfilePath, "-t", config.image];
-
-  if (noCache) {
-    cmd.push("--no-cache");
-  }
-
-  cmd.push(config.projectRoot);
-  return cmd;
-}
-
-/**
- * Build the `docker compose up -d` command.
+ * Build the `docker compose up -d --build` command.
  */
 export function composeUp(config: SandboxConfig): string[] {
-  return [...composeCmd(config), "up", "-d"];
+  return [...composeCmd(config), "up", "-d", "--build"];
 }
 
 /**
  * Build the `docker compose down` command.
  */
-export function composeDown(config: SandboxConfig, rmi = false): string[] {
+export function composeDown(config: SandboxConfig, volumes = false): string[] {
   const cmd = [...composeCmd(config), "down"];
-  if (rmi) {
-    cmd.push("--rmi", "local");
+  if (volumes) {
+    cmd.push("-v");
   }
   return cmd;
 }
@@ -87,13 +74,6 @@ export function execCmd(
 
   cmd.push(name, ...command);
   return cmd;
-}
-
-/**
- * Build the `docker push` command.
- */
-export function pushCmd(config: SandboxConfig): string[] {
-  return ["docker", "push", config.image];
 }
 
 /**

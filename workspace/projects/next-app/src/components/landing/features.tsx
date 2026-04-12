@@ -12,7 +12,7 @@ const features = [
     icon: Zap,
     title: "Minutes, Not Hours",
     description:
-      "No Dockerfile tweaking, env var juggling, or dependency debugging. openharness quickstart provisions the entire sandbox — Docker, database, tunnel, agent CLI — in one shot.",
+      "No Dockerfile tweaking, env var juggling, or dependency debugging. openharness sandbox provisions the entire sandbox — Docker, database, tunnel, agent CLI — in one shot.",
   },
   {
     icon: Globe,

@@ -16,7 +16,7 @@ export default function (pi: ExtensionAPI) {
 
   // Register slash commands for direct execution (no LLM)
   pi.registerCommand("list", {
-    description: "List running sandboxes and worktrees",
+    description: "List running sandboxes",
     async handler(_args, ctx) {
       const { listTool } = await import("../src/tools/list.js");
       const result = await listTool.execute("cmd", {}, undefined, undefined, ctx);
@@ -24,68 +24,34 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  pi.registerCommand("quickstart", {
-    description: "Provision a new sandbox: /quickstart <name> [--base-branch main]",
+  pi.registerCommand("sandbox", {
+    description: "Build and start sandbox: /sandbox [name]",
     async handler(args, ctx) {
-      const [name, ...rest] = args;
-      if (!name) {
-        ctx.ui.notify("Usage: /quickstart <name> [--base-branch <branch>]", "error");
-        return;
-      }
-      const params: Record<string, string | boolean> = { name };
-      for (let i = 0; i < rest.length; i++) {
-        if (rest[i] === "--base-branch" && rest[i + 1]) {
-          params.baseBranch = rest[++i];
-        } else if (rest[i] === "--docker") {
-          params.docker = true;
-        } else if (rest[i] === "--tag" && rest[i + 1]) {
-          params.tag = rest[++i];
+      const params: Record<string, string> = {};
+      for (const arg of args) {
+        if (!arg.startsWith("-")) {
+          params.name = arg;
+          break;
         }
       }
-      const { quickstartTool } = await import("../src/tools/quickstart.js");
-      const result = await quickstartTool.execute("cmd", params, undefined, undefined, ctx);
-      ctx.ui.notify(result.content[0].type === "text" ? result.content[0].text : "", "info");
-    },
-  });
-
-  pi.registerCommand("build", {
-    description: "Build Docker image: /build <name>",
-    async handler(args, ctx) {
-      const [name] = args;
-      if (!name) {
-        ctx.ui.notify("Usage: /build <name>", "error");
-        return;
-      }
-      const { buildTool } = await import("../src/tools/build.js");
-      const result = await buildTool.execute("cmd", { name }, undefined, undefined, ctx);
-      ctx.ui.notify(result.content[0].type === "text" ? result.content[0].text : "", "info");
-    },
-  });
-
-  pi.registerCommand("rebuild", {
-    description: "Rebuild sandbox (no cache): /rebuild <name>",
-    async handler(args, ctx) {
-      const [name] = args;
-      if (!name) {
-        ctx.ui.notify("Usage: /rebuild <name>", "error");
-        return;
-      }
-      const { rebuildTool } = await import("../src/tools/rebuild.js");
-      const result = await rebuildTool.execute("cmd", { name }, undefined, undefined, ctx);
+      const { sandboxTool } = await import("../src/tools/sandbox.js");
+      const result = await sandboxTool.execute("cmd", params, undefined, undefined, ctx);
       ctx.ui.notify(result.content[0].type === "text" ? result.content[0].text : "", "info");
     },
   });
 
   pi.registerCommand("run", {
-    description: "Start a sandbox container: /run <name>",
+    description: "Start the sandbox container: /run [name]",
     async handler(args, ctx) {
-      const [name] = args;
-      if (!name) {
-        ctx.ui.notify("Usage: /run <name>", "error");
-        return;
+      const params: Record<string, string> = {};
+      for (const arg of args) {
+        if (!arg.startsWith("-")) {
+          params.name = arg;
+          break;
+        }
       }
       const { runTool } = await import("../src/tools/run.js");
-      const result = await runTool.execute("cmd", { name }, undefined, undefined, ctx);
+      const result = await runTool.execute("cmd", params, undefined, undefined, ctx);
       ctx.ui.notify(result.content[0].type === "text" ? result.content[0].text : "", "info");
     },
   });
@@ -105,43 +71,33 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.registerCommand("stop", {
-    description: "Stop a sandbox: /stop <name>",
+    description: "Stop a sandbox: /stop [name]",
     async handler(args, ctx) {
-      const [name] = args;
-      if (!name) {
-        ctx.ui.notify("Usage: /stop <name>", "error");
-        return;
+      const params: Record<string, string> = {};
+      for (const arg of args) {
+        if (!arg.startsWith("-")) {
+          params.name = arg;
+          break;
+        }
       }
       const { stopTool } = await import("../src/tools/stop.js");
-      const result = await stopTool.execute("cmd", { name }, undefined, undefined, ctx);
+      const result = await stopTool.execute("cmd", params, undefined, undefined, ctx);
       ctx.ui.notify(result.content[0].type === "text" ? result.content[0].text : "", "info");
     },
   });
 
   pi.registerCommand("clean", {
-    description: "Full cleanup (container + image + worktree): /clean <name>",
+    description: "Full cleanup (containers + volumes): /clean [name]",
     async handler(args, ctx) {
-      const [name] = args;
-      if (!name) {
-        ctx.ui.notify("Usage: /clean <name>", "error");
-        return;
+      const params: Record<string, string> = {};
+      for (const arg of args) {
+        if (!arg.startsWith("-")) {
+          params.name = arg;
+          break;
+        }
       }
       const { cleanTool } = await import("../src/tools/clean.js");
-      const result = await cleanTool.execute("cmd", { name }, undefined, undefined, ctx);
-      ctx.ui.notify(result.content[0].type === "text" ? result.content[0].text : "", "info");
-    },
-  });
-
-  pi.registerCommand("push", {
-    description: "Push sandbox image to registry: /push <name>",
-    async handler(args, ctx) {
-      const [name] = args;
-      if (!name) {
-        ctx.ui.notify("Usage: /push <name>", "error");
-        return;
-      }
-      const { pushTool } = await import("../src/tools/push.js");
-      const result = await pushTool.execute("cmd", { name }, undefined, undefined, ctx);
+      const result = await cleanTool.execute("cmd", params, undefined, undefined, ctx);
       ctx.ui.notify(result.content[0].type === "text" ? result.content[0].text : "", "info");
     },
   });
@@ -186,6 +142,23 @@ export default function (pi: ExtensionAPI) {
       }
       const { worktreeTool } = await import("../src/tools/worktree.js");
       const result = await worktreeTool.execute("cmd", params, undefined, undefined, ctx);
+      ctx.ui.notify(result.content[0].type === "text" ? result.content[0].text : "", "info");
+    },
+  });
+
+  pi.registerCommand("onboard", {
+    description: "Interactive first-time setup: /onboard [name] [--force]",
+    async handler(args, ctx) {
+      const params: Record<string, string | boolean> = {};
+      for (const arg of args) {
+        if (arg === "--force") {
+          params.force = true;
+        } else if (!arg.startsWith("-")) {
+          params.name = arg;
+        }
+      }
+      const { onboardTool } = await import("../src/tools/onboard.js");
+      const result = await onboardTool.execute("cmd", params, undefined, undefined, ctx);
       ctx.ui.notify(result.content[0].type === "text" ? result.content[0].text : "", "info");
     },
   });

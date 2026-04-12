@@ -1,0 +1,60 @@
+# Quickstart
+
+Pick whichever method fits your workflow:
+
+## Option A — VS Code Dev Containers (recommended)
+
+Open the repo in VS Code and select **"Reopen in Container"** from the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`). The Dev Containers extension handles everything automatically.
+
+## Option B — CLI
+
+```bash
+openharness sandbox
+```
+
+Builds the image, starts the container, and applies your compose overlays from `.openharness/config.json`.
+
+## Option C — Manual compose
+
+```bash
+docker compose -f .devcontainer/docker-compose.yml up -d --build
+```
+
+## Enter the sandbox
+
+```bash
+openharness shell open-harness   # enter the sandbox
+claude                           # start an agent
+```
+
+## Credentials
+
+| Field | Value |
+|-------|-------|
+| User | `sandbox` |
+| Password (SSH + sudo) | `test1234` |
+| SSH Port | `2222` |
+
+## VS Code Remote-SSH
+
+Add to `~/.ssh/config` on your host:
+
+```
+Host sandbox
+    HostName localhost
+    Port 2222
+    User sandbox
+```
+
+Then connect via **Remote-SSH: Connect to Host...** → `sandbox`.
+
+## Cleanup
+
+```bash
+openharness clean                # stop containers + remove volumes
+openharness list                 # see what's still running
+```
+
+## Next step
+
+Complete the [one-time onboarding](/open-harness/getting-started/onboarding) to set up SSH, GitHub, and Claude Code auth.

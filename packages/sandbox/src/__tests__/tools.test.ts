@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { sandboxTools } from "../tools/index.js";
 
 describe("sandboxTools", () => {
-  it("exports all 11 tools", () => {
-    expect(sandboxTools).toHaveLength(11);
+  it("exports all 9 tools", () => {
+    expect(sandboxTools).toHaveLength(9);
   });
 
   it("each tool has required fields", () => {
@@ -29,16 +29,14 @@ describe("sandboxTools", () => {
 
   const expectedTools = [
     "sandbox_list",
-    "sandbox_quickstart",
-    "sandbox_build",
-    "sandbox_rebuild",
+    "sandbox_sandbox",
     "sandbox_run",
     "sandbox_shell",
     "sandbox_stop",
     "sandbox_clean",
-    "sandbox_push",
     "sandbox_heartbeat",
     "sandbox_worktree",
+    "sandbox_onboard",
   ];
 
   for (const name of expectedTools) {
@@ -46,4 +44,11 @@ describe("sandboxTools", () => {
       expect(sandboxTools.find((t) => t.name === name)).toBeTruthy();
     });
   }
+
+  it("does not include removed tools", () => {
+    const names = sandboxTools.map((t) => t.name);
+    expect(names).not.toContain("sandbox_build");
+    expect(names).not.toContain("sandbox_rebuild");
+    expect(names).not.toContain("sandbox_push");
+  });
 });

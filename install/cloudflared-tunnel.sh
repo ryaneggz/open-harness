@@ -69,9 +69,9 @@ ok "Config written"
 
 # ─── Route DNS ───────────────────────────────────────────────────
 banner "Routing DNS: $HOSTNAME -> tunnel $TUNNEL_NAME"
-cloudflared tunnel route dns "$TUNNEL_NAME" "$HOSTNAME" 2>/dev/null && \
-  ok "DNS route created for $HOSTNAME" || \
-  ok "DNS route already exists for $HOSTNAME"
+cloudflared tunnel route dns --overwrite-dns "$TUNNEL_NAME" "$HOSTNAME" 2>/dev/null && \
+  ok "DNS route set for $HOSTNAME" || \
+  ok "DNS route already correct for $HOSTNAME"
 
 # ─── Summary ─────────────────────────────────────────────────────
 printf "\n${GREEN}Tunnel '$TUNNEL_NAME' is configured!${NC}\n"

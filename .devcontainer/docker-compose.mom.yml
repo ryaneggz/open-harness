@@ -3,3 +3,11 @@ services:
     environment:
       - MOM_SLACK_APP_TOKEN=${MOM_SLACK_APP_TOKEN:-}
       - MOM_SLACK_BOT_TOKEN=${MOM_SLACK_BOT_TOKEN:-}
+      - MOM_PROVIDER=${MOM_PROVIDER:-openai-codex}
+      - MOM_MODEL=${MOM_MODEL:-gpt-5.4}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    volumes:
+      - pi-auth:/home/sandbox/.pi
+
+volumes:
+  pi-auth:

@@ -26,16 +26,14 @@ function makeMockTool(name: string) {
 function makeMockSandbox(): SandboxModule {
   return {
     listTool: makeMockTool("sandbox_list"),
-    quickstartTool: makeMockTool("sandbox_quickstart"),
-    buildTool: makeMockTool("sandbox_build"),
-    rebuildTool: makeMockTool("sandbox_rebuild"),
+    sandboxTool: makeMockTool("sandbox_sandbox"),
     runTool: makeMockTool("sandbox_run"),
     shellTool: makeMockTool("sandbox_shell"),
     stopTool: makeMockTool("sandbox_stop"),
     cleanTool: makeMockTool("sandbox_clean"),
-    pushTool: makeMockTool("sandbox_push"),
     heartbeatTool: makeMockTool("sandbox_heartbeat"),
     worktreeTool: makeMockTool("sandbox_worktree"),
+    onboardTool: makeMockTool("sandbox_onboard"),
   };
 }
 
@@ -44,16 +42,14 @@ function makeMockSandbox(): SandboxModule {
 describe("SUBCOMMANDS", () => {
   const expected = [
     "list",
-    "quickstart",
-    "build",
-    "rebuild",
+    "sandbox",
     "run",
     "shell",
     "stop",
     "clean",
-    "push",
     "heartbeat",
     "worktree",
+    "onboard",
   ];
 
   it("contains all expected subcommands", () => {
@@ -64,6 +60,12 @@ describe("SUBCOMMANDS", () => {
 
   it("has exactly the expected count", () => {
     expect(SUBCOMMANDS.size).toBe(expected.length);
+  });
+
+  it("does not contain removed commands", () => {
+    expect(SUBCOMMANDS.has("build")).toBe(false);
+    expect(SUBCOMMANDS.has("rebuild")).toBe(false);
+    expect(SUBCOMMANDS.has("push")).toBe(false);
   });
 
   it("does not contain agent-mode flags", () => {
@@ -99,51 +101,17 @@ describe("parseToolArgs", () => {
     });
   });
 
-  it("parses --base-branch flag", () => {
+  it("parses --force boolean flag", () => {
+    expect(parseToolArgs(["my-agent", "--force"])).toEqual({
+      name: "my-agent",
+      force: true,
+    });
+  });
+
+  it("parses --base-branch flag (for worktree)", () => {
     expect(parseToolArgs(["my-agent", "--base-branch", "main"])).toEqual({
       name: "my-agent",
       baseBranch: "main",
-    });
-  });
-
-  it("parses --tag flag", () => {
-    expect(parseToolArgs(["my-agent", "--tag", "v2"])).toEqual({
-      name: "my-agent",
-      tag: "v2",
-    });
-  });
-
-  it("parses --branch flag", () => {
-    expect(parseToolArgs(["my-agent", "--branch", "feature/x"])).toEqual({
-      name: "my-agent",
-      branch: "feature/x",
-    });
-  });
-
-  it("parses --docker boolean flag", () => {
-    expect(parseToolArgs(["my-agent", "--docker"])).toEqual({
-      name: "my-agent",
-      docker: true,
-    });
-  });
-
-  it("parses all flags together", () => {
-    const result = parseToolArgs([
-      "my-agent",
-      "--base-branch",
-      "main",
-      "--tag",
-      "v1",
-      "--branch",
-      "agent/test",
-      "--docker",
-    ]);
-    expect(result).toEqual({
-      name: "my-agent",
-      baseBranch: "main",
-      tag: "v1",
-      branch: "agent/test",
-      docker: true,
     });
   });
 
@@ -153,25 +121,6 @@ describe("parseToolArgs", () => {
 
   it("ignores unknown flags", () => {
     expect(parseToolArgs(["my-agent", "--unknown"])).toEqual({ name: "my-agent" });
-  });
-
-  it("ignores --base-branch without a following value", () => {
-    // --base-branch at end of args with no value
-    const result = parseToolArgs(["my-agent", "--base-branch"]);
-    expect(result).toEqual({ name: "my-agent" });
-    expect(result.baseBranch).toBeUndefined();
-  });
-
-  it("ignores --tag without a following value", () => {
-    const result = parseToolArgs(["my-agent", "--tag"]);
-    expect(result).toEqual({ name: "my-agent" });
-    expect(result.tag).toBeUndefined();
-  });
-
-  it("ignores --branch without a following value", () => {
-    const result = parseToolArgs(["my-agent", "--branch"]);
-    expect(result).toEqual({ name: "my-agent" });
-    expect(result.branch).toBeUndefined();
   });
 
   it("ignores positionals beyond the second", () => {
@@ -264,18 +213,55 @@ describe("resolveSubcommand", () => {
     });
   });
 
-  describe("named commands", () => {
-    const commands = [
-      "quickstart",
-      "build",
-      "rebuild",
-      "run",
-      "shell",
-      "stop",
-      "clean",
-      "push",
-      "worktree",
-    ];
+  describe("onboard command", () => {
+    it("resolves without name (inside-container mode)", () => {
+      const result = resolveSubcommand("onboard", [], sandbox);
+      expect(result).toEqual({ tool: sandbox.onboardTool, params: {} });
+    });
+
+    it("resolves with name (host mode)", () => {
+      const result = resolveSubcommand("onboard", ["my-agent"], sandbox);
+      expect(result).toEqual({ tool: sandbox.onboardTool, params: { name: "my-agent" } });
+    });
+
+    it("resolves with --force flag", () => {
+      const result = resolveSubcommand("onboard", ["my-agent", "--force"], sandbox);
+      expect(result).toEqual({
+        tool: sandbox.onboardTool,
+        params: { name: "my-agent", force: true },
+      });
+    });
+
+    it("resolves with --force only (no name)", () => {
+      const result = resolveSubcommand("onboard", ["--force"], sandbox);
+      expect(result).toEqual({ tool: sandbox.onboardTool, params: { force: true } });
+    });
+  });
+
+  describe("optional-name commands", () => {
+    const commands = ["sandbox", "run", "stop", "clean"];
+
+    for (const cmd of commands) {
+      it(`resolves ${cmd} with name`, () => {
+        const result = resolveSubcommand(cmd, ["my-agent"], sandbox);
+        expect("tool" in result).toBe(true);
+        if ("tool" in result) {
+          expect(result.params).toEqual({ name: "my-agent" });
+        }
+      });
+
+      it(`resolves ${cmd} without name`, () => {
+        const result = resolveSubcommand(cmd, [], sandbox);
+        expect("tool" in result).toBe(true);
+        if ("tool" in result) {
+          expect(result.params).toEqual({});
+        }
+      });
+    }
+  });
+
+  describe("required-name commands", () => {
+    const commands = ["shell", "worktree"];
 
     for (const cmd of commands) {
       it(`resolves ${cmd} with name`, () => {
@@ -295,38 +281,12 @@ describe("resolveSubcommand", () => {
         }
       });
     }
-
-    it("passes flags through for quickstart", () => {
-      const result = resolveSubcommand(
-        "quickstart",
-        ["my-agent", "--base-branch", "main", "--docker"],
-        sandbox,
-      );
-      expect("tool" in result).toBe(true);
-      if ("tool" in result) {
-        expect(result.params).toEqual({
-          name: "my-agent",
-          baseBranch: "main",
-          docker: true,
-        });
-      }
-    });
   });
 
   describe("tool mapping", () => {
-    it("maps quickstart to quickstartTool", () => {
-      const result = resolveSubcommand("quickstart", ["x"], sandbox);
-      expect("tool" in result && result.tool).toBe(sandbox.quickstartTool);
-    });
-
-    it("maps build to buildTool", () => {
-      const result = resolveSubcommand("build", ["x"], sandbox);
-      expect("tool" in result && result.tool).toBe(sandbox.buildTool);
-    });
-
-    it("maps rebuild to rebuildTool", () => {
-      const result = resolveSubcommand("rebuild", ["x"], sandbox);
-      expect("tool" in result && result.tool).toBe(sandbox.rebuildTool);
+    it("maps sandbox to sandboxTool", () => {
+      const result = resolveSubcommand("sandbox", ["x"], sandbox);
+      expect("tool" in result && result.tool).toBe(sandbox.sandboxTool);
     });
 
     it("maps run to runTool", () => {
@@ -349,14 +309,14 @@ describe("resolveSubcommand", () => {
       expect("tool" in result && result.tool).toBe(sandbox.cleanTool);
     });
 
-    it("maps push to pushTool", () => {
-      const result = resolveSubcommand("push", ["x"], sandbox);
-      expect("tool" in result && result.tool).toBe(sandbox.pushTool);
-    });
-
     it("maps worktree to worktreeTool", () => {
       const result = resolveSubcommand("worktree", ["x"], sandbox);
       expect("tool" in result && result.tool).toBe(sandbox.worktreeTool);
+    });
+
+    it("maps onboard to onboardTool", () => {
+      const result = resolveSubcommand("onboard", ["x"], sandbox);
+      expect("tool" in result && result.tool).toBe(sandbox.onboardTool);
     });
   });
 });
@@ -380,11 +340,11 @@ describe("helpText", () => {
     }
   });
 
-  it("documents all CLI flags", () => {
-    expect(text).toContain("--base-branch");
-    expect(text).toContain("--docker");
-    expect(text).toContain("--tag");
-    expect(text).toContain("--branch");
+  it("does not document removed commands", () => {
+    // build/rebuild/push should not appear as command entries
+    expect(text).not.toMatch(/^\s+build\b/m);
+    expect(text).not.toMatch(/^\s+rebuild\b/m);
+    expect(text).not.toMatch(/^\s+push\b/m);
   });
 
   it("documents agent mode options", () => {
@@ -395,9 +355,8 @@ describe("helpText", () => {
   });
 
   it("includes usage examples", () => {
-    expect(text).toContain("openharness quickstart my-agent");
-    expect(text).toContain("openharness list");
-    expect(text).toContain("openharness shell my-agent");
-    expect(text).toContain("openharness clean my-agent");
+    expect(text).toContain("openharness sandbox");
+    expect(text).toContain("openharness onboard");
+    expect(text).toContain("openharness clean");
   });
 });

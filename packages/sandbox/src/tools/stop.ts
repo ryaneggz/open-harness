@@ -7,18 +7,10 @@ import { run } from "../lib/exec.js";
 export const stopTool: ToolDefinition = {
   name: "sandbox_stop",
   label: "Stop Sandbox",
-  description: "Stop and remove a sandbox container (docker compose down).",
-  promptSnippet: "sandbox_stop — stop and remove a sandbox container",
+  description: "Stop and remove the sandbox container (docker compose down).",
+  promptSnippet: "sandbox_stop — stop and remove the sandbox container",
   parameters: Type.Object({
-    name: Type.String({ description: "Sandbox name" }),
-    branch: Type.Optional(Type.String({ description: "Git branch (default: agent/<name>)" })),
-    baseBranch: Type.Optional(
-      Type.String({ description: "Base branch for worktree (default: development)" }),
-    ),
-    tag: Type.Optional(Type.String({ description: "Image tag (default: latest)" })),
-    docker: Type.Optional(
-      Type.Boolean({ description: "Enable Docker-in-Docker (default: false)" }),
-    ),
+    name: Type.Optional(Type.String({ description: "Sandbox name (auto-resolved if omitted)" })),
   }),
 
   async execute(_toolCallId, params: Record<string, unknown>) {

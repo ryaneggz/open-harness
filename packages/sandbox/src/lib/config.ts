@@ -1,69 +1,69 @@
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { execSync } from "node:child_process";
 
-const DEFAULT_REGISTRY = "ghcr.io/ryaneggz";
-const DEFAULT_BASE_BRANCH = "development";
-const DEFAULT_TAG = "latest";
+const BASE_COMPOSE = ".devcontainer/docker-compose.yml";
+const CONFIG_PATH = ".openharness/config.json";
+const ENV_FILE = ".devcontainer/.env";
+const INIT_ENV = ".devcontainer/init-env.sh";
 
 export interface SandboxOptions {
-  name: string;
-  branch?: string;
-  baseBranch?: string;
-  tag?: string;
-  docker?: boolean;
-  registry?: string;
+  name?: string;
 }
 
 export class SandboxConfig {
   readonly name: string;
-  readonly branch: string;
-  readonly baseBranch: string;
-  readonly tag: string;
-  readonly docker: boolean;
-  readonly registry: string;
+  readonly composeFiles: string[];
+  readonly envFile: string;
 
-  constructor(opts: SandboxOptions) {
-    this.name = opts.name;
-    this.branch = opts.branch ?? process.env.BRANCH ?? `agent/${opts.name}`;
-    this.baseBranch = opts.baseBranch ?? process.env.BASE_BRANCH ?? DEFAULT_BASE_BRANCH;
-    this.tag = opts.tag ?? process.env.TAG ?? DEFAULT_TAG;
-    this.docker = opts.docker ?? process.env.DOCKER === "true";
-    this.registry = opts.registry ?? DEFAULT_REGISTRY;
-  }
+  constructor(opts: SandboxOptions = {}) {
+    this.envFile = ENV_FILE;
 
-  get image(): string {
-    return `${this.registry}/${this.name}:${this.tag}`;
-  }
-
-  get worktreePath(): string {
-    return `.worktrees/${this.branch}`;
-  }
-
-  get worktreeAbsPath(): string {
-    return resolve(process.cwd(), this.worktreePath);
-  }
-
-  get projectRoot(): string {
-    const worktree = this.worktreePath;
-    if (existsSync(resolve(process.cwd(), worktree, "docker", "Dockerfile"))) {
-      return worktree;
+    // Resolve name: explicit > .env file > init-env.sh fallback
+    if (opts.name) {
+      this.name = opts.name;
+    } else {
+      // Try running init-env.sh to generate .env, then read SANDBOX_NAME
+      if (existsSync(INIT_ENV)) {
+        try {
+          execSync(`bash ${INIT_ENV}`, { stdio: "pipe" });
+        } catch {
+          // Ignore — .env may already exist
+        }
+      }
+      this.name = readEnvName() ?? "sandbox";
     }
-    return ".";
-  }
 
-  get projectRootAbs(): string {
-    return resolve(process.cwd(), this.projectRoot);
+    // Build compose file list: base + overlays from config.json
+    const files: string[] = [BASE_COMPOSE];
+    if (existsSync(CONFIG_PATH)) {
+      try {
+        const raw = readFileSync(CONFIG_PATH, "utf-8");
+        const config = JSON.parse(raw) as { composeOverrides?: string[] };
+        if (Array.isArray(config.composeOverrides)) {
+          for (const override of config.composeOverrides) {
+            if (existsSync(override)) {
+              files.push(override);
+            }
+          }
+        }
+      } catch {
+        // Ignore parse errors — use base only
+      }
+    }
+    this.composeFiles = files;
   }
+}
 
-  get dockerfilePath(): string {
-    return `${this.projectRoot}/docker/Dockerfile`;
-  }
-
-  get composeFile(): string {
-    return `${this.projectRoot}/docker/docker-compose.yml`;
-  }
-
-  get composeDockerFile(): string {
-    return `${this.projectRoot}/docker/docker-compose.docker.yml`;
+/**
+ * Read SANDBOX_NAME from .devcontainer/.env
+ */
+function readEnvName(): string | undefined {
+  if (!existsSync(ENV_FILE)) return undefined;
+  try {
+    const content = readFileSync(ENV_FILE, "utf-8");
+    const match = content.match(/^SANDBOX_NAME=(.+)$/m);
+    return match?.[1]?.trim() || undefined;
+  } catch {
+    return undefined;
   }
 }

@@ -7,18 +7,10 @@ import { run } from "../lib/exec.js";
 export const runTool: ToolDefinition = {
   name: "sandbox_run",
   label: "Run Sandbox",
-  description: "Start a sandbox container (docker compose up -d).",
-  promptSnippet: "sandbox_run — start a sandbox container",
+  description: "Start the sandbox container (docker compose up -d --build).",
+  promptSnippet: "sandbox_run — start the sandbox container",
   parameters: Type.Object({
-    name: Type.String({ description: "Sandbox name" }),
-    branch: Type.Optional(Type.String({ description: "Git branch (default: agent/<name>)" })),
-    baseBranch: Type.Optional(
-      Type.String({ description: "Base branch for worktree (default: development)" }),
-    ),
-    tag: Type.Optional(Type.String({ description: "Image tag (default: latest)" })),
-    docker: Type.Optional(
-      Type.Boolean({ description: "Enable Docker-in-Docker (default: false)" }),
-    ),
+    name: Type.Optional(Type.String({ description: "Sandbox name (auto-resolved if omitted)" })),
   }),
 
   async execute(_toolCallId, params: Record<string, unknown>) {

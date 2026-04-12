@@ -1,3 +1,4 @@
 packages:
   - cli
   - packages/sandbox
+  - docs

@@ -1,93 +1,113 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { SandboxConfig } from "../lib/config.js";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { existsSync, readFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+
+// Mock fs and child_process before importing config
+vi.mock("node:fs", () => ({
+  existsSync: vi.fn(),
+  readFileSync: vi.fn(),
+}));
+
+vi.mock("node:child_process", () => ({
+  execSync: vi.fn(),
+}));
+
+const mockExistsSync = vi.mocked(existsSync);
+const mockReadFileSync = vi.mocked(readFileSync);
+const mockExecSync = vi.mocked(execSync);
+
+// Import after mocks are set up
+const { SandboxConfig } = await import("../lib/config.js");
 
 describe("SandboxConfig", () => {
-  const savedEnv = { ...process.env };
-
   beforeEach(() => {
-    delete process.env.BRANCH;
-    delete process.env.BASE_BRANCH;
-    delete process.env.TAG;
-    delete process.env.DOCKER;
+    vi.clearAllMocks();
+    // Default: no files exist
+    mockExistsSync.mockReturnValue(false);
   });
 
-  afterEach(() => {
-    process.env = { ...savedEnv };
+  it("uses explicit name when provided", () => {
+    const config = new SandboxConfig({ name: "my-sandbox" });
+    expect(config.name).toBe("my-sandbox");
   });
 
-  it("resolves defaults from name", () => {
-    const config = new SandboxConfig({ name: "my-agent" });
-    expect(config.name).toBe("my-agent");
-    expect(config.branch).toBe("agent/my-agent");
-    expect(config.baseBranch).toBe("development");
-    expect(config.tag).toBe("latest");
-    expect(config.docker).toBe(false);
-    expect(config.registry).toBe("ghcr.io/ryaneggz");
+  it("falls back to 'sandbox' when no name can be resolved", () => {
+    const config = new SandboxConfig();
+    expect(config.name).toBe("sandbox");
   });
 
-  it("derives image from registry, name, and tag", () => {
-    const config = new SandboxConfig({ name: "blog-writer", tag: "v2" });
-    expect(config.image).toBe("ghcr.io/ryaneggz/blog-writer:v2");
+  it("reads SANDBOX_NAME from .env when init-env.sh exists", () => {
+    mockExistsSync.mockImplementation((path) => {
+      if (String(path) === ".devcontainer/init-env.sh") return true;
+      if (String(path) === ".devcontainer/.env") return true;
+      return false;
+    });
+    mockReadFileSync.mockReturnValue("SANDBOX_NAME=open-harness\n");
+
+    const config = new SandboxConfig();
+    expect(config.name).toBe("open-harness");
+    expect(mockExecSync).toHaveBeenCalledWith("bash .devcontainer/init-env.sh", { stdio: "pipe" });
   });
 
-  it("derives worktree path from branch", () => {
-    const config = new SandboxConfig({ name: "zoho-crm" });
-    expect(config.worktreePath).toBe(".worktrees/agent/zoho-crm");
-  });
-
-  it("accepts custom branch", () => {
-    const config = new SandboxConfig({ name: "cli", branch: "feat/cli" });
-    expect(config.branch).toBe("feat/cli");
-    expect(config.worktreePath).toBe(".worktrees/feat/cli");
-  });
-
-  it("reads BRANCH from env var", () => {
-    process.env.BRANCH = "custom/branch";
+  it("always includes base compose file", () => {
     const config = new SandboxConfig({ name: "test" });
-    expect(config.branch).toBe("custom/branch");
+    expect(config.composeFiles[0]).toBe(".devcontainer/docker-compose.yml");
   });
 
-  it("reads BASE_BRANCH from env var", () => {
-    process.env.BASE_BRANCH = "main";
+  it("appends overlays from config.json when they exist", () => {
+    mockExistsSync.mockImplementation((path) => {
+      const p = String(path);
+      if (p === ".openharness/config.json") return true;
+      if (p === ".devcontainer/docker-compose.docker.yml") return true;
+      if (p === ".devcontainer/docker-compose.cloudflared.yml") return true;
+      return false;
+    });
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({
+        composeOverrides: [
+          ".devcontainer/docker-compose.docker.yml",
+          ".devcontainer/docker-compose.cloudflared.yml",
+          ".devcontainer/docker-compose.missing.yml",
+        ],
+      }),
+    );
+
     const config = new SandboxConfig({ name: "test" });
-    expect(config.baseBranch).toBe("main");
+    expect(config.composeFiles).toEqual([
+      ".devcontainer/docker-compose.yml",
+      ".devcontainer/docker-compose.docker.yml",
+      ".devcontainer/docker-compose.cloudflared.yml",
+    ]);
   });
 
-  it("reads TAG from env var", () => {
-    process.env.TAG = "nightly";
+  it("skips overlays that do not exist on disk", () => {
+    mockExistsSync.mockImplementation((path) => {
+      if (String(path) === ".openharness/config.json") return true;
+      return false;
+    });
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({
+        composeOverrides: [".devcontainer/docker-compose.missing.yml"],
+      }),
+    );
+
     const config = new SandboxConfig({ name: "test" });
-    expect(config.tag).toBe("nightly");
+    expect(config.composeFiles).toEqual([".devcontainer/docker-compose.yml"]);
   });
 
-  it("reads DOCKER from env var", () => {
-    process.env.DOCKER = "true";
+  it("handles malformed config.json gracefully", () => {
+    mockExistsSync.mockImplementation((path) => {
+      if (String(path) === ".openharness/config.json") return true;
+      return false;
+    });
+    mockReadFileSync.mockReturnValue("not valid json");
+
     const config = new SandboxConfig({ name: "test" });
-    expect(config.docker).toBe(true);
+    expect(config.composeFiles).toEqual([".devcontainer/docker-compose.yml"]);
   });
 
-  it("explicit options override env vars", () => {
-    process.env.BRANCH = "env-branch";
-    process.env.TAG = "env-tag";
-    const config = new SandboxConfig({ name: "test", branch: "opt-branch", tag: "opt-tag" });
-    expect(config.branch).toBe("opt-branch");
-    expect(config.tag).toBe("opt-tag");
-  });
-
-  it("accepts custom registry", () => {
-    const config = new SandboxConfig({ name: "test", registry: "docker.io/myorg" });
-    expect(config.image).toBe("docker.io/myorg/test:latest");
-  });
-
-  it("falls back to repo root for projectRoot when worktree does not exist", () => {
-    const config = new SandboxConfig({ name: "nonexistent" });
-    expect(config.projectRoot).toBe(".");
-  });
-
-  it("derives dockerfile and compose paths from projectRoot", () => {
+  it("sets envFile to .devcontainer/.env", () => {
     const config = new SandboxConfig({ name: "test" });
-    const root = config.projectRoot;
-    expect(config.dockerfilePath).toBe(`${root}/docker/Dockerfile`);
-    expect(config.composeFile).toBe(`${root}/docker/docker-compose.yml`);
-    expect(config.composeDockerFile).toBe(`${root}/docker/docker-compose.docker.yml`);
+    expect(config.envFile).toBe(".devcontainer/.env");
   });
 });
