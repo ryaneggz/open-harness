@@ -15,7 +15,8 @@ Slack periodic heartbeat events are firing, but the resulting assistant replies 
 5. Add structured event lifecycle logging for `loaded`, `triggered`, `posted`, `persisted`, and `failed`.
 
 ### Recommended Design
-- Implementation work must be performed from a git worktree under `.worktrees/feat/` so the base worktree remains undisturbed.
+- Implementation work must be performed from a dedicated git worktree under `.worktrees/feat/` so the base worktree remains undisturbed.
+- Each independent workflow, bugfix, or PR must use its own separate worktree directory under `.worktrees/feat/`.
 - Event schema supports optional `threadTs` on immediate, one-shot, and periodic events.
 - Synthetic event retains destination metadata in `SlackEvent`.
 - Agent response helpers decide between channel post and thread post from one canonical execution context.

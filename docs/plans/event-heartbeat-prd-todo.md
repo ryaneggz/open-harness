@@ -15,8 +15,9 @@ Issue: #34
 - [ ] Add or update tests for visible channel delivery and thread delivery paths.
 - [ ] Add or update tests for event-originated log persistence.
 - [ ] Validate heartbeat behavior manually in Slack.
-- [ ] Create and use a git worktree under `.worktrees/feat/` for implementation so the base worktree is not disturbed.
-- [ ] Implement fix on PR branch from that worktree.
+- [ ] Create and use a dedicated git worktree under `.worktrees/feat/` for implementation so the base worktree is not disturbed.
+- [ ] Ensure this bugfix uses its own unique worktree directory and does not reuse another feature or bugfix worktree.
+- [ ] Implement fix on PR branch from that dedicated worktree.
 - [ ] Run tests and validate behavior.
 - [ ] Push implementation commits.
 - [ ] Use CI status to watch checks.
