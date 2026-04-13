@@ -53,8 +53,7 @@ claude                           # start an agent
 | Field | Value |
 |-------|-------|
 | User | `sandbox` |
-| Password | `test1234` |
-| SSH Port | `2222` |
+| Shell | `openharness shell <name>` or `docker exec -it -u sandbox <name> bash` |
 
 ### 🧹 Cleanup
 
@@ -79,7 +78,7 @@ Toggle optional services in `.openharness/config.json`:
 }
 ```
 
-Available: `postgres`, `cloudflared`, `docker`, `git`, `ssh`, `ssh-generate`, `mom`. See the [overlays guide](https://ryaneggz.github.io/open-harness/guide/overlays) for details.
+Available: `postgres`, `cloudflared`, `docker`, `git`, `ssh`, `ssh-generate`, `sshd`, `slack`. See the [overlays guide](https://ryaneggz.github.io/open-harness/guide/overlays) for details.
 
 ---
 

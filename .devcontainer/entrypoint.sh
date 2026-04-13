@@ -20,14 +20,22 @@ for dir in .claude .cloudflared .config/gh .ssh .pi; do
   fi
 done
 
-# Generate SSH keypair if none exists (for ssh-keys volume)
-if [ -d "/home/sandbox/.ssh" ] && [ ! -f "/home/sandbox/.ssh/id_ed25519" ]; then
-  gosu sandbox ssh-keygen -t ed25519 -f /home/sandbox/.ssh/id_ed25519 -N "" -C "sandbox@$(hostname)" 2>/dev/null || true
-fi
-
-# Generate SSH host keys if missing (needed for sshd to accept connections)
-if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
-  ssh-keygen -A
+# ─── SSH server setup (only when sshd overlay is active) ──────────
+if echo "$@" | grep -q sshd; then
+  # Set password for SSH login from env var
+  echo "sandbox:${SANDBOX_PASSWORD:-changeme}" | chpasswd 2>/dev/null || true
+  # Configure sshd for password + environment auth
+  mkdir -p /run/sshd
+  sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config 2>/dev/null || true
+  sed -i 's/#PermitUserEnvironment no/PermitUserEnvironment yes/' /etc/ssh/sshd_config 2>/dev/null || true
+  # Generate SSH host keys if missing
+  if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
+    ssh-keygen -A
+  fi
+  # Generate SSH keypair if none exists
+  if [ -d "/home/sandbox/.ssh" ] && [ ! -f "/home/sandbox/.ssh/id_ed25519" ]; then
+    gosu sandbox ssh-keygen -t ed25519 -f /home/sandbox/.ssh/id_ed25519 -N "" -C "sandbox@$(hostname)" 2>/dev/null || true
+  fi
 fi
 
 # Start cron daemon (needed for heartbeat scheduling)

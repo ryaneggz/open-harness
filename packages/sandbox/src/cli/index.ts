@@ -88,9 +88,9 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
         process.exit(1);
       }
 
-      // Get port mappings
-      let sshPort = "2222";
-      let appPort = "3000";
+      // Get port mappings (only show what's actually mapped)
+      let sshPort: string | null = null;
+      let appPort: string | null = null;
       try {
         const ports = execSync(`docker port ${config.name}`, {
           encoding: "utf-8",
@@ -101,14 +101,18 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
         if (sshMatch) sshPort = sshMatch[1];
         if (appMatch) appPort = appMatch[1];
       } catch {
-        // use defaults
+        // no ports mapped
       }
 
       console.log(`\n  Sandbox '${config.name}' is running!\n`);
       console.log("  Connect:");
-      console.log(`    SSH:    ssh sandbox@localhost -p ${sshPort}    (password: test1234)`);
+      if (sshPort) {
+        console.log(`    SSH:    ssh sandbox@localhost -p ${sshPort}`);
+      }
       console.log(`    Shell:  openharness shell ${config.name}`);
-      console.log(`    App:    http://localhost:${appPort}`);
+      if (appPort) {
+        console.log(`    App:    http://localhost:${appPort}`);
+      }
       console.log("");
       console.log("  Next steps:");
       console.log(`    openharness onboard ${config.name}    # one-time auth setup`);

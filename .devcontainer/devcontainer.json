@@ -4,7 +4,6 @@
   "service": "sandbox",
   "workspaceFolder": "/home/sandbox/harness",
   "remoteUser": "sandbox",
-  "forwardPorts": [2222],
   "customizations": {
     "vscode": {
       "settings": {

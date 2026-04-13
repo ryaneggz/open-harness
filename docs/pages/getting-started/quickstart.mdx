@@ -27,17 +27,19 @@ openharness shell open-harness   # enter the sandbox
 claude                           # start an agent
 ```
 
-## Credentials
+## SSH access (optional)
+
+The default sandbox does **not** expose SSH. To enable it, add `".devcontainer/docker-compose.sshd.yml"` to your `.openharness/config.json` overlays, then rebuild.
 
 | Field | Value |
 |-------|-------|
 | User | `sandbox` |
-| Password (SSH + sudo) | `test1234` |
-| SSH Port | `2222` |
+| Password | Set via `SANDBOX_PASSWORD` env (default: `changeme`) |
+| SSH Port | `2222` (when sshd overlay enabled) |
 
-## VS Code Remote-SSH
+### VS Code Remote-SSH
 
-Add to `~/.ssh/config` on your host:
+With the sshd overlay enabled, add to `~/.ssh/config` on your host:
 
 ```
 Host sandbox

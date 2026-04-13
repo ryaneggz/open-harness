@@ -6,9 +6,6 @@ services:
     build:
       context: ..
       dockerfile: .devcontainer/Dockerfile
-    ports:
-      - "2222:22"
-      - "${PORT:-3000}:3000"
     volumes:
       - ..:/home/sandbox/harness
       - ../.openharness:/home/sandbox/.openharness
@@ -23,10 +20,11 @@ services:
       - HEARTBEAT_ACTIVE_START=${HEARTBEAT_ACTIVE_START:-}
       - HEARTBEAT_ACTIVE_END=${HEARTBEAT_ACTIVE_END:-}
       - HEARTBEAT_AGENT=${HEARTBEAT_AGENT:-claude}
+      - SANDBOX_PASSWORD=${SANDBOX_PASSWORD:-changeme}
     stdin_open: true
     tty: true
     entrypoint: /usr/local/bin/entrypoint.sh
-    command: /usr/sbin/sshd -D
+    command: sleep infinity
     restart: unless-stopped
 
 volumes:
