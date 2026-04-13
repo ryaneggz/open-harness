@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, GitFork, Map } from "lucide-react";
+import { BookOpen, GitFork, Map } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -27,13 +27,13 @@ export function Navbar() {
             GitHub
           </Link>
           <Link
-            href="https://openharness.ruska.dev"
+            href="https://ryaneggz.github.io/open-harness/"
             target="_blank"
             rel="noopener noreferrer"
             className={buttonVariants({ variant: "ghost", size: "sm" })}
           >
-            <ExternalLink className="mr-1.5 h-4 w-4" />
-            Demo
+            <BookOpen className="mr-1.5 h-4 w-4" />
+            Docs
           </Link>
           <ThemeToggle />
         </div>

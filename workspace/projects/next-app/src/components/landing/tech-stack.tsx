@@ -35,13 +35,15 @@ export function TechStack() {
   const items = [...stack, ...stack, ...stack];
 
   return (
-    <section className="py-24">
-      <p className="mb-4 text-center text-sm font-medium uppercase tracking-widest text-muted-foreground">
-        Our Technology Ecosystem
-      </p>
-      <h2 className="mb-14 text-center text-2xl font-bold tracking-tight sm:text-3xl">
-        No proprietary lock-in — just open-source tools, pre-wired and ready
-      </h2>
+    <section className="py-16">
+      <div className="mx-auto max-w-5xl px-4">
+        <p className="mb-4 text-center text-sm font-medium uppercase tracking-widest text-muted-foreground">
+          Our Technology Ecosystem
+        </p>
+        <h2 className="mb-12 text-center text-2xl font-bold tracking-tight sm:text-3xl">
+          No proprietary lock-in — just open-source tools, pre-wired and ready
+        </h2>
+      </div>
       <div className="group relative overflow-hidden">
         <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-32 bg-gradient-to-r from-background to-transparent" />
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-32 bg-gradient-to-l from-background to-transparent" />
