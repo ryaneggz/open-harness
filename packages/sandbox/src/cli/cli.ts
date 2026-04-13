@@ -32,9 +32,6 @@ export const SUBCOMMANDS = new Set([
   "onboard",
 ]);
 
-export const INSTALL_HINT =
-  "Sandbox tools not installed. Run: openharness install @openharness/sandbox";
-
 export const HEARTBEAT_ACTIONS = ["sync", "stop", "status", "migrate"] as const;
 
 // ─── Types ─────────────────────────────────────────────────────────

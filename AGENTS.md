@@ -105,8 +105,8 @@ workspace/            # Template for all agent workspaces
   .claude/skills/     # Reusable skill templates
     quality-gate/     # Template: validate decisions before execution
     strategy-review/  # Template: measure decision quality over time
-cli/                  # openharness CLI (sandbox orchestration)
-packages/sandbox/     # @openharness/sandbox (container lifecycle tools)
+packages/sandbox/     # @openharness/sandbox (CLI + container lifecycle tools)
+  src/cli/            # openharness binary entry point
 packages/slack/       # Vendored fork of pi-mom Slack bot (see .claude/rules/slack-package.md)
   src/                # TypeScript source (canonical — all edits here)
   dist/               # Compiled ESM output (committed, rebuilt before commit)

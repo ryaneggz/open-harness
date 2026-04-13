@@ -2,13 +2,9 @@
 
 Open Harness is a monorepo that provides isolated Docker sandboxes for AI coding agents. The system has three main layers:
 
-## CLI Layer (`cli/`)
+## CLI & Sandbox Package (`packages/sandbox/`)
 
-The `openharness` TypeScript CLI handles all user-facing commands: starting, stopping, entering, and cleaning up sandboxes. It delegates to the sandbox package for container lifecycle operations.
-
-## Sandbox Package (`packages/sandbox/`)
-
-`@openharness/sandbox` contains the Docker Compose command builders and tool definitions. Each tool (sandbox, run, stop, clean, shell, etc.) constructs and executes Docker commands against the `.devcontainer/` configuration.
+`@openharness/sandbox` is the core of the system. The `openharness` binary lives in `src/cli/` and handles all user-facing commands: starting, stopping, entering, and cleaning up sandboxes. Container lifecycle operations — Docker Compose command builders and tool definitions — live in `src/tools/` and `src/lib/`. Each tool (sandbox, run, stop, clean, shell, etc.) constructs and executes Docker commands against the `.devcontainer/` configuration.
 
 The package also serves as a Pi Agent extension, registering all tools as both LLM-callable functions and slash commands.
 

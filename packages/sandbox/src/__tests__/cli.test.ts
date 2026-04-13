@@ -2,14 +2,13 @@ import { describe, it, expect } from "vitest";
 import {
   SUBCOMMANDS,
   HEARTBEAT_ACTIONS,
-  INSTALL_HINT,
   parseToolArgs,
   formatResult,
   resolveSubcommand,
   helpText,
   type SandboxModule,
   type ToolResult,
-} from "../cli.js";
+} from "../cli/cli.js";
 
 // ─── Mock sandbox module ───────────────────────────────────────────
 
@@ -78,12 +77,6 @@ describe("SUBCOMMANDS", () => {
 describe("HEARTBEAT_ACTIONS", () => {
   it("contains sync, stop, status, migrate", () => {
     expect([...HEARTBEAT_ACTIONS]).toEqual(["sync", "stop", "status", "migrate"]);
-  });
-});
-
-describe("INSTALL_HINT", () => {
-  it("mentions openharness install", () => {
-    expect(INSTALL_HINT).toContain("openharness install @openharness/sandbox");
   });
 });
 

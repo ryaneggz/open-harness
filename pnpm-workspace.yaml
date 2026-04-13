@@ -1,5 +1,4 @@
 packages:
-  - cli
   - packages/sandbox
   - packages/slack
   - docs

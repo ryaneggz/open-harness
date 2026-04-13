@@ -1,8 +1,11 @@
 {
   "name": "@openharness/sandbox",
   "version": "0.1.0",
-  "description": "Sandbox management tools for Open Harness — Docker containers, git worktrees, heartbeats",
+  "description": "Open Harness CLI and sandbox tools — Docker containers, git worktrees, heartbeats",
   "type": "module",
+  "bin": {
+    "openharness": "./dist/src/cli/index.js"
+  },
   "keywords": [
     "pi-package"
   ],

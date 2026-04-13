@@ -8,13 +8,11 @@ open-harness/
 │   ├── docker-compose.*.yml    # overlays: postgres, cloudflared, docker, ssh, git, slack
 │   ├── entrypoint.sh           # Docker GID matching + cron + heartbeat sync
 │   └── init-env.sh             # resolve SANDBOX_NAME from git remote
-├── cli/                        # openharness CLI (TypeScript, pnpm workspace)
+├── packages/sandbox/           # @openharness/sandbox (CLI + container lifecycle tools)
 │   ├── src/
-│   │   ├── cli.ts              # subcommand routing, arg parsing, help text
-│   │   └── index.ts            # entry point (argv, exit codes)
-│   └── dist/                   # compiled output
-├── packages/sandbox/           # @openharness/sandbox (container lifecycle tools)
-│   ├── src/
+│   │   ├── cli/
+│   │   │   ├── cli.ts          # subcommand routing, arg parsing, help text
+│   │   │   └── index.ts        # CLI entry point (argv, exit codes)
 │   │   ├── lib/
 │   │   │   ├── config.ts       # SandboxConfig: name, compose files, env
 │   │   │   ├── docker.ts       # compose command builders

@@ -1,2 +1,1 @@
-cd cli && pnpm exec lint-staged && pnpm run build && pnpm run test
-cd ../packages/sandbox && pnpm exec lint-staged && pnpm run build && pnpm run test
+cd packages/sandbox && pnpm exec lint-staged && pnpm run build && pnpm run test

@@ -8,8 +8,6 @@
  */
 
 import { main, VERSION } from "@mariozechner/pi-coding-agent";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   SUBCOMMANDS,
   HOST_ONLY_COMMANDS,
@@ -17,9 +15,6 @@ import {
   parseToolArgs,
   helpText,
 } from "./cli.js";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const extensionPath = resolve(__dirname, "extension.js");
 
 const args = process.argv.slice(2);
 const firstArg = args[0];
@@ -48,8 +43,7 @@ if (firstArg && SUBCOMMANDS.has(firstArg)) {
     process.exit(1);
   });
 } else {
-  // Forward to Pi main() for AI agent mode
-  args.push("--extension", extensionPath);
+  // Forward to Pi main() for AI agent mode — extensions auto-discovered via pi.extensions
   main(args).catch((err) => {
     console.error(err);
     process.exit(1);
@@ -61,8 +55,9 @@ if (firstArg && SUBCOMMANDS.has(firstArg)) {
  * No Pi SDK, no AI model — just docker compose.
  */
 async function runSubcommand(command: string, cmdArgs: string[]) {
-  const { SandboxConfig, composeUp, composeDown, composeEnv, execCmd, psCmd, run, runSafe } =
-    await import("@openharness/sandbox");
+  const { SandboxConfig } = await import("../lib/config.js");
+  const { composeUp, composeDown, composeEnv, execCmd, psCmd } = await import("../lib/docker.js");
+  const { run, runSafe } = await import("../lib/exec.js");
 
   const params = parseToolArgs(cmdArgs);
 
@@ -215,7 +210,7 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
         process.exit(1);
       }
       // Heartbeat still goes through the tool since it has complex logic
-      const { heartbeatTool } = await import("@openharness/sandbox");
+      const { heartbeatTool } = await import("../tools/index.js");
       const result = await heartbeatTool.execute(
         "cli",
         { name, action },
@@ -234,7 +229,7 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
         console.error("Usage: openharness worktree <name> [--base-branch <branch>]");
         process.exit(1);
       }
-      const { worktreeTool } = await import("@openharness/sandbox");
+      const { worktreeTool } = await import("../tools/index.js");
       const result = await worktreeTool.execute(
         "cli",
         params,

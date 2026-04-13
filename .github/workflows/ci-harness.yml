@@ -1,9 +1,9 @@
 name: "CI: Harness"
 
 on:
+  workflow_dispatch:
   push:
     paths:
-      - "cli/**"
       - "packages/**"
       - "package.json"
       - "pnpm-lock.yaml"

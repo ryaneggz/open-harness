@@ -48,7 +48,7 @@ banner "Resolving repository"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
 
-if [ -f "$SCRIPT_DIR/cli/package.json" ] && [ -f "$SCRIPT_DIR/pnpm-workspace.yaml" ]; then
+if [ -f "$SCRIPT_DIR/packages/sandbox/package.json" ] && [ -f "$SCRIPT_DIR/pnpm-workspace.yaml" ]; then
   # Running from inside the repo (bash install.sh or ./install.sh)
   REPO_DIR="$SCRIPT_DIR"
   ok "Using local repo: $REPO_DIR"
@@ -70,7 +70,7 @@ banner "Building and linking openharness CLI"
 cd "$REPO_DIR"
 pnpm install
 pnpm -r run build
-pnpm link --global ./cli
+pnpm link --global ./packages/sandbox
 ok "openharness CLI built and linked"
 
 # ─── 6. Verify installation ──────────────────────────────────────────

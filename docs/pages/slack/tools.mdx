@@ -1,0 +1,23 @@
+# Tools
+
+The Slack bot has five built-in tools for interacting with the sandbox environment. All tool execution happens inside the sandbox container.
+
+| Tool | Description |
+|------|-------------|
+| `bash` | Execute shell commands. Primary tool for getting work done. Output truncated at 2000 lines / 50 KB |
+| `read` | Read file contents (text with truncation, or images as base64) |
+| `write` | Create or overwrite files with automatic directory creation |
+| `edit` | Make surgical edits to existing files using diff-based patches |
+| `attach` | Share files back to the Slack channel |
+
+## Execution environment
+
+The bot executes all commands inside the sandbox container:
+
+- **Isolated**: Commands can only access the mounted workspace and container filesystem
+- **Self-managing**: The agent installs its own tools (`apt-get install git jq curl`, npm packages, etc.) without manual setup
+- **Persistent**: Installed tools and files survive across sessions. Only destroying the container resets the environment.
+
+## Tool output in threads
+
+Tool execution details — commands run, file contents, errors — appear in the message thread, not in the main channel message. The main message shows only a status indicator while tools are running, then the final response.

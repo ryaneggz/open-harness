@@ -42,12 +42,12 @@ fi
 
 # Build and link openharness CLI in background (from bind-mounted repo)
 HARNESS="/home/sandbox/harness"
-if [ -f "$HARNESS/cli/package.json" ] && ! command -v openharness &>/dev/null; then
+if [ -f "$HARNESS/packages/sandbox/package.json" ] && ! command -v openharness &>/dev/null; then
   (
     cd "$HARNESS"
     gosu sandbox pnpm install --frozen-lockfile 2>/dev/null || gosu sandbox pnpm install 2>/dev/null || true
-    gosu sandbox pnpm --filter openharness --filter @openharness/sandbox run build 2>/dev/null || true
-    ln -sf "$HARNESS/cli/dist/index.js" /usr/local/bin/openharness
+    gosu sandbox pnpm --filter @openharness/sandbox run build 2>/dev/null || true
+    ln -sf "$HARNESS/packages/sandbox/dist/src/cli/index.js" /usr/local/bin/openharness
     chmod +x /usr/local/bin/openharness
     echo "[entrypoint] openharness CLI installed"
   ) &
