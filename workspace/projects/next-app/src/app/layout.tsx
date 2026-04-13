@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = "https://next-postgres-shadcn.ruska.dev";
+const siteUrl = "https://openharness.ruska.dev";
 const siteTitle = "OpenHarness: Next + Postgres + shadcn";
 const siteDescription =
   "A fully-provisioned Next.js + PostgreSQL + shadcn/ui development environment running inside an isolated Docker sandbox for AI coding agents.";

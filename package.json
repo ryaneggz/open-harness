@@ -14,6 +14,9 @@
     "docs:dev": "pnpm --filter @openharness/docs dev",
     "docs:build": "pnpm --filter @openharness/docs build"
   },
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  },
   "engines": {
     "node": ">=20.0.0"
   }

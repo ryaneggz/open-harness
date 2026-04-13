@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: roadmapTitle,
     description: roadmapDescription,
-    url: "https://next-postgres-shadcn.ruska.dev/roadmap",
+    url: "https://openharness.ruska.dev/roadmap",
   },
   twitter: {
     card: "summary_large_image",
@@ -53,7 +53,7 @@ export default function RoadmapPage() {
             </span>{" "}
             on{" "}
             <Link
-              href="https://github.com/ryaneggz/next-postgres-shadcn/issues"
+              href="https://github.com/ryaneggz/open-harness/issues"
               target="_blank"
               rel="noopener noreferrer"
               className="underline underline-offset-4 hover:text-foreground"

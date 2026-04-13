@@ -73,7 +73,7 @@ Toggle optional services in `.openharness/config.json`:
   "composeOverrides": [
     ".devcontainer/docker-compose.cloudflared.yml",
     ".devcontainer/docker-compose.docker.yml",
-    ".devcontainer/docker-compose.mom.yml",
+    ".devcontainer/docker-compose.slack.yml",
     ".devcontainer/docker-compose.ssh-generate.yml"
   ]
 }

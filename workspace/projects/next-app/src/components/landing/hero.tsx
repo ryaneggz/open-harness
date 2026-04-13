@@ -20,7 +20,7 @@ export function Hero() {
       </p>
       <div className="mt-8 flex items-center gap-4">
         <Link
-          href="https://next-postgres-shadcn.ruska.dev"
+          href="https://openharness.ruska.dev"
           target="_blank"
           rel="noopener noreferrer"
           className={buttonVariants({ size: "lg" })}
@@ -29,7 +29,7 @@ export function Hero() {
           Live Demo
         </Link>
         <Link
-          href="https://github.com/ryaneggz/next-postgres-shadcn"
+          href="https://github.com/ryaneggz/open-harness"
           target="_blank"
           rel="noopener noreferrer"
           className={buttonVariants({ variant: "outline", size: "lg" })}
@@ -41,3 +41,4 @@ export function Hero() {
     </div>
   );
 }
+

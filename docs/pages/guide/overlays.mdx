@@ -14,7 +14,7 @@ Compose overlays in `.devcontainer/` add optional services. Enable them in `.ope
 | `docker-compose.git.yml` | Git worktree mount (worktrees only) |
 | `docker-compose.ssh.yml` | Mount host `~/.ssh` read-only |
 | `docker-compose.ssh-generate.yml` | Generate keypair in persistent volume |
-| `docker-compose.mom.yml` | Slack bot tokens + LLM provider config |
+| `docker-compose.slack.yml` | Slack bot tokens + LLM provider config |
 
 ## Configuration
 
@@ -25,13 +25,13 @@ Edit `.openharness/config.json` to enable or disable overlays:
   "composeOverrides": [
     ".devcontainer/docker-compose.cloudflared.yml",
     ".devcontainer/docker-compose.docker.yml",
-    ".devcontainer/docker-compose.mom.yml",
+    ".devcontainer/docker-compose.slack.yml",
     ".devcontainer/docker-compose.ssh-generate.yml"
   ]
 }
 ```
 
-Default enabled: `cloudflared`, `docker`, `mom`, `ssh-generate`.
+Default enabled: `cloudflared`, `docker`, `slack`, `ssh-generate`.
 
 After editing, run `openharness sandbox` or `/provision` to apply changes.
 

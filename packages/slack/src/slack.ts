@@ -13,6 +13,8 @@ export interface SlackEvent {
 	type: "mention" | "dm";
 	channel: string;
 	ts: string;
+	/** Thread timestamp — when set, responses are posted in this thread instead of creating a new one */
+	threadTs?: string;
 	user: string;
 	text: string;
 	files?: Array<{ name?: string; url_private_download?: string; url_private?: string }>;

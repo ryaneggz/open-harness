@@ -49,7 +49,7 @@ List all available overlay files (everything matching `.devcontainer/docker-comp
 and show which are currently enabled in `.openharness/config.json`.
 
 **Default overlays** (postgres is opt-in, not included by default):
-- cloudflared, docker, mom, ssh-generate
+- cloudflared, docker, slack, ssh-generate
 
 **Guard**: `docker-compose.git.yml` requires `GIT_COMMON_DIR` (only valid in worktrees).
 If not in a worktree, do NOT include `git.yml` — it will produce invalid mount path `:`.
@@ -62,7 +62,7 @@ Available compose overlays:
   [x] docker-compose.cloudflared.yml   — Cloudflare tunnel env vars
   [x] docker-compose.docker.yml        — Docker socket mount (DinD)
   [ ] docker-compose.git.yml           — Git worktree mount (ONLY valid in worktrees)
-  [x] docker-compose.mom.yml           — Mom Slack bot env vars
+  [x] docker-compose.slack.yml          — Slack bot env vars
   [ ] (any new overlays found)
 
 Enable/disable any overlays?

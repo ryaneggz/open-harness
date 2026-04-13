@@ -1,0 +1,11 @@
+services:
+  sandbox:
+    environment:
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN:-}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    volumes:
+      - agent-auth:/home/sandbox/.pi
+
+volumes:
+  agent-auth:

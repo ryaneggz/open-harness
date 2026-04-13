@@ -23,7 +23,7 @@ const complexityColors: Record<Complexity, string> = {
 
 export function RoadmapCard({ item }: { item: RoadmapItem }) {
   const issueUrl = item.issueNumber
-    ? `https://github.com/ryaneggz/next-postgres-shadcn/issues/${item.issueNumber}`
+    ? `https://github.com/ryaneggz/open-harness/issues/${item.issueNumber}`
     : null;
 
   return (

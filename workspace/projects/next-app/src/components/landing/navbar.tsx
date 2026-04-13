@@ -18,7 +18,7 @@ export function Navbar() {
             Roadmap
           </Link>
           <Link
-            href="https://github.com/ryaneggz/next-postgres-shadcn"
+            href="https://github.com/ryaneggz/open-harness"
             target="_blank"
             rel="noopener noreferrer"
             className={buttonVariants({ variant: "ghost", size: "sm" })}
@@ -27,7 +27,7 @@ export function Navbar() {
             GitHub
           </Link>
           <Link
-            href="https://next-postgres-shadcn.ruska.dev"
+            href="https://openharness.ruska.dev"
             target="_blank"
             rel="noopener noreferrer"
             className={buttonVariants({ variant: "ghost", size: "sm" })}

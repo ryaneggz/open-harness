@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { CopyButton } from "./copy-button";
 
 const setupCode = `# Clone the harness
-git clone https://github.com/ryaneggz/next-postgres-shadcn.git
-cd next-postgres-shadcn
+git clone https://github.com/ryaneggz/open-harness.git
+cd open-harness
 
 # Install dependencies and link the openharness CLI
 pnpm run setup

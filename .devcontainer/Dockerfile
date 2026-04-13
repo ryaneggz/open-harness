@@ -55,10 +55,6 @@ RUN corepack enable && corepack prepare pnpm@latest --activate \
 # ─── Agent CLIs ─────────────────────────────────────────────────────
 RUN pnpm add -g @anthropic-ai/claude-code @openai/codex @mariozechner/pi-coding-agent
 
-# ─── Slack bot (forked pi-mom with configurable provider) ─────────
-COPY packages/slack/ /opt/slack/
-RUN cd /opt/slack && pnpm install --prod 2>/dev/null && pnpm link --global
-
 # ─── Agent Browser + Chromium ──────────────────────────────────────
 RUN pnpm add -g agent-browser@0.8.5 \
  && find $PNPM_HOME -name "agent-browser-linux-*" -exec chmod +x {} \; \

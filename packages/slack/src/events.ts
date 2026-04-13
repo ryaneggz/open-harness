@@ -13,6 +13,7 @@ export interface ImmediateEvent {
 	type: "immediate";
 	channelId: string;
 	text: string;
+	threadTs?: string;
 }
 
 export interface OneShotEvent {
@@ -20,6 +21,7 @@ export interface OneShotEvent {
 	channelId: string;
 	text: string;
 	at: string; // ISO 8601 with timezone offset
+	threadTs?: string;
 }
 
 export interface PeriodicEvent {
@@ -28,9 +30,78 @@ export interface PeriodicEvent {
 	text: string;
 	schedule: string; // cron syntax
 	timezone: string; // IANA timezone
+	threadTs?: string;
 }
 
 export type MomEvent = ImmediateEvent | OneShotEvent | PeriodicEvent;
+
+// ============================================================================
+// Parsing & synthetic event helpers (exported for testing)
+// ============================================================================
+
+export function parseEventContent(content: string, filename: string): MomEvent | null {
+	const data = JSON.parse(content);
+
+	if (!data.type || !data.channelId || !data.text) {
+		throw new Error(`Missing required fields (type, channelId, text) in ${filename}`);
+	}
+
+	switch (data.type) {
+		case "immediate":
+			return { type: "immediate", channelId: data.channelId, text: data.text, threadTs: data.threadTs };
+
+		case "one-shot":
+			if (!data.at) {
+				throw new Error(`Missing 'at' field for one-shot event in ${filename}`);
+			}
+			return { type: "one-shot", channelId: data.channelId, text: data.text, at: data.at, threadTs: data.threadTs };
+
+		case "periodic":
+			if (!data.schedule) {
+				throw new Error(`Missing 'schedule' field for periodic event in ${filename}`);
+			}
+			if (!data.timezone) {
+				throw new Error(`Missing 'timezone' field for periodic event in ${filename}`);
+			}
+			return {
+				type: "periodic",
+				channelId: data.channelId,
+				text: data.text,
+				schedule: data.schedule,
+				timezone: data.timezone,
+				threadTs: data.threadTs,
+			};
+
+		default:
+			throw new Error(`Unknown event type '${data.type}' in ${filename}`);
+	}
+}
+
+export function buildSyntheticEvent(filename: string, event: MomEvent): SlackEvent {
+	let scheduleInfo: string;
+	switch (event.type) {
+		case "immediate":
+			scheduleInfo = "immediate";
+			break;
+		case "one-shot":
+			scheduleInfo = event.at;
+			break;
+		case "periodic":
+			scheduleInfo = event.schedule;
+			break;
+	}
+
+	const message = `[EVENT:${filename}:${event.type}:${scheduleInfo}] ${event.text}`;
+
+	return {
+		type: "mention",
+		channel: event.channelId,
+		user: "EVENT",
+		text: message,
+		ts: (Date.now() / 1000).toFixed(6),
+		threadTs: event.threadTs,
+	};
+}
 
 // ============================================================================
 // EventsWatcher
@@ -219,40 +290,7 @@ export class EventsWatcher {
 	}
 
 	private parseEvent(content: string, filename: string): MomEvent | null {
-		const data = JSON.parse(content);
-
-		if (!data.type || !data.channelId || !data.text) {
-			throw new Error(`Missing required fields (type, channelId, text) in ${filename}`);
-		}
-
-		switch (data.type) {
-			case "immediate":
-				return { type: "immediate", channelId: data.channelId, text: data.text };
-
-			case "one-shot":
-				if (!data.at) {
-					throw new Error(`Missing 'at' field for one-shot event in ${filename}`);
-				}
-				return { type: "one-shot", channelId: data.channelId, text: data.text, at: data.at };
-
-			case "periodic":
-				if (!data.schedule) {
-					throw new Error(`Missing 'schedule' field for periodic event in ${filename}`);
-				}
-				if (!data.timezone) {
-					throw new Error(`Missing 'timezone' field for periodic event in ${filename}`);
-				}
-				return {
-					type: "periodic",
-					channelId: data.channelId,
-					text: data.text,
-					schedule: data.schedule,
-					timezone: data.timezone,
-				};
-
-			default:
-				throw new Error(`Unknown event type '${data.type}' in ${filename}`);
-		}
+		return parseEventContent(content, filename);
 	}
 
 	private handleImmediate(filename: string, event: ImmediateEvent): void {
@@ -316,30 +354,7 @@ export class EventsWatcher {
 	}
 
 	private execute(filename: string, event: MomEvent, deleteAfter: boolean = true): void {
-		// Format the message
-		let scheduleInfo: string;
-		switch (event.type) {
-			case "immediate":
-				scheduleInfo = "immediate";
-				break;
-			case "one-shot":
-				scheduleInfo = event.at;
-				break;
-			case "periodic":
-				scheduleInfo = event.schedule;
-				break;
-		}
-
-		const message = `[EVENT:${filename}:${event.type}:${scheduleInfo}] ${event.text}`;
-
-		// Create synthetic SlackEvent
-		const syntheticEvent: SlackEvent = {
-			type: "mention",
-			channel: event.channelId,
-			user: "EVENT",
-			text: message,
-			ts: Date.now().toString(),
-		};
+		const syntheticEvent = buildSyntheticEvent(filename, event);
 
 		// Enqueue for processing
 		const enqueued = this.slack.enqueueEvent(syntheticEvent);

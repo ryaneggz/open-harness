@@ -22,14 +22,54 @@ import { createExecutor, type SandboxConfig } from "./sandbox.js";
 import type { ChannelInfo, SlackContext, UserInfo } from "./slack.js";
 import type { ChannelStore } from "./store.js";
 import { createMomTools, setUploadFunction } from "./tools/index.js";
+import { resolveAgentDir, resolveLegacyAgentDir } from "./config.js";
 
-// Configurable model via env vars (fixes issue #63)
-const momProvider = process.env.MOM_PROVIDER || "openai-codex";
-const momModelId = process.env.MOM_MODEL || "gpt-5.4";
-const model = getModel(momProvider, momModelId);
+// Read defaults from agent settings.json (same config the CLI uses)
+function readAgentDefaults(): { provider?: string; model?: string } {
+	try {
+		const raw = readFileSync(join(resolveAgentDir(), "settings.json"), "utf-8");
+		const settings = JSON.parse(raw);
+		return {
+			provider: settings.defaultProvider || undefined,
+			model: settings.defaultModel || undefined,
+		};
+	} catch {
+		// Fall back to legacy .pi path
+		try {
+			const raw = readFileSync(join(resolveLegacyAgentDir(), "settings.json"), "utf-8");
+			const settings = JSON.parse(raw);
+			return {
+				provider: settings.defaultProvider || undefined,
+				model: settings.defaultModel || undefined,
+			};
+		} catch {
+			return {};
+		}
+	}
+}
+
+// Model from openharness agent settings.json (same config the CLI uses)
+const agentDefaults = readAgentDefaults();
+if (!agentDefaults.provider || !agentDefaults.model) {
+	console.error("No default model configured. Run 'openharness' then '/model' to set provider and model.");
+	if (process.env.NODE_ENV !== "test") process.exit(1);
+}
+const slackProvider: string = agentDefaults.provider ?? "";
+const slackModelId: string = agentDefaults.model ?? "";
+const model = getModel(slackProvider as any, slackModelId as any);
 if (!model) {
-	console.error(`Unknown model: ${momProvider}/${momModelId}. Check MOM_PROVIDER and MOM_MODEL env vars.`);
-	process.exit(1);
+	console.error(`Unknown model: ${slackProvider}/${slackModelId}. Update default in 'openharness' with '/model'.`);
+	if (process.env.NODE_ENV !== "test") process.exit(1);
+}
+console.log(`Provider: ${slackProvider}/${slackModelId} (from settings.json)`);
+
+/** Resolve auth.json path: openharness dir > legacy .pi/agent > legacy .pi/mom. */
+function resolveAuthPath(): string {
+	const primary = join(resolveAgentDir(), "auth.json");
+	if (existsSync(primary)) return primary;
+	const legacy = join(resolveLegacyAgentDir(), "auth.json");
+	if (existsSync(legacy)) return legacy;
+	return join(homedir(), ".pi", "slack", "auth.json");
 }
 
 export interface PendingMessage {
@@ -49,12 +89,11 @@ export interface AgentRunner {
 }
 
 async function getApiKeyForProvider(authStorage: AuthStorage): Promise<string> {
-	const key = await authStorage.getApiKey(momProvider);
+	const key = await authStorage.getApiKey(slackProvider);
 	if (!key) {
 		throw new Error(
-			`No API key found for ${momProvider}.\n\n` +
-				`Use /login with the appropriate provider and link to auth.json from ` +
-				join(homedir(), ".pi", "mom", "auth.json"),
+			`No API key found for ${slackProvider}.\n\n` +
+				`Run 'openharness' then '/login' to authenticate with your LLM provider.`,
 		);
 	}
 	return key;
@@ -339,7 +378,7 @@ function truncate(text: string, maxLen: number): string {
 	return `${text.substring(0, maxLen - 3)}...`;
 }
 
-function extractToolResultText(result: unknown): string {
+export function extractToolResultText(result: unknown): string {
 	if (typeof result === "string") {
 		return result;
 	}
@@ -365,7 +404,7 @@ function extractToolResultText(result: unknown): string {
 	return JSON.stringify(result);
 }
 
-function formatToolArgsForSlack(_toolName: string, args: Record<string, unknown>): string {
+export function formatToolArgsForSlack(_toolName: string, args: Record<string, unknown>): string {
 	const lines: string[] = [];
 
 	for (const [key, value] of Object.entries(args)) {
@@ -434,7 +473,7 @@ function createRunner(sandboxConfig: SandboxConfig, channelId: string, channelDi
 
 	// Create AuthStorage and ModelRegistry
 	// Auth stored outside workspace so agent can't access it
-	const authStorage = AuthStorage.create(join(homedir(), ".pi", "mom", "auth.json"));
+	const authStorage = AuthStorage.create(resolveAuthPath());
 	const modelRegistry = new ModelRegistry(authStorage);
 
 	// Create agent
@@ -535,23 +574,15 @@ function createRunner(sandboxConfig: SandboxConfig, channelId: string, channelDi
 				log.logToolSuccess(logCtx, agentEvent.toolName, durationMs, resultStr);
 			}
 
-			// Post args + result to thread
+			// Post status indicator to main message (success and error)
 			const label = pending?.args ? (pending.args as { label?: string }).label : undefined;
-			const argsFormatted = pending
-				? formatToolArgsForSlack(agentEvent.toolName, pending.args as Record<string, unknown>)
-				: "(args not found)";
+			const displayLabel = label || agentEvent.toolName;
 			const duration = (durationMs / 1000).toFixed(1);
-			let threadMessage = `*${agentEvent.isError ? "✗" : "✓"} ${agentEvent.toolName}*`;
-			if (label) threadMessage += `: ${label}`;
-			threadMessage += ` (${duration}s)\n`;
-			if (argsFormatted) threadMessage += `\`\`\`\n${argsFormatted}\n\`\`\`\n`;
-			threadMessage += `*Result:*\n\`\`\`\n${resultStr}\n\`\`\``;
-
-			queue.enqueueMessage(threadMessage, "thread", "tool result thread", false);
-
-			if (agentEvent.isError) {
-				queue.enqueue(() => ctx.respond(`_Error: ${truncate(resultStr, 200)}_`, false), "tool error");
-			}
+			const icon = agentEvent.isError ? ":x:" : ":white_check_mark:";
+			queue.enqueue(
+				() => ctx.respond(`_${icon} ${displayLabel} (${duration}s)_`, false),
+				"tool status"
+			);
 		} else if (event.type === "message_start") {
 			const agentEvent = event as AgentEvent & { type: "message_start" };
 			if (agentEvent.message.role === "assistant") {

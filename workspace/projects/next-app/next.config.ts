@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
-  allowedDevOrigins: ["next-postgres-shadcn.ruska.dev"],
+  allowedDevOrigins: ["openharness.ruska.dev"],
 };
 
 export default withPWA(nextConfig);
