@@ -41,4 +41,3 @@ export function Hero() {
     </div>
   );
 }
-
