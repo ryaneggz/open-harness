@@ -52,7 +52,7 @@ function readAgentDefaults(): { provider?: string; model?: string } {
 const agentDefaults = readAgentDefaults();
 if (!agentDefaults.provider || !agentDefaults.model) {
 	console.error("No default model configured. Run 'openharness' then '/model' to set provider and model.");
-	process.exit(1);
+	if (process.env.NODE_ENV !== "test") process.exit(1);
 }
 const slackProvider = agentDefaults.provider;
 const slackModelId = agentDefaults.model;
