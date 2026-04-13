@@ -1,8 +1,34 @@
+import Mermaid from "../../components/Mermaid";
+
 # How It Works
 
 The Slack bot connects to Slack via Socket Mode and maintains separate conversation contexts per channel. Every channel (or DM) the bot is added to gets its own isolated workspace — independent history, memory, and tools — so conversations never bleed across channels.
 
 ## Message flow
+
+<Mermaid chart={`
+sequenceDiagram
+    participant S as Slack
+    participant Bot as Slack Bot
+    participant Log as log.jsonl
+    participant Ctx as context.jsonl
+    participant LLM as LLM Provider
+    participant Sandbox as Sandbox Container
+
+    S->>Bot: @mention or DM (Socket Mode)
+    Bot->>Log: Write message + attachments
+    Bot->>Ctx: Sync unseen messages from log
+    Bot->>Bot: Load MEMORY.md + skills
+    Bot->>Bot: Build system prompt
+    Bot->>LLM: Send context + prompt
+    LLM->>Bot: Tool calls (bash, read, write, edit)
+    Bot->>Sandbox: Execute tools
+    Sandbox-->>Bot: Tool results
+    Bot-->>S: Tool details in thread
+    LLM->>Bot: Final response
+    Bot->>S: Replace status with response
+    Bot->>Log: Store response
+`} />
 
 1. A message arrives via Socket Mode (mention or DM)
 2. The message is logged to the channel's `log.jsonl` — the source of truth for full channel history. If the message includes attachments, they are saved to the channel's `attachments/` directory
