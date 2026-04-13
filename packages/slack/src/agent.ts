@@ -59,7 +59,7 @@ const slackModelId: string = agentDefaults.model ?? "";
 const model = getModel(slackProvider as any, slackModelId as any);
 if (!model) {
 	console.error(`Unknown model: ${slackProvider}/${slackModelId}. Update default in 'openharness' with '/model'.`);
-	process.exit(1);
+	if (process.env.NODE_ENV !== "test") process.exit(1);
 }
 console.log(`Provider: ${slackProvider}/${slackModelId} (from settings.json)`);
 
