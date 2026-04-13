@@ -17,7 +17,7 @@
 
 | Commit | Date | Description |
 |--------|------|-------------|
-| `e23a7f05` | 2026-04-11 | Configurable model via `MOM_PROVIDER`/`MOM_MODEL` env vars + thread replies |
+| `e23a7f05` | 2026-04-11 | Configurable model via openharness `settings.json` + thread replies |
 | `81469b3f` | 2026-04-11 | Remove duplicate responses and usage summary from Slack |
 
 ### Harness-only changes (not yet in fork)

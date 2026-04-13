@@ -13,8 +13,8 @@ import { ChannelStore } from "./store.js";
 // Config
 // ============================================================================
 
-const MOM_SLACK_APP_TOKEN = process.env.MOM_SLACK_APP_TOKEN;
-const MOM_SLACK_BOT_TOKEN = process.env.MOM_SLACK_BOT_TOKEN;
+const MOM_SLACK_APP_TOKEN = process.env.SLACK_APP_TOKEN;
+const MOM_SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
 
 interface ParsedArgs {
 	workingDir?: string;
@@ -55,7 +55,7 @@ const parsedArgs = parseArgs();
 // Handle --download mode
 if (parsedArgs.downloadChannel) {
 	if (!MOM_SLACK_BOT_TOKEN) {
-		console.error("Missing env: MOM_SLACK_BOT_TOKEN");
+		console.error("Missing env: SLACK_BOT_TOKEN");
 		process.exit(1);
 	}
 	await downloadChannel(parsedArgs.downloadChannel, MOM_SLACK_BOT_TOKEN);
@@ -72,7 +72,7 @@ if (!parsedArgs.workingDir) {
 const { workingDir, sandbox } = { workingDir: parsedArgs.workingDir, sandbox: parsedArgs.sandbox };
 
 if (!MOM_SLACK_APP_TOKEN || !MOM_SLACK_BOT_TOKEN) {
-	console.error("Missing env: MOM_SLACK_APP_TOKEN, MOM_SLACK_BOT_TOKEN");
+	console.error("Missing env: SLACK_APP_TOKEN, SLACK_BOT_TOKEN");
 	process.exit(1);
 }
 
@@ -118,7 +118,7 @@ function createSlackContext(event: SlackEvent, slack: SlackBot, state: ChannelSt
 	let isWorking = true;
 	const workingIndicator = " ...";
 	let updatePromise = Promise.resolve();
-	const threadParent = event.threadTs ?? event.ts;
+	const threadParent = event.threadTs ?? (isEvent ? undefined : event.ts);
 
 	const user = slack.getUser(event.user);
 
@@ -158,7 +158,9 @@ function createSlackContext(event: SlackEvent, slack: SlackBot, state: ChannelSt
 					if (messageTs) {
 						await slack.updateMessage(event.channel, messageTs, displayText);
 					} else {
-						messageTs = await slack.postInThread(event.channel, threadParent, displayText);
+						messageTs = threadParent
+							? await slack.postInThread(event.channel, threadParent, displayText)
+							: await slack.postMessage(event.channel, displayText);
 					}
 
 					if (shouldLog && messageTs) {
@@ -188,7 +190,14 @@ function createSlackContext(event: SlackEvent, slack: SlackBot, state: ChannelSt
 					if (messageTs) {
 						await slack.updateMessage(event.channel, messageTs, displayText);
 					} else {
-						messageTs = await slack.postInThread(event.channel, threadParent, displayText);
+						messageTs = threadParent
+							? await slack.postInThread(event.channel, threadParent, displayText)
+							: await slack.postMessage(event.channel, displayText);
+					}
+
+					// Log final consolidated response
+					if (messageTs) {
+						slack.logBotResponse(event.channel, accumulatedText, messageTs);
 					}
 				} catch (err) {
 					log.logWarning("Slack replaceMessage error", err instanceof Error ? err.message : String(err));
@@ -224,7 +233,9 @@ function createSlackContext(event: SlackEvent, slack: SlackBot, state: ChannelSt
 					try {
 						if (!messageTs) {
 							accumulatedText = eventFilename ? `_Starting event: ${eventFilename}_` : "_Thinking_";
-							messageTs = await slack.postInThread(event.channel, threadParent, accumulatedText + workingIndicator);
+							messageTs = threadParent
+								? await slack.postInThread(event.channel, threadParent, accumulatedText + workingIndicator)
+								: await slack.postMessage(event.channel, accumulatedText + workingIndicator);
 						}
 					} catch (err) {
 						log.logWarning("Slack setTyping error", err instanceof Error ? err.message : String(err));

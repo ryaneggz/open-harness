@@ -69,8 +69,8 @@ else
     openharness 2>/dev/null || true
     if [ -s "$PI_AUTH" ] && [ "$(cat "$PI_AUTH" 2>/dev/null)" != "{}" ]; then
       ok "LLM provider authenticated"
-      mkdir -p "$HOME/.pi/mom"
-      cp "$PI_AUTH" "$HOME/.pi/mom/auth.json"
+      mkdir -p "$HOME/.pi/slack"
+      ln -sf "$PI_AUTH" "$HOME/.pi/slack/auth.json"
       ok "Auth shared with Mom (Slack bot)"
       STEPS[llm]="done"
     else
@@ -88,8 +88,8 @@ fi
 # ═══════════════════════════════════════════════════════════════════════
 banner "Step 2/6 — Slack (Mom Bot)"
 
-SLACK_APP_TOKEN="${MOM_SLACK_APP_TOKEN:-}"
-SLACK_BOT_TOKEN="${MOM_SLACK_BOT_TOKEN:-}"
+SLACK_APP_TOKEN="${SLACK_APP_TOKEN:-}"
+SLACK_BOT_TOKEN="${SLACK_BOT_TOKEN:-}"
 
 if [ -n "$SLACK_APP_TOKEN" ] && [ -n "$SLACK_BOT_TOKEN" ]; then
   ok "Slack tokens detected from environment"
@@ -116,25 +116,25 @@ else
     read -r SLACK_BOT_TOKEN
 
     if [ -n "$SLACK_APP_TOKEN" ] && [ -n "$SLACK_BOT_TOKEN" ]; then
-      export MOM_SLACK_APP_TOKEN="$SLACK_APP_TOKEN"
-      export MOM_SLACK_BOT_TOKEN="$SLACK_BOT_TOKEN"
+      export SLACK_APP_TOKEN="$SLACK_APP_TOKEN"
+      export SLACK_BOT_TOKEN="$SLACK_BOT_TOKEN"
       ok "Tokens set for this session"
 
       # Persist to host .env if writable
       HOST_ENV="$HOME/harness/.env"
       if [ -w "$HOME/harness" ]; then
         if [ -f "$HOST_ENV" ]; then
-          sed -i '/^MOM_SLACK_APP_TOKEN=/d' "$HOST_ENV"
-          sed -i '/^MOM_SLACK_BOT_TOKEN=/d' "$HOST_ENV"
+          sed -i '/^SLACK_APP_TOKEN=/d' "$HOST_ENV"
+          sed -i '/^SLACK_BOT_TOKEN=/d' "$HOST_ENV"
         fi
-        echo "MOM_SLACK_APP_TOKEN=$SLACK_APP_TOKEN" >> "$HOST_ENV"
-        echo "MOM_SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN" >> "$HOST_ENV"
+        echo "SLACK_APP_TOKEN=$SLACK_APP_TOKEN" >> "$HOST_ENV"
+        echo "SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN" >> "$HOST_ENV"
         ok "Tokens saved to .env (persist across rebuilds)"
       else
         warn "Cannot write to $HOST_ENV — tokens valid for this session only"
         printf "    Add manually to .env on the host:\n"
-        printf "      MOM_SLACK_APP_TOKEN=%s\n" "$SLACK_APP_TOKEN"
-        printf "      MOM_SLACK_BOT_TOKEN=%s\n" "$SLACK_BOT_TOKEN"
+        printf "      SLACK_APP_TOKEN=%s\n" "$SLACK_APP_TOKEN"
+        printf "      SLACK_BOT_TOKEN=%s\n" "$SLACK_BOT_TOKEN"
       fi
     else
       warn "Tokens not provided"
@@ -147,32 +147,39 @@ else
   fi
 fi
 
+# Bootstrap .openharness/agent directory (symlink from legacy .pi paths)
+OHARNESS_AGENT="$HOME/.openharness/agent"
+mkdir -p "$OHARNESS_AGENT"
+[ ! -e "$OHARNESS_AGENT/settings.json" ] && [ -s "$HOME/.pi/agent/settings.json" ] && \
+  ln -sf "$HOME/.pi/agent/settings.json" "$OHARNESS_AGENT/settings.json"
+[ ! -e "$OHARNESS_AGENT/auth.json" ] && [ -s "$HOME/.pi/agent/auth.json" ] && \
+  ln -sf "$HOME/.pi/agent/auth.json" "$OHARNESS_AGENT/auth.json"
+
 # Start Mom and validate if tokens are available
 if [ -n "$SLACK_APP_TOKEN" ] && [ -n "$SLACK_BOT_TOKEN" ]; then
   if command -v mom &>/dev/null; then
     # Ensure LLM auth exists for Mom
-    MOMDIR="$HOME/.pi/mom"
-    if [ ! -s "$MOMDIR/auth.json" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
+    SLACKDIR="$HOME/.pi/slack"
+    if [ ! -s "$SLACKDIR/auth.json" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
       if [ -s "$HOME/.pi/agent/auth.json" ]; then
-        mkdir -p "$MOMDIR"
-        cp "$HOME/.pi/agent/auth.json" "$MOMDIR/auth.json"
-        ok "Copied LLM auth from Pi agent"
+        mkdir -p "$SLACKDIR"
+        ln -sf "$HOME/.pi/agent/auth.json" "$SLACKDIR/auth.json"
+        ok "Linked Mom auth to Pi agent (shared key store)"
       else
         warn "Mom needs LLM auth to respond. Complete Step 1 first."
       fi
     fi
 
-    tmux kill-session -t mom 2>/dev/null || true
-    MOM_SLACK_APP_TOKEN="$SLACK_APP_TOKEN" MOM_SLACK_BOT_TOKEN="$SLACK_BOT_TOKEN" \
-      MOM_PROVIDER="${MOM_PROVIDER:-openai-codex}" MOM_MODEL="${MOM_MODEL:-gpt-5.4}" \
-      tmux new-session -d -s mom 'mom --sandbox=host ~/harness/workspace/.slack'
+    tmux kill-session -t slack 2>/dev/null || true
+    SLACK_APP_TOKEN="$SLACK_APP_TOKEN" SLACK_BOT_TOKEN="$SLACK_BOT_TOKEN" \
+      tmux new-session -d -s slack 'mom --sandbox=host ~/harness/workspace/.slack'
 
     # Validate: wait for Mom to connect or fail
     printf "\n  Validating Slack connection"
     MOM_OK=false
     for i in $(seq 1 15); do
       printf "."
-      OUTPUT=$(tmux capture-pane -t mom -p 2>/dev/null || true)
+      OUTPUT=$(tmux capture-pane -t slack -p 2>/dev/null || true)
       if echo "$OUTPUT" | grep -q "connected and listening"; then
         MOM_OK=true
         break
@@ -192,21 +199,21 @@ if [ -n "$SLACK_APP_TOKEN" ] && [ -n "$SLACK_BOT_TOKEN" ]; then
       printf "    2. Wait for a response (not just \"Thinking...\")\n"
       printf "\n"
       ask "Did Mom respond in Slack? [Y/n]:"
-      read -r mom_test
-      if [[ "$mom_test" =~ ^[Nn]$ ]]; then
-        warn "Mom connected but not responding — check logs: tmux attach -t mom"
-        tmux capture-pane -t mom -p 2>/dev/null | grep -i "error\|No API key" | head -3 | while IFS= read -r line; do
+      read -r slack_test
+      if [[ "$slack_test" =~ ^[Nn]$ ]]; then
+        warn "Mom connected but not responding — check logs: tmux attach -t slack"
+        tmux capture-pane -t slack -p 2>/dev/null | grep -i "error\|No API key" | head -3 | while IFS= read -r line; do
           printf "    ${RED}%s${NC}\n" "$line"
         done
         STEPS[slack]="failed"
       else
-        ok "Mom is working! (tmux attach -t mom)"
+        ok "Mom is working! (tmux attach -t slack)"
         STEPS[slack]="done"
       fi
     else
-      fail "Mom failed to connect — check logs: tmux attach -t mom"
+      fail "Mom failed to connect — check logs: tmux attach -t slack"
       # Show the error
-      tmux capture-pane -t mom -p 2>/dev/null | grep -i "error\|missing\|failed" | head -3 | while IFS= read -r line; do
+      tmux capture-pane -t slack -p 2>/dev/null | grep -i "error\|missing\|failed" | head -3 | while IFS= read -r line; do
         printf "    ${RED}%s${NC}\n" "$line"
       done
       STEPS[slack]="failed"

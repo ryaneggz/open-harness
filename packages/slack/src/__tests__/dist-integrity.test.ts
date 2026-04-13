@@ -185,9 +185,9 @@ describe("dist integrity", () => {
 	});
 
 	describe("provider configuration", () => {
-		it("agent.js uses env var for provider (not hardcoded anthropic)", () => {
+		it("agent.js reads model from settings.json (not hardcoded anthropic)", () => {
 			const content = readFileSync(join(distDir, "agent.js"), "utf-8");
-			expect(content).toContain("MOM_PROVIDER");
+			expect(content).toContain("readAgentDefaults");
 			expect(content).not.toContain('getModel("anthropic"');
 		});
 	});

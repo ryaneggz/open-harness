@@ -5,7 +5,7 @@ open-harness/
 ├── .devcontainer/
 │   ├── Dockerfile              # sandbox image: Debian + Node 22 + agent CLIs + pnpm
 │   ├── docker-compose.yml      # base compose: SSH + workspace mount
-│   ├── docker-compose.*.yml    # overlays: postgres, cloudflared, docker, ssh, git, mom
+│   ├── docker-compose.*.yml    # overlays: postgres, cloudflared, docker, ssh, git, slack
 │   ├── entrypoint.sh           # Docker GID matching + cron + heartbeat sync
 │   └── init-env.sh             # resolve SANDBOX_NAME from git remote
 ├── cli/                        # openharness CLI (TypeScript, pnpm workspace)

@@ -9,7 +9,7 @@
 #   ./docker.sh status              - Check container status
 #   ./docker.sh shell               - Open a shell in the container
 
-CONTAINER_NAME="mom-sandbox"
+CONTAINER_NAME="slack-sandbox"
 IMAGE="alpine:latest"
 
 case "$1" in

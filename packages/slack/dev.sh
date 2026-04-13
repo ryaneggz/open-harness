@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-CONTAINER_NAME="mom-sandbox"
+CONTAINER_NAME="slack-sandbox"
 DATA_DIR="$(pwd)/data"
 
 # Create data directory if it doesn't exist
