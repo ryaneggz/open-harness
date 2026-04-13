@@ -145,4 +145,14 @@ describe("buildSyntheticEvent", () => {
 
 		expect(result.text).toContain("periodic:0 * * * *");
 	});
+
+	it("produces valid Slack timestamp format (seconds.microseconds)", () => {
+		const event: ImmediateEvent = { type: "immediate", channelId: "C123", text: "test" };
+		const result = buildSyntheticEvent("fmt.json", event);
+
+		// Slack timestamps are "seconds.microseconds" — e.g., "1712931200.000000"
+		expect(result.ts).toMatch(/^\d+\.\d{6}$/);
+		// Must NOT be a raw millisecond epoch like "1712931200000"
+		expect(result.ts).not.toMatch(/^\d{13,}$/);
+	});
 });

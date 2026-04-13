@@ -22,14 +22,54 @@ import { createExecutor, type SandboxConfig } from "./sandbox.js";
 import type { ChannelInfo, SlackContext, UserInfo } from "./slack.js";
 import type { ChannelStore } from "./store.js";
 import { createMomTools, setUploadFunction } from "./tools/index.js";
+import { resolveAgentDir, resolveLegacyAgentDir } from "./config.js";
 
-// Configurable model via env vars (fixes issue #63)
-const momProvider = process.env.MOM_PROVIDER || "openai-codex";
-const momModelId = process.env.MOM_MODEL || "gpt-5.4";
-const model = getModel(momProvider as any, momModelId as any);
-if (!model) {
-	console.error(`Unknown model: ${momProvider}/${momModelId}. Check MOM_PROVIDER and MOM_MODEL env vars.`);
+// Read defaults from agent settings.json (same config the CLI uses)
+function readAgentDefaults(): { provider?: string; model?: string } {
+	try {
+		const raw = readFileSync(join(resolveAgentDir(), "settings.json"), "utf-8");
+		const settings = JSON.parse(raw);
+		return {
+			provider: settings.defaultProvider || undefined,
+			model: settings.defaultModel || undefined,
+		};
+	} catch {
+		// Fall back to legacy .pi path
+		try {
+			const raw = readFileSync(join(resolveLegacyAgentDir(), "settings.json"), "utf-8");
+			const settings = JSON.parse(raw);
+			return {
+				provider: settings.defaultProvider || undefined,
+				model: settings.defaultModel || undefined,
+			};
+		} catch {
+			return {};
+		}
+	}
+}
+
+// Model from openharness agent settings.json (same config the CLI uses)
+const agentDefaults = readAgentDefaults();
+if (!agentDefaults.provider || !agentDefaults.model) {
+	console.error("No default model configured. Run 'openharness' then '/model' to set provider and model.");
 	process.exit(1);
+}
+const slackProvider = agentDefaults.provider;
+const slackModelId = agentDefaults.model;
+const model = getModel(slackProvider as any, slackModelId as any);
+if (!model) {
+	console.error(`Unknown model: ${slackProvider}/${slackModelId}. Update default in 'openharness' with '/model'.`);
+	process.exit(1);
+}
+console.log(`Provider: ${slackProvider}/${slackModelId} (from settings.json)`);
+
+/** Resolve auth.json path: openharness dir > legacy .pi/agent > legacy .pi/mom. */
+function resolveAuthPath(): string {
+	const primary = join(resolveAgentDir(), "auth.json");
+	if (existsSync(primary)) return primary;
+	const legacy = join(resolveLegacyAgentDir(), "auth.json");
+	if (existsSync(legacy)) return legacy;
+	return join(homedir(), ".pi", "slack", "auth.json");
 }
 
 export interface PendingMessage {
@@ -49,12 +89,11 @@ export interface AgentRunner {
 }
 
 async function getApiKeyForProvider(authStorage: AuthStorage): Promise<string> {
-	const key = await authStorage.getApiKey(momProvider);
+	const key = await authStorage.getApiKey(slackProvider);
 	if (!key) {
 		throw new Error(
-			`No API key found for ${momProvider}.\n\n` +
-				`Use /login with the appropriate provider and link to auth.json from ` +
-				join(homedir(), ".pi", "mom", "auth.json"),
+			`No API key found for ${slackProvider}.\n\n` +
+				`Run 'openharness' then '/login' to authenticate with your LLM provider.`,
 		);
 	}
 	return key;
@@ -434,7 +473,7 @@ function createRunner(sandboxConfig: SandboxConfig, channelId: string, channelDi
 
 	// Create AuthStorage and ModelRegistry
 	// Auth stored outside workspace so agent can't access it
-	const authStorage = AuthStorage.create(join(homedir(), ".pi", "mom", "auth.json"));
+	const authStorage = AuthStorage.create(resolveAuthPath());
 	const modelRegistry = new ModelRegistry(authStorage);
 
 	// Create agent

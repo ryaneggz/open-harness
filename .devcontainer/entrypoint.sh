@@ -61,20 +61,20 @@ fi
 
 # Copy Pi agent auth to Mom if Mom auth is missing/empty
 if [ -d "/home/sandbox/.pi/agent" ] && [ -s "/home/sandbox/.pi/agent/auth.json" ]; then
-  MOMDIR="/home/sandbox/.pi/mom"
-  if [ ! -s "$MOMDIR/auth.json" ]; then
-    mkdir -p "$MOMDIR"
-    cp /home/sandbox/.pi/agent/auth.json "$MOMDIR/auth.json"
-    chown -R sandbox:sandbox "$MOMDIR"
+  SLACKDIR="/home/sandbox/.pi/slack"
+  if [ ! -s "$SLACKDIR/auth.json" ]; then
+    mkdir -p "$SLACKDIR"
+    ln -sf /home/sandbox/.pi/agent/auth.json "$SLACKDIR/auth.json"
+    chown -R sandbox:sandbox "$SLACKDIR"
   fi
 fi
 
 # Auto-start Mom (Slack bot) if tokens are present
-if [ -n "${MOM_SLACK_APP_TOKEN:-}" ] && [ -n "${MOM_SLACK_BOT_TOKEN:-}" ]; then
+if [ -n "${SLACK_APP_TOKEN:-}" ] && [ -n "${SLACK_BOT_TOKEN:-}" ]; then
   if command -v mom &>/dev/null; then
-    gosu sandbox tmux new-session -d -s mom \
+    gosu sandbox tmux new-session -d -s slack \
       'mom --sandbox=host ~/harness/workspace/.slack' 2>/dev/null || true
-    echo "[entrypoint] Mom started (tmux attach -t mom)"
+    echo "[entrypoint] Mom started (tmux attach -t slack)"
   fi
 fi
 

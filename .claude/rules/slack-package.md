@@ -10,7 +10,7 @@
 2. **NEVER** manually patch `/opt/slack/` — it no longer exists; runtime links from bind-mount
 3. **ALL** source changes go in `packages/slack/src/`, rebuild dist, commit BOTH `src/` and `dist/`
 4. Sibling deps (`pi-agent-core`, `pi-ai`, `pi-coding-agent`) use EXACT version pins — no caret ranges
-5. The bot provider is configured via `MOM_PROVIDER`/`MOM_MODEL` env vars — the upstream hardcodes `anthropic`
+5. The bot reads provider/model from openharness agent `settings.json` — the upstream hardcodes `anthropic`
 
 ## Build
 

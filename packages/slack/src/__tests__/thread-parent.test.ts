@@ -15,7 +15,7 @@ describe("createSlackContext threadParent routing", () => {
 		);
 
 		// The threadParent computation must exist
-		expect(mainSource).toContain("const threadParent = event.threadTs ?? event.ts");
+		expect(mainSource).toContain("const threadParent = event.threadTs ?? (isEvent ? undefined : event.ts)");
 	});
 
 	it("uses threadParent in respond postInThread call", async () => {
@@ -86,6 +86,48 @@ describe("createSlackContext threadParent routing", () => {
 		// respondInThread posts UNDER the bot's own message, not under the thread parent
 		expect(respondInThreadBlock).toContain("slack.postInThread(event.channel, messageTs,");
 		expect(respondInThreadBlock).not.toContain("slack.postInThread(event.channel, threadParent,");
+	});
+
+	it("respond/replaceMessage/setTyping fall back to postMessage when threadParent is undefined", async () => {
+		const fs = await import("fs");
+		const path = await import("path");
+		const mainSource = fs.readFileSync(
+			path.join(import.meta.dirname, "..", "main.ts"),
+			"utf-8",
+		);
+
+		// All three functions should have the postMessage fallback for channel-level events
+		const respondIdx = mainSource.indexOf("respond: async (text: string");
+		const replaceIdx = mainSource.indexOf("replaceMessage: async");
+		const respondInThreadIdx = mainSource.indexOf("respondInThread: async");
+		const setTypingIdx = mainSource.indexOf("setTyping: async");
+		const uploadIdx = mainSource.indexOf("uploadFile: async");
+
+		const respondBlock = mainSource.substring(respondIdx, replaceIdx);
+		const replaceBlock = mainSource.substring(replaceIdx, respondInThreadIdx);
+		const typingBlock = mainSource.substring(setTypingIdx, uploadIdx);
+
+		// Each block should contain the postMessage fallback
+		expect(respondBlock).toContain("slack.postMessage(event.channel,");
+		expect(replaceBlock).toContain("slack.postMessage(event.channel,");
+		expect(typingBlock).toContain("slack.postMessage(event.channel,");
+	});
+
+	it("replaceMessage logs final consolidated response via logBotResponse", async () => {
+		const fs = await import("fs");
+		const path = await import("path");
+		const mainSource = fs.readFileSync(
+			path.join(import.meta.dirname, "..", "main.ts"),
+			"utf-8",
+		);
+
+		// Find the replaceMessage handler
+		const replaceIdx = mainSource.indexOf("replaceMessage: async");
+		const respondInThreadIdx = mainSource.indexOf("respondInThread: async");
+		const replaceBlock = mainSource.substring(replaceIdx, respondInThreadIdx);
+
+		// Must call logBotResponse with accumulatedText (not raw input text)
+		expect(replaceBlock).toContain("slack.logBotResponse(event.channel, accumulatedText, messageTs)");
 	});
 
 	it("SlackEvent interface includes threadTs field", async () => {

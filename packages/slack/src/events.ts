@@ -98,7 +98,7 @@ export function buildSyntheticEvent(filename: string, event: MomEvent): SlackEve
 		channel: event.channelId,
 		user: "EVENT",
 		text: message,
-		ts: Date.now().toString(),
+		ts: (Date.now() / 1000).toFixed(6),
 		threadTs: event.threadTs,
 	};
 }

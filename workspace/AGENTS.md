@@ -112,6 +112,6 @@ Parallel planning agents in `.claude/agents/`:
 
 ## Slack Interface
 
-The Slack bot runs as a tmux session (`tmux attach -t mom`) providing Slack-based access to this workspace.
+The Slack bot runs as a tmux session (`tmux attach -t slack`) providing Slack-based access to this workspace.
 Shares the same skills (`.claude/skills/`), memory (`.slack/MEMORY.md`), and agent config as claude/codex/pi.
-Auto-starts on container boot when `MOM_SLACK_APP_TOKEN` and `MOM_SLACK_BOT_TOKEN` are set.
+Auto-starts on container boot when `SLACK_APP_TOKEN` and `SLACK_BOT_TOKEN` are set.
