@@ -1,6 +1,27 @@
+import Mermaid from "../../components/Mermaid";
+
 # Events
 
 The Slack bot can schedule events that trigger at specific times or immediately. Events are JSON files placed in the `events/` directory of the workspace. The bot watches this directory and executes events when they're due.
+
+<Mermaid chart={`
+flowchart TD
+    A["JSON file written to events/"] --> B{Event type?}
+    B -->|immediate| C["Trigger now"]
+    B -->|one-shot| D["Schedule for 'at' time"]
+    B -->|periodic| E["Schedule cron"]
+    C --> F["Build synthetic SlackEvent"]
+    D --> F
+    E --> F
+    F --> G["Enqueue to channel"]
+    G --> H["Agent processes message"]
+    H --> I{Response?}
+    I -->|Normal| J["Post to channel/thread"]
+    I -->|SILENT| K["Suppress message"]
+    C --> L["Delete file"]
+    D --> L
+    E -->|Persists| E
+`} />
 
 ## Event types
 

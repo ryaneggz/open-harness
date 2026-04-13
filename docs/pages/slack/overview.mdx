@@ -1,6 +1,20 @@
+import Mermaid from "../../components/Mermaid";
+
 # Slack Bot
 
 The Open Harness Slack bot is an LLM-powered agent that connects to your workspace via Socket Mode and runs inside the sandbox container, giving it direct access to the full runtime environment.
+
+<Mermaid chart={`
+flowchart LR
+    Slack["Slack Workspace"] -->|Socket Mode| Bot["Slack Bot"]
+    Bot -->|Tools| Sandbox["Sandbox Container"]
+    Bot -->|Prompt| LLM["LLM Provider"]
+    Sandbox -->|bash, read, write, edit| FS["Workspace Files"]
+    Bot -->|attach| Slack
+    Bot -->|Read/Write| Mem["MEMORY.md"]
+    Bot -->|Load| Skills["Skills"]
+    Bot -->|Watch| Events["events/"]
+`} />
 
 ## Capabilities
 
