@@ -20,6 +20,12 @@ for dir in .claude .cloudflared .config/gh .ssh .pi .openharness; do
   fi
 done
 
+# Fix ownership of bind-mounted repo (git needs write access to .git/)
+HARNESS="/home/sandbox/harness"
+if [ -d "$HARNESS/.git" ]; then
+  chown -R sandbox:sandbox "$HARNESS/.git" 2>/dev/null || true
+fi
+
 # ─── SSH server setup (only when sshd overlay is active) ──────────
 if echo "$@" | grep -q sshd; then
   # Set password for SSH login from env var
