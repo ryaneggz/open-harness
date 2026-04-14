@@ -60,7 +60,6 @@ Present a checklist to the user **before proceeding**:
 Available compose overlays:
   [ ] docker-compose.postgres.yml      — PostgreSQL 16 + devnet
   [x] docker-compose.cloudflared.yml   — Cloudflare tunnel env vars
-  [x] docker-compose.docker.yml        — Docker socket mount (DinD)
   [ ] docker-compose.git.yml           — Git worktree mount (ONLY valid in worktrees)
   [x] docker-compose.slack.yml          — Slack bot env vars
   [ ] docker-compose.sshd.yml           — SSH server daemon (opt-in, port 2222)

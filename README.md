@@ -146,7 +146,6 @@ Toggle overlays in `.openharness/config.json`:
 ```json
 {
   "composeOverrides": [
-    ".devcontainer/docker-compose.docker.yml",
     ".devcontainer/docker-compose.slack.yml"
   ]
 }
@@ -155,7 +154,6 @@ Toggle overlays in `.openharness/config.json`:
 | Overlay | File | What it adds |
 |---------|------|-------------|
 | **postgres** | `docker-compose.postgres.yml` | Postgres 16 on a bridge network. Sets `DATABASE_URL`, `PGHOST`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` automatically. Data persisted in a `pgdata` volume. |
-| **docker** | `docker-compose.docker.yml` | Mounts the host Docker socket so agents can run containers from inside the sandbox (Docker-in-Docker). |
 | **ssh** | `docker-compose.ssh.yml` | Mounts `HOST_SSH_DIR` read-only so git can authenticate with your existing SSH keys. Auto-enabled when `HOST_SSH_DIR` is set in `.env`. |
 | **ssh-generate** | `docker-compose.ssh-generate.yml` | Persists `~/.ssh` in a named volume so generated keys survive container rebuilds. Use this instead of `ssh` if the sandbox should have its own keys. |
 | **sshd** | `docker-compose.sshd.yml` | Runs an SSH server inside the sandbox on port `2222:22`. Enables direct SSH access for remote workflows and multi-sandbox setups. Uses `SANDBOX_PASSWORD` for auth. |
