@@ -34,12 +34,13 @@ Provision a new agent sandbox. The sandbox uses `.devcontainer/` as the base env
 4. Complete onboarding (one-time, inside the sandbox):
    ```bash
    gh auth login && gh auth setup-git
-   claude                           # authenticate (OAuth)
+   pi                               # authenticate Pi Agent (OAuth) — powers Slack, heartbeats, and extensions
    ```
 
 5. Start the agent:
    ```bash
-   claude                           # or codex, pi
+   claude                           # terminal coding agent
+   pi                               # automations — Slack, heartbeats, extensions
    ```
 
 ### Validate

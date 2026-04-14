@@ -48,13 +48,14 @@ If Docker is running on a remote host, SSH in first, then attach to the containe
 ```bash
 gh auth login                    # authenticate GitHub CLI
 gh auth setup-git                # configure git auth (no SSH keys needed)
-claude                           # authenticate Claude Code (OAuth)
+pi                               # authenticate Pi Agent (OAuth) — powers Slack, heartbeats, and extensions
 ```
 
 ### 4. Start working
 
 ```bash
-claude                           # start an agent
+claude                           # terminal coding agent
+pi                               # automations — Slack, heartbeats, extensions
 ```
 
 ### Cleanup
