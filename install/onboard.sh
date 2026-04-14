@@ -149,6 +149,7 @@ fi
 
 # Bootstrap .openharness/agent directory (symlink from legacy .pi paths)
 OHARNESS_AGENT="$HOME/.openharness/agent"
+sudo chown -R sandbox:sandbox "$HOME/.openharness" 2>/dev/null || true
 mkdir -p "$OHARNESS_AGENT"
 [ ! -e "$OHARNESS_AGENT/settings.json" ] && [ -s "$HOME/.pi/agent/settings.json" ] && \
   ln -sf "$HOME/.pi/agent/settings.json" "$OHARNESS_AGENT/settings.json"

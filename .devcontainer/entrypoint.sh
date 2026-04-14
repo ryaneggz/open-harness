@@ -13,7 +13,7 @@ if [ -S "$SOCK" ]; then
 fi
 
 # Fix ownership of mounted volumes (created as root by Docker)
-for dir in .claude .cloudflared .config/gh .ssh .pi; do
+for dir in .claude .cloudflared .config/gh .ssh .pi .openharness; do
   if [ -d "/home/sandbox/$dir" ]; then
     chown -R sandbox:sandbox "/home/sandbox/$dir" 2>/dev/null || true
     [ "$dir" = ".ssh" ] && chmod 700 "/home/sandbox/$dir" 2>/dev/null || true
