@@ -12,6 +12,9 @@ When performing maintenance (manually or during idle heartbeats):
 3. **AGENTS.md** — operating rules still accurate? Any new decision rules needed?
 4. **TOOLS.md** — tools/services still current? Versions correct?
 5. **USER.md** — owner preferences still accurate?
+6. **Skills** — are skill steps still effective? Any consistently find nothing?
+7. **Agents** — are agent workflows optimal? Any skills to add/remove from their repertoire?
+8. **Rules** — any false positives? Missing guard clauses?
 
 ## Drift Detection
 
@@ -21,6 +24,8 @@ Watch for:
 - Environment details appearing in AGENTS.md (should be in TOOLS.md)
 - Growing content in root files that should be extracted to subdirectories
 - Daily memory logs (`memory/`) that haven't been distilled into MEMORY.md
+- Skills with steps that never find issues (candidates for removal or refinement)
+- Rules that consistently trigger false positives (candidates for loosening)
 
 ## Memory Distillation
 
@@ -29,3 +34,11 @@ During heartbeats or when asked:
 2. Extract durable patterns, recurring lessons, confirmed decisions
 3. Update MEMORY.md with distilled insights
 4. Keep daily logs as-is (they are the audit trail)
+
+## Self-Improvement Audit
+
+Periodically review:
+1. Which skills found the most issues? Prioritize and refine those.
+2. Which skills found zero issues across 3+ runs? Flag for review or removal.
+3. Which agents are most/least effective? Adjust skill assignments.
+4. Which rules caught real violations vs. false positives? Tune thresholds.

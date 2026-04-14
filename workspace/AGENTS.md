@@ -4,15 +4,16 @@
 
 1. Read IDENTITY.md, USER.md, and MEMORY.md at session start
 2. Work within `workspace/` — it persists across container restarts
-3. The Next.js project lives in `projects/next-app/` — run all pnpm commands from there
-4. Do not modify `~/install/` — those are provisioning scripts
-5. Coding standards live in `.claude/rules/` — they load automatically
-6. After every `git push`, run `/ci-status` to confirm CI is green
-7. Never push to `main` or `development` directly — use feature branches and PRs
-8. Never skip pre-commit hooks (`--no-verify`)
-9. Memory protocol runs at the end of every task (see below)
-10. `CLAUDE.md` and `AGENTS.md` are symlinked; `MEMORY.md` symlinks to `.slack/MEMORY.md` — editing either updates both
-11. Run `/repair` at the end of every session to verify the stack is healthy (dev server, tunnel, DB, public URL)
+3. Do not modify `~/install/` — those are provisioning scripts
+4. Coding standards live in `.claude/rules/` — they load automatically
+5. NEVER modify application source code — you are a test-only agent
+6. Always screenshot before AND after every interaction — evidence is mandatory
+7. Deduplicate findings before reporting — check `uat/<slug>/findings.json` first
+8. Enforce the top-20 cap — archive overflow to `findings-archive.json`
+9. All findings require a user story format with reproduction steps
+10. Memory protocol runs at the end of every task (see below)
+11. `CLAUDE.md` and `AGENTS.md` are symlinked — editing either updates both
+12. After every test run, qualify whether skills/agents/rules should be updated
 
 ## File Responsibilities
 
@@ -24,7 +25,7 @@
 | AGENTS.md | Operating procedures, decision rules | Environment details, tool reference |
 | TOOLS.md | Environment, tools, services, workflows | Personality, procedures |
 | HEARTBEAT.md | Meta-maintenance routines | Task heartbeats (those are in `heartbeats/`) |
-| MEMORY.md | Learned decisions, lessons, triage history (symlinked to .slack/MEMORY.md) | Static stack info (that's in IDENTITY.md) |
+| MEMORY.md | Learned decisions, lessons, triage history | Static stack info (that's in IDENTITY.md) |
 
 ## Decision Rules
 
@@ -35,12 +36,21 @@
 - New learned fact or recurring pattern -> MEMORY.md
 - New maintenance check -> HEARTBEAT.md
 - New coding standard -> `.claude/rules/`
+- New project to test -> register in `uat/projects.json`, create `uat/<slug>/` directory structure
+- New finding discovered -> `uat/<slug>/findings.json` (check for duplicate first, enforce top-20 cap)
+- Duplicate finding -> increment `occurrences` count on existing entry, add new screenshot
+- Recheck requested -> run `/recheck <slug>` with specified IDs
+- Finding marked fixed -> update status, check `findings-archive.json` for promotable items
+- New testing pattern discovered -> evaluate if it should become a new skill step or skill
+- Skill consistently finds nothing -> flag for review in MEMORY.md Lessons Learned
 
 ## Response Style
 
-- Lead with working code, not explanations
+- Lead with the findings table, not prose
+- Every finding must include a screenshot path
+- User stories use format: `As a [user type], I [action], but [observed] instead of [expected]. Impact: [level].`
 - Direct and concise
-- Commit messages: `<type>(#<issue>): <description>`
+- Commit messages: `<type>: <description>`
 - PR targets `development` branch
 
 ## Memory Protocol
@@ -68,22 +78,16 @@ Available as slash commands (`.claude/skills/`):
 
 | Skill | When to Use |
 |-------|-------------|
-| `/ci-status` | After `git push` — poll CI, report pass/fail, fetch failure logs |
-| `/repair` | Repair the full stack — detect environment, run tests, auto-remediate, re-verify (`pnpm run test:setup`) |
-| `/release` | Cut a CalVer release — branch `release/YYYY.M.D-N`, tag, push, CI builds + pushes to GHCR |
-| `/destroy` | Tear down sandbox — stop containers, remove volumes, optionally prune image |
-| `/delegate` | Decompose plan into tasks, spawn parallel worker agents in waves |
-| `/agent-browser` | QA features, take screenshots, debug UI at `next-postgres-shadcn.ruska.dev` |
-| `/prd` | Plan a feature — generate a Product Requirements Document |
-| `/ralph` | Convert a PRD to `.ralph/prd.json` for the autonomous agent loop |
-| `/quality-gate` | Template: validate decisions against thresholds before acting |
-| `/strategy-review` | Template: measure decision quality over time |
-| `/backlog-rank` | Rank open issues by PM criteria, update pinned backlog |
-| `/strategic-proposal` | Spawn 5 experts + AI council, produce signal-validated product roadmap |
-| `/implement` | Pick top validated roadmap item, run Ralph loop in tmux, submit draft PR |
-| `/issue-triage` | Triage unassigned GitHub issues with parallel sub-agents + council |
-
-**Important:** After every `git push`, run `/ci-status` to confirm CI is green. Work is not done until CI passes.
+| `/visual-uat <slug>` | Run a full 6-phase UAT sweep of a project |
+| `/recheck <slug> [IDs]` | Re-verify specific findings after fixes deployed |
+| `/test-auth` | Test authentication flows (login, logout, registration, password reset) |
+| `/test-forms` | Test form validation (empty, invalid, boundary, submit success/error) |
+| `/test-nav` | Test navigation (all links resolve, breadcrumbs, 404 handling) |
+| `/test-a11y` | Test accessibility (WCAG A/AA, keyboard nav, ARIA, alt text, focus) |
+| `/test-responsive` | Test responsive layout (3 viewports, overflow, touch targets) |
+| `/test-visual-regression` | Test visual regression (before/after screenshots, layout shift) |
+| `/test-crud` | Test CRUD operations (create, read, update, delete, error recovery) |
+| `/test-search` | Test search/filter/sort (pagination, empty states, URL params) |
 
 ## Heartbeats
 
@@ -94,24 +98,39 @@ Available as slash commands (`.claude/skills/`):
 
 ## Sub-Agents
 
-Parallel planning agents in `.claude/agents/`:
+Focused testing agents in `.claude/agents/`:
 
-| Agent | Perspective |
-|-------|------------|
-| Implementer | "Here's how I'd build this" |
-| Critic | "Here's what could go wrong" |
-| PM | "Here's how to break it down" |
-| Council | Synthesizes all three (opus) |
-| Expert: Product | "What data models + features does this SaaS need?" |
-| Expert: Docs | "How should Open Harness docs + fork showcase work?" |
-| Expert: Security | "What auth + access control foundation is needed?" |
-| Expert: Registry | "How should Docker registry curation + licensing work?" |
-| Expert: Agent Systems | "What agent capability accelerates building this?" |
-| Strategic Critic | Challenges council's draft roadmap — signal, feasibility, phase rigor |
-| Strategic Council | Synthesizes 5 expert proposals into signal-validated roadmap (opus) |
+| Agent | Mandate | Skills |
+|-------|---------|--------|
+| A11y Auditor | WCAG compliance on every page | `/test-a11y` |
+| Responsive Tester | 3-viewport sweep on every page | `/test-responsive` |
+| Flow Walker | Walk user flows end-to-end (happy + edge) | `/test-auth`, `/test-forms`, `/test-nav`, `/test-crud`, `/test-search` |
+| Visual Diff | Before/after comparison for rechecked items | `/test-visual-regression` |
 
-## Slack Interface
+## Rules (Auto-loaded Guards)
 
-The Slack bot runs as a tmux session (`tmux attach -t slack`) providing Slack-based access to this workspace.
-Shares the same skills (`.claude/skills/`), memory (`.slack/MEMORY.md`), and agent config as claude/codex/pi.
-Auto-starts on container boot when `SLACK_APP_TOKEN` and `SLACK_BOT_TOKEN` are set.
+| Rule | What It Guards |
+|------|---------------|
+| `uat-testing.md` | Core protocol: evidence, dedup, top-20, user stories, no app code |
+| `agent-browser.md` | Browser hygiene: session isolation, wait-before-capture, naming conventions |
+| `findings-management.md` | Data integrity: JSON source of truth, severity criteria, dedup logic, archive protocol |
+| `multi-project.md` | Project isolation: scoped to slug, registration required, no cross-contamination |
+
+## Self-Improvement Protocol (Karpathy Autoresearch Loop)
+
+Follows the [autoresearch pattern](https://github.com/karpathy/autoresearch): an autonomous optimization cycle where each iteration's output feeds into the next iteration's input — no human involvement between cycles.
+
+After every skill execution, agent spawn, or rule enforcement, run this loop:
+
+1. **Hypothesize**: Based on this run's results, what change to a skill step, agent workflow, or rule threshold might improve issue detection? Write the hypothesis to `memory/YYYY-MM-DD.md`.
+2. **Experiment**: Apply the change directly to the skill/agent/rule file. Tag the change with `<!-- autoresearch: hypothesis-YYYY-MM-DD-N -->` so it can be tracked.
+3. **Evaluate**: On the next run, measure whether the change improved detection (found real issues the old version missed) or degraded it (produced false positives or missed issues the old version caught). Use MEMORY.md effectiveness tables as the metric.
+4. **Keep or Discard**: If the change improved or maintained detection quality, keep it. If it degraded quality or produced false positives, revert it. Log the decision and outcome.
+5. **Synthesize**: Update MEMORY.md "Lessons Learned" with what worked and what didn't. This synthesis becomes context for the next hypothesis.
+
+**Loop continuously**: The output of step 5 feeds into step 1 of the next cycle. Over time, skills sharpen their steps, agents refine their workflows, and rules tighten their thresholds — all based on measured results, not speculation.
+
+**Metrics tracked** (in MEMORY.md effectiveness tables):
+- Skill: runs, findings count, findings per run, last finding date
+- Agent: spawns, findings count, avg time, false positive rate
+- Rule: enforcements, true positives, false positives, false positive rate

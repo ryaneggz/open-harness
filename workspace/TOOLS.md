@@ -34,6 +34,62 @@ All tools are installed system-wide in `/usr/local/bin` or via apt:
 | Pi Agent | `pi` | https://shittycodingagent.ai |
 | AgentMail | `agentmail` | https://docs.agentmail.to/integrations/cli |
 
+## agent-browser CLI
+
+`agent-browser` is the primary testing tool for this agent. Use it to navigate, interact with, and validate web UIs.
+
+### Basic Navigation
+
+```bash
+agent-browser open "https://example.com"        # Open URL
+agent-browser screenshot path/to/file.png        # Capture screenshot
+agent-browser close                               # Close session
+```
+
+### Accessibility Snapshot
+
+```bash
+agent-browser snapshot -i              # Interactive elements with refs
+agent-browser snapshot -c              # Compact tree (removes empty nodes)
+```
+
+### Form Interaction
+
+```bash
+agent-browser fill @e3 "user@example.com"   # Fill field by ref
+agent-browser click @e5                      # Click element by ref
+agent-browser press Enter                    # Press key
+```
+
+### State Checking
+
+```bash
+agent-browser is visible "selector"
+agent-browser is enabled "selector"
+agent-browser get text "selector"
+```
+
+### Responsive Testing
+
+```bash
+agent-browser set viewport 1920 1080   # Desktop
+agent-browser set viewport 768 1024    # Tablet
+agent-browser set viewport 375 812     # Mobile
+```
+
+### Session Management
+
+```bash
+agent-browser --session uat-run open <url>   # Isolated session
+agent-browser close                          # Always close when done
+```
+
+### Screenshot Convention
+
+```
+uat/<slug>/screenshots/YYYY-MM-DD/<flow>-<step>-<viewport>.png
+```
+
 ## Tool Use Principles
 
 - Use `uv` for Python projects (e.g. `uv init`, `uv add`, `uv run`)
@@ -41,3 +97,4 @@ All tools are installed system-wide in `/usr/local/bin` or via apt:
 - Use `docker compose` to manage services; the sandbox can reach host containers via `host.docker.internal`
 - You have full sudo access if you need to install additional system packages
 - Agent config directories (`.openharness/`, `.claude/`, `.codex/`) are in the workspace root
+- `agent-browser` is the primary testing tool. Always close sessions when done. Use `--session` for test isolation. Wait for selectors to be present before taking screenshots.
