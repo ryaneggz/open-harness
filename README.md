@@ -8,30 +8,40 @@ Isolated, pre-configured sandbox containers for AI coding agents — [Claude Cod
 
 ## ⚡ Quickstart
 
-**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [git](https://git-scm.com/). Node.js only needed with `--with-cli` flag.
+**Only host dependency:** [Docker](https://docs.docker.com/get-docker/).
 
-### 1. Install the CLI
+### 1. Start the sandbox
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/install.sh | bash
-```
-
-### 2. Start the sandbox
-
-**Option A — VS Code (recommended):**
-Open the repo in VS Code → `Cmd+Shift+P` → **"Reopen in Container"**
-
-**Option B — CLI:**
-```bash
-openharness sandbox
-```
-
-**Option C — Manual:**
-```bash
+git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
 cp .devcontainer/.example.env .env        # configure name, password, etc.
 docker compose -f .devcontainer/docker-compose.yml up -d --build
+```
+
+### 2. Connect to the sandbox
+
+**Option A — Terminal (works everywhere):**
+```bash
 docker exec -it -u sandbox openharness bash   # use your SANDBOX_NAME
 ```
+
+**Option B — VS Code Attach to Container (local):**
+Install the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension → `Cmd+Shift+P` → **"Attach to Running Container"** → select your sandbox.
+
+**Option C — VS Code Remote SSH + Attach (remote server):**
+If Docker is running on a remote host, SSH in first, then attach to the container.
+
+1. Add an entry to your local `~/.ssh/config` so credentials forward automatically:
+
+   ```
+   Host openharness
+     HostName your-server-ip
+     User openharness
+     ForwardAgent yes
+   ```
+
+2. In VS Code: **Remote-SSH: Connect to Host** → `openharness`
+3. Once connected to the remote, **Attach to Running Container** → select your sandbox.
 
 ### 3. Onboard (one-time, inside the sandbox)
 
@@ -44,19 +54,13 @@ claude                           # authenticate Claude Code (OAuth)
 ### 4. Start working
 
 ```bash
-openharness shell open-harness   # enter the sandbox
 claude                           # start an agent
 ```
-
-| Field | Value |
-|-------|-------|
-| User | `sandbox` |
-| Shell | `openharness shell <name>` or `docker exec -it -u sandbox <name> bash` |
 
 ### Cleanup
 
 ```bash
-openharness clean                # containers + volumes
+docker compose -f .devcontainer/docker-compose.yml down -v
 ```
 
 ---
