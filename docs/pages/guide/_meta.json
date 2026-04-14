@@ -6,5 +6,6 @@
   "multi-sandbox-ssh": "Multi-Sandbox SSH",
   "heartbeats": "Heartbeats",
   "identity": "Identity & Memory",
+  "uat-testing": "UAT Testing",
   "releases": "Releases"
 }
