@@ -14,13 +14,13 @@ Isolated, pre-configured sandbox containers for AI coding agents — [Claude Cod
 
 ```bash
 git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
-cp .devcontainer/.example.env .env        # configure name, password, etc.
+cp .devcontainer/.example.env .devcontainer/.env        # configure name, password, etc.
 ```
 
 ### 2. Start the sandbox
 
 ```bash
-docker compose -f .devcontainer/docker-compose.yml up -d --build
+docker compose --env-file .devcontainer/.env -f .devcontainer/docker-compose.yml up -d --build
 ```
 
 ### 3. Connect
