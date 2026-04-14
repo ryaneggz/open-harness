@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: ${SANDBOX_NAME:-sandbox}-postgres
+    container_name: ${SANDBOX_NAME:-openharness}-postgres
     environment:
       POSTGRES_USER: sandbox
       POSTGRES_PASSWORD: sandbox
@@ -31,7 +31,7 @@ services:
 
 networks:
   devnet:
-    name: ${SANDBOX_NAME:-sandbox}-devnet
+    name: ${SANDBOX_NAME:-openharness}-devnet
     driver: bridge
 
 volumes:

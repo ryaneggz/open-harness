@@ -1,8 +1,8 @@
-name: ${SANDBOX_NAME:-sandbox}
+name: ${SANDBOX_NAME:-openharness}
 
 services:
   sandbox:
-    container_name: ${SANDBOX_NAME:-sandbox}
+    container_name: ${SANDBOX_NAME:-openharness}
     build:
       context: ..
       dockerfile: .devcontainer/Dockerfile

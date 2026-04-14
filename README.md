@@ -73,7 +73,7 @@ Docker Compose reads `.env` automatically from the project root.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SANDBOX_NAME` | `sandbox` | Name for the Docker container, compose project, and CLI commands |
+| `SANDBOX_NAME` | `openharness` | Name for the Docker container, compose project, and CLI commands |
 | `SANDBOX_PASSWORD` | `changeme` | Linux user password — only set when sshd overlay is active (SSH login) |
 | `TZ` | `America/Denver` | Container timezone — affects cron schedules and log timestamps |
 | `HEARTBEAT_AGENT` | `claude` | Which agent CLI runs heartbeat tasks (`claude`, `codex`, `pi`) |
