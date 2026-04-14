@@ -5,9 +5,9 @@ paths:
 
 # API Routes
 
-- Use Route Handlers (`route.ts`) with named exports: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`
-- Validate request input at the boundary — use Zod or similar for schema validation
-- Return `NextResponse.json()` with appropriate HTTP status codes
-- Use typed request/response: `NextRequest` input, typed JSON output
-- Handle errors with try/catch — return structured error responses, never expose stack traces
-- Keep route handlers thin — extract business logic into `src/lib/` modules
+- Route Handlers (`route.ts`): `GET`, `POST`, `PUT`, `PATCH`, `DELETE`
+- Validate input at boundary (Zod)
+- Return `NextResponse.json()` with proper status codes
+- Typed: `NextRequest` in, typed JSON out
+- Try/catch — structured errors, never expose stack traces
+- Thin handlers — logic in `src/lib/`

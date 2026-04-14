@@ -4,48 +4,37 @@ paths:
   - "projects/next-app/next.config.ts"
 ---
 
-# Next.js + Vercel Best Practices
+# Next.js
 
 ## Server vs Client
-
-- Default to Server Components — only add `"use client"` when the component needs browser APIs, hooks, or event handlers
-- Use `"use client"` at the component boundary, not at the page level
-- Never import server-only code in client components — use `server-only` package to enforce
-- Fetch data in Server Components, pass as props to Client Components
+- Default Server Components — `"use client"` only for browser APIs/hooks/events
+- `"use client"` at component boundary, not page level
+- Never import server-only in client — use `server-only` package
+- Fetch in Server Components, pass as props to Client
 
 ## App Router
+- `page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, `not-found.tsx`
+- Route-specific components colocated; shared in `src/components/`
+- `NEXT_PUBLIC_` prefix only if client-side needed
 
-- Route files: `page.tsx` for pages, `layout.tsx` for layouts, `loading.tsx` for suspense, `error.tsx` for error boundaries, `not-found.tsx` for 404
-- Colocate route-specific components in the route directory, shared components in `src/components/`
-- Environment variables: prefix with `NEXT_PUBLIC_` only if needed client-side
+## Data
+- `async` Server Components for loading — no `useEffect` for initial data
+- Colocate fetching with consumer component
+- Server Actions (`"use server"`) over API routes for mutations
 
-## Data Fetching
+## Perf
+- `next/image` with explicit dimensions — never `<img>`
+- `next/link` for internal nav — never raw `<a>`
+- `next/dynamic` for heavy client components
+- Export `metadata`/`generateMetadata`
 
-- Use `async` Server Components for data loading — no `useEffect` for initial data
-- Colocate data fetching with the component that uses it
-- For mutations, use Server Actions (`"use server"`) over API routes when possible
+## TS
+- Strict, zero `any`. `satisfies` for narrowing. `import type` for type-only.
 
-## Performance
-
-- Use `next/image` with explicit `width` and `height` — never use unoptimized `<img>`
-- Use `next/link` for all internal navigation — never use `<a>` for internal routes
-- Use dynamic imports (`next/dynamic`) for heavy client components
-- Export `metadata` or `generateMetadata` from page/layout files
-
-## TypeScript
-
-- Strict mode — zero tolerance for `any`
-- Use `satisfies` for type narrowing with inference
-- Prefer interfaces for object shapes, type aliases for unions and intersections
-- Use `import type` for type-only imports to reduce bundle size
-
-## Error Handling
-
-- Use `error.tsx` boundaries per route segment — always include a reset button
-- Log errors server-side, show user-friendly messages client-side
+## Errors
+- `error.tsx` per route segment with reset button
+- Server-side logging, user-friendly messages client-side
 
 ## Config
-
-- `turbopack: {}` in next.config.ts for Next.js 16 compatibility
-- `allowedDevOrigins` includes `next-postgres-shadcn.ruska.dev` for cloudflared tunnel
-- Dev server binds `0.0.0.0` (package.json) for container port forwarding
+- `turbopack: {}` for Next.js 16
+- Dev server binds `0.0.0.0` for container forwarding
