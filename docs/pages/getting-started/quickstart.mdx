@@ -1,66 +1,90 @@
 # Quickstart
 
-Pick whichever method fits your workflow:
+**Only host dependency:** [Docker](https://docs.docker.com/get-docker/).
 
-## Option A — VS Code Dev Containers (recommended)
-
-Open the repo in VS Code and select **"Reopen in Container"** from the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`). The Dev Containers extension handles everything automatically.
-
-## Option B — CLI
+## 1. Clone and configure
 
 ```bash
-openharness sandbox
-```
-
-Builds the image, starts the container, and applies your compose overlays from `.openharness/config.json`.
-
-## Option C — Manual compose
-
-```bash
+git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
 cp .devcontainer/.example.env .env        # configure name, password, etc.
-docker compose -f .devcontainer/docker-compose.yml up -d --build
-docker exec -it -u sandbox sandbox bash   # use your SANDBOX_NAME
 ```
 
 See [Configuration](/open-harness/guide/configuration) for all available environment variables.
 
-## Enter the sandbox
+## 2. Start the sandbox
 
 ```bash
-openharness shell open-harness   # enter the sandbox
-claude                           # start an agent
+docker compose -f .devcontainer/docker-compose.yml up -d --build
 ```
 
-## SSH access (optional)
+## 3. Connect to the sandbox
 
-The default sandbox does **not** expose SSH. To enable it, add `".devcontainer/docker-compose.sshd.yml"` to your `.openharness/config.json` overlays, then rebuild.
+Pick whichever method fits your setup:
 
-| Field | Value |
-|-------|-------|
-| User | `sandbox` |
-| Password | Set via `SANDBOX_PASSWORD` env (default: `changeme`) |
-| SSH Port | `2222` (when sshd overlay enabled) |
+### Option A — Terminal (works everywhere)
 
-### VS Code Remote-SSH
-
-With the sshd overlay enabled, add to `~/.ssh/config` on your host:
-
-```
-Host sandbox
-    HostName localhost
-    Port 2222
-    User sandbox
+```bash
+docker exec -it -u sandbox openharness bash   # use your SANDBOX_NAME
 ```
 
-Then connect via **Remote-SSH: Connect to Host...** → `sandbox`.
+### Option B — VS Code Attach to Container (local)
+
+Install the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension, then:
+
+`Cmd+Shift+P` → **"Attach to Running Container"** → select your sandbox.
+
+### Option C — VS Code Remote SSH + Attach (remote server)
+
+If Docker is running on a remote host, SSH into the host first, then attach to the container.
+
+1. Add an entry to your local `~/.ssh/config` so credentials forward automatically:
+
+   ```
+   Host openharness
+     HostName your-server-ip
+     User openharness
+     ForwardAgent yes
+   ```
+
+2. In VS Code: **Remote-SSH: Connect to Host** → `openharness`
+3. Once connected to the remote host: **Attach to Running Container** → select your sandbox.
+
+### Option D — SSH directly into sandboxes
+
+Enable the `sshd` overlay and SSH straight into any sandbox on a unique port. This also enables sandbox-to-sandbox communication and CI/CD integration.
+
+See the [Multi-Sandbox SSH guide](/open-harness/guide/multi-sandbox-ssh) for full setup.
+
+## 4. Onboard (one-time)
+
+Inside the sandbox, authenticate the tools you'll use:
+
+```bash
+gh auth login                    # GitHub CLI
+gh auth setup-git                # git credential helper (no SSH keys needed)
+pi                               # Pi Agent OAuth — powers Slack, heartbeats, extensions
+```
+
+See [Onboarding](/open-harness/getting-started/onboarding) for the full walkthrough.
+
+## 5. Start working
+
+```bash
+claude                           # terminal coding agent
+pi                               # automations — Slack, heartbeats, extensions
+```
 
 ## Cleanup
 
 ```bash
-openharness clean                # stop containers + remove volumes
-openharness list                 # see what's still running
+docker compose -f .devcontainer/docker-compose.yml down -v    # containers + volumes
 ```
 
-## Next step
+Omit `-v` to keep auth volumes (Claude Code, GitHub CLI, Cloudflare tokens) across rebuilds.
 
-Complete the [one-time onboarding](/open-harness/getting-started/onboarding) to set up GitHub and Claude Code auth.
+## Next steps
+
+- [What's installed](/open-harness/getting-started/whats-installed) — full inventory of pre-installed tools
+- [Compose overlays](/open-harness/guide/overlays) — add Postgres, Slack, Docker-in-Docker, SSH
+- [Workspace structure](/open-harness/guide/workspace) — identity files, memory, heartbeats
+- [Permissions & security](/open-harness/guide/permissions) — what agents can and can't do
