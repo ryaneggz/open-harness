@@ -17,8 +17,12 @@ Builds the image, starts the container, and applies your compose overlays from `
 ## Option C — Manual compose
 
 ```bash
+cp .devcontainer/.example.env .env        # configure name, password, etc.
 docker compose -f .devcontainer/docker-compose.yml up -d --build
+docker exec -it -u sandbox sandbox bash   # use your SANDBOX_NAME
 ```
+
+See [Configuration](/open-harness/guide/configuration) for all available environment variables.
 
 ## Enter the sandbox
 
@@ -59,4 +63,4 @@ openharness list                 # see what's still running
 
 ## Next step
 
-Complete the [one-time onboarding](/open-harness/getting-started/onboarding) to set up SSH, GitHub, and Claude Code auth.
+Complete the [one-time onboarding](/open-harness/getting-started/onboarding) to set up GitHub and Claude Code auth.
