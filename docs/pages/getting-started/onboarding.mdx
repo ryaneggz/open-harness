@@ -8,7 +8,7 @@ openharness onboard              # from the host
 bash ~/install/onboard.sh
 ```
 
-## The 4 steps
+## Steps
 
 ### Step 1 — SSH Key
 
@@ -22,18 +22,30 @@ bash ~/install/onboard.sh
 - Runs `gh auth login` if not authenticated
 - Required for creating PRs, issues, and releases from inside the sandbox
 
-### Step 3 — Cloudflare Tunnel (optional)
+### Step 3 — Git Authentication
+
+- Runs `gh auth setup-git` to configure git credential helper
+- Eliminates the need for SSH keys for git operations
+- Works with HTTPS remotes automatically
+
+### Step 4 — Cloudflare Tunnel (optional)
 
 - Only runs if `cloudflared` is installed in the container
 - Runs `cloudflared login` for Cloudflare authentication
 - Prompts for tunnel name, hostname, and local port
 - Creates a tunnel config for public URL access to your dev server
 
-### Step 4 — Claude Code
+### Step 5 — Claude Code
 
 - Checks for existing credentials in `~/.claude/`
 - Runs `claude --version` to trigger OAuth if needed
 - Required for using Claude Code as your coding agent
+
+### Step 6 — Pi Agent
+
+- Runs `pi` to trigger OAuth authentication
+- Pi Agent powers the Slack bot, heartbeats, and extensions
+- Required if using any automation features (Slack, scheduled tasks)
 
 ## After onboarding
 
@@ -42,6 +54,10 @@ The wizard:
 - Starts the Next.js dev server on port 3000
 - Starts the Cloudflare tunnel (if configured)
 - Writes an onboarded marker so it won't run again
+
+Once complete, agents are ready to use:
+- `claude` — terminal coding agent
+- `pi` — automations (Slack, heartbeats, extensions)
 
 ## Re-running
 

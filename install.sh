@@ -7,20 +7,28 @@ banner() { printf "\n${CYAN}==> %s${NC}\n" "$*"; }
 ok()     { printf "${GREEN} ✓  %s${NC}\n" "$*"; }
 die()    { printf "${RED}ERROR: %s${NC}\n" "$*" >&2; exit 1; }
 
+WITH_CLI=false
+for arg in "$@"; do
+  case "$arg" in
+    --with-cli) WITH_CLI=true ;;
+  esac
+done
+
 # ─── Banner ──────────────────────────────────────────────────────────
 printf "\n${CYAN}╔══════════════════════════════════════╗${NC}\n"
 printf "${CYAN}║   Open Harness — CLI Installer       ║${NC}\n"
 printf "${CYAN}╚══════════════════════════════════════╝${NC}\n\n"
 
-# ─── 1. Check Node.js >= 20 ──────────────────────────────────────────
-banner "Checking Node.js"
-if ! command -v node &>/dev/null; then
-  die "Node.js is not installed. Install Node.js 20+ from: https://nodejs.org"
+# ─── 1. Check Docker ────────────────────────────────────────────────
+banner "Checking Docker"
+if ! command -v docker &>/dev/null; then
+  die "Docker is not installed. Install Docker from: https://docs.docker.com/get-docker/"
 fi
-if ! node -e "if(parseInt(process.version.slice(1))<20)process.exit(1)" 2>/dev/null; then
-  die "Node.js 20+ required (found $(node --version)). Upgrade at: https://nodejs.org"
+if ! docker compose version &>/dev/null; then
+  die "Docker Compose plugin is not installed. Install it from: https://docs.docker.com/compose/install/"
 fi
-ok "Node.js $(node --version) — OK"
+ok "Docker $(docker --version | awk '{print $3}') — OK"
+ok "Docker Compose $(docker compose version --short) — OK"
 
 # ─── 2. Check git ────────────────────────────────────────────────────
 banner "Checking git"
@@ -29,31 +37,15 @@ if ! command -v git &>/dev/null; then
 fi
 ok "git $(git --version | awk '{print $3}') — OK"
 
-# ─── 3. Ensure pnpm is available ─────────────────────────────────────
-banner "Checking pnpm"
-if command -v pnpm &>/dev/null; then
-  ok "pnpm $(pnpm --version) — already installed"
-elif command -v corepack &>/dev/null; then
-  corepack enable
-  corepack prepare pnpm@latest --activate
-  ok "pnpm $(pnpm --version) — enabled via corepack"
-else
-  npm install -g pnpm
-  ok "pnpm $(pnpm --version) — installed via npm"
-fi
-
-# ─── 4. Resolve repo directory ────────────────────────────────────────
-# If running from inside the repo, use it. Otherwise clone fresh.
+# ─── 3. Resolve repo directory ────────────────────────────────────────
 banner "Resolving repository"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
 
 if [ -f "$SCRIPT_DIR/packages/sandbox/package.json" ] && [ -f "$SCRIPT_DIR/pnpm-workspace.yaml" ]; then
-  # Running from inside the repo (bash install.sh or ./install.sh)
   REPO_DIR="$SCRIPT_DIR"
   ok "Using local repo: $REPO_DIR"
 else
-  # Running via curl pipe or from outside the repo — clone it
   REPO_DIR="$HOME/.openharness"
   if [ -d "$REPO_DIR/.git" ]; then
     printf "  Repository exists — pulling latest changes...\n"
@@ -65,34 +57,89 @@ else
   fi
 fi
 
-# ─── 5. Build and link CLI ───────────────────────────────────────────
-banner "Building and linking openharness CLI"
 cd "$REPO_DIR"
-pnpm install
-pnpm -r run build
-pnpm link --global ./packages/sandbox
-ok "openharness CLI built and linked"
 
-# ─── 6. Verify installation ──────────────────────────────────────────
-banner "Verifying installation"
-if ! command -v openharness &>/dev/null; then
-  die "openharness command not found on PATH. Check that pnpm global bin is in your PATH."
+# ─── 4. Configure sandbox ────────────────────────────────────────────
+banner "Configuring sandbox"
+
+# Container name
+DEFAULT_NAME=$(basename "$REPO_DIR")
+printf "  Container name [${DEFAULT_NAME}]: "
+read -r SANDBOX_NAME
+SANDBOX_NAME="${SANDBOX_NAME:-$DEFAULT_NAME}"
+ok "Name: $SANDBOX_NAME"
+
+# Password (only used when sshd overlay is active)
+printf "  Sandbox password [changeme]: "
+read -rs SANDBOX_PASSWORD
+printf "\n"
+SANDBOX_PASSWORD="${SANDBOX_PASSWORD:-changeme}"
+ok "Password: (set)"
+
+# Write .env for docker compose
+cat > "$REPO_DIR/.env" <<ENVEOF
+SANDBOX_NAME=$SANDBOX_NAME
+SANDBOX_PASSWORD=$SANDBOX_PASSWORD
+ENVEOF
+ok "Wrote .env"
+
+# ─── 5. Build and start sandbox ──────────────────────────────────────
+banner "Building and starting sandbox"
+docker compose -f .devcontainer/docker-compose.yml up -d --build
+ok "Sandbox '$SANDBOX_NAME' started"
+
+# ─── 6. (Optional) Build and link host CLI ───────────────────────────
+if [ "$WITH_CLI" = true ]; then
+  banner "Building host CLI (--with-cli)"
+
+  # Check Node.js >= 20
+  if ! command -v node &>/dev/null; then
+    die "Node.js is not installed. Install Node.js 20+ from: https://nodejs.org"
+  fi
+  if ! node -e "if(parseInt(process.version.slice(1))<20)process.exit(1)" 2>/dev/null; then
+    die "Node.js 20+ required (found $(node --version)). Upgrade at: https://nodejs.org"
+  fi
+  ok "Node.js $(node --version) — OK"
+
+  # Ensure pnpm
+  if command -v pnpm &>/dev/null; then
+    ok "pnpm $(pnpm --version) — already installed"
+  elif command -v corepack &>/dev/null; then
+    corepack enable
+    corepack prepare pnpm@latest --activate
+    ok "pnpm $(pnpm --version) — enabled via corepack"
+  else
+    npm install -g pnpm
+    ok "pnpm $(pnpm --version) — installed via npm"
+  fi
+
+  pnpm install
+  pnpm -r run build
+  pnpm link --global ./packages/sandbox
+  ok "openharness CLI built and linked"
+
+  if ! command -v openharness &>/dev/null; then
+    die "openharness command not found on PATH. Check that pnpm global bin is in your PATH."
+  fi
+  ok "openharness available on PATH"
 fi
-ok "openharness $(openharness --version 2>/dev/null || echo 'installed') — available on PATH"
 
 # ─── Success ─────────────────────────────────────────────────────────
 printf "\n${GREEN}Installation complete!${NC}\n\n"
 printf "  ${CYAN}Next steps${NC}\n"
 printf "  ──────────────────────────────────────\n"
 printf "\n"
-printf "  ${CYAN}Option A — VS Code (recommended):${NC}\n"
+printf "  ${CYAN}Enter the sandbox:${NC}\n"
+if [ "$WITH_CLI" = true ]; then
+  printf "    openharness shell %s\n" "$SANDBOX_NAME"
+else
+  printf "    docker exec -it -u sandbox %s bash\n" "$SANDBOX_NAME"
+fi
+printf "\n"
+printf "  ${CYAN}One-time setup (inside the sandbox):${NC}\n"
+printf "    gh auth login                         # authenticate GitHub CLI\n"
+printf "    gh auth setup-git                     # configure git auth\n"
+printf "\n"
+printf "  ${CYAN}VS Code (alternative):${NC}\n"
 printf "    Open the repo in VS Code → Cmd+Shift+P → \"Reopen in Container\"\n"
-printf "\n"
-printf "  ${CYAN}Option B — CLI:${NC}\n"
-printf "    openharness sandbox                   # build + start sandbox\n"
-printf "    openharness onboard                   # one-time auth setup\n"
-printf "\n"
-printf "  ${CYAN}Option C — Manual:${NC}\n"
-printf "    docker compose -f .devcontainer/docker-compose.yml up -d --build\n"
-printf "    ssh sandbox@localhost -p 2222         # password: test1234\n"
 printf "\n"

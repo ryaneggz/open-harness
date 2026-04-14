@@ -14,12 +14,12 @@ When you start a sandbox (`openharness sandbox` or `docker compose up`), this se
 3. **entrypoint.sh runs as root:**
    - Matches the container's Docker group GID to the host socket GID (fixes DinD permissions)
    - Fixes volume ownership (root → sandbox user)
-   - Generates SSH keypair and host keys if none exist
+   - Runs conditional SSH server setup if sshd overlay is active
    - Starts the cron daemon
    - Syncs heartbeat schedules from `heartbeats.conf`
    - Runs `workspace/startup.sh` as the sandbox user
    - Prints first-boot onboarding message if not yet onboarded
-   - Execs the SSH server as the main process
+   - Execs the container command (`sleep infinity` by default, or `sshd -D` with the sshd overlay)
 
 4. **startup.sh runs as sandbox user:**
    - Installs project dependencies (`pnpm install`)

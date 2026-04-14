@@ -50,7 +50,30 @@ export class SandboxConfig {
         // Ignore parse errors — use base only
       }
     }
+    // Auto-enable SSH overlay when HOST_SSH_DIR is set
+    const sshOverlay = ".devcontainer/docker-compose.ssh.yml";
+    if (!files.includes(sshOverlay) && existsSync(sshOverlay)) {
+      const hostSshDir = process.env.HOST_SSH_DIR ?? readEnvVar(ENV_FILE, "HOST_SSH_DIR");
+      if (hostSshDir) {
+        files.push(sshOverlay);
+      }
+    }
+
     this.composeFiles = files;
+  }
+}
+
+/**
+ * Read a variable from a .env file.
+ */
+function readEnvVar(envPath: string, key: string): string | undefined {
+  if (!existsSync(envPath)) return undefined;
+  try {
+    const content = readFileSync(envPath, "utf-8");
+    const match = content.match(new RegExp(`^${key}=(.+)$`, "m"));
+    return match?.[1]?.trim() || undefined;
+  } catch {
+    return undefined;
   }
 }
 
@@ -58,12 +81,5 @@ export class SandboxConfig {
  * Read SANDBOX_NAME from .devcontainer/.env
  */
 function readEnvName(): string | undefined {
-  if (!existsSync(ENV_FILE)) return undefined;
-  try {
-    const content = readFileSync(ENV_FILE, "utf-8");
-    const match = content.match(/^SANDBOX_NAME=(.+)$/m);
-    return match?.[1]?.trim() || undefined;
-  } catch {
-    return undefined;
-  }
+  return readEnvVar(ENV_FILE, "SANDBOX_NAME");
 }

@@ -14,29 +14,33 @@ Provision a new agent sandbox. The sandbox uses `.devcontainer/` as the base env
 
 1. Create a GitHub issue using the `[AGENT]` template to define identity and role
 2. Start the sandbox:
-
-   **Option A — VS Code Dev Containers (recommended):**
-   Open the repo in VS Code → "Reopen in Container"
-
-   **Option B — CLI:**
-   ```bash
-   openharness sandbox
-   ```
-
-   **Option C — Manual compose:**
    ```bash
    docker compose -f .devcontainer/docker-compose.yml up -d --build
    ```
 
-3. Complete onboarding (one-time):
+3. Connect to the sandbox:
+
+   **Option A — Terminal:**
    ```bash
-   openharness onboard              # from the host
+   docker exec -it -u sandbox openharness bash
    ```
 
-4. Enter and start the agent:
+   **Option B — VS Code Attach to Container (local):**
+   Dev Containers extension → "Attach to Running Container" → select sandbox
+
+   **Option C — VS Code Remote SSH + Attach (remote server):**
+   SSH into the remote host first, then attach to the container
+
+4. Complete onboarding (one-time, inside the sandbox):
    ```bash
-   openharness shell <name>
-   claude                           # or codex, pi
+   gh auth login && gh auth setup-git
+   pi                               # authenticate Pi Agent (OAuth) — powers Slack, heartbeats, and extensions
+   ```
+
+5. Start the agent:
+   ```bash
+   claude                           # terminal coding agent
+   pi                               # automations — Slack, heartbeats, extensions
    ```
 
 ### Validate

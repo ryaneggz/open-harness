@@ -62,7 +62,6 @@ RUN pnpm add -g agent-browser@0.8.5 \
 
 # ─── Sandbox user ──────────────────────────────────────────────────
 RUN useradd -m -s /bin/bash sandbox \
- && echo "sandbox:test1234" | chpasswd \
  && echo "sandbox ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/sandbox \
  && chmod 0440 /etc/sudoers.d/sandbox \
  && groupadd -f docker && usermod -aG docker sandbox
@@ -89,11 +88,6 @@ RUN mkdir -p /.devcontainer && echo '{"workspaceFolder":"/home/sandbox/harness",
 # Labels for VS Code "Attach to Running Container"
 LABEL devcontainer.metadata='[{"remoteUser":"sandbox","workspaceFolder":"/home/sandbox/harness"}]'
 
-# ─── SSH server ─────────────────────────────────────────────────────
-RUN mkdir -p /run/sshd \
- && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config \
- && sed -i 's/#PermitUserEnvironment no/PermitUserEnvironment yes/' /etc/ssh/sshd_config
-
 # ─── Copy install scripts + workspace (for CI; bind mount overrides at runtime)
 COPY --chown=sandbox:sandbox install/ /home/sandbox/install/
 RUN chmod +x /home/sandbox/install/*.sh
@@ -105,7 +99,6 @@ COPY .devcontainer/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 WORKDIR /home/sandbox/harness
-EXPOSE 22
 
 ENTRYPOINT ["entrypoint.sh"]
-CMD ["/usr/sbin/sshd", "-D"]
+CMD ["sleep", "infinity"]

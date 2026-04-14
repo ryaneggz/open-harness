@@ -1,60 +1,90 @@
 # Quickstart
 
-Pick whichever method fits your workflow:
+**Only host dependency:** [Docker](https://docs.docker.com/get-docker/).
 
-## Option A — VS Code Dev Containers (recommended)
-
-Open the repo in VS Code and select **"Reopen in Container"** from the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`). The Dev Containers extension handles everything automatically.
-
-## Option B — CLI
+## 1. Clone and configure
 
 ```bash
-openharness sandbox
+git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
+cp .devcontainer/.example.env .env        # configure name, password, etc.
 ```
 
-Builds the image, starts the container, and applies your compose overlays from `.openharness/config.json`.
+See [Configuration](/open-harness/guide/configuration) for all available environment variables.
 
-## Option C — Manual compose
+## 2. Start the sandbox
 
 ```bash
 docker compose -f .devcontainer/docker-compose.yml up -d --build
 ```
 
-## Enter the sandbox
+## 3. Connect to the sandbox
+
+Pick whichever method fits your setup:
+
+### Option A — Terminal (works everywhere)
 
 ```bash
-openharness shell open-harness   # enter the sandbox
-claude                           # start an agent
+docker exec -it -u sandbox openharness bash   # use your SANDBOX_NAME
 ```
 
-## Credentials
+### Option B — VS Code Attach to Container (local)
 
-| Field | Value |
-|-------|-------|
-| User | `sandbox` |
-| Password (SSH + sudo) | `test1234` |
-| SSH Port | `2222` |
+Install the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension, then:
 
-## VS Code Remote-SSH
+`Cmd+Shift+P` → **"Attach to Running Container"** → select your sandbox.
 
-Add to `~/.ssh/config` on your host:
+### Option C — VS Code Remote SSH + Attach (remote server)
 
+If Docker is running on a remote host, SSH into the host first, then attach to the container.
+
+1. Add an entry to your local `~/.ssh/config` so credentials forward automatically:
+
+   ```
+   Host openharness
+     HostName your-server-ip
+     User openharness
+     ForwardAgent yes
+   ```
+
+2. In VS Code: **Remote-SSH: Connect to Host** → `openharness`
+3. Once connected to the remote host: **Attach to Running Container** → select your sandbox.
+
+### Option D — SSH directly into sandboxes
+
+Enable the `sshd` overlay and SSH straight into any sandbox on a unique port. This also enables sandbox-to-sandbox communication and CI/CD integration.
+
+See the [Multi-Sandbox SSH guide](/open-harness/guide/multi-sandbox-ssh) for full setup.
+
+## 4. Onboard (one-time)
+
+Inside the sandbox, authenticate the tools you'll use:
+
+```bash
+gh auth login                    # GitHub CLI
+gh auth setup-git                # git credential helper (no SSH keys needed)
+pi                               # Pi Agent OAuth — powers Slack, heartbeats, extensions
 ```
-Host sandbox
-    HostName localhost
-    Port 2222
-    User sandbox
-```
 
-Then connect via **Remote-SSH: Connect to Host...** → `sandbox`.
+See [Onboarding](/open-harness/getting-started/onboarding) for the full walkthrough.
+
+## 5. Start working
+
+```bash
+claude                           # terminal coding agent
+pi                               # automations — Slack, heartbeats, extensions
+```
 
 ## Cleanup
 
 ```bash
-openharness clean                # stop containers + remove volumes
-openharness list                 # see what's still running
+docker compose -f .devcontainer/docker-compose.yml down -v    # containers + volumes
 ```
 
-## Next step
+Omit `-v` to keep auth volumes (Claude Code, GitHub CLI, Cloudflare tokens) across rebuilds.
 
-Complete the [one-time onboarding](/open-harness/getting-started/onboarding) to set up SSH, GitHub, and Claude Code auth.
+## Next steps
+
+- [What's installed](/open-harness/getting-started/whats-installed) — full inventory of pre-installed tools
+- [Compose overlays](/open-harness/guide/overlays) — add Postgres, Slack, Docker-in-Docker, SSH
+- [Workspace structure](/open-harness/guide/workspace) — identity files, memory, heartbeats
+- [Permissions & security](/open-harness/guide/permissions) — what agents can and can't do

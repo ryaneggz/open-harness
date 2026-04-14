@@ -49,7 +49,7 @@ List all available overlay files (everything matching `.devcontainer/docker-comp
 and show which are currently enabled in `.openharness/config.json`.
 
 **Default overlays** (postgres is opt-in, not included by default):
-- cloudflared, docker, slack, ssh-generate
+- cloudflared, docker, slack
 
 **Guard**: `docker-compose.git.yml` requires `GIT_COMMON_DIR` (only valid in worktrees).
 If not in a worktree, do NOT include `git.yml` — it will produce invalid mount path `:`.
@@ -63,20 +63,30 @@ Available compose overlays:
   [x] docker-compose.docker.yml        — Docker socket mount (DinD)
   [ ] docker-compose.git.yml           — Git worktree mount (ONLY valid in worktrees)
   [x] docker-compose.slack.yml          — Slack bot env vars
+  [ ] docker-compose.sshd.yml           — SSH server daemon (opt-in, port 2222)
   [ ] (any new overlays found)
 
 Enable/disable any overlays?
 ```
 
-**SSH key strategy** (mutually exclusive — exactly one must be enabled):
+**SSH server access** (opt-in — not enabled by default):
+
+The `sshd` overlay runs sshd as the main process and maps port 2222:22.
+The entrypoint auto-configures password auth and host keys when this overlay is active.
+Password is set from `SANDBOX_PASSWORD` env var (default: `changeme`).
+
+**SSH key strategy** (mutually exclusive — pick at most one):
 ```
-SSH keys for git authentication:
+SSH keys for git authentication (optional — gh auth setup-git is the recommended alternative):
   ( ) docker-compose.ssh.yml          — Mount host ~/.ssh read-only (no GitHub setup needed)
   ( ) docker-compose.ssh-generate.yml — Generate new keypair in a persistent volume (must add to GitHub)
 ```
 
+**Note:** The SSH *key* overlays (`ssh.yml`, `ssh-generate.yml`) manage SSH client keys for git.
+The `sshd.yml` overlay manages the SSH *server* for remote access. They serve different purposes.
+
 If the user changes selections, update `.openharness/config.json` accordingly.
-Ensure only one SSH overlay is enabled — if the user picks `ssh.yml`, remove `ssh-generate.yml` and vice versa.
+Ensure only one SSH key overlay is enabled — if the user picks `ssh.yml`, remove `ssh-generate.yml` and vice versa.
 
 ### 2c. Build compose file list
 
@@ -189,20 +199,18 @@ Check logs and remediate:
 
 Re-run `pnpm run test:setup` after fixing. Do not loop more than once.
 
-## 7. Retrieve SSH public key
+## 7. Retrieve SSH public key (if ssh-generate overlay is active)
 
-The sandbox generates an ED25519 keypair on first boot (persisted in the `ssh-keys` volume).
+If the `ssh-generate` overlay is enabled, the sandbox generates an ED25519 keypair on first boot.
 Read the public key so the user can add it to GitHub / GitLab:
 
 ```bash
-docker exec -u sandbox "$SANDBOX_NAME" cat ~/.ssh/id_ed25519.pub
+docker exec -u sandbox "$SANDBOX_NAME" cat ~/.ssh/id_ed25519.pub 2>/dev/null || echo "(no SSH keypair — using gh auth for git)"
 ```
 
-Save this value for the report.
+If no keypair exists, skip this step — git auth via `gh auth setup-git` is the default.
 
 ## 8. Report
-
-Include the SSH public key so the user can paste it directly into their git platform:
 
 ```
 Sandbox 'next-postgres-shadcn' is ready!
@@ -211,12 +219,10 @@ Sandbox 'next-postgres-shadcn' is ready!
   URL:     https://next-postgres-shadcn.ruska.dev
   Tests:   8/8 passed
 
-  SSH public key (add to GitHub → Settings → SSH keys):
-    <paste id_ed25519.pub contents here>
-
   Finish setup (one-time, inside the sandbox):
     openharness shell next-postgres-shadcn
     gh auth login                           # authenticate GitHub CLI
+    gh auth setup-git                       # configure git auth (no SSH keys needed)
     claude                                  # authenticate Claude Code (OAuth)
 
   CLI (openharness):

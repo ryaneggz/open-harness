@@ -1,0 +1,8 @@
+# SSH server overlay — run sshd as the main process with port 2222 mapped.
+# Entrypoint auto-configures password auth and host keys when this is active.
+# Add to .openharness/config.json composeOverrides to activate.
+services:
+  sandbox:
+    ports:
+      - "2222:22"
+    command: /usr/sbin/sshd -D

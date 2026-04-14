@@ -26,15 +26,24 @@ open-harness/
 │   ├── cloudflared-tunnel.sh   # cloudflare tunnel configuration
 │   └── entrypoint.sh           # sandbox container entrypoint
 ├── workspace/                  # template workspace for all agent sandboxes
-│   ├── AGENTS.md               # agent operating procedures (CLAUDE.md symlinks here)
-│   ├── SOUL.md                 # agent persona template
-│   ├── MEMORY.md               # long-term memory
-│   ├── heartbeats.conf         # heartbeat schedule config
-│   ├── heartbeats/             # heartbeat task .md files
+│   ├── AGENTS.md               # operating procedures — decision rules, skills, sub-agents
+│   ├── CLAUDE.md               # symlink → AGENTS.md (Claude Code reads this automatically)
+│   ├── SOUL.md                 # agent personality, tone, values, guardrails
+│   ├── IDENTITY.md             # name, role, mission, tech stack, URLs
+│   ├── USER.md                 # owner preferences, constraints, goals
+│   ├── TOOLS.md                # environment, available tools, service endpoints
+│   ├── HEARTBEAT.md            # meta-maintenance routines
+│   ├── MEMORY.md               # long-term memory (learned decisions, lessons)
+│   ├── heartbeats.conf         # cron schedule for autonomous tasks
+│   ├── heartbeats/             # task definitions (markdown prompt files)
+│   ├── startup.sh              # runs on container boot after onboarding
+│   ├── memory/                 # daily activity logs (YYYY-MM-DD.md)
 │   ├── .claude/
 │   │   ├── rules/              # coding standards (git, code-quality, nextjs, api, etc.)
-│   │   ├── skills/             # reusable skill templates
-│   │   └── agents/             # sub-agent personas (implementer, critic, pm, council)
+│   │   ├── skills/             # reusable skill definitions
+│   │   └── agents/             # sub-agent prompts (implementer, critic, pm, council)
+│   ├── .slack/
+│   │   └── MEMORY.md           # Slack-specific memory
 │   └── projects/
 │       └── next-app/           # Next.js project template
 ├── docs/                       # Nextra documentation site (this site)
@@ -45,3 +54,21 @@ open-harness/
 │   └── config.json             # compose overlay selection
 └── .claude/skills/             # orchestrator skills (/provision, /repair, /release, etc.)
 ```
+
+## Workspace identity files
+
+The `workspace/` directory contains markdown files that define the agent's identity, procedures, and memory. The orchestrator scaffolds these during provisioning; the agent owns and evolves them once running.
+
+| File | Purpose | Owner |
+|------|---------|-------|
+| `IDENTITY.md` | Name, role, mission, tech stack, URLs | Orchestrator → Agent |
+| `SOUL.md` | Personality, tone, values, guardrails | Orchestrator → Agent |
+| `USER.md` | Owner preferences, constraints, goals | User |
+| `TOOLS.md` | Environment, tools, service endpoints | Orchestrator |
+| `AGENTS.md` | Decision rules, skills, sub-agents | Orchestrator → Agent |
+| `HEARTBEAT.md` | Meta-maintenance routines | Agent |
+| `MEMORY.md` | Learned facts, decisions, lessons | Agent |
+
+`CLAUDE.md` is a symlink to `AGENTS.md` so Claude Code loads operating procedures automatically.
+
+See the [Workspace guide](/open-harness/guide/workspace) for full details on each file and the ownership model.
