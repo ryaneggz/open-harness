@@ -30,7 +30,7 @@ CRON_MARKER="# heartbeat-managed"
 log() {
   local ts
   ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  echo "[$ts] $*" | tee -a "$LOG_FILE"
+  echo "[$ts] $*" >> "$LOG_FILE"
 }
 
 rotate_log() {
@@ -197,21 +197,23 @@ ${heartbeat_content}
   log "[${basename}] Running heartbeat (agent: ${agent})"
 
   local response="" exit_code=0
+  local heartbeat_timeout="${HEARTBEAT_TIMEOUT:-3600}"
 
+  # Close the lock FD in child processes so orphaned children don't hold the flock
   case "$agent" in
     claude)
-      response=$(timeout 300 claude -p "$prompt" --dangerously-skip-permissions 2>&1) || exit_code=$?
+      response=$(timeout "$heartbeat_timeout" claude -p "$prompt" --dangerously-skip-permissions 2>&1 200>&-) || exit_code=$?
       ;;
     codex)
-      response=$(timeout 300 codex "$prompt" 2>&1) || exit_code=$?
+      response=$(timeout "$heartbeat_timeout" codex "$prompt" 2>&1 200>&-) || exit_code=$?
       ;;
     *)
-      response=$(timeout 300 "$agent" -p "$prompt" 2>&1) || exit_code=$?
+      response=$(timeout "$heartbeat_timeout" "$agent" -p "$prompt" 2>&1 200>&-) || exit_code=$?
       ;;
   esac
 
   if (( exit_code == 124 )); then
-    log "[${basename}] Timed out (300s limit)"
+    log "[${basename}] Timed out (${heartbeat_timeout}s limit)"
     return 0
   elif (( exit_code != 0 )); then
     log "[${basename}] Failed (exit code ${exit_code}): ${response:0:500}"

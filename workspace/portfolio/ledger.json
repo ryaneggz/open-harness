@@ -19,8 +19,10 @@
       "metrics_at_entry": null,
       "metrics_forward": {
         "sharpe_since_entry": null,
-        "return_since_entry": null,
-        "max_drawdown_since_entry": null
+        "return_since_entry": 0.0230,
+        "max_drawdown_since_entry": -0.0003,
+        "last_updated": "2026-04-03",
+        "note": "4 trading days only — Sharpe not yet meaningful. Return +2.30%, portfolio value $102,299"
       }
     }
   ]
