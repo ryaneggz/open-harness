@@ -85,14 +85,11 @@ if echo "$@" | grep -q sshd; then
   fi
 fi
 
-# Start cron daemon (needed for heartbeat scheduling)
-if command -v cron &>/dev/null; then
-  service cron start 2>/dev/null || true
-fi
-
-# Auto-sync heartbeat schedules from persistent config
-if [ -f "/home/sandbox/harness/workspace/heartbeats.conf" ]; then
-  gosu sandbox /home/sandbox/install/heartbeat.sh sync 2>/dev/null || true
+# Start heartbeat daemon (replaces cron-based scheduling)
+DAEMON_SCRIPT="/home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
+if [ -f "$DAEMON_SCRIPT" ]; then
+  gosu sandbox node "$DAEMON_SCRIPT" start >> /home/sandbox/.heartbeat/heartbeat.log 2>&1 &
+  echo "[entrypoint] heartbeat daemon started (pid $!)"
 fi
 
 # Build and link openharness CLI in background (from bind-mounted repo)

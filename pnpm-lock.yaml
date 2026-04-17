@@ -49,6 +49,9 @@ importers:
       '@sinclair/typebox':
         specifier: ^0.34.0
         version: 0.34.49
+      croner:
+        specifier: ^9.1.0
+        version: 9.1.0
     devDependencies:
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.0.0

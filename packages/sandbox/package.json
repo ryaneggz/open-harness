@@ -32,7 +32,8 @@
   },
   "dependencies": {
     "@mariozechner/pi-coding-agent": "latest",
-    "@sinclair/typebox": "^0.34.0"
+    "@sinclair/typebox": "^0.34.0",
+    "croner": "^9.1.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.0.0",
