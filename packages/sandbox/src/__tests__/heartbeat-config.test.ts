@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { readdir, readFile } from "node:fs/promises";
 
 vi.mock("node:fs", () => ({
   existsSync: vi.fn(),
@@ -7,11 +8,18 @@ vi.mock("node:fs", () => ({
   readdirSync: vi.fn(),
 }));
 
+vi.mock("node:fs/promises", () => ({
+  readdir: vi.fn(),
+  readFile: vi.fn(),
+}));
+
 const mockExistsSync = vi.mocked(existsSync);
 const mockReadFileSync = vi.mocked(readFileSync);
 const mockReaddirSync = vi.mocked(readdirSync);
+const mockReaddir = vi.mocked(readdir);
+const mockReadFile = vi.mocked(readFile);
 
-const { secondsToCron, parseFrontmatter, parseHeartbeatConfig } =
+const { secondsToCron, parseFrontmatter, parseHeartbeatConfig, parseHeartbeatConfigAsync } =
   await import("../lib/heartbeat/config.js");
 
 describe("secondsToCron", () => {
@@ -247,5 +255,101 @@ describe("parseHeartbeatConfig", () => {
       const result = parseHeartbeatConfig(workspacePath, "codex");
       expect(result[0].agent).toBe("codex");
     });
+  });
+});
+
+describe("parseHeartbeatConfigAsync", () => {
+  const workspacePath = "/home/sandbox/workspace";
+  const heartbeatsDir = `${workspacePath}/heartbeats`;
+  const legacyPath = `${workspacePath}/HEARTBEAT.md`;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockExistsSync.mockReturnValue(false);
+  });
+
+  it("returns empty array when neither heartbeats/ dir nor HEARTBEAT.md exists", async () => {
+    const result = await parseHeartbeatConfigAsync(workspacePath);
+    expect(result).toEqual([]);
+  });
+
+  it("scans heartbeats/ dir and parses frontmatter from .md files", async () => {
+    mockExistsSync.mockImplementation((p) => String(p) === heartbeatsDir);
+    mockReaddir.mockResolvedValue(["build-health.md", "nightly.md"] as unknown as Awaited<
+      ReturnType<typeof readdir>
+    >);
+    mockReadFile.mockImplementation((p) => {
+      if (String(p).includes("build-health.md")) {
+        return Promise.resolve(
+          `---\nschedule: "*/30 * * * *"\nagent: claude\nactive: 9-21\n---\n\n# Build`,
+        );
+      }
+      return Promise.resolve(`---\nschedule: "50 23 * * *"\n---\n\n# Nightly`);
+    });
+
+    const result = await parseHeartbeatConfigAsync(workspacePath);
+    expect(result).toHaveLength(2);
+
+    expect(result[0]).toEqual({
+      cronExpr: "*/30 * * * *",
+      filePath: "heartbeats/build-health.md",
+      agent: "claude",
+      activeStart: 9,
+      activeEnd: 21,
+    });
+
+    expect(result[1]).toEqual({
+      cronExpr: "50 23 * * *",
+      filePath: "heartbeats/nightly.md",
+      agent: "claude",
+    });
+  });
+
+  it("reads files in parallel via Promise.all", async () => {
+    mockExistsSync.mockImplementation((p) => String(p) === heartbeatsDir);
+    mockReaddir.mockResolvedValue(["a.md", "b.md", "c.md"] as unknown as Awaited<
+      ReturnType<typeof readdir>
+    >);
+    mockReadFile.mockResolvedValue(`---\nschedule: "0 * * * *"\n---\n`);
+
+    await parseHeartbeatConfigAsync(workspacePath);
+
+    // All three files should have been read
+    expect(mockReadFile).toHaveBeenCalledTimes(3);
+  });
+
+  it("skips files that fail to read", async () => {
+    mockExistsSync.mockImplementation((p) => String(p) === heartbeatsDir);
+    mockReaddir.mockResolvedValue(["good.md", "bad.md"] as unknown as Awaited<
+      ReturnType<typeof readdir>
+    >);
+    mockReadFile.mockImplementation((p) => {
+      if (String(p).includes("bad.md")) return Promise.reject(new Error("ENOENT"));
+      return Promise.resolve(`---\nschedule: "0 * * * *"\n---\n`);
+    });
+
+    const result = await parseHeartbeatConfigAsync(workspacePath);
+    expect(result).toHaveLength(1);
+  });
+
+  it("falls back to legacy HEARTBEAT.md when heartbeats/ dir does not exist", async () => {
+    mockExistsSync.mockImplementation((p) => String(p) === legacyPath);
+
+    const result = await parseHeartbeatConfigAsync(workspacePath);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      cronExpr: "*/30 * * * *",
+      filePath: "HEARTBEAT.md",
+      agent: "claude",
+    });
+  });
+
+  it("uses defaultAgent when agent not specified in frontmatter", async () => {
+    mockExistsSync.mockImplementation((p) => String(p) === heartbeatsDir);
+    mockReaddir.mockResolvedValue(["task.md"] as unknown as Awaited<ReturnType<typeof readdir>>);
+    mockReadFile.mockResolvedValue(`---\nschedule: "0 * * * *"\n---\n\n# Task`);
+
+    const result = await parseHeartbeatConfigAsync(workspacePath, "codex");
+    expect(result[0].agent).toBe("codex");
   });
 });

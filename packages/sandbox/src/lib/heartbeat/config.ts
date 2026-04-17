@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 export interface HeartbeatEntry {
@@ -88,13 +89,70 @@ export function parseHeartbeatConfig(
   return [];
 }
 
+/**
+ * Async variant of parseHeartbeatConfig — uses non-blocking I/O with
+ * parallel file reads. Preferred by the long-lived daemon to avoid blocking
+ * the event loop (and cron callbacks) during sync.
+ */
+export async function parseHeartbeatConfigAsync(
+  workspacePath: string,
+  defaultAgent = "claude",
+  defaultInterval = 1800,
+): Promise<HeartbeatEntry[]> {
+  const heartbeatsDir = path.join(workspacePath, "heartbeats");
+
+  if (existsSync(heartbeatsDir)) {
+    return parseHeartbeatDirAsync(heartbeatsDir, defaultAgent);
+  }
+
+  // Legacy fallback: bare HEARTBEAT.md with no frontmatter
+  const legacyFile = path.join(workspacePath, "HEARTBEAT.md");
+  if (existsSync(legacyFile)) {
+    return [
+      {
+        cronExpr: secondsToCron(defaultInterval),
+        filePath: "HEARTBEAT.md",
+        agent: defaultAgent,
+      },
+    ];
+  }
+
+  return [];
+}
+
 // ---------------------------------------------------------------------------
 // Internal
 // ---------------------------------------------------------------------------
 
-function parseHeartbeatDir(heartbeatsDir: string, defaultAgent: string): HeartbeatEntry[] {
-  const entries: HeartbeatEntry[] = [];
+/** Build a HeartbeatEntry from a parsed frontmatter record, or null if invalid. */
+function buildEntry(
+  file: string,
+  fm: Record<string, string>,
+  defaultAgent: string,
+): HeartbeatEntry | null {
+  if (!fm.schedule) return null;
 
+  const entry: HeartbeatEntry = {
+    cronExpr: fm.schedule,
+    filePath: `heartbeats/${file}`,
+    agent: fm.agent || defaultAgent,
+  };
+
+  // Parse active hours "start-end"
+  if (fm.active && fm.active.includes("-")) {
+    const dashIdx = fm.active.indexOf("-");
+    const start = parseInt(fm.active.slice(0, dashIdx), 10);
+    const end = parseInt(fm.active.slice(dashIdx + 1), 10);
+    if (!isNaN(start) && !isNaN(end)) {
+      entry.activeStart = start;
+      entry.activeEnd = end;
+    }
+  }
+
+  return entry;
+}
+
+function parseHeartbeatDir(heartbeatsDir: string, defaultAgent: string): HeartbeatEntry[] {
   let files: string[];
   try {
     files = readdirSync(heartbeatsDir)
@@ -104,6 +162,7 @@ function parseHeartbeatDir(heartbeatsDir: string, defaultAgent: string): Heartbe
     return [];
   }
 
+  const entries: HeartbeatEntry[] = [];
   for (const file of files) {
     const fullPath = path.join(heartbeatsDir, file);
     let content: string;
@@ -114,27 +173,37 @@ function parseHeartbeatDir(heartbeatsDir: string, defaultAgent: string): Heartbe
     }
 
     const fm = parseFrontmatter(content);
-    if (!fm || !fm.schedule) continue;
-
-    const entry: HeartbeatEntry = {
-      cronExpr: fm.schedule,
-      filePath: `heartbeats/${file}`,
-      agent: fm.agent || defaultAgent,
-    };
-
-    // Parse active hours "start-end"
-    if (fm.active && fm.active.includes("-")) {
-      const dashIdx = fm.active.indexOf("-");
-      const start = parseInt(fm.active.slice(0, dashIdx), 10);
-      const end = parseInt(fm.active.slice(dashIdx + 1), 10);
-      if (!isNaN(start) && !isNaN(end)) {
-        entry.activeStart = start;
-        entry.activeEnd = end;
-      }
-    }
-
-    entries.push(entry);
+    if (!fm) continue;
+    const entry = buildEntry(file, fm, defaultAgent);
+    if (entry) entries.push(entry);
   }
 
   return entries;
+}
+
+async function parseHeartbeatDirAsync(
+  heartbeatsDir: string,
+  defaultAgent: string,
+): Promise<HeartbeatEntry[]> {
+  let files: string[];
+  try {
+    files = (await readdir(heartbeatsDir)).filter((f) => f.endsWith(".md")).sort();
+  } catch {
+    return [];
+  }
+
+  const results = await Promise.all(
+    files.map(async (file) => {
+      try {
+        const content = await readFile(path.join(heartbeatsDir, file), "utf-8");
+        const fm = parseFrontmatter(content);
+        if (!fm) return null;
+        return buildEntry(file, fm, defaultAgent);
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  return results.filter((e): e is HeartbeatEntry => e !== null);
 }

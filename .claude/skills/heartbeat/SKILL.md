@@ -66,23 +66,23 @@ active: <ACTIVE>          ← omit this line entirely if no active window
 
 Keep the body focused. The heartbeat runner has a 300-second timeout — design tasks that complete well within that.
 
-## 3. Sync the Daemon
+## 3. Verify
 
-**Always** sync after creating the file. The user asked for a heartbeat — they want it running.
+The daemon watches the `heartbeats/` directory and auto-syncs within 500ms of file changes. No manual sync command is needed.
+
+To confirm the daemon picked up the new heartbeat, wait 1 second then check status:
+
+```bash
+node /home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js status
+```
+
+If the daemon is not running or the heartbeat doesn't appear, fall back to manual sync:
 
 ```bash
 node /home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js sync
 ```
 
-If the daemon is not built (command fails), fall back to:
-
-```bash
-openharness heartbeat sync
-```
-
-## 4. Verify
-
-Confirm the new heartbeat appears in sync output. Report:
+Report:
 
 ```
 Heartbeat created: heartbeats/<NAME>.md

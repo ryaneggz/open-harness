@@ -235,17 +235,29 @@ describe("HeartbeatScheduler", () => {
   });
 
   describe("sync(entries)", () => {
-    it("stops existing jobs and starts new ones", () => {
+    it("stops removed jobs and starts new ones", () => {
       const scheduler = new HeartbeatScheduler(RUNNER_OPTIONS);
       scheduler.start([makeEntry({ filePath: "old.md" })]);
 
       vi.clearAllMocks();
       mockGetLogger.mockReturnValue({ log: mockLoggerLog });
 
+      // Restore MockCron constructor mock after clearAllMocks
+      MockCron.mockImplementation((pattern: string, callback: () => Promise<void>) => {
+        lastCronCallback = callback;
+        mockCronGetPattern.mockReturnValue(pattern);
+        return {
+          stop: mockCronStop,
+          nextRun: mockCronNextRun,
+          isRunning: mockCronIsRunning,
+          getPattern: mockCronGetPattern,
+        };
+      });
+
       const newEntries = [makeEntry({ filePath: "new.md" }), makeEntry({ filePath: "another.md" })];
       scheduler.sync(newEntries);
 
-      // Old job should have been stopped
+      // Old job should have been stopped (removed)
       expect(mockCronStop).toHaveBeenCalledTimes(1);
       // Two new Cron instances should have been created
       expect(MockCron).toHaveBeenCalledTimes(2);
@@ -259,6 +271,80 @@ describe("HeartbeatScheduler", () => {
 
       // Only one job should remain (the new one)
       expect(scheduler.status()).toHaveLength(1);
+    });
+
+    it("does NOT recreate unchanged jobs (differential sync)", () => {
+      const scheduler = new HeartbeatScheduler(RUNNER_OPTIONS);
+      const entry = makeEntry({ filePath: "stable.md", cronExpr: "*/5 * * * *" });
+      scheduler.start([entry]);
+
+      vi.clearAllMocks();
+      mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+
+      // Sync with identical entry — should be a no-op
+      scheduler.sync([makeEntry({ filePath: "stable.md", cronExpr: "*/5 * * * *" })]);
+
+      // No jobs stopped, no new jobs created
+      expect(mockCronStop).not.toHaveBeenCalled();
+      expect(MockCron).not.toHaveBeenCalled();
+    });
+
+    it("restarts only the changed job when one entry changes", () => {
+      const scheduler = new HeartbeatScheduler(RUNNER_OPTIONS);
+      scheduler.start([
+        makeEntry({ filePath: "stable.md", cronExpr: "*/5 * * * *" }),
+        makeEntry({ filePath: "changing.md", cronExpr: "*/10 * * * *" }),
+      ]);
+
+      vi.clearAllMocks();
+      mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      MockCron.mockImplementation((pattern: string, callback: () => Promise<void>) => {
+        lastCronCallback = callback;
+        mockCronGetPattern.mockReturnValue(pattern);
+        return {
+          stop: mockCronStop,
+          nextRun: mockCronNextRun,
+          isRunning: mockCronIsRunning,
+          getPattern: mockCronGetPattern,
+        };
+      });
+
+      // Change only the second entry's schedule
+      scheduler.sync([
+        makeEntry({ filePath: "stable.md", cronExpr: "*/5 * * * *" }),
+        makeEntry({ filePath: "changing.md", cronExpr: "*/15 * * * *" }),
+      ]);
+
+      // Only the changed job was stopped and recreated
+      expect(mockCronStop).toHaveBeenCalledTimes(1);
+      expect(MockCron).toHaveBeenCalledTimes(1);
+      expect(MockCron).toHaveBeenCalledWith("*/15 * * * *", expect.any(Function));
+    });
+
+    it("logs 'removed' when a job is deleted and 'changed' when modified", () => {
+      const scheduler = new HeartbeatScheduler(RUNNER_OPTIONS);
+      scheduler.start([
+        makeEntry({ filePath: "keep.md", cronExpr: "*/5 * * * *" }),
+        makeEntry({ filePath: "remove-me.md", cronExpr: "*/10 * * * *" }),
+      ]);
+
+      vi.clearAllMocks();
+      mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      MockCron.mockImplementation((pattern: string, callback: () => Promise<void>) => {
+        lastCronCallback = callback;
+        mockCronGetPattern.mockReturnValue(pattern);
+        return {
+          stop: mockCronStop,
+          nextRun: mockCronNextRun,
+          isRunning: mockCronIsRunning,
+          getPattern: mockCronGetPattern,
+        };
+      });
+
+      // Remove one entry entirely
+      scheduler.sync([makeEntry({ filePath: "keep.md", cronExpr: "*/5 * * * *" })]);
+
+      expect(mockLoggerLog).toHaveBeenCalledWith(expect.stringContaining("removed"));
     });
   });
 

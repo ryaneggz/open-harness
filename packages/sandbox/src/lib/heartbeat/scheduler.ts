@@ -12,6 +12,7 @@ export interface SchedulerStatus {
 
 export class HeartbeatScheduler {
   private jobs: Map<string, Cron> = new Map();
+  private fingerprints: Map<string, string> = new Map();
   private runner: HeartbeatRunner;
   private logger: HeartbeatLogger;
 
@@ -22,15 +23,9 @@ export class HeartbeatScheduler {
 
   start(entries: HeartbeatEntry[]): void {
     for (const entry of entries) {
-      const name = entry.filePath.replace(/\.md$/, "").replace(/\//g, "-");
-      const cron = new Cron(entry.cronExpr, async () => {
-        try {
-          await this.runner.run(entry);
-        } catch (err) {
-          this.logger.log(`[${name}] Error: ${err instanceof Error ? err.message : String(err)}`);
-        }
-      });
-      this.jobs.set(name, cron);
+      const name = this.entryName(entry);
+      this.jobs.set(name, this.createJob(name, entry));
+      this.fingerprints.set(name, this.fingerprint(entry));
       this.logger.log(`[${name}] Scheduled: ${entry.cronExpr}`);
     }
   }
@@ -41,11 +36,56 @@ export class HeartbeatScheduler {
       this.logger.log(`[${name}] Stopped`);
     }
     this.jobs.clear();
+    this.fingerprints.clear();
   }
 
+  /** Differential sync: only stop/start jobs that changed */
   sync(entries: HeartbeatEntry[]): void {
-    this.stop();
-    this.start(entries);
+    const newMap = new Map<string, HeartbeatEntry>();
+    const newFps = new Map<string, string>();
+    for (const entry of entries) {
+      const name = this.entryName(entry);
+      newMap.set(name, entry);
+      newFps.set(name, this.fingerprint(entry));
+    }
+
+    // Stop removed or changed jobs
+    for (const [name, cron] of this.jobs) {
+      const newFp = newFps.get(name);
+      if (!newFp || newFp !== this.fingerprints.get(name)) {
+        cron.stop();
+        this.jobs.delete(name);
+        this.fingerprints.delete(name);
+        this.logger.log(`[${name}] Stopped (${newFp ? "changed" : "removed"})`);
+      }
+    }
+
+    // Start new or changed jobs
+    for (const [name, entry] of newMap) {
+      if (!this.jobs.has(name)) {
+        this.jobs.set(name, this.createJob(name, entry));
+        this.fingerprints.set(name, this.fingerprint(entry));
+        this.logger.log(`[${name}] Scheduled: ${entry.cronExpr}`);
+      }
+    }
+  }
+
+  private entryName(entry: HeartbeatEntry): string {
+    return entry.filePath.replace(/\.md$/, "").replace(/\//g, "-");
+  }
+
+  private fingerprint(entry: HeartbeatEntry): string {
+    return `${entry.cronExpr}|${entry.agent}|${entry.activeStart ?? ""}|${entry.activeEnd ?? ""}`;
+  }
+
+  private createJob(name: string, entry: HeartbeatEntry): Cron {
+    return new Cron(entry.cronExpr, async () => {
+      try {
+        await this.runner.run(entry);
+      } catch (err) {
+        this.logger.log(`[${name}] Error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    });
   }
 
   status(): SchedulerStatus[] {

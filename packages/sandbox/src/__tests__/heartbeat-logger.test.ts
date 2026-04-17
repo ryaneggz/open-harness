@@ -70,6 +70,20 @@ describe("HeartbeatLogger", () => {
 
       expect(mockMkdirSync).not.toHaveBeenCalled();
     });
+
+    it("skips existsSync on subsequent log() calls (dir existence is cached)", () => {
+      mockExistsSync.mockReturnValue(true);
+
+      const logger = new HeartbeatLogger(LOG_PATH);
+      logger.log("first call");
+      expect(mockExistsSync).toHaveBeenCalledTimes(1);
+
+      mockExistsSync.mockClear();
+      logger.log("second call");
+      logger.log("third call");
+      expect(mockExistsSync).not.toHaveBeenCalled();
+      expect(mockAppendFileSync).toHaveBeenCalledTimes(3);
+    });
   });
 
   describe("rotate()", () => {

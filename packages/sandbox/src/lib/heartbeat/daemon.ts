@@ -1,8 +1,8 @@
-import { parseHeartbeatConfig, secondsToCron } from "./config.js";
+import { parseHeartbeatConfig, parseHeartbeatConfigAsync, secondsToCron } from "./config.js";
 import { HeartbeatScheduler } from "./scheduler.js";
 import { HeartbeatLogger } from "./logger.js";
 import type { RunnerOptions } from "./runner.js";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, watch, type FSWatcher } from "node:fs";
 import { join } from "node:path";
 
 export interface DaemonOptions {
@@ -17,6 +17,8 @@ export interface DaemonOptions {
 export class HeartbeatDaemon {
   private scheduler: HeartbeatScheduler;
   private logger: HeartbeatLogger;
+  private watcher: FSWatcher | null = null;
+  private watchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private options: DaemonOptions) {
     const runnerOpts: RunnerOptions = {
@@ -29,9 +31,9 @@ export class HeartbeatDaemon {
     this.logger = new HeartbeatLogger(join(options.heartbeatDir, "heartbeat.log"));
   }
 
-  /** Parse config and start scheduling */
-  start(): void {
-    const entries = parseHeartbeatConfig(
+  /** Parse config, start scheduling, and watch for changes */
+  async start(): Promise<void> {
+    const entries = await parseHeartbeatConfigAsync(
       this.options.workspacePath,
       this.options.defaultAgent,
       this.options.defaultInterval,
@@ -39,17 +41,35 @@ export class HeartbeatDaemon {
     if (entries.length === 0) {
       this.logger.log("No heartbeats configured — nothing to schedule");
       console.log("No heartbeats configured.");
-      return;
+    } else {
+      this.scheduler.start(entries);
+      console.log(`Synced ${entries.length} heartbeat schedule(s)`);
+      for (const entry of entries) {
+        console.log(`  ${entry.cronExpr}  →  ${entry.filePath}`);
+      }
     }
-    this.scheduler.start(entries);
+    this.startWatching();
+  }
+
+  /** Re-sync: re-parse config and differentially update schedules */
+  async sync(): Promise<void> {
+    const entries = await parseHeartbeatConfigAsync(
+      this.options.workspacePath,
+      this.options.defaultAgent,
+      this.options.defaultInterval,
+    );
+    this.scheduler.sync(entries);
     console.log(`Synced ${entries.length} heartbeat schedule(s)`);
     for (const entry of entries) {
       console.log(`  ${entry.cronExpr}  →  ${entry.filePath}`);
     }
   }
 
-  /** Re-sync: stop existing, re-parse config, start fresh */
-  sync(): void {
+  /**
+   * One-shot sync using synchronous I/O. Used by the CLI `sync` command
+   * which runs in a short-lived process and exits immediately.
+   */
+  syncOnce(): void {
     const entries = parseHeartbeatConfig(
       this.options.workspacePath,
       this.options.defaultAgent,
@@ -62,10 +82,55 @@ export class HeartbeatDaemon {
     }
   }
 
-  /** Stop all scheduled heartbeats */
+  /** Stop all scheduled heartbeats and the file watcher */
   stop(): void {
+    this.stopWatching();
     this.scheduler.stop();
     console.log("Heartbeat schedules removed.");
+  }
+
+  /** Start watching the heartbeats directory for file changes */
+  private startWatching(): void {
+    const dir = this.options.heartbeatDir;
+    if (!existsSync(dir)) return;
+
+    try {
+      this.watcher = watch(dir, { persistent: false }, (_event, filename) => {
+        // Only react to .md file changes
+        if (!filename || !filename.endsWith(".md")) return;
+
+        // Debounce: coalesce rapid events into a single sync
+        if (this.watchDebounceTimer) clearTimeout(this.watchDebounceTimer);
+        this.watchDebounceTimer = setTimeout(() => {
+          this.watchDebounceTimer = null;
+          this.sync().catch((err) => {
+            this.logger.log(
+              `[watcher] Sync error: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          });
+        }, 500);
+      });
+
+      this.watcher.on("error", (err) => {
+        this.logger.log(`[watcher] Error: ${err.message}`);
+      });
+    } catch (err) {
+      this.logger.log(
+        `[watcher] Failed to watch ${dir}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  /** Stop the file watcher and clear any pending debounce timer */
+  private stopWatching(): void {
+    if (this.watchDebounceTimer) {
+      clearTimeout(this.watchDebounceTimer);
+      this.watchDebounceTimer = null;
+    }
+    if (this.watcher) {
+      this.watcher.close();
+      this.watcher = null;
+    }
   }
 
   /** Show status: daemon info, scheduled jobs, recent logs */

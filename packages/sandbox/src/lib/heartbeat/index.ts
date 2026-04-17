@@ -1,6 +1,7 @@
 export {
   type HeartbeatEntry,
   parseHeartbeatConfig,
+  parseHeartbeatConfigAsync,
   parseFrontmatter,
   secondsToCron,
 } from "./config.js";

@@ -19,20 +19,21 @@ const command = process.argv[2] ?? "start";
 
 switch (command) {
   case "start":
+    // Start daemon with async config parsing, file watching, and cron scheduling
+    await daemon.start();
+    process.on("SIGTERM", () => {
+      daemon.stop();
+      process.exit(0);
+    });
+    process.on("SIGINT", () => {
+      daemon.stop();
+      process.exit(0);
+    });
+    console.log(`Heartbeat daemon running (pid ${process.pid})`);
+    break;
   case "sync":
-    daemon.sync();
-    // If "start", keep process alive for cron scheduling
-    if (command === "start") {
-      process.on("SIGTERM", () => {
-        daemon.stop();
-        process.exit(0);
-      });
-      process.on("SIGINT", () => {
-        daemon.stop();
-        process.exit(0);
-      });
-      console.log(`Heartbeat daemon running (pid ${process.pid})`);
-    }
+    // One-shot sync: parse config, print what was found, exit
+    daemon.syncOnce();
     break;
   case "stop":
     daemon.stop();
