@@ -339,11 +339,19 @@ This writes the `.md` file and the daemon auto-detects it within 500ms — no ma
 
 ### Management
 
+From the host, use the `openharness` CLI:
+
 ```bash
-# Inside the sandbox:
-heartbeat-daemon status    # Show running schedules and recent logs
-heartbeat-daemon sync      # Force re-read of all heartbeat files
-heartbeat-daemon stop      # Remove all heartbeat schedules
+openharness heartbeat status <sandbox-name>   # Show running schedules and recent logs
+openharness heartbeat sync <sandbox-name>     # Force re-read of all heartbeat files
+openharness heartbeat stop <sandbox-name>     # Remove all heartbeat schedules
+```
+
+Inside the sandbox, invoke the daemon script directly:
+
+```bash
+node packages/sandbox/dist/src/cli/heartbeat-daemon.js status
+node packages/sandbox/dist/src/cli/heartbeat-daemon.js sync
 ```
 
 The daemon starts automatically on container boot, watches the `heartbeats/` directory for file changes (`fs.watch`), and performs differential sync — only restarting jobs whose schedule or config actually changed.
