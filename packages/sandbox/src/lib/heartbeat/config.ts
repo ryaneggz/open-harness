@@ -11,7 +11,7 @@ export interface HeartbeatEntry {
 
 /**
  * Convert a seconds interval to a 5-field cron expression.
- * Mirrors the bash `seconds_to_cron()` function in install/heartbeat.sh exactly.
+ * Convert a seconds interval to a 5-field cron expression.
  */
 export function secondsToCron(seconds: number): string {
   const minutes = Math.floor(seconds / 60);

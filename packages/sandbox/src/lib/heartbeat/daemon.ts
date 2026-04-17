@@ -138,7 +138,7 @@ export class HeartbeatDaemon {
 #   0 */4 * * *  | heartbeats/memory-distill.md
 #   0 20 * * *   | heartbeats/daily-summary.md
 #
-# After editing, run: heartbeat.sh sync (or from host: make heartbeat)
+# After editing, run: openharness heartbeat sync <name>
 
 ${cronExpr} | heartbeats/default.md${activeLine}
 `;
@@ -149,7 +149,7 @@ ${cronExpr} | heartbeats/default.md${activeLine}
     console.log(
       "Add more heartbeats by editing heartbeats.conf and placing .md files in heartbeats/",
     );
-    console.log("Then run: heartbeat.sh sync");
+    console.log("Then run: openharness heartbeat sync <name>");
   }
 
   getScheduler(): HeartbeatScheduler {

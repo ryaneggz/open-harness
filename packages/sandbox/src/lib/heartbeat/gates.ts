@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
  * Returns true if the current hour falls within the configured active window,
  * or if no window is configured (always active).
  *
- * Mirrors bash `is_active_hours()` in install/heartbeat.sh.
+ * Check if current hour is within the active window.
  *
  * @param start - Hour (0-23) when active window begins (inclusive).
  * @param end   - Hour (0-23) when active window ends (exclusive).
@@ -33,7 +33,7 @@ export function isActiveHours(start?: number, end?: number): boolean {
  *
  * Returns false when the file does not exist (bash equivalent: `return 1`).
  *
- * Mirrors bash `is_heartbeat_empty()` in install/heartbeat.sh.
+ * Check if a heartbeat file has no actionable content.
  */
 export function isHeartbeatEmpty(filePath: string): boolean {
   if (!existsSync(filePath)) {
@@ -72,7 +72,7 @@ export function isHeartbeatEmpty(filePath: string): boolean {
  * it must contain the literal string "HEARTBEAT_OK" AND be fewer than
  * 300 characters long.
  *
- * Mirrors bash `is_heartbeat_ok()` in install/heartbeat.sh.
+ * Check if a response is a HEARTBEAT_OK acknowledgment.
  */
 export function isHeartbeatOk(response: string): boolean {
   return response.length < 300 && response.includes("HEARTBEAT_OK");
