@@ -19,11 +19,16 @@ fi
 
 # Start heartbeat daemon (replaces cron-based scheduling)
 DAEMON_SCRIPT="/home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
-if [ -f "$DAEMON_SCRIPT" ]; then
+if command -v heartbeat-daemon &>/dev/null; then
+  mkdir -p /home/sandbox/harness/workspace/heartbeats
+  chown sandbox:sandbox /home/sandbox/harness/workspace/heartbeats
+  gosu sandbox heartbeat-daemon start >> /home/sandbox/harness/workspace/heartbeats/heartbeat.log 2>&1 &
+  echo "[entrypoint] heartbeat daemon started (pid $!)"
+elif [ -f "$DAEMON_SCRIPT" ]; then
   mkdir -p /home/sandbox/harness/workspace/heartbeats
   chown sandbox:sandbox /home/sandbox/harness/workspace/heartbeats
   gosu sandbox node "$DAEMON_SCRIPT" start >> /home/sandbox/harness/workspace/heartbeats/heartbeat.log 2>&1 &
-  echo "[entrypoint] heartbeat daemon started (pid $!)"
+  echo "[entrypoint] heartbeat daemon started via fallback (pid $!)"
 fi
 
 # Install cloudflared if requested but missing (requires root)

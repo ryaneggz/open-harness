@@ -29,13 +29,12 @@ The `.example.env` file contains all available variables with comments explainin
 
 ### Heartbeats
 
-Heartbeats are cron-scheduled tasks that run an AI agent CLI inside the sandbox on a recurring schedule (e.g., hourly issue triage). Task definitions live in `workspace/heartbeats.conf`. See the [heartbeats guide](/open-harness/guide/heartbeats) for details.
+Heartbeats are cron-scheduled tasks that run an AI agent CLI inside the sandbox on a recurring schedule (e.g., hourly issue triage). Each heartbeat is a `.md` file in `workspace/heartbeats/` with YAML frontmatter defining its schedule, agent, and active hours. See the [heartbeats guide](/open-harness/guide/heartbeats) for details.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HEARTBEAT_AGENT` | `claude` | Which agent CLI to invoke for heartbeat tasks. Options: `claude`, `codex`, `pi`. |
-| `HEARTBEAT_ACTIVE_START` | _(empty)_ | Hour (24h integer) when the active window opens. When both START and END are set, heartbeats only fire during this window. When empty, heartbeats run at any hour. Example: `8` for 8 AM. |
-| `HEARTBEAT_ACTIVE_END` | _(empty)_ | Hour (24h integer) when the active window closes. Example: `18` for 6 PM. With `START=8` and `END=18`, heartbeats only run between 8 AM–6 PM in the container timezone. |
+| `HEARTBEAT_AGENT` | `claude` | Default agent CLI for heartbeats without an `agent` frontmatter field. Options: `claude`, `codex`, `pi`. |
+| `HEARTBEAT_INTERVAL` | `1800` | Default interval (seconds) for legacy `HEARTBEAT.md` fallback. Only used when `workspace/heartbeats/` does not exist. |
 
 ### SSH (overlay)
 

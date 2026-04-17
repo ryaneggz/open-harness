@@ -21,8 +21,7 @@ export const heartbeatTool: ToolDefinition = {
     const name = params.name as string;
     const action = params.action as string;
 
-    const daemonScript = "/home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js";
-    const cmd = execCmd(name, ["node", daemonScript, action], {
+    const cmd = execCmd(name, ["heartbeat-daemon", action], {
       user: "sandbox",
     });
 

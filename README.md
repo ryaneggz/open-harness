@@ -347,11 +347,11 @@ openharness heartbeat sync <sandbox-name>     # Force re-read of all heartbeat f
 openharness heartbeat stop <sandbox-name>     # Remove all heartbeat schedules
 ```
 
-Inside the sandbox, invoke the daemon script directly:
+Inside the sandbox, use the `heartbeat-daemon` binary directly:
 
 ```bash
-node packages/sandbox/dist/src/cli/heartbeat-daemon.js status
-node packages/sandbox/dist/src/cli/heartbeat-daemon.js sync
+heartbeat-daemon status    # Show running schedules and recent logs
+heartbeat-daemon sync      # Force re-read of all heartbeat files
 ```
 
 The daemon starts automatically on container boot, watches the `heartbeats/` directory for file changes (`fs.watch`), and performs differential sync — only restarting jobs whose schedule or config actually changed.

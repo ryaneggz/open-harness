@@ -6,7 +6,7 @@ open-harness/
 │   ├── Dockerfile              # sandbox image: Debian + Node 22 + agent CLIs + pnpm
 │   ├── docker-compose.yml      # base compose: SSH + workspace mount
 │   ├── docker-compose.*.yml    # overlays: postgres, cloudflared, docker, ssh, git, slack
-│   ├── entrypoint.sh           # Docker GID matching + cron + heartbeat sync
+│   ├── entrypoint.sh           # Docker GID matching + heartbeat daemon + CLI install
 │   └── init-env.sh             # resolve SANDBOX_NAME from git remote
 ├── packages/sandbox/           # @openharness/sandbox (CLI + container lifecycle tools)
 │   ├── src/
@@ -22,9 +22,11 @@ open-harness/
 │       └── sandbox.ts          # Pi Agent extension (tool + command registration)
 ├── install/
 │   ├── onboard.sh              # interactive first-time setup wizard
-│   ├── heartbeat.sh            # cron-based heartbeat runner
+│   ├── entrypoint.sh           # late-stage container setup (starts heartbeat daemon)
+│   ├── setup.sh                # environment setup utilities
+│   ├── tmux-agent.sh           # tmux session management for agents
 │   ├── cloudflared-tunnel.sh   # cloudflare tunnel configuration
-│   └── entrypoint.sh           # sandbox container entrypoint
+│   └── slack-manifest.json     # Slack app manifest for Socket Mode
 ├── workspace/                  # template workspace for all agent sandboxes
 │   ├── AGENTS.md               # operating procedures — decision rules, skills, sub-agents
 │   ├── CLAUDE.md               # symlink → AGENTS.md (Claude Code reads this automatically)
@@ -34,8 +36,7 @@ open-harness/
 │   ├── TOOLS.md                # environment, available tools, service endpoints
 │   ├── HEARTBEAT.md            # meta-maintenance routines
 │   ├── MEMORY.md               # long-term memory (learned decisions, lessons)
-│   ├── heartbeats.conf         # cron schedule for autonomous tasks
-│   ├── heartbeats/             # task definitions (markdown prompt files)
+│   ├── heartbeats/             # heartbeat task definitions (frontmatter .md files)
 │   ├── startup.sh              # runs on container boot after onboarding
 │   ├── memory/                 # daily activity logs (YYYY-MM-DD.md)
 │   ├── .claude/

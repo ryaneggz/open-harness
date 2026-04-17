@@ -15,8 +15,7 @@ workspace/
   HEARTBEAT.md          # Meta-maintenance routines
   MEMORY.md             # Long-term memory (learned decisions, lessons)
 
-  heartbeats.conf       # Cron schedule for autonomous tasks
-  heartbeats/           # Task definitions (markdown files)
+  heartbeats/           # Heartbeat task definitions (frontmatter .md files)
   startup.sh            # Runs on container boot after onboarding
 
   memory/               # Daily activity logs (YYYY-MM-DD.md)
@@ -74,7 +73,7 @@ Logs are append-only. Agents distill durable lessons from them into `MEMORY.md` 
 
 ## Heartbeats
 
-`heartbeats.conf` defines cron-scheduled tasks. See the [Heartbeats guide](/open-harness/guide/heartbeats) for syntax and management.
+The `heartbeats/` directory contains heartbeat task definitions — markdown files with YAML frontmatter (`schedule`, `agent`, `active` fields). See the [Heartbeats guide](/open-harness/guide/heartbeats) for details.
 
 ## Application code
 

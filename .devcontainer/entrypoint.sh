@@ -87,9 +87,12 @@ fi
 
 # Start heartbeat daemon (replaces cron-based scheduling)
 DAEMON_SCRIPT="/home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
-if [ -f "$DAEMON_SCRIPT" ]; then
-  gosu sandbox node "$DAEMON_SCRIPT" start >> /home/sandbox/harness/workspace/heartbeats/heartbeat.log 2>&1 &
+if command -v heartbeat-daemon &>/dev/null; then
+  gosu sandbox heartbeat-daemon start >> /home/sandbox/harness/workspace/heartbeats/heartbeat.log 2>&1 &
   echo "[entrypoint] heartbeat daemon started (pid $!)"
+elif [ -f "$DAEMON_SCRIPT" ]; then
+  gosu sandbox node "$DAEMON_SCRIPT" start >> /home/sandbox/harness/workspace/heartbeats/heartbeat.log 2>&1 &
+  echo "[entrypoint] heartbeat daemon started via fallback (pid $!)"
 fi
 
 # Build and link openharness CLI in background (from bind-mounted repo)
@@ -100,8 +103,9 @@ if [ -f "$HARNESS/packages/sandbox/package.json" ] && ! command -v openharness &
     gosu sandbox pnpm install --frozen-lockfile 2>/dev/null || gosu sandbox pnpm install 2>/dev/null || true
     gosu sandbox pnpm --filter @openharness/sandbox run build 2>/dev/null || true
     ln -sf "$HARNESS/packages/sandbox/dist/src/cli/index.js" /usr/local/bin/openharness
-    chmod +x /usr/local/bin/openharness
-    echo "[entrypoint] openharness CLI installed"
+    ln -sf "$HARNESS/packages/sandbox/dist/src/cli/heartbeat-daemon.js" /usr/local/bin/heartbeat-daemon
+    chmod +x /usr/local/bin/openharness /usr/local/bin/heartbeat-daemon
+    echo "[entrypoint] openharness CLI + heartbeat-daemon installed"
   ) &
 fi
 

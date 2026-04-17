@@ -73,13 +73,13 @@ The daemon watches the `heartbeats/` directory and auto-syncs within 500ms of fi
 To confirm the daemon picked up the new heartbeat, wait 1 second then check status:
 
 ```bash
-node /home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js status
+heartbeat-daemon status
 ```
 
 If the daemon is not running or the heartbeat doesn't appear, fall back to manual sync:
 
 ```bash
-node /home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js sync
+heartbeat-daemon sync
 ```
 
 Report:

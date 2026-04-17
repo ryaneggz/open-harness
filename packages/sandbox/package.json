@@ -4,7 +4,8 @@
   "description": "Open Harness CLI and sandbox tools — Docker containers, git worktrees, heartbeats",
   "type": "module",
   "bin": {
-    "openharness": "./dist/src/cli/index.js"
+    "openharness": "./dist/src/cli/index.js",
+    "heartbeat-daemon": "./dist/src/cli/heartbeat-daemon.js"
   },
   "keywords": [
     "pi-package"
