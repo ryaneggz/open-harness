@@ -70,7 +70,7 @@ End of every task (heartbeat, skill, interactive):
 | `/release` | CalVer release — branch, tag, push, GHCR |
 | `/destroy` | Tear down — stop containers, remove volumes |
 | `/delegate` | Decompose plan → parallel worker agents |
-| `/agent-browser` | QA features, screenshots, debug UI |
+| `/heartbeat` | Create a new heartbeat and sync daemon — immediately live |
 | `/compress` | Compress identity files/rules (~46% token savings) |
 | `/prd` | Generate Product Requirements Document |
 | `/ralph` | Convert PRD to `.ralph/prd.json` |
@@ -85,9 +85,10 @@ After `git push` → `/ci-status`. Not done until CI green.
 
 ## Heartbeats
 
-- Schedule: `heartbeats.conf` maps `.md` to cron
+- Definition: YAML frontmatter in `heartbeats/*.md` (`schedule`, `agent`, `active` fields)
+- Create: `/heartbeat <description>` — writes file + syncs daemon automatically
 - Tasks: `heartbeats/` directory
-- Logs: `~/.heartbeat/heartbeat.log`
+- Logs: `heartbeats/heartbeat.log`
 - Nothing to do → `HEARTBEAT_OK`
 
 ## Sub-Agents

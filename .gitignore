@@ -15,7 +15,7 @@ dist/
 **/.claude/screenshots/*
 !**/.claude/screenshots/.gitkeep
 
-# Heartbeat logs (local runtime logs)
+# Heartbeat runtime log
 workspace/heartbeats/heartbeat.log
 
 # Ralph runtime files (keep prd.json + progress.txt tracked for recovery)

@@ -88,7 +88,7 @@ fi
 # Start heartbeat daemon (replaces cron-based scheduling)
 DAEMON_SCRIPT="/home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
 if [ -f "$DAEMON_SCRIPT" ]; then
-  gosu sandbox node "$DAEMON_SCRIPT" start >> /home/sandbox/.heartbeat/heartbeat.log 2>&1 &
+  gosu sandbox node "$DAEMON_SCRIPT" start >> /home/sandbox/harness/workspace/heartbeats/heartbeat.log 2>&1 &
   echo "[entrypoint] heartbeat daemon started (pid $!)"
 fi
 

@@ -165,18 +165,18 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("HeartbeatRunner", () => {
-  describe("lock gating", () => {
-    it("skips execution when lock cannot be acquired and logs message", async () => {
+  describe("concurrency guard", () => {
+    it("skips execution when entry is already running and logs message", async () => {
       const runner = new HeartbeatRunner({
         workspacePath,
         heartbeatDir,
         soulFile,
       });
 
-      // Acquire lock externally so runner cannot get it
-      const { LockManager } = await import("../lib/heartbeat/lock.js");
-      const externalLock = new LockManager(heartbeatDir);
-      externalLock.acquire(ENTRY_BASENAME);
+      // Simulate an in-flight run by adding the entry name to the internal Set
+      // (accessed via the run() guard path)
+      const runningSet = (runner as unknown as { running: Set<string> }).running;
+      runningSet.add(ENTRY_BASENAME);
 
       const logSpy = vi.spyOn(runner.getLogger(), "log").mockImplementation(() => {});
 
@@ -187,7 +187,7 @@ describe("HeartbeatRunner", () => {
         expect.stringContaining("previous execution still running"),
       );
 
-      externalLock.release(ENTRY_BASENAME);
+      runningSet.delete(ENTRY_BASENAME);
     });
   });
 
@@ -516,7 +516,7 @@ describe("HeartbeatRunner", () => {
   });
 
   describe("lifecycle", () => {
-    it("always releases lock in finally block even when an error occurs", async () => {
+    it("clears running guard in finally block even when an error occurs", async () => {
       // Make spawn throw an error
       mockSpawn.mockImplementation(() => {
         throw new Error("spawn failed");
@@ -533,12 +533,9 @@ describe("HeartbeatRunner", () => {
       // Should not throw
       await expect(runner.run(makeEntry())).resolves.not.toThrow();
 
-      // After run completes, we should be able to acquire the lock again
-      const { LockManager } = await import("../lib/heartbeat/lock.js");
-      const checkLock = new LockManager(heartbeatDir);
-      const canAcquire = checkLock.acquire(ENTRY_BASENAME);
-      expect(canAcquire).toBe(true);
-      checkLock.release(ENTRY_BASENAME);
+      // After run completes, the entry should no longer be in the running set
+      const runningSet = (runner as unknown as { running: Set<string> }).running;
+      expect(runningSet.has(ENTRY_BASENAME)).toBe(false);
     });
 
     it("calls rotate() after execution", async () => {

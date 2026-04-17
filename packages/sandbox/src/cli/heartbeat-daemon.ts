@@ -8,7 +8,7 @@ const WORKSPACE = join(HOME, "harness/workspace");
 
 const daemon = new HeartbeatDaemon({
   workspacePath: WORKSPACE,
-  heartbeatDir: join(HOME, ".heartbeat"),
+  heartbeatDir: join(WORKSPACE, "heartbeats"),
   soulFile: process.env.SOUL_FILE ?? join(WORKSPACE, "SOUL.md"),
   memoryDir: process.env.MEMORY_DIR ?? join(WORKSPACE, "memory"),
   defaultAgent: process.env.HEARTBEAT_AGENT ?? "claude",

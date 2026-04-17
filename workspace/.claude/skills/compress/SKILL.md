@@ -79,7 +79,12 @@ Summary:
 Total: <total_original> → <total_compressed> words (~<tokens_saved> tokens saved per turn)
 ```
 
-### 4. Memory Protocol
+### 4. Verify freshness
+
+Run `/freshness audit` to confirm all pairs are in sync after compression.
+If any pair is flagged as drifted, report the discrepancy.
+
+### 5. Memory Protocol
 
 Log compression run to `memory/YYYY-MM-DD.md`.
 

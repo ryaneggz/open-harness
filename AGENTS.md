@@ -78,6 +78,19 @@ Remove an agent sandbox.
 | PR target | `development` |
 | Commit format | `<type>: <description>` (`feat`, `fix`, `task`, `audit`, `skill`) |
 
+## Skills
+
+| Skill | When |
+|-------|------|
+| `/provision` | Provision or rebuild sandbox — compose overlays, build, validate |
+| `/destroy` | Tear down sandbox — stop containers, remove volumes |
+| `/repair` | Repair sandbox stack — detect env, test, auto-remediate |
+| `/release` | CalVer release — branch, tag, push, GHCR |
+| `/ci-status` | After `git push` — poll CI, report pass/fail |
+| `/delegate` | Decompose plan → parallel worker sub-agents |
+| `/heartbeat` | Create a new heartbeat and sync daemon — immediately live |
+| `/strategic-proposal` | 5 experts + AI council → roadmap |
+
 ## What You Do
 
 - Commit and push changes to the harness itself (.devcontainer/, install/, workspace/ templates)
@@ -85,7 +98,7 @@ Remove an agent sandbox.
 - Review diffs across agent branches
 - Provision, validate, and tear down sandboxes (`openharness sandbox`, `openharness clean`, `docker exec`, etc.)
 - Create and manage GitHub issues for agent tracking
-- Run the `/provision` skill for end-to-end sandbox setup
+- Run skills (`/provision`, `/destroy`, `/repair`, `/heartbeat`, etc.) for lifecycle management
 - **Scaffold agent workspaces** after provisioning — write SOUL.md, MEMORY.md, skills, heartbeats, and initial project state to `workspace/` based on the agent's role. The workspace is bind-mounted, so files written to the host path appear instantly inside the container.
 
 ## What You Do NOT Do
@@ -105,7 +118,7 @@ workspace/            # Template for all agent workspaces
   AGENTS.md           # In-sandbox agent instructions (separate from this file)
   SOUL.md             # Agent persona template
   MEMORY.md           # Long-term memory template
-  heartbeats.conf     # Periodic task schedule
+  heartbeats/         # Periodic task definitions (YAML frontmatter in .md files)
   .claude/skills/     # Reusable skill templates
     quality-gate/     # Template: validate decisions before execution
     strategy-review/  # Template: measure decision quality over time

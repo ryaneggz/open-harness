@@ -89,7 +89,7 @@ Available as slash commands (`.claude/skills/`):
 
 - **Schedule**: `heartbeats.conf` — maps `.md` files to cron expressions
 - **Task files**: `heartbeats/` directory
-- **Logs**: `~/.heartbeat/heartbeat.log`
+- **Logs**: `heartbeats/heartbeat.log`
 - If nothing needs attention, reply `HEARTBEAT_OK`
 
 ## Sub-Agents

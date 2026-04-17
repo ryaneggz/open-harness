@@ -21,7 +21,7 @@ const mockWriteFileSync = vi.mocked(writeFileSync);
 const { HeartbeatLogger } = await import("../lib/heartbeat/logger.js");
 
 describe("HeartbeatLogger", () => {
-  const LOG_PATH = "/home/sandbox/.heartbeat/heartbeat.log";
+  const LOG_PATH = "/home/sandbox/harness/workspace/heartbeats/heartbeat.log";
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -56,7 +56,9 @@ describe("HeartbeatLogger", () => {
       const logger = new HeartbeatLogger(LOG_PATH);
       logger.log("creating dir");
 
-      expect(mockMkdirSync).toHaveBeenCalledWith("/home/sandbox/.heartbeat", { recursive: true });
+      expect(mockMkdirSync).toHaveBeenCalledWith("/home/sandbox/harness/workspace/heartbeats", {
+        recursive: true,
+      });
       expect(mockAppendFileSync).toHaveBeenCalledOnce();
     });
 

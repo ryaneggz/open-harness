@@ -332,7 +332,7 @@ heartbeat.sh status    # Show active cron jobs and last run times
 heartbeat.sh stop      # Remove all heartbeat cron entries
 ```
 
-Logs are written to `~/.heartbeat/heartbeat.log` inside the container.
+Logs are written to `workspace/heartbeats/heartbeat.log` inside the container.
 
 ---
 

@@ -106,6 +106,6 @@ Standalone Node script — instantiates `HeartbeatDaemon`, dispatches subcommand
 2. `pnpm --filter @openharness/sandbox run test` — all new + existing tests pass
 3. `pnpm --filter @openharness/sandbox run lint && pnpm --filter @openharness/sandbox run format:check` — clean
 4. Inside container: `node packages/sandbox/dist/src/cli/heartbeat-daemon.js status` — shows scheduled heartbeats
-5. Inside container: verify a heartbeat fires on schedule (check `~/.heartbeat/heartbeat.log`)
+5. Inside container: verify a heartbeat fires on schedule (check `workspace/heartbeats/heartbeat.log`)
 6. `openharness heartbeat status <name>` from host — works through docker exec
 7. Container restart — verify daemon auto-starts and heartbeats resume

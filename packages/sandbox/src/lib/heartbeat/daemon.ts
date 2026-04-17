@@ -7,7 +7,7 @@ import { join } from "node:path";
 
 export interface DaemonOptions {
   workspacePath: string; // ~/harness/workspace
-  heartbeatDir: string; // ~/.heartbeat
+  heartbeatDir: string; // ~/harness/workspace/heartbeats
   soulFile?: string; // ~/harness/workspace/SOUL.md
   memoryDir?: string; // ~/harness/workspace/memory
   defaultAgent?: string; // "claude"

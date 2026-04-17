@@ -2,7 +2,6 @@ import { spawn } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
 import { basename, join } from "node:path";
 import { HeartbeatLogger } from "./logger.js";
-import { LockManager } from "./lock.js";
 import { isActiveHours, isHeartbeatEmpty, isHeartbeatOk } from "./gates.js";
 import type { HeartbeatEntry } from "./config.js";
 
@@ -15,11 +14,10 @@ export interface RunnerOptions {
 
 export class HeartbeatRunner {
   private logger: HeartbeatLogger;
-  private lockManager: LockManager;
+  private running = new Set<string>();
 
   constructor(private options: RunnerOptions) {
     this.logger = new HeartbeatLogger(`${options.heartbeatDir}/heartbeat.log`);
-    this.lockManager = new LockManager(options.heartbeatDir);
   }
 
   async run(entry: HeartbeatEntry): Promise<void> {
@@ -30,13 +28,14 @@ export class HeartbeatRunner {
 
     const entryName = basename(filePath, ".md");
 
-    // 2. Acquire lock (per-entry name) — skip if already locked
-    const acquired = this.lockManager.acquire(entryName);
-    if (!acquired) {
+    // 2. In-memory guard — skip if already running
+    if (this.running.has(entryName)) {
       this.logger.log(`[${entryName}] Skipping — previous execution still running`);
       this.logger.rotate();
       return;
     }
+
+    this.running.add(entryName);
 
     try {
       // 3a. Check active hours gate
@@ -78,7 +77,7 @@ export class HeartbeatRunner {
       // 6. Spawn agent with AbortSignal.timeout(300s)
       const response = await this.spawnAgent(entry.agent, prompt, entryName);
 
-      // 8. Log result (response === null means timeout/failure handled inside spawnAgent)
+      // 7. Log result (response === null means timeout/failure handled inside spawnAgent)
       if (response !== null) {
         if (isHeartbeatOk(response)) {
           this.logger.log(`[${entryName}] HEARTBEAT_OK`);
@@ -87,9 +86,9 @@ export class HeartbeatRunner {
         }
       }
     } finally {
-      // 9. Release lock
-      this.lockManager.release(entryName);
-      // 10. Rotate log
+      // 8. Release guard
+      this.running.delete(entryName);
+      // 9. Rotate log
       this.logger.rotate();
     }
   }
