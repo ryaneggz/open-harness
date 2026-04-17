@@ -1,0 +1,71 @@
+---
+title: "How It Works"
+---
+
+# How It Works
+
+The Slack bot connects to Slack via Socket Mode and maintains separate conversation contexts per channel. Every channel (or DM) the bot is added to gets its own isolated workspace — independent history, memory, and tools — so conversations never bleed across channels.
+
+## Message flow
+
+```mermaid
+sequenceDiagram
+    participant S as Slack
+    participant Bot as Slack Bot
+    participant Log as log.jsonl
+    participant Ctx as context.jsonl
+    participant LLM as LLM Provider
+    participant Sandbox as Sandbox Container
+
+    S->>Bot: @mention or DM (Socket Mode)
+    Bot->>Log: Write message + attachments
+    Bot->>Ctx: Sync unseen messages from log
+    Bot->>Bot: Load MEMORY.md + skills
+    Bot->>Bot: Build system prompt
+    Bot->>LLM: Send context + prompt
+    LLM->>Bot: Tool calls (bash, read, write, edit)
+    Bot->>Sandbox: Execute tools
+    Sandbox-->>Bot: Tool results
+    Bot-->>S: Tool details in thread
+    LLM->>Bot: Final response
+    Bot->>S: Replace status with response
+    Bot->>Log: Store response
+```
+
+1. A message arrives via Socket Mode (mention or DM)
+2. The message is logged to the channel's `log.jsonl` — the source of truth for full channel history. If the message includes attachments, they are saved to the channel's `attachments/` directory
+3. Unseen messages from `log.jsonl` are synced into `context.jsonl` (the LLM context window) before the bot responds
+4. The bot loads memory from global and channel-specific `MEMORY.md` files, plus any available skills
+5. A system prompt is built incorporating channel info, the active user list, loaded memory, and the skill inventory
+6. The agent processes the request using its available tools: `bash`, `read`, `write`, `edit`, and `attach`
+7. Tool execution details (command output, intermediate results) appear in a Slack thread; the main response replaces the in-progress status message
+8. The final response is stored back in `log.jsonl`
+
+## Per-channel isolation
+
+Each Slack channel or DM gets its own directory under the workspace root. That directory holds everything specific to that channel: conversation history, LLM context, memory, skills, attachments, and working files. Channels never share context with each other. This means the bot can be active in multiple channels simultaneously without conversations interfering.
+
+## Workspace layout
+
+```
+.slack/
+  MEMORY.md                   # Global memory (shared across channels)
+  settings.json               # Workspace settings
+  skills/                     # Global custom tools
+  events/                     # Scheduled events
+  C123ABC/                    # Per-channel directory
+    MEMORY.md                 # Channel-specific memory
+    log.jsonl                 # Full message history (source of truth)
+    context.jsonl             # LLM context (synced from log.jsonl)
+    attachments/              # User-shared files
+    scratch/                  # Working directory
+    skills/                   # Channel-specific tools
+```
+
+Global files (`MEMORY.md`, `settings.json`, `skills/`) apply across all channels. Each per-channel directory is fully self-contained — you can inspect logs, memory, and tools at any time by reading these files directly.
+
+## Context management
+
+- `context.jsonl` is what the LLM actually sees. It is synced from `log.jsonl` at the start of each response cycle, so any messages that arrived while the bot was idle are included before it replies.
+- When the accumulated context exceeds the model's context window, the bot compacts it: recent messages and tool results are kept in full, while older entries are summarized and replaced with a compact representation.
+- For history that falls outside even the compacted context window, the bot greps `log.jsonl` directly, giving it effectively infinite searchable history over past conversations.

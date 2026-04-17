@@ -1,0 +1,13 @@
+{
+  "title": "Slack Bot",
+  "pages": [
+    "overview",
+    "setup",
+    "how-it-works",
+    "tools",
+    "skills",
+    "events",
+    "memory",
+    "security"
+  ]
+}

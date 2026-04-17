@@ -1,0 +1,49 @@
+---
+title: "Installation"
+---
+
+# Installation
+
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [git](https://git-scm.com/). That's all you need on your host.
+
+## One-line install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/install.sh | bash
+```
+
+The installer checks for Docker and git, prompts for a container name and password, clones the repo, and starts the sandbox. No Node.js required.
+
+## With host CLI (optional)
+
+If you want the `openharness` CLI available on your host machine (not just inside the container), pass `--with-cli`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/install.sh | bash -s -- --with-cli
+```
+
+This additionally requires [Node.js 20+](https://nodejs.org/) and builds/links the CLI via pnpm.
+
+## Manual install
+
+```bash
+git clone https://github.com/ryaneggz/open-harness.git
+cd open-harness
+cp .devcontainer/.example.env .env   # configure name, password, etc.
+docker compose -f .devcontainer/docker-compose.yml up -d --build
+```
+
+Or [fork the repo](https://github.com/ryaneggz/open-harness/fork) first for your own customizations.
+
+## What the installer does
+
+1. Checks for Docker (with Compose plugin) and git
+2. Prompts for container name and password
+3. Clones the repo to `~/.openharness/` (or uses the local repo)
+4. Writes `.env` with your configuration
+5. Runs `docker compose up -d --build`
+6. _(with `--with-cli`)_ Checks Node.js 20+, installs pnpm, builds and globally links the `openharness` CLI
+
+## Next step
+
+Once installed, [configure your environment](/docs/guide/configuration) or jump straight to the [quickstart](/docs/getting-started/quickstart).
