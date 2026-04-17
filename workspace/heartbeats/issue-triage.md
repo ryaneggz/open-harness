@@ -1,3 +1,8 @@
+---
+# schedule: "0 * * * *"
+agent: claude
+---
+
 # Issue Triage
 
 Check for open, unassigned issues in ryaneggz/next-postgres-shadcn and create

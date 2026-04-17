@@ -1,3 +1,7 @@
+---
+schedule: "0 * * * *"
+---
+
 # Documentation Drift Delegated Workflow
 
 Use /delegate for this entire workflow.

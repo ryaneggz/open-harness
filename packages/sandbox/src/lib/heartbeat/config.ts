@@ -1,16 +1,15 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 export interface HeartbeatEntry {
   cronExpr: string;
-  filePath: string; // relative to workspace (or absolute)
+  filePath: string; // relative to workspace (e.g. "heartbeats/build-health.md")
   agent: string; // default: "claude"
   activeStart?: number; // hour 0-23
   activeEnd?: number; // hour 0-23
 }
 
 /**
- * Convert a seconds interval to a 5-field cron expression.
  * Convert a seconds interval to a 5-field cron expression.
  */
 export function secondsToCron(seconds: number): string {
@@ -31,34 +30,55 @@ export function secondsToCron(seconds: number): string {
 }
 
 /**
- * Parse heartbeats.conf (pipe-delimited) or fall back to legacy HEARTBEAT.md.
+ * Extract YAML frontmatter from a markdown string.
+ * Returns key-value pairs (all string values), or null if no frontmatter found.
+ */
+export function parseFrontmatter(content: string): Record<string, string> | null {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) return null;
+
+  const fields: Record<string, string> = {};
+  for (const line of match[1].split("\n")) {
+    // Skip comments and blank lines
+    if (/^\s*#/.test(line) || line.trim() === "") continue;
+
+    const colonIdx = line.indexOf(":");
+    if (colonIdx === -1) continue;
+
+    const key = line.slice(0, colonIdx).trim();
+    // Strip surrounding quotes from value
+    const raw = line.slice(colonIdx + 1).trim();
+    fields[key] = raw.replace(/^["']|["']$/g, "");
+  }
+
+  return Object.keys(fields).length > 0 ? fields : null;
+}
+
+/**
+ * Scan heartbeat markdown files for frontmatter-based schedule config.
  *
- * Config format per line:
- *   <cron 5 fields> | <file-path> | [agent] | [active_start-active_end]
+ * Reads all .md files in `<workspacePath>/heartbeats/`, extracts frontmatter,
+ * and returns entries for files that have a `schedule` field.
  *
- * Lines starting with # and blank lines are skipped.
- * File paths that do not exist on disk are skipped with a warning.
- *
- * Legacy mode: when heartbeats.conf is absent but HEARTBEAT.md exists,
- * a single entry is produced using defaultInterval seconds.
+ * Falls back to legacy HEARTBEAT.md (no frontmatter needed — uses defaultInterval).
  */
 export function parseHeartbeatConfig(
   workspacePath: string,
   defaultAgent = "claude",
   defaultInterval = 1800,
 ): HeartbeatEntry[] {
-  const configFile = path.join(workspacePath, "heartbeats.conf");
-  const legacyFile = path.join(workspacePath, "HEARTBEAT.md");
+  const heartbeatsDir = path.join(workspacePath, "heartbeats");
 
-  if (existsSync(configFile)) {
-    return parseConfigFile(configFile, workspacePath, defaultAgent);
+  if (existsSync(heartbeatsDir)) {
+    return parseHeartbeatDir(heartbeatsDir, defaultAgent);
   }
 
+  // Legacy fallback: bare HEARTBEAT.md with no frontmatter
+  const legacyFile = path.join(workspacePath, "HEARTBEAT.md");
   if (existsSync(legacyFile)) {
-    const cronExpr = secondsToCron(defaultInterval);
     return [
       {
-        cronExpr,
+        cronExpr: secondsToCron(defaultInterval),
         filePath: "HEARTBEAT.md",
         agent: defaultAgent,
       },
@@ -69,58 +89,47 @@ export function parseHeartbeatConfig(
 }
 
 // ---------------------------------------------------------------------------
-// Internal helpers
+// Internal
 // ---------------------------------------------------------------------------
 
-function parseConfigFile(
-  configFile: string,
-  workspacePath: string,
-  defaultAgent: string,
-): HeartbeatEntry[] {
-  const raw = readFileSync(configFile, "utf-8") as string;
-  const lines = raw.split("\n");
+function parseHeartbeatDir(heartbeatsDir: string, defaultAgent: string): HeartbeatEntry[] {
   const entries: HeartbeatEntry[] = [];
 
-  for (const line of lines) {
-    // Skip comment lines
-    if (/^\s*#/.test(line)) continue;
+  let files: string[];
+  try {
+    files = readdirSync(heartbeatsDir)
+      .filter((f) => f.endsWith(".md"))
+      .sort();
+  } catch {
+    return [];
+  }
 
-    // Skip blank / whitespace-only lines
-    if (line.trim() === "") continue;
-
-    const parts = line.split("|");
-    if (parts.length < 2) continue;
-
-    const cronExpr = parts[0].trim();
-    const filePath = parts[1].trim();
-    const agentRaw = (parts[2] ?? "").trim();
-    const activeRangeRaw = (parts[3] ?? "").trim();
-
-    if (!cronExpr || !filePath) continue;
-
-    // Validate file exists (resolve relative paths against workspacePath)
-    const fullPath = filePath.startsWith("/") ? filePath : path.join(workspacePath, filePath);
-
-    if (!existsSync(fullPath)) {
-      // Mirror bash behavior: warn and skip
-      console.warn(`heartbeat-config: file not found: ${fullPath} (skipping)`);
+  for (const file of files) {
+    const fullPath = path.join(heartbeatsDir, file);
+    let content: string;
+    try {
+      content = readFileSync(fullPath, "utf-8");
+    } catch {
       continue;
     }
 
-    const agent = agentRaw || defaultAgent;
+    const fm = parseFrontmatter(content);
+    if (!fm || !fm.schedule) continue;
 
-    const entry: HeartbeatEntry = { cronExpr, filePath, agent };
+    const entry: HeartbeatEntry = {
+      cronExpr: fm.schedule,
+      filePath: `heartbeats/${file}`,
+      agent: fm.agent || defaultAgent,
+    };
 
-    // Parse active_range "start-end" e.g. "9-21"
-    if (activeRangeRaw && activeRangeRaw.includes("-")) {
-      const dashIdx = activeRangeRaw.indexOf("-");
-      const startStr = activeRangeRaw.slice(0, dashIdx);
-      const endStr = activeRangeRaw.slice(dashIdx + 1);
-      const activeStart = parseInt(startStr, 10);
-      const activeEnd = parseInt(endStr, 10);
-      if (!isNaN(activeStart) && !isNaN(activeEnd)) {
-        entry.activeStart = activeStart;
-        entry.activeEnd = activeEnd;
+    // Parse active hours "start-end"
+    if (fm.active && fm.active.includes("-")) {
+      const dashIdx = fm.active.indexOf("-");
+      const start = parseInt(fm.active.slice(0, dashIdx), 10);
+      const end = parseInt(fm.active.slice(dashIdx + 1), 10);
+      if (!isNaN(start) && !isNaN(end)) {
+        entry.activeStart = start;
+        entry.activeEnd = end;
       }
     }
 

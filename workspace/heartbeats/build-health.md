@@ -1,3 +1,9 @@
+---
+schedule: "*/30 * * * *"
+agent: claude
+active: 9-21
+---
+
 # Build Health Check
 
 Run a quick health check on the project. This catches regressions early.

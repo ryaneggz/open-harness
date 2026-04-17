@@ -1,4 +1,9 @@
-export { type HeartbeatEntry, parseHeartbeatConfig, secondsToCron } from "./config.js";
+export {
+  type HeartbeatEntry,
+  parseHeartbeatConfig,
+  parseFrontmatter,
+  secondsToCron,
+} from "./config.js";
 export { HeartbeatLogger } from "./logger.js";
 export { LockManager } from "./lock.js";
 export { isActiveHours, isHeartbeatEmpty, isHeartbeatOk } from "./gates.js";

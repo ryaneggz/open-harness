@@ -1,3 +1,8 @@
+---
+# schedule: "0 8 * * *"
+agent: claude
+---
+
 # Daily Feature Backlog Ranking
 
 Curate and rank open issues by PM criteria, updating the pinned backlog

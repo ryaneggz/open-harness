@@ -1,16 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 
-// Mock fs before importing the module under test
 vi.mock("node:fs", () => ({
   existsSync: vi.fn(),
   readFileSync: vi.fn(),
+  readdirSync: vi.fn(),
 }));
 
 const mockExistsSync = vi.mocked(existsSync);
 const mockReadFileSync = vi.mocked(readFileSync);
+const mockReaddirSync = vi.mocked(readdirSync);
 
-const { secondsToCron, parseHeartbeatConfig } = await import("../lib/heartbeat/config.js");
+const { secondsToCron, parseFrontmatter, parseHeartbeatConfig } =
+  await import("../lib/heartbeat/config.js");
 
 describe("secondsToCron", () => {
   it("returns * * * * * for 0 seconds", () => {
@@ -50,9 +52,71 @@ describe("secondsToCron", () => {
   });
 });
 
+describe("parseFrontmatter", () => {
+  it("returns null when no frontmatter present", () => {
+    expect(parseFrontmatter("# Just a heading\nSome text")).toBeNull();
+  });
+
+  it("parses schedule and agent fields", () => {
+    const content = `---
+schedule: "*/30 * * * *"
+agent: claude
+---
+
+# My Heartbeat`;
+    const fm = parseFrontmatter(content);
+    expect(fm).toEqual({ schedule: "*/30 * * * *", agent: "claude" });
+  });
+
+  it("strips surrounding quotes from values", () => {
+    const content = `---
+schedule: '0 * * * *'
+agent: "codex"
+---`;
+    const fm = parseFrontmatter(content);
+    expect(fm).toEqual({ schedule: "0 * * * *", agent: "codex" });
+  });
+
+  it("skips commented-out fields", () => {
+    const content = `---
+# schedule: "0 * * * *"
+agent: claude
+---`;
+    const fm = parseFrontmatter(content);
+    expect(fm).toEqual({ agent: "claude" });
+  });
+
+  it("returns null when all fields are commented out", () => {
+    const content = `---
+# schedule: "0 * * * *"
+# agent: claude
+---`;
+    expect(parseFrontmatter(content)).toBeNull();
+  });
+
+  it("skips blank lines in frontmatter", () => {
+    const content = `---
+schedule: "0 * * * *"
+
+agent: claude
+---`;
+    const fm = parseFrontmatter(content);
+    expect(fm).toEqual({ schedule: "0 * * * *", agent: "claude" });
+  });
+
+  it("parses active hours field", () => {
+    const content = `---
+schedule: "*/30 * * * *"
+active: 9-21
+---`;
+    const fm = parseFrontmatter(content);
+    expect(fm).toEqual({ schedule: "*/30 * * * *", active: "9-21" });
+  });
+});
+
 describe("parseHeartbeatConfig", () => {
   const workspacePath = "/home/sandbox/workspace";
-  const configPath = `${workspacePath}/heartbeats.conf`;
+  const heartbeatsDir = `${workspacePath}/heartbeats`;
   const legacyPath = `${workspacePath}/HEARTBEAT.md`;
 
   beforeEach(() => {
@@ -60,34 +124,25 @@ describe("parseHeartbeatConfig", () => {
     mockExistsSync.mockReturnValue(false);
   });
 
-  it("returns empty array when neither file exists", () => {
+  it("returns empty array when neither heartbeats/ dir nor HEARTBEAT.md exists", () => {
     const result = parseHeartbeatConfig(workspacePath);
     expect(result).toEqual([]);
   });
 
-  it("parses a valid heartbeats.conf with multiple entries", () => {
-    mockExistsSync.mockImplementation((p) => {
-      const s = String(p);
-      if (s === configPath) return true;
-      // All file paths exist for validation
-      return (
-        s.includes("build-health.md") ||
-        s.includes("nightly-release.md") ||
-        s.includes("daily-summary.md")
-      );
+  it("scans heartbeats/ dir and parses frontmatter from .md files", () => {
+    mockExistsSync.mockImplementation((p) => String(p) === heartbeatsDir);
+    mockReaddirSync.mockReturnValue(["build-health.md", "nightly.md"] as unknown as ReturnType<
+      typeof readdirSync
+    >);
+    mockReadFileSync.mockImplementation((p) => {
+      if (String(p).includes("build-health.md")) {
+        return `---\nschedule: "*/30 * * * *"\nagent: claude\nactive: 9-21\n---\n\n# Build`;
+      }
+      return `---\nschedule: "50 23 * * *"\n---\n\n# Nightly`;
     });
 
-    mockReadFileSync.mockReturnValue(
-      [
-        "*/30 * * * * | heartbeats/build-health.md | claude | 9-21",
-        "50 23 * * *  | heartbeats/nightly-release.md | claude",
-        "0 0 * * *    | heartbeats/daily-summary.md",
-      ].join("\n"),
-    );
-
     const result = parseHeartbeatConfig(workspacePath);
-
-    expect(result).toHaveLength(3);
+    expect(result).toHaveLength(2);
 
     expect(result[0]).toEqual({
       cronExpr: "*/30 * * * *",
@@ -99,180 +154,97 @@ describe("parseHeartbeatConfig", () => {
 
     expect(result[1]).toEqual({
       cronExpr: "50 23 * * *",
-      filePath: "heartbeats/nightly-release.md",
-      agent: "claude",
-    });
-
-    expect(result[2]).toEqual({
-      cronExpr: "0 0 * * *",
-      filePath: "heartbeats/daily-summary.md",
+      filePath: "heartbeats/nightly.md",
       agent: "claude",
     });
   });
 
-  it("skips comment lines (starting with #)", () => {
-    mockExistsSync.mockImplementation((p) => {
-      const s = String(p);
-      return s === configPath || s.includes("active.md");
-    });
+  it("skips files without frontmatter", () => {
+    mockExistsSync.mockImplementation((p) => String(p) === heartbeatsDir);
+    mockReaddirSync.mockReturnValue(["no-fm.md"] as unknown as ReturnType<typeof readdirSync>);
+    mockReadFileSync.mockReturnValue("# No frontmatter\nJust content");
 
+    const result = parseHeartbeatConfig(workspacePath);
+    expect(result).toHaveLength(0);
+  });
+
+  it("skips files without a schedule field (disabled heartbeats)", () => {
+    mockExistsSync.mockImplementation((p) => String(p) === heartbeatsDir);
+    mockReaddirSync.mockReturnValue(["disabled.md"] as unknown as ReturnType<typeof readdirSync>);
     mockReadFileSync.mockReturnValue(
-      [
-        "# This is a comment",
-        "*/30 * * * * | heartbeats/active.md | claude",
-        "# 0 * * * * | heartbeats/commented-out.md | claude",
-      ].join("\n"),
+      `---\n# schedule: "0 * * * *"\nagent: claude\n---\n\n# Disabled`,
     );
 
     const result = parseHeartbeatConfig(workspacePath);
-    expect(result).toHaveLength(1);
-    expect(result[0].filePath).toBe("heartbeats/active.md");
+    expect(result).toHaveLength(0);
   });
 
-  it("skips blank lines", () => {
-    mockExistsSync.mockImplementation((p) => {
-      const s = String(p);
-      return s === configPath || s.includes("task.md");
-    });
-
-    mockReadFileSync.mockReturnValue(
-      ["", "   ", "*/15 * * * * | heartbeats/task.md | claude", "", ""].join("\n"),
-    );
-
-    const result = parseHeartbeatConfig(workspacePath);
-    expect(result).toHaveLength(1);
-  });
-
-  it("handles entries with only cron + file (no agent, no active_range)", () => {
-    mockExistsSync.mockImplementation((p) => {
-      const s = String(p);
-      return s === configPath || s.includes("minimal.md");
-    });
-
-    mockReadFileSync.mockReturnValue("0 * * * * | heartbeats/minimal.md");
-
-    const result = parseHeartbeatConfig(workspacePath);
-    expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
-      cronExpr: "0 * * * *",
-      filePath: "heartbeats/minimal.md",
-      agent: "claude",
-    });
-    expect(result[0].activeStart).toBeUndefined();
-    expect(result[0].activeEnd).toBeUndefined();
-  });
-
-  it("handles entries with agent but no active_range", () => {
-    mockExistsSync.mockImplementation((p) => {
-      const s = String(p);
-      return s === configPath || s.includes("norange.md");
-    });
-
-    mockReadFileSync.mockReturnValue("0 */2 * * * | heartbeats/norange.md | codex");
-
-    const result = parseHeartbeatConfig(workspacePath);
-    expect(result).toHaveLength(1);
-    expect(result[0].agent).toBe("codex");
-    expect(result[0].activeStart).toBeUndefined();
-    expect(result[0].activeEnd).toBeUndefined();
-  });
-
-  it("uses defaultAgent parameter when agent field is empty", () => {
-    mockExistsSync.mockImplementation((p) => {
-      const s = String(p);
-      return s === configPath || s.includes("noagent.md");
-    });
-
-    mockReadFileSync.mockReturnValue("*/30 * * * * | heartbeats/noagent.md");
+  it("uses defaultAgent when agent not specified in frontmatter", () => {
+    mockExistsSync.mockImplementation((p) => String(p) === heartbeatsDir);
+    mockReaddirSync.mockReturnValue(["task.md"] as unknown as ReturnType<typeof readdirSync>);
+    mockReadFileSync.mockReturnValue(`---\nschedule: "0 * * * *"\n---\n\n# Task`);
 
     const result = parseHeartbeatConfig(workspacePath, "codex");
     expect(result[0].agent).toBe("codex");
   });
 
-  it("skips entries with fewer than 2 pipe-separated parts", () => {
-    mockExistsSync.mockImplementation((p) => String(p) === configPath);
+  it("overrides defaultAgent with frontmatter agent field", () => {
+    mockExistsSync.mockImplementation((p) => String(p) === heartbeatsDir);
+    mockReaddirSync.mockReturnValue(["task.md"] as unknown as ReturnType<typeof readdirSync>);
+    mockReadFileSync.mockReturnValue(`---\nschedule: "0 * * * *"\nagent: claude\n---\n`);
 
-    mockReadFileSync.mockReturnValue(
-      ["*/30 * * * *", "0 * * * * | heartbeats/missing-file.md"].join("\n"),
-    );
-
-    // missing-file.md doesn't exist on disk → also skipped
-    const result = parseHeartbeatConfig(workspacePath);
-    expect(result).toHaveLength(0);
+    const result = parseHeartbeatConfig(workspacePath, "codex");
+    expect(result[0].agent).toBe("claude");
   });
 
-  it("skips entries whose file does not exist on disk", () => {
-    mockExistsSync.mockImplementation((p) => {
-      return String(p) === configPath;
-      // heartbeats/ghost.md does NOT exist
-    });
-
-    mockReadFileSync.mockReturnValue("*/30 * * * * | heartbeats/ghost.md | claude");
-
-    const result = parseHeartbeatConfig(workspacePath);
-    expect(result).toHaveLength(0);
-  });
-
-  it("resolves relative file paths against workspacePath for existence check", () => {
-    mockExistsSync.mockImplementation((p) => {
-      const s = String(p);
-      return s === configPath || s === `${workspacePath}/heartbeats/relative.md`;
-    });
-
-    mockReadFileSync.mockReturnValue("*/30 * * * * | heartbeats/relative.md | claude");
+  it("only reads .md files, ignoring other extensions", () => {
+    mockExistsSync.mockImplementation((p) => String(p) === heartbeatsDir);
+    mockReaddirSync.mockReturnValue(["task.md", "readme.txt", ".DS_Store"] as unknown as ReturnType<
+      typeof readdirSync
+    >);
+    mockReadFileSync.mockReturnValue(`---\nschedule: "0 * * * *"\n---\n`);
 
     const result = parseHeartbeatConfig(workspacePath);
     expect(result).toHaveLength(1);
-    expect(result[0].filePath).toBe("heartbeats/relative.md");
+    expect(mockReadFileSync).toHaveBeenCalledTimes(1);
   });
 
-  it("does not resolve absolute file paths against workspacePath", () => {
-    const absPath = "/tmp/absolute.md";
-
-    mockExistsSync.mockImplementation((p) => {
-      const s = String(p);
-      return s === configPath || s === absPath;
-    });
-
-    mockReadFileSync.mockReturnValue(`*/30 * * * * | ${absPath} | claude`);
+  it("returns entries sorted by filename", () => {
+    mockExistsSync.mockImplementation((p) => String(p) === heartbeatsDir);
+    mockReaddirSync.mockReturnValue(["z-last.md", "a-first.md"] as unknown as ReturnType<
+      typeof readdirSync
+    >);
+    mockReadFileSync.mockReturnValue(`---\nschedule: "0 * * * *"\n---\n`);
 
     const result = parseHeartbeatConfig(workspacePath);
-    expect(result).toHaveLength(1);
-    expect(result[0].filePath).toBe(absPath);
+    expect(result[0].filePath).toBe("heartbeats/a-first.md");
+    expect(result[1].filePath).toBe("heartbeats/z-last.md");
   });
 
   describe("legacy HEARTBEAT.md fallback", () => {
     it("produces a single entry when only HEARTBEAT.md exists", () => {
-      mockExistsSync.mockImplementation((p) => {
-        return String(p) === legacyPath;
-      });
+      mockExistsSync.mockImplementation((p) => String(p) === legacyPath);
 
       const result = parseHeartbeatConfig(workspacePath);
-
       expect(result).toHaveLength(1);
-      expect(result[0].filePath).toBe("HEARTBEAT.md");
-      expect(result[0].agent).toBe("claude");
-      // default interval is 1800s → */30 * * * *
-      expect(result[0].cronExpr).toBe("*/30 * * * *");
+      expect(result[0]).toEqual({
+        cronExpr: "*/30 * * * *",
+        filePath: "HEARTBEAT.md",
+        agent: "claude",
+      });
     });
 
     it("uses defaultInterval for the cron expression in legacy mode", () => {
-      mockExistsSync.mockImplementation((p) => {
-        return String(p) === legacyPath;
-      });
+      mockExistsSync.mockImplementation((p) => String(p) === legacyPath);
 
       const result = parseHeartbeatConfig(workspacePath, "claude", 3600);
-
       expect(result[0].cronExpr).toBe("0 * * * *");
     });
 
     it("uses defaultAgent in legacy mode", () => {
-      mockExistsSync.mockImplementation((p) => {
-        return String(p) === legacyPath;
-      });
+      mockExistsSync.mockImplementation((p) => String(p) === legacyPath);
 
       const result = parseHeartbeatConfig(workspacePath, "codex");
-
       expect(result[0].agent).toBe("codex");
     });
   });

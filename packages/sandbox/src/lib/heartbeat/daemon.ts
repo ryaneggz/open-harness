@@ -2,7 +2,7 @@ import { parseHeartbeatConfig, secondsToCron } from "./config.js";
 import { HeartbeatScheduler } from "./scheduler.js";
 import { HeartbeatLogger } from "./logger.js";
 import type { RunnerOptions } from "./runner.js";
-import { existsSync, writeFileSync, mkdirSync, renameSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 
 export interface DaemonOptions {
@@ -90,12 +90,19 @@ export class HeartbeatDaemon {
     }
   }
 
-  /** Migrate legacy HEARTBEAT_INTERVAL to heartbeats.conf */
+  /** Migrate legacy HEARTBEAT.md into heartbeats/ with frontmatter */
   migrate(): void {
-    const configFile = join(this.options.workspacePath, "heartbeats.conf");
-    if (existsSync(configFile)) {
-      console.log("heartbeats.conf already exists — not overwriting.");
-      console.log(`Edit it directly: ${configFile}`);
+    const heartbeatsDir = join(this.options.workspacePath, "heartbeats");
+    const legacyFile = join(this.options.workspacePath, "HEARTBEAT.md");
+    const targetFile = join(heartbeatsDir, "default.md");
+
+    if (existsSync(targetFile)) {
+      console.log("heartbeats/default.md already exists — not overwriting.");
+      return;
+    }
+
+    if (!existsSync(legacyFile)) {
+      console.log("No HEARTBEAT.md found — nothing to migrate.");
       return;
     }
 
@@ -103,53 +110,35 @@ export class HeartbeatDaemon {
     const agent = this.options.defaultAgent ?? "claude";
     const cronExpr = secondsToCron(interval);
 
-    const heartbeatsDir = join(this.options.workspacePath, "heartbeats");
     mkdirSync(heartbeatsDir, { recursive: true });
 
-    // Move legacy HEARTBEAT.md to heartbeats/default.md
-    const legacyFile = join(this.options.workspacePath, "HEARTBEAT.md");
-    const defaultFile = join(heartbeatsDir, "default.md");
-    if (existsSync(legacyFile) && !existsSync(defaultFile)) {
-      renameSync(legacyFile, defaultFile);
-      console.log("Moved HEARTBEAT.md → heartbeats/default.md");
-    }
+    // Read existing content and prepend frontmatter
+    const existing = readFileSync(legacyFile, "utf-8");
 
-    // Build active range line if env vars set
     const activeStart = process.env.HEARTBEAT_ACTIVE_START;
     const activeEnd = process.env.HEARTBEAT_ACTIVE_END;
     let activeLine = "";
     if (activeStart && activeEnd) {
-      activeLine = ` | ${agent} | ${activeStart}-${activeEnd}`;
+      activeLine = `\nactive: ${activeStart}-${activeEnd}`;
     }
 
-    // Write config file (match bash cmd_migrate output)
-    const content = `# Heartbeat Schedule Configuration
-# =================================
-# Format: <cron-expression> | <file-path> | [agent] | [active_start-active_end]
-#
-# - cron-expression: Standard 5-field cron (min hour dom mon dow)
-# - file-path: Relative to ~/harness/workspace/
-# - agent: (optional) Override HEARTBEAT_AGENT env var. Default: ${agent}
-# - active_start-active_end: (optional) Hours (0-23). Only run during this window.
-#
-# Examples:
-#   */30 * * * * | heartbeats/default.md
-#   */15 * * * * | heartbeats/check-deployments.md | claude | 9-18
-#   0 */4 * * *  | heartbeats/memory-distill.md
-#   0 20 * * *   | heartbeats/daily-summary.md
-#
-# After editing, run: openharness heartbeat sync <name>
+    const content = `---
+schedule: "${cronExpr}"
+agent: ${agent}${activeLine}
+---
 
-${cronExpr} | heartbeats/default.md${activeLine}
-`;
-    writeFileSync(configFile, content);
-    console.log(`Created: ${configFile}`);
-    console.log(`  Schedule: ${cronExpr} (from HEARTBEAT_INTERVAL=${interval}s)`);
+${existing}`;
+
+    writeFileSync(targetFile, content);
+    console.log(`Migrated: HEARTBEAT.md → heartbeats/default.md`);
+    console.log(`  Schedule: ${cronExpr} (from interval ${interval}s)`);
     console.log("");
-    console.log(
-      "Add more heartbeats by editing heartbeats.conf and placing .md files in heartbeats/",
-    );
-    console.log("Then run: openharness heartbeat sync <name>");
+    console.log("Add more heartbeats by creating .md files in heartbeats/ with frontmatter:");
+    console.log("  ---");
+    console.log('  schedule: "*/30 * * * *"');
+    console.log("  agent: claude");
+    console.log("  active: 9-21");
+    console.log("  ---");
   }
 
   getScheduler(): HeartbeatScheduler {
