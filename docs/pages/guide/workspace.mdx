@@ -19,6 +19,11 @@ workspace/
   startup.sh            # Runs on container boot after onboarding
 
   memory/               # Daily activity logs (YYYY-MM-DD.md)
+  wiki/                 # LLM-maintained knowledge base
+    index.md            # Master catalog of all wiki pages
+    log.md              # Operations log (append-only)
+    sources/            # Raw input documents (immutable)
+    pages/              # LLM-generated wiki pages
   projects/             # Application code (e.g., Next.js app)
 
   .claude/
@@ -54,6 +59,7 @@ When the agent learns something new, it writes to the appropriate file:
 | New tool, service, or environment detail | `TOOLS.md` |
 | New operating procedure or skill | `AGENTS.md` |
 | Lesson from experience, factual knowledge | `MEMORY.md` |
+| Domain knowledge from external documents | `wiki/pages/` |
 | Coding standard or file-type convention | `.claude/rules/` |
 
 ## Daily activity logs

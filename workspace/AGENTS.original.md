@@ -62,6 +62,48 @@ Log format:
 - **Observation**: [one sentence]
 ```
 
+## Wiki Protocol
+
+The wiki is a persistent, LLM-maintained knowledge base for structured domain knowledge extracted from external sources. It lives in `wiki/` and is distinct from the memory system.
+
+**Memory vs Wiki:**
+- **Memory** (MEMORY.md + memory/) = operational self-awareness — decisions, patterns, lessons learned from doing work
+- **Wiki** (wiki/) = structured domain knowledge — entities, concepts, and synthesis extracted from external documents
+
+### Directory Structure
+
+| Path | Contents |
+|------|----------|
+| `wiki/index.md` | Master catalog — page titles, types, tags, update dates |
+| `wiki/log.md` | Chronological operations log (append-only, rotated at 200 entries) |
+| `wiki/sources/` | Raw input documents (immutable after ingest) |
+| `wiki/pages/` | LLM-generated wiki pages (entity, concept, synthesis) |
+
+### Page Types
+
+| Type | Sources | Description |
+|------|---------|-------------|
+| `entity` | Raw sources | Person, org, project, tool, product |
+| `concept` | Raw sources | Idea, framework, methodology, pattern |
+| `synthesis` | Other pages | Cross-cutting theme connecting multiple pages |
+
+### Operations
+
+- **Ingest** (`/wiki-ingest`): source → extract topics → create/update pages → update index + log
+- **Query** (`/wiki-query`): question → search index → read pages → synthesize answer → optionally file back as synthesis page
+- **Lint** (`/wiki-lint`): health-check for index corruption, orphans, phantoms, stale pages, broken refs, tag drift
+
+### Decision: Where does this go?
+
+| Signal | Destination |
+|--------|-------------|
+| Learned from doing work | MEMORY.md |
+| Extracted from external document | wiki/pages/ |
+| Operational decision or preference | MEMORY.md |
+| Domain fact or entity information | wiki/pages/ |
+| Recurring pattern in my behavior | MEMORY.md |
+| Relationship between external concepts | wiki/pages/ (synthesis) |
+
 ## Skills
 
 Available as slash commands (`.claude/skills/`):
@@ -82,12 +124,16 @@ Available as slash commands (`.claude/skills/`):
 | `/strategic-proposal` | Spawn 5 experts + AI council, produce signal-validated product roadmap |
 | `/implement` | Pick top validated roadmap item, run Ralph loop in tmux, submit draft PR |
 | `/issue-triage` | Triage unassigned GitHub issues with parallel sub-agents + council |
+| `/wiki-ingest` | Process sources into wiki pages — `wiki/sources/` → `wiki/pages/` |
+| `/wiki-query` | Search wiki, synthesize answers, optionally file back as synthesis page |
+| `/wiki-lint` | Health-check wiki — orphans, broken refs, stale pages, tag drift, index integrity |
 
 **Important:** After every `git push`, run `/ci-status` to confirm CI is green. Work is not done until CI passes.
 
 ## Heartbeats
 
-- **Schedule**: `heartbeats.conf` — maps `.md` files to cron expressions
+- **Definition**: YAML frontmatter in `heartbeats/*.md` (`schedule`, `agent`, optional `active` fields)
+- **Create**: `/heartbeat <description>` — writes file + syncs daemon automatically
 - **Task files**: `heartbeats/` directory
 - **Logs**: `heartbeats/heartbeat.log`
 - If nothing needs attention, reply `HEARTBEAT_OK`

@@ -33,6 +33,7 @@
 - Tool/service/workflow -> TOOLS.md
 - Operating rule/procedure -> AGENTS.md
 - Learned fact/pattern -> MEMORY.md
+- Domain knowledge from external doc -> wiki/pages/
 - Maintenance check -> HEARTBEAT.md
 - Coding standard -> `.claude/rules/`
 
@@ -61,6 +62,48 @@ End of every task (heartbeat, skill, interactive):
 - **Observation**: [one sentence]
 ```
 
+## Wiki Protocol
+
+Wiki = persistent, LLM-maintained knowledge base for structured domain knowledge from external sources. Lives in `wiki/`. Distinct from memory system.
+
+**Memory vs Wiki:**
+- **Memory** (MEMORY.md + memory/) = operational self-awareness — decisions, patterns, lessons from work
+- **Wiki** (wiki/) = structured domain knowledge — entities, concepts, synthesis from external docs
+
+### Directory Structure
+
+| Path | Contents |
+|------|----------|
+| `wiki/index.md` | Master catalog — titles, types, tags, dates |
+| `wiki/log.md` | Operations log (append-only, rotated at 200) |
+| `wiki/sources/` | Raw input docs (immutable after ingest) |
+| `wiki/pages/` | LLM-generated pages (entity, concept, synthesis) |
+
+### Page Types
+
+| Type | Sources | Description |
+|------|---------|-------------|
+| `entity` | Raw sources | Person, org, project, tool, product |
+| `concept` | Raw sources | Idea, framework, methodology, pattern |
+| `synthesis` | Other pages | Cross-cutting theme connecting multiple pages |
+
+### Operations
+
+- **Ingest** (`/wiki-ingest`): source → extract topics → create/update pages → update index + log
+- **Query** (`/wiki-query`): question → search index → read pages → synthesize → optionally file back as synthesis
+- **Lint** (`/wiki-lint`): health-check — index corruption, orphans, phantoms, stale pages, broken refs, tag drift
+
+### Where Does This Go?
+
+| Signal | Destination |
+|--------|-------------|
+| Learned from work | MEMORY.md |
+| Extracted from external doc | wiki/pages/ |
+| Operational decision/preference | MEMORY.md |
+| Domain fact/entity info | wiki/pages/ |
+| Recurring behavioral pattern | MEMORY.md |
+| Relationship between external concepts | wiki/pages/ (synthesis) |
+
 ## Skills
 
 | Skill | When |
@@ -70,7 +113,7 @@ End of every task (heartbeat, skill, interactive):
 | `/release` | CalVer release — branch, tag, push, GHCR |
 | `/destroy` | Tear down — stop containers, remove volumes |
 | `/delegate` | Decompose plan → parallel worker agents |
-| `/heartbeat` | Create a new heartbeat and sync daemon — immediately live |
+| `/heartbeat` | Create heartbeat and sync daemon — immediately live |
 | `/compress` | Compress identity files/rules (~46% token savings) |
 | `/prd` | Generate Product Requirements Document |
 | `/ralph` | Convert PRD to `.ralph/prd.json` |
@@ -80,6 +123,9 @@ End of every task (heartbeat, skill, interactive):
 | `/strategic-proposal` | 5 experts + AI council → roadmap |
 | `/implement` | Top roadmap item → Ralph loop → draft PR |
 | `/issue-triage` | Triage issues with sub-agents + council |
+| `/wiki-ingest` | Process sources into wiki pages — `wiki/sources/` → `wiki/pages/` |
+| `/wiki-query` | Search wiki, synthesize answers, optionally file back as synthesis |
+| `/wiki-lint` | Health-check wiki — orphans, broken refs, stale pages, tag drift, index integrity |
 
 After `git push` → `/ci-status`. Not done until CI green.
 
