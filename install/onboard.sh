@@ -269,11 +269,15 @@ banner "Step 4/6 — GitHub CLI"
 
 if gh auth status &>/dev/null; then
   ok "GitHub CLI already authenticated"
+  gh auth setup-git 2>/dev/null || true
+  ok "Git credential helper configured"
   STEPS[github]="done"
 else
   printf "  Running: ${CYAN}gh auth login${NC}\n\n"
   if gh auth login; then
     ok "GitHub CLI authenticated"
+    gh auth setup-git 2>/dev/null || true
+    ok "Git credential helper configured"
     STEPS[github]="done"
   else
     fail "GitHub CLI authentication failed"
