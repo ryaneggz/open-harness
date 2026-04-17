@@ -1,3 +1,9 @@
+---
+# schedule: "0 */2 * * *"
+agent: claude
+# active: 9-21
+---
+
 # Implementer Heartbeat
 
 Pick the highest-priority validated roadmap item and run a Ralph implementation

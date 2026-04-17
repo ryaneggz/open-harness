@@ -20,10 +20,51 @@ for dir in .claude .cloudflared .config/gh .ssh .pi .openharness; do
   fi
 done
 
-# Fix ownership of bind-mounted repo (git needs write access to .git/)
+# ─── Git worktree resolution ────────────────────────────────────────
+# When the sandbox runs from a git worktree, .git is a file (not a dir)
+# pointing to the main repo's .git/worktrees/<name>. The main .git/ is
+# outside the bind mount, so we mount it separately at /home/sandbox/.git-main
+# (via docker-compose.git.yml) and rewrite the .git file to resolve inside
+# the container.
 HARNESS="/home/sandbox/harness"
-if [ -d "$HARNESS/.git" ]; then
+GIT_MAIN="/home/sandbox/.git-main"
+
+if [ -f "$HARNESS/.git" ] && [ -d "$GIT_MAIN" ]; then
+  WORKTREE_NAME=$(sed -n 's|.*worktrees/||p' "$HARNESS/.git")
+  if [ -n "$WORKTREE_NAME" ] && [ -d "$GIT_MAIN/worktrees/$WORKTREE_NAME" ]; then
+    echo "gitdir: $GIT_MAIN/worktrees/$WORKTREE_NAME" > "$HARNESS/.git"
+    chown sandbox:sandbox "$HARNESS/.git"
+    chown -R sandbox:sandbox "$GIT_MAIN" 2>/dev/null || true
+    gosu sandbox git config --global --add safe.directory "$HARNESS"
+    echo "[entrypoint] git worktree resolved → $GIT_MAIN/worktrees/$WORKTREE_NAME"
+  fi
+elif [ -d "$HARNESS/.git" ]; then
+  # Regular repo (not a worktree) — just fix ownership
   chown -R sandbox:sandbox "$HARNESS/.git" 2>/dev/null || true
+fi
+
+# ─── Git identity + credential helper ───────────────────────────────
+# Set git user from env vars (fallback to gh-authenticated user)
+if [ -n "${GIT_USER_NAME:-}" ]; then
+  gosu sandbox git config --global user.name "$GIT_USER_NAME"
+elif gosu sandbox gh auth status &>/dev/null; then
+  GH_USER=$(gosu sandbox gh api user --jq .name 2>/dev/null || true)
+  [ -n "$GH_USER" ] && gosu sandbox git config --global user.name "$GH_USER"
+fi
+if [ -n "${GIT_USER_EMAIL:-}" ]; then
+  gosu sandbox git config --global user.email "$GIT_USER_EMAIL"
+elif gosu sandbox gh auth status &>/dev/null; then
+  GH_EMAIL=$(gosu sandbox gh api user --jq .email 2>/dev/null || true)
+  # GitHub may return null for private emails — use noreply fallback
+  if [ -z "$GH_EMAIL" ] || [ "$GH_EMAIL" = "null" ]; then
+    GH_LOGIN=$(gosu sandbox gh api user --jq .login 2>/dev/null || true)
+    [ -n "$GH_LOGIN" ] && GH_EMAIL="${GH_LOGIN}@users.noreply.github.com"
+  fi
+  [ -n "$GH_EMAIL" ] && gosu sandbox git config --global user.email "$GH_EMAIL"
+fi
+# Register gh as git credential helper (persisted gh-config volume)
+if gosu sandbox gh auth status &>/dev/null; then
+  gosu sandbox gh auth setup-git 2>/dev/null || true
 fi
 
 # ─── SSH server setup (only when sshd overlay is active) ──────────
@@ -44,14 +85,11 @@ if echo "$@" | grep -q sshd; then
   fi
 fi
 
-# Start cron daemon (needed for heartbeat scheduling)
-if command -v cron &>/dev/null; then
-  service cron start 2>/dev/null || true
-fi
-
-# Auto-sync heartbeat schedules from persistent config
-if [ -f "/home/sandbox/harness/workspace/heartbeats.conf" ]; then
-  gosu sandbox /home/sandbox/install/heartbeat.sh sync 2>/dev/null || true
+# Start heartbeat daemon (replaces cron-based scheduling)
+DAEMON_SCRIPT="/home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
+if [ -f "$DAEMON_SCRIPT" ]; then
+  gosu sandbox node "$DAEMON_SCRIPT" start >> /home/sandbox/.heartbeat/heartbeat.log 2>&1 &
+  echo "[entrypoint] heartbeat daemon started (pid $!)"
 fi
 
 # Build and link openharness CLI in background (from bind-mounted repo)

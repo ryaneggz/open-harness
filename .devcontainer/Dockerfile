@@ -4,7 +4,7 @@ ENV TZ=America/Denver
 
 # ─── System packages ────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openssh-server ca-certificates cron curl wget sudo gosu git jq gnupg \
+    openssh-server ca-certificates curl wget sudo gosu git jq gnupg \
     lsb-release nano ripgrep tmux unzip bash-completion procps less \
  && rm -rf /var/lib/apt/lists/*
 
