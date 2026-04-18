@@ -312,7 +312,7 @@ else
       else
         skip "Skipped — to set up later, run:"
         printf "      cloudflared login\n"
-        printf "      bash ~/install/cloudflared-tunnel.sh <name> <hostname> 3000\n"
+        printf "      /cloudflared-tunnel <name> <hostname> 3000\n"
         STEPS[cloudflare]="skipped"
       fi
     fi
