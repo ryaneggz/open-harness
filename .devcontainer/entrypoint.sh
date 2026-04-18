@@ -43,6 +43,13 @@ elif [ -d "$HARNESS/.git" ]; then
   chown -R sandbox:sandbox "$HARNESS/.git" 2>/dev/null || true
 fi
 
+# ─── GitHub CLI auth via PAT (optional) ─────────────────────────────
+if [ -n "${GH_TOKEN:-}" ] && ! gosu sandbox gh auth status &>/dev/null; then
+  echo "$GH_TOKEN" | gosu sandbox gh auth login --with-token 2>/dev/null \
+    && echo "[entrypoint] GitHub CLI authenticated via GH_TOKEN" \
+    || echo "[entrypoint] GH_TOKEN provided but gh auth login failed"
+fi
+
 # ─── Git identity + credential helper ───────────────────────────────
 # Set git user from env vars (fallback to gh-authenticated user)
 if [ -n "${GIT_USER_NAME:-}" ]; then
