@@ -32,7 +32,7 @@
     "ci": "eslint src/ extensions/ && prettier --check 'src/**/*.ts' 'extensions/**/*.ts' && vitest run"
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "latest",
+    "@mariozechner/pi-coding-agent": "0.66.1",
     "@sinclair/typebox": "^0.34.0",
     "croner": "^9.1.0"
   },

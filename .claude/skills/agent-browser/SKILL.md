@@ -100,6 +100,28 @@ If snapshot returns content (even minimal), the browser is healthy. Close the he
 agent-browser close
 ```
 
+### Step 2d — DNS resolution check (tunnel hostnames)
+
+If the URL contains a hostname that routes through a cloudflared tunnel (e.g., `oh.ruska.dev`, `oh-docs.ruska.dev`), the container's DNS may not resolve it. Check and fix:
+
+```bash
+HOSTNAME=$(echo "$URL" | sed 's|https\?://||; s|/.*||; s|:.*||')
+if ! getent hosts "$HOSTNAME" &>/dev/null; then
+  # Resolve via Cloudflare DNS API
+  IP=$(curl -sf "https://cloudflare-dns.com/dns-query?name=${HOSTNAME}&type=A" \
+    -H "accept: application/dns-json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['Answer'][0]['data'])" 2>/dev/null)
+  if [ -n "$IP" ]; then
+    echo "$IP $HOSTNAME" | sudo tee -a /etc/hosts >/dev/null
+    echo "Added $HOSTNAME -> $IP to /etc/hosts (container DNS didn't resolve it)"
+  else
+    echo "FAIL: $HOSTNAME does not resolve. Check cloudflared tunnel DNS routing."
+    # Stop here
+  fi
+fi
+```
+
+This ensures agent-browser can reach tunnel-served sites even when the container's DNS resolver hasn't propagated the CNAME yet.
+
 ### Step 3 — Open the target URL with viewport
 
 Set the viewport size based on the selected viewport, then open the URL:
@@ -118,7 +140,7 @@ agent-browser execute "await page.setViewportSize({ width: $WIDTH, height: $HEIG
 
 If this fails, report the error with the full output.
 
-### Step 4 — Confirm page loaded
+### Step 4 — Confirm page loaded and screenshot
 
 ```bash
 agent-browser snapshot -c
@@ -126,17 +148,28 @@ agent-browser snapshot -c
 
 Report a summary of what loaded (page title, key elements visible).
 
+Take a screenshot to `.claude/screenshots/` using a descriptive filename derived from the URL path:
+
+```bash
+# Generate filename from URL: strip protocol, replace / with --, remove trailing -
+FILENAME=$(echo "$URL" | sed 's|https\?://||; s|/|--|g; s|--$||; s|[^a-zA-Z0-9._-]|-|g')
+agent-browser screenshot ".claude/screenshots/${FILENAME}.png"
+```
+
+Example: `https://oh-docs.ruska.dev/docs` → `.claude/screenshots/oh-docs.ruska.dev--docs.png`
+
 ### Step 5 — Report
 
 ```
 Browser ready.
 
-  URL:      $URL
-  Viewport: $VIEWPORT ($WIDTHx$HEIGHT)
-  Session:  $SESSION (or "default")
+  URL:        $URL
+  Viewport:   $VIEWPORT ($WIDTHx$HEIGHT)
+  Session:    $SESSION (or "default")
+  Screenshot: .claude/screenshots/$FILENAME.png
 
   Next steps:
-    agent-browser screenshot <path>       # capture the page
+    agent-browser screenshot <path>       # capture to custom path
     agent-browser snapshot -i             # interactive elements
     agent-browser is visible "<selector>" # wait for element
     agent-browser close                   # end session (always do this)

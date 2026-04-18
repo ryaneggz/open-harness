@@ -19,6 +19,14 @@ on:
       - "workspace/projects/next-app/.prettierignore"
       - "workspace/projects/next-app/.gitignore"
       - "workspace/projects/next-app/.eslintrc*"
+      - "packages/sandbox/src/**"
+      - "packages/sandbox/package.json"
+      - "packages/sandbox/pnpm-lock.yaml"
+      - "packages/sandbox/tsconfig.json"
+      - "packages/slack/src/**"
+      - "packages/slack/package.json"
+      - "packages/slack/pnpm-lock.yaml"
+      - "packages/slack/tsconfig.json"
       - ".github/workflows/ci.yml"
 
 permissions:
@@ -80,3 +88,59 @@ jobs:
       - name: E2E tests
         working-directory: workspace/projects/next-app
         run: pnpm run test:e2e
+
+  test-sandbox:
+    name: "Test: packages/sandbox"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        working-directory: packages/sandbox
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        working-directory: packages/sandbox
+        run: pnpm run build
+
+      - name: Test
+        working-directory: packages/sandbox
+        run: pnpm test
+
+  test-slack:
+    name: "Test: packages/slack"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        working-directory: packages/slack
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        working-directory: packages/slack
+        run: pnpm run build
+
+      - name: Test
+        working-directory: packages/slack
+        run: pnpm test

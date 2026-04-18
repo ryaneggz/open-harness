@@ -6,12 +6,12 @@ description: |
   on an existing tunnel.
   TRIGGER when: asked to create, set up, or configure a Cloudflare tunnel,
   or expose a local service via Cloudflare.
-argument-hint: "<tunnel-name> <hostname> <local-port> [--run]"
+argument-hint: "<tunnel-name> <hostname:port> [<hostname:port> ...] [--run]"
 ---
 
 # Cloudflared Tunnel
 
-Create a named Cloudflare tunnel, write its ingress config, route DNS, and optionally start it.
+Create a named Cloudflare tunnel, write multi-ingress config, route DNS, and optionally start it. Supports multiple hostname:port pairs for routing several services through one tunnel.
 
 ## Instructions
 
@@ -19,15 +19,19 @@ Create a named Cloudflare tunnel, write its ingress config, route DNS, and optio
 
 Arguments received: `$ARGUMENTS`
 
-- **TUNNEL_NAME**: `$0` (required)
-- **HOSTNAME**: `$1` (required)
-- **LOCAL_PORT**: `$2` (required)
+- **TUNNEL_NAME**: first positional arg (required)
+- **INGRESS_PAIRS**: all `hostname:port` args (at least one required)
 - **RUN_AFTER**: `true` if `--run` flag is present, otherwise `false`
 
-If any required argument is missing, ask the user to provide it. Suggest defaults:
+Supports two formats:
+- **Multi-ingress**: `<tunnel-name> <hostname:port> [<hostname:port> ...] [--run]`
+  - Example: `openharness oh.ruska.dev:3000 oh-docs.ruska.dev:3001`
+- **Legacy single-ingress**: `<tunnel-name> <hostname> <port> [--run]`
+  - Example: `openharness oh.ruska.dev 3000`
+
+If no ingress pairs provided, suggest defaults:
 - Tunnel name: derived from the project or sandbox name
-- Hostname: `<tunnel-name>.ruska.dev`
-- Local port: `3000`
+- Hostname: `<tunnel-name>.ruska.dev:3000`
 
 ### Step 2 — Check prerequisites
 
@@ -73,7 +77,7 @@ TUNNEL_ID=$(cloudflared tunnel list --output json | jq -r ".[] | select(.name==\
 echo "Tunnel ID: $TUNNEL_ID"
 ```
 
-### Step 4 — Write config
+### Step 4 — Write config (multi-ingress)
 
 Write the ingress config to `~/.cloudflared/config-<tunnel-name>.yml`:
 
@@ -81,25 +85,44 @@ Write the ingress config to `~/.cloudflared/config-<tunnel-name>.yml`:
 CREDS_FILE="$HOME/.cloudflared/${TUNNEL_ID}.json"
 CONFIG_FILE="$HOME/.cloudflared/config-${TUNNEL_NAME}.yml"
 
-cat > "$CONFIG_FILE" <<EOF
-tunnel: $TUNNEL_ID
-credentials-file: $CREDS_FILE
-
-ingress:
-  - hostname: $HOSTNAME
-    service: http://localhost:$LOCAL_PORT
-  - service: http_status:404
-EOF
+# Build multi-ingress YAML
+{
+  echo "tunnel: $TUNNEL_ID"
+  echo "credentials-file: $CREDS_FILE"
+  echo ""
+  echo "ingress:"
+  for pair in "${INGRESS_PAIRS[@]}"; do
+    hostname="${pair%%:*}"
+    port="${pair##*:}"
+    echo "  - hostname: $hostname"
+    echo "    service: http://localhost:$port"
+  done
+  echo "  - service: http_status:404"
+} > "$CONFIG_FILE"
 
 echo "Config written: $CONFIG_FILE"
 ```
 
-### Step 5 — Route DNS
+### Step 5 — Route DNS (all hostnames)
+
+Route DNS for **each** hostname in the ingress:
 
 ```bash
-cloudflared tunnel route dns --overwrite-dns "$TUNNEL_NAME" "$HOSTNAME" 2>/dev/null && \
-  echo "DNS route set for $HOSTNAME" || \
-  echo "DNS route already correct for $HOSTNAME"
+for pair in "${INGRESS_PAIRS[@]}"; do
+  hostname="${pair%%:*}"
+  cloudflared tunnel route dns --overwrite-dns "$TUNNEL_NAME" "$hostname" 2>/dev/null && \
+    echo "DNS route set for $hostname" || \
+    echo "DNS route already correct for $hostname"
+done
+```
+
+### Step 5b — Restart tunnel if already running
+
+Config changes require a tunnel restart — cloudflared does NOT hot-reload:
+
+```bash
+pkill -f "cloudflared.*run $TUNNEL_NAME" 2>/dev/null && \
+  echo "Killed existing tunnel process" || true
 ```
 
 ### Step 6 — Report
@@ -108,10 +131,11 @@ cloudflared tunnel route dns --overwrite-dns "$TUNNEL_NAME" "$HOSTNAME" 2>/dev/n
 Tunnel '$TUNNEL_NAME' is configured!
 
   Tunnel ID:  $TUNNEL_ID
-  Hostname:   $HOSTNAME
-  Local port: $LOCAL_PORT
   Config:     $CONFIG_FILE
   Creds:      $CREDS_FILE
+
+  Ingress rules:
+    <hostname> → localhost:<port>    (for each pair)
 
   To run:
     cloudflared tunnel --config $CONFIG_FILE run $TUNNEL_NAME
@@ -119,10 +143,29 @@ Tunnel '$TUNNEL_NAME' is configured!
 
 ### Step 7 — Optionally run
 
-If `--run` was passed, start the tunnel:
+If `--run` was passed, start the tunnel in background:
 
 ```bash
-cloudflared tunnel --config "$CONFIG_FILE" run "$TUNNEL_NAME"
+nohup cloudflared tunnel --config "$CONFIG_FILE" run "$TUNNEL_NAME" &>/tmp/cloudflared-${TUNNEL_NAME}.log &
+echo "Tunnel running (PID: $!, log: /tmp/cloudflared-${TUNNEL_NAME}.log)"
 ```
 
-This is a long-running process. Tell the user the tunnel is running and how to stop it (Ctrl+C).
+### Step 8 — Verify (agent-browser)
+
+After tunnel starts, verify each hostname is reachable. For each ingress pair, ensure the hostname resolves inside the container (add to `/etc/hosts` if needed via Cloudflare DNS-over-HTTPS), then health-check:
+
+```bash
+for pair in "${INGRESS_PAIRS[@]}"; do
+  hostname="${pair%%:*}"
+  # Ensure DNS resolves inside container
+  if ! getent hosts "$hostname" &>/dev/null; then
+    IP=$(curl -sf "https://cloudflare-dns.com/dns-query?name=${hostname}&type=A" \
+      -H "accept: application/dns-json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['Answer'][0]['data'])" 2>/dev/null)
+    [ -n "$IP" ] && echo "$IP $hostname" | sudo tee -a /etc/hosts >/dev/null
+  fi
+  STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "https://${hostname}/" 2>/dev/null)
+  echo "$hostname → $STATUS"
+done
+```
+
+Report pass/fail for each hostname. If any returns 000 or 502, check `/tmp/cloudflared-${TUNNEL_NAME}.log` for errors.
