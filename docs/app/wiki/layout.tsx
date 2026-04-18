@@ -5,7 +5,12 @@ import type { ReactNode } from "react";
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <DocsLayout tree={wikiSource.getPageTree()} {...baseOptions()}>
+    <DocsLayout
+      tree={wikiSource.getPageTree()}
+      {...baseOptions()}
+      containerProps={{ style: { maxWidth: "100%" } }}
+      sidebar={{ collapsible: true }}
+    >
       {children}
     </DocsLayout>
   );
