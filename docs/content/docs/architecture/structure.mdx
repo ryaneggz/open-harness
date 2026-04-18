@@ -10,7 +10,7 @@ open-harness/
 │   ├── docker-compose.yml      # base compose: SSH + workspace mount
 │   ├── docker-compose.*.yml    # overlays: postgres, cloudflared, docker, ssh, git, slack
 │   ├── entrypoint.sh           # Docker GID matching + heartbeat daemon + CLI install
-│   └── init-env.sh             # resolve SANDBOX_NAME from git remote
+│   └── init-env.sh             # seed .devcontainer/.env on first provision (SANDBOX_NAME, GIT_COMMON_DIR)
 ├── packages/sandbox/           # @openharness/sandbox (CLI + container lifecycle tools)
 │   ├── src/
 │   │   ├── cli/

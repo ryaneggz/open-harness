@@ -14,13 +14,13 @@ Isolated, pre-configured sandbox containers for AI coding agents — [Claude Cod
 
 ```bash
 git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
-cp .devcontainer/.example.env .env        # configure name, password, etc.
+cp .devcontainer/.example.env .devcontainer/.env   # configure name, password, etc.
 ```
 
 ### 2. Start the sandbox
 
 ```bash
-docker compose -f .devcontainer/docker-compose.yml up -d --build
+docker compose --env-file .devcontainer/.env -f .devcontainer/docker-compose.yml up -d --build
 ```
 
 ### 3. Connect
@@ -95,10 +95,10 @@ The sandbox user has passwordless `sudo` and full Docker socket access (with the
 Copy the example env file and edit to taste:
 
 ```bash
-cp .devcontainer/.example.env .env
+cp .devcontainer/.example.env .devcontainer/.env
 ```
 
-Docker Compose reads `.env` automatically from the project root.
+Docker Compose and the `openharness` CLI read `.devcontainer/.env` directly.
 
 ### Sandbox
 
@@ -397,7 +397,7 @@ curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/ma
   docker-compose.yml          # Base sandbox service
   docker-compose.*.yml        # Compose overlays (postgres, sshd, slack, etc.)
   entrypoint.sh               # Container bootstrap script
-  init-env.sh                 # Environment initialization
+  init-env.sh                 # Seed .devcontainer/.env on first provision (SANDBOX_NAME, GIT_COMMON_DIR)
   .example.env                # Environment variable template
 
 install/                      # Provisioning scripts

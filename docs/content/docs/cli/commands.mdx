@@ -53,4 +53,4 @@ openharness -c                           # continue previous session
 
 ## Name resolution
 
-Most commands accept an optional `[name]` parameter. If omitted, the sandbox name is auto-resolved from the git remote URL (via `.devcontainer/init-env.sh`), falling back to `sandbox`.
+Most commands accept an optional `[name]` parameter. If omitted, the sandbox name is read from `.devcontainer/.env` (seeded by `.devcontainer/init-env.sh` from the git remote URL on first provision), falling back to `sandbox`.

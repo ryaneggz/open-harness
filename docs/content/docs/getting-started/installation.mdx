@@ -28,7 +28,7 @@ This additionally requires [Node.js 20+](https://nodejs.org/) and builds/links t
 ```bash
 git clone https://github.com/ryaneggz/open-harness.git
 cd open-harness
-cp .devcontainer/.example.env .env   # configure name, password, etc.
+cp .devcontainer/.example.env .devcontainer/.env   # configure name, password, etc.
 docker compose -f .devcontainer/docker-compose.yml up -d --build
 ```
 
@@ -39,7 +39,7 @@ Or [fork the repo](https://github.com/ryaneggz/open-harness/fork) first for your
 1. Checks for Docker (with Compose plugin) and git
 2. Prompts for container name and password
 3. Clones the repo to `~/.openharness/` (or uses the local repo)
-4. Writes `.env` with your configuration
+4. Writes `.devcontainer/.env` with your configuration
 5. Runs `docker compose up -d --build`
 6. _(with `--with-cli`)_ Checks Node.js 20+, installs pnpm, builds and globally links the `openharness` CLI
 

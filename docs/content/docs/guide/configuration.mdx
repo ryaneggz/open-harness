@@ -3,14 +3,14 @@ title: "Configuration"
 ---
 
 
-All sandbox configuration is done through environment variables. Docker Compose reads a `.env` file automatically from the project root.
+All sandbox configuration is done through environment variables. Docker Compose and the `openharness` CLI read `.devcontainer/.env` directly.
 
 ## Setup
 
 Copy the example env file and edit to taste:
 
 ```bash
-cp .devcontainer/.example.env .env
+cp .devcontainer/.example.env .devcontainer/.env
 ```
 
 The `.example.env` file contains all available variables with comments explaining each one.
@@ -61,7 +61,7 @@ Only applies when the `slack.yml` overlay is enabled. The Slack bot (Mom) connec
 Docker Compose resolves variables in this order:
 
 1. Shell environment (e.g. `SANDBOX_NAME=foo docker compose up`)
-2. `.env` file in the project root
+2. `.devcontainer/.env` (host-side sandbox configuration)
 3. Default values in `docker-compose.yml` (the `:-` fallbacks)
 
 Shell environment always wins, so you can override `.env` values inline on the command line.
