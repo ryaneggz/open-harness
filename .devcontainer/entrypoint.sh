@@ -13,12 +13,66 @@ if [ -S "$SOCK" ]; then
 fi
 
 # Fix ownership of mounted volumes (created as root by Docker)
-for dir in .claude .cloudflared .config/gh .ssh .pi; do
+for dir in .claude .cloudflared .config/gh .ssh .pi .openharness; do
   if [ -d "/home/sandbox/$dir" ]; then
     chown -R sandbox:sandbox "/home/sandbox/$dir" 2>/dev/null || true
     [ "$dir" = ".ssh" ] && chmod 700 "/home/sandbox/$dir" 2>/dev/null || true
   fi
 done
+
+# ─── Git worktree resolution ────────────────────────────────────────
+# When the sandbox runs from a git worktree, .git is a file (not a dir)
+# pointing to the main repo's .git/worktrees/<name>. The main .git/ is
+# outside the bind mount, so we mount it separately at /home/sandbox/.git-main
+# (via docker-compose.git.yml) and rewrite the .git file to resolve inside
+# the container.
+HARNESS="/home/sandbox/harness"
+GIT_MAIN="/home/sandbox/.git-main"
+
+if [ -f "$HARNESS/.git" ] && [ -d "$GIT_MAIN" ]; then
+  WORKTREE_NAME=$(sed -n 's|.*worktrees/||p' "$HARNESS/.git")
+  if [ -n "$WORKTREE_NAME" ] && [ -d "$GIT_MAIN/worktrees/$WORKTREE_NAME" ]; then
+    echo "gitdir: $GIT_MAIN/worktrees/$WORKTREE_NAME" > "$HARNESS/.git"
+    chown sandbox:sandbox "$HARNESS/.git"
+    chown -R sandbox:sandbox "$GIT_MAIN" 2>/dev/null || true
+    gosu sandbox git config --global --add safe.directory "$HARNESS"
+    echo "[entrypoint] git worktree resolved → $GIT_MAIN/worktrees/$WORKTREE_NAME"
+  fi
+elif [ -d "$HARNESS/.git" ]; then
+  # Regular repo (not a worktree) — just fix ownership
+  chown -R sandbox:sandbox "$HARNESS/.git" 2>/dev/null || true
+fi
+
+# ─── GitHub CLI auth via PAT (optional) ─────────────────────────────
+if [ -n "${GH_TOKEN:-}" ] && ! gosu sandbox gh auth status &>/dev/null; then
+  echo "$GH_TOKEN" | gosu sandbox gh auth login --with-token 2>/dev/null \
+    && echo "[entrypoint] GitHub CLI authenticated via GH_TOKEN" \
+    || echo "[entrypoint] GH_TOKEN provided but gh auth login failed"
+fi
+
+# ─── Git identity + credential helper ───────────────────────────────
+# Set git user from env vars (fallback to gh-authenticated user)
+if [ -n "${GIT_USER_NAME:-}" ]; then
+  gosu sandbox git config --global user.name "$GIT_USER_NAME"
+elif gosu sandbox gh auth status &>/dev/null; then
+  GH_USER=$(gosu sandbox gh api user --jq .name 2>/dev/null || true)
+  [ -n "$GH_USER" ] && gosu sandbox git config --global user.name "$GH_USER"
+fi
+if [ -n "${GIT_USER_EMAIL:-}" ]; then
+  gosu sandbox git config --global user.email "$GIT_USER_EMAIL"
+elif gosu sandbox gh auth status &>/dev/null; then
+  GH_EMAIL=$(gosu sandbox gh api user --jq .email 2>/dev/null || true)
+  # GitHub may return null for private emails — use noreply fallback
+  if [ -z "$GH_EMAIL" ] || [ "$GH_EMAIL" = "null" ]; then
+    GH_LOGIN=$(gosu sandbox gh api user --jq .login 2>/dev/null || true)
+    [ -n "$GH_LOGIN" ] && GH_EMAIL="${GH_LOGIN}@users.noreply.github.com"
+  fi
+  [ -n "$GH_EMAIL" ] && gosu sandbox git config --global user.email "$GH_EMAIL"
+fi
+# Register gh as git credential helper (persisted gh-config volume)
+if gosu sandbox gh auth status &>/dev/null; then
+  gosu sandbox gh auth setup-git 2>/dev/null || true
+fi
 
 # ─── SSH server setup (only when sshd overlay is active) ──────────
 if echo "$@" | grep -q sshd; then
@@ -38,17 +92,8 @@ if echo "$@" | grep -q sshd; then
   fi
 fi
 
-# Start cron daemon (needed for heartbeat scheduling)
-if command -v cron &>/dev/null; then
-  service cron start 2>/dev/null || true
-fi
-
-# Auto-sync heartbeat schedules from persistent config
-if [ -f "/home/sandbox/harness/workspace/heartbeats.conf" ]; then
-  gosu sandbox /home/sandbox/install/heartbeat.sh sync 2>/dev/null || true
-fi
-
-# Build and link openharness CLI in background (from bind-mounted repo)
+# Build and link openharness CLI (from bind-mounted repo)
+# Must complete before heartbeat daemon check so the binary is available on first boot.
 HARNESS="/home/sandbox/harness"
 if [ -f "$HARNESS/packages/sandbox/package.json" ] && ! command -v openharness &>/dev/null; then
   (
@@ -56,9 +101,47 @@ if [ -f "$HARNESS/packages/sandbox/package.json" ] && ! command -v openharness &
     gosu sandbox pnpm install --frozen-lockfile 2>/dev/null || gosu sandbox pnpm install 2>/dev/null || true
     gosu sandbox pnpm --filter @openharness/sandbox run build 2>/dev/null || true
     ln -sf "$HARNESS/packages/sandbox/dist/src/cli/index.js" /usr/local/bin/openharness
-    chmod +x /usr/local/bin/openharness
-    echo "[entrypoint] openharness CLI installed"
+    ln -sf "$HARNESS/packages/sandbox/dist/src/cli/heartbeat-daemon.js" /usr/local/bin/heartbeat-daemon
+    chmod +x /usr/local/bin/openharness /usr/local/bin/heartbeat-daemon
+    echo "[entrypoint] openharness CLI + heartbeat-daemon installed"
+  )
+fi
+
+# ─── Start heartbeat daemon (with watchdog) ──────────────────────
+WORKSPACE="/home/sandbox/harness/workspace"
+DAEMON_SCRIPT="/home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
+HB_LOG="$WORKSPACE/heartbeats/heartbeat.log"
+mkdir -p "$WORKSPACE/heartbeats"
+if command -v heartbeat-daemon &>/dev/null; then
+  (
+    while true; do
+      gosu sandbox heartbeat-daemon start 2>&1 | tee -a "$HB_LOG"
+      EXIT_CODE=$?
+      echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] heartbeat-daemon exited ($EXIT_CODE), restarting in 5s..." >> "$HB_LOG"
+      sleep 5
+    done
   ) &
+  echo "[entrypoint] heartbeat daemon started with watchdog (pid $!)"
+elif [ -f "$DAEMON_SCRIPT" ]; then
+  (
+    while true; do
+      gosu sandbox node "$DAEMON_SCRIPT" start 2>&1 | tee -a "$HB_LOG"
+      EXIT_CODE=$?
+      echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] heartbeat-daemon exited ($EXIT_CODE), restarting in 5s..." >> "$HB_LOG"
+      sleep 5
+    done
+  ) &
+  echo "[entrypoint] heartbeat daemon started with watchdog via fallback (pid $!)"
+fi
+
+# ─── Optional: agent-browser (opt-in via INSTALL_AGENT_BROWSER=true) ──
+if [ "${INSTALL_AGENT_BROWSER:-false}" = "true" ] && ! command -v agent-browser &>/dev/null; then
+  echo "[entrypoint] Installing agent-browser (INSTALL_AGENT_BROWSER=true)..."
+  pnpm add -g agent-browser@0.8.5 \
+    && find "$PNPM_HOME" -name "agent-browser-linux-*" -exec chmod +x {} \; \
+    && agent-browser install --with-deps 2>&1 | tail -5 \
+    && echo "[entrypoint] agent-browser installed" \
+    || echo "[entrypoint] agent-browser install failed — skipping"
 fi
 
 # Run workspace startup (dev server + tunnel) as sandbox user

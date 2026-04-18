@@ -1,0 +1,16 @@
+{
+  "title": "Guide",
+  "pages": [
+    "configuration",
+    "overlays",
+    "permissions",
+    "workspace",
+    "multi-sandbox-ssh",
+    "heartbeats",
+    "identity",
+    "wiki",
+    "uat-testing",
+    "token-conservation",
+    "releases"
+  ]
+}

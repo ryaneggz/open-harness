@@ -40,23 +40,23 @@ assignees: ""
 > **IMPORTANT**: Validate this metadata before starting work.
 
 ```yml
-agent: "next-postgres-shadcn"
-branch: "agent/next-postgres-shadcn"
-worktree_path: ".worktrees/agent/next-postgres-shadcn"
-pull_request: "FROM agent/next-postgres-shadcn TO development"
+agent: "orchestrator"
+branch: "agent/orchestrator"
+worktree_path: ".worktrees/agent/orchestrator"
+pull_request: "FROM agent/orchestrator TO development"
 ```
 
 ### Workflow
 
 ```bash
 # Enter the sandbox
-openharness shell next-postgres-shadcn
+openharness shell orchestrator
 claude
 
 # When complete — PR from agent branch to development
-cd .worktrees/agent/next-postgres-shadcn
+cd .worktrees/agent/orchestrator
 git add -A && git commit -m "fix(<issue#>): <description>"
-git push -u origin agent/next-postgres-shadcn
+git push -u origin agent/orchestrator
 gh pr create --base development --title "fix(<issue#>): <shortdesc>" --body "Closes #<issue#>"
 ```
 
@@ -67,6 +67,6 @@ gh pr create --base development --title "fix(<issue#>): <shortdesc>" --body "Clo
 - [ ] Bug is fixed and no longer reproducible
 - [ ] Regression test added (Vitest or Playwright)
 - [ ] Lint + format + type-check pass
-- [ ] Verified via agent-browser at `https://next-postgres-shadcn.ruska.dev`
+- [ ] Verified via agent-browser at `https://oh.ruska.dev`
 - [ ] No regressions introduced
 - [ ] PR targets `development` branch

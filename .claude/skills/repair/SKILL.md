@@ -144,7 +144,7 @@ Status values: **OK** (passed first run), **FIXED** (failed then remediated), **
 As a final check, open the public URL with agent-browser and take a screenshot:
 
 ```bash
-agent-browser open "https://next-postgres-shadcn.ruska.dev"
+agent-browser open "https://oh.ruska.dev"
 agent-browser screenshot .claude/screenshots/repair-dod.png
 agent-browser close
 ```

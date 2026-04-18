@@ -66,7 +66,7 @@ git push origin "$BRANCH"
 ### Step 4 — Create and push the tag
 
 The tag triggers `.github/workflows/release.yml` which runs the full CI pipeline,
-builds `ghcr.io/ryaneggz/next-postgres-shadcn:<VERSION>`, and creates a GitHub Release.
+builds `ghcr.io/ryaneggz/openharness:<VERSION>`, and creates a GitHub Release.
 
 ```bash
 git tag "$VERSION"
@@ -82,13 +82,13 @@ After pushing the tag, poll the release workflow:
 sleep 10
 
 # Get the run ID
-RUN_ID=$(gh api "repos/ryaneggz/next-postgres-shadcn/actions/runs?branch=${VERSION}&per_page=1" \
+RUN_ID=$(gh api "repos/ryaneggz/open-harness/actions/runs?branch=${VERSION}&per_page=1" \
   --jq '.workflow_runs[0].id')
 
 # Poll until complete (max 10 minutes)
 for i in $(seq 1 40); do
-  STATUS=$(gh api "repos/ryaneggz/next-postgres-shadcn/actions/runs/$RUN_ID" --jq '.status')
-  CONCLUSION=$(gh api "repos/ryaneggz/next-postgres-shadcn/actions/runs/$RUN_ID" --jq '.conclusion')
+  STATUS=$(gh api "repos/ryaneggz/open-harness/actions/runs/$RUN_ID" --jq '.status')
+  CONCLUSION=$(gh api "repos/ryaneggz/open-harness/actions/runs/$RUN_ID" --jq '.conclusion')
   if [ "$STATUS" = "completed" ]; then
     echo "Release workflow: $CONCLUSION"
     break
@@ -102,17 +102,17 @@ done
 
 ```bash
 # Check the GitHub Release exists
-gh release view "$VERSION" --repo ryaneggz/next-postgres-shadcn
+gh release view "$VERSION" --repo ryaneggz/open-harness
 
 # Verify the Docker image was pushed to GHCR
-gh api "users/ryaneggz/packages/container/next-postgres-shadcn/versions" \
+gh api "users/ryaneggz/packages/container/openharness/versions" \
   --jq '.[0] | {tags: .metadata.container.tags, created: .created_at}'
 ```
 
 ### Step 7 — Return to working branch
 
 ```bash
-git checkout agent/next-postgres-shadcn
+git checkout agent/orchestrator
 ```
 
 ### Step 8 — Report
@@ -122,8 +122,8 @@ Release $VERSION complete!
 
   Tag:      $VERSION
   Branch:   release/$VERSION
-  Image:    ghcr.io/ryaneggz/next-postgres-shadcn:$VERSION
-  Release:  https://github.com/ryaneggz/next-postgres-shadcn/releases/tag/$VERSION
+  Image:    ghcr.io/ryaneggz/openharness:$VERSION
+  Release:  https://github.com/ryaneggz/open-harness/releases/tag/$VERSION
   CI:       <pass/fail with run URL>
 ```
 

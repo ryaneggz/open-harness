@@ -149,6 +149,7 @@ fi
 
 # Bootstrap .openharness/agent directory (symlink from legacy .pi paths)
 OHARNESS_AGENT="$HOME/.openharness/agent"
+sudo chown -R sandbox:sandbox "$HOME/.openharness" 2>/dev/null || true
 mkdir -p "$OHARNESS_AGENT"
 [ ! -e "$OHARNESS_AGENT/settings.json" ] && [ -s "$HOME/.pi/agent/settings.json" ] && \
   ln -sf "$HOME/.pi/agent/settings.json" "$OHARNESS_AGENT/settings.json"
@@ -170,53 +171,51 @@ if [ -n "$SLACK_APP_TOKEN" ] && [ -n "$SLACK_BOT_TOKEN" ]; then
       fi
     fi
 
-    tmux kill-session -t slack 2>/dev/null || true
-    SLACK_APP_TOKEN="$SLACK_APP_TOKEN" SLACK_BOT_TOKEN="$SLACK_BOT_TOKEN" \
-      tmux new-session -d -s slack 'mom --sandbox=host ~/harness/workspace/.slack'
-
-    # Validate: wait for Mom to connect or fail
-    printf "\n  Validating Slack connection"
-    MOM_OK=false
-    for i in $(seq 1 15); do
-      printf "."
-      OUTPUT=$(tmux capture-pane -t slack -p 2>/dev/null || true)
-      if echo "$OUTPUT" | grep -q "connected and listening"; then
-        MOM_OK=true
-        break
+    # Check if Mom is already running and connected (started by entrypoint)
+    MOM_ALREADY_RUNNING=false
+    if tmux has-session -t slack 2>/dev/null; then
+      EXISTING_OUTPUT=$(tmux capture-pane -t slack -p 2>/dev/null || true)
+      if echo "$EXISTING_OUTPUT" | grep -q "connected and listening"; then
+        MOM_ALREADY_RUNNING=true
       fi
-      if echo "$OUTPUT" | grep -q "Run error\|Error\|Missing env"; then
-        break
-      fi
-      sleep 1
-    done
-    printf "\n"
+    fi
 
-    if [ "$MOM_OK" = true ]; then
-      ok "Mom connected to Slack"
-      printf "\n  ${B}Test it now:${NC}\n"
-      printf "    1. Go to Slack and mention ${CYAN}@OpenHarness${NC} with a message\n"
-      printf "       (e.g. \"${CYAN}@OpenHarness what time is it?${NC}\")\n"
-      printf "    2. Wait for a response (not just \"Thinking...\")\n"
+    if [ "$MOM_ALREADY_RUNNING" = true ]; then
+      ok "Mom already running and connected (started by entrypoint)"
+      STEPS[slack]="done"
+    else
+      # Not running or not connected — (re)start
+      tmux kill-session -t slack 2>/dev/null || true
+      SLACK_APP_TOKEN="$SLACK_APP_TOKEN" SLACK_BOT_TOKEN="$SLACK_BOT_TOKEN" \
+        tmux new-session -d -s slack 'mom --sandbox=host ~/harness/workspace/.slack'
+
+      # Validate: wait for Mom to connect or fail
+      printf "\n  Validating Slack connection"
+      MOM_OK=false
+      for i in $(seq 1 15); do
+        printf "."
+        OUTPUT=$(tmux capture-pane -t slack -p 2>/dev/null || true)
+        if echo "$OUTPUT" | grep -q "connected and listening"; then
+          MOM_OK=true
+          break
+        fi
+        if echo "$OUTPUT" | grep -q "Run error\|Error\|Missing env"; then
+          break
+        fi
+        sleep 1
+      done
       printf "\n"
-      ask "Did Mom respond in Slack? [Y/n]:"
-      read -r slack_test
-      if [[ "$slack_test" =~ ^[Nn]$ ]]; then
-        warn "Mom connected but not responding — check logs: tmux attach -t slack"
-        tmux capture-pane -t slack -p 2>/dev/null | grep -i "error\|No API key" | head -3 | while IFS= read -r line; do
+
+      if [ "$MOM_OK" = true ]; then
+        ok "Mom connected to Slack"
+        STEPS[slack]="done"
+      else
+        fail "Mom failed to connect — check logs: tmux attach -t slack"
+        tmux capture-pane -t slack -p 2>/dev/null | grep -i "error\|missing\|failed" | head -3 | while IFS= read -r line; do
           printf "    ${RED}%s${NC}\n" "$line"
         done
         STEPS[slack]="failed"
-      else
-        ok "Mom is working! (tmux attach -t slack)"
-        STEPS[slack]="done"
       fi
-    else
-      fail "Mom failed to connect — check logs: tmux attach -t slack"
-      # Show the error
-      tmux capture-pane -t slack -p 2>/dev/null | grep -i "error\|missing\|failed" | head -3 | while IFS= read -r line; do
-        printf "    ${RED}%s${NC}\n" "$line"
-      done
-      STEPS[slack]="failed"
     fi
   else
     fail "mom CLI not found — reinstall with: pnpm add -g @mariozechner/pi-mom"
@@ -270,11 +269,15 @@ banner "Step 4/6 — GitHub CLI"
 
 if gh auth status &>/dev/null; then
   ok "GitHub CLI already authenticated"
+  gh auth setup-git 2>/dev/null || true
+  ok "Git credential helper configured"
   STEPS[github]="done"
 else
   printf "  Running: ${CYAN}gh auth login${NC}\n\n"
   if gh auth login; then
     ok "GitHub CLI authenticated"
+    gh auth setup-git 2>/dev/null || true
+    ok "Git credential helper configured"
     STEPS[github]="done"
   else
     fail "GitHub CLI authentication failed"
@@ -309,7 +312,7 @@ else
       else
         skip "Skipped — to set up later, run:"
         printf "      cloudflared login\n"
-        printf "      bash ~/install/cloudflared-tunnel.sh <name> <hostname> 3000\n"
+        printf "      /cloudflared-tunnel <name> <hostname> 3000\n"
         STEPS[cloudflare]="skipped"
       fi
     fi

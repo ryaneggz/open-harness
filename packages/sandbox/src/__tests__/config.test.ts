@@ -58,14 +58,14 @@ describe("SandboxConfig", () => {
     mockExistsSync.mockImplementation((path) => {
       const p = String(path);
       if (p === ".openharness/config.json") return true;
-      if (p === ".devcontainer/docker-compose.docker.yml") return true;
+      if (p === ".devcontainer/docker-compose.slack.yml") return true;
       if (p === ".devcontainer/docker-compose.cloudflared.yml") return true;
       return false;
     });
     mockReadFileSync.mockReturnValue(
       JSON.stringify({
         composeOverrides: [
-          ".devcontainer/docker-compose.docker.yml",
+          ".devcontainer/docker-compose.slack.yml",
           ".devcontainer/docker-compose.cloudflared.yml",
           ".devcontainer/docker-compose.missing.yml",
         ],
@@ -75,7 +75,7 @@ describe("SandboxConfig", () => {
     const config = new SandboxConfig({ name: "test" });
     expect(config.composeFiles).toEqual([
       ".devcontainer/docker-compose.yml",
-      ".devcontainer/docker-compose.docker.yml",
+      ".devcontainer/docker-compose.slack.yml",
       ".devcontainer/docker-compose.cloudflared.yml",
     ]);
   });

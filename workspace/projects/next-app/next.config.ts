@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
-  allowedDevOrigins: ["openharness.ruska.dev"],
+  allowedDevOrigins: ["oh.ruska.dev"],
 };
 
 export default withPWA(nextConfig);

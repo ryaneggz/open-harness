@@ -1,5 +1,5 @@
 {
-    "project": "next-postgres-shadcn",
+    "project": "openharness",
     "branchName": "feat/5-og-meta-tags",
     "description": "Add Open Graph and Twitter Card meta tags to the root layout and /roadmap page so shared links render with proper title, description, and preview image on social platforms.",
     "roadmapContext": {
@@ -16,8 +16,8 @@
             "description": "As a user sharing the app URL on social media, I want the link to render with a proper title, description, and preview image so the app looks professional when shared.",
             "acceptanceCriteria": [
                 "Create a placeholder OG image at public/og-image.png (1200x630 pixels) — a simple branded placeholder with 'OpenHarness' text, kept under 100KB",
-                "Root layout exports metadata with openGraph fields: og:title, og:description, og:url (https://next-postgres-shadcn.ruska.dev), og:site_name (OpenHarness), og:type (website)",
-                "Root layout metadata includes openGraph.images with url (absolute: https://next-postgres-shadcn.ruska.dev/og-image.png), width (1200), height (630), alt text",
+                "Root layout exports metadata with openGraph fields: og:title, og:description, og:url (https://oh.ruska.dev), og:site_name (OpenHarness), og:type (website)",
+                "Root layout metadata includes openGraph.images with url (absolute: https://oh.ruska.dev/og-image.png), width (1200), height (630), alt text",
                 "Root layout exports metadata with twitter object: card ('summary_large_image'), title, description",
                 "Typecheck passes (pnpm run type-check)",
                 "Lint passes (pnpm run lint)",
@@ -33,7 +33,7 @@
             "title": "Add page-specific OG metadata to /roadmap page",
             "description": "As a user sharing the roadmap URL, I want the shared link to show roadmap-specific title and description rather than inheriting generic root metadata.",
             "acceptanceCriteria": [
-                "/roadmap page exports metadata with openGraph fields: og:title ('Roadmap | OpenHarness'), og:description (roadmap-specific), og:url (https://next-postgres-shadcn.ruska.dev/roadmap)",
+                "/roadmap page exports metadata with openGraph fields: og:title ('Roadmap | OpenHarness'), og:description (roadmap-specific), og:url (https://oh.ruska.dev/roadmap)",
                 "/roadmap page exports metadata with twitter object: card ('summary_large_image'), title, description",
                 "OG image is inherited from root layout (no need to override)",
                 "Typecheck passes (pnpm run type-check)",
@@ -72,8 +72,8 @@
                 "Archive .ralph/prd.json and .ralph/progress.txt to .ralph/archives/2026-04-08/og-meta-tags/ (plural archives, date and feature as SEPARATE directories)",
                 "Verify archive exists: ls .ralph/archives/2026-04-08/og-meta-tags/prd.json must succeed",
                 "Verify dev server: curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ must return 200 — if not running, start with pnpm run dev and wait",
-                "Verify public URL: curl -s -o /dev/null -w '%{http_code}' https://next-postgres-shadcn.ruska.dev/ must return 200 — if 502/000, this is a BLOCKER",
-                "Create feature branch: git checkout -b feat/5-og-meta-tags from agent/next-postgres-shadcn (NEVER git clone)",
+                "Verify public URL: curl -s -o /dev/null -w '%{http_code}' https://oh.ruska.dev/ must return 200 — if 502/000, this is a BLOCKER",
+                "Create feature branch: git checkout -b feat/5-og-meta-tags from agent/orchestrator (NEVER git clone)",
                 "Push all commits to the feature branch",
                 "Create draft PR to development with body containing: Closes #5 (MUST be on its own line so GitHub auto-closes the issue on merge), ## Roadmap Context (Rank: 2, Category: docs, Phase: now, Complexity: S, Signal: infrastructure), ## What (summary of all changes made across stories), ## Why (motivation — link to roadmap item and GitHub issue, explain the infrastructure signal that justified building this), ## How (implementation approach, key architecture decisions, tradeoffs), ## Manual Review Steps (numbered checklist: specific pages to visit, interactions to test, edge cases to verify — written for a human reviewer who has NOT seen the code), ## Acceptance Criteria (consolidated from all user stories)",
                 "PR body MUST include 'Closes #5' where 5 is the GitHub issue number — this auto-closes the issue when the PR merges",

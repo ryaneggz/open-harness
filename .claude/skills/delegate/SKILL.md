@@ -74,7 +74,7 @@ Analyze the plan deeply and produce a structured task list. For each task, deter
 | **Description** | What the worker agent needs to do (2-3 sentences, include file paths) |
 | **Depends On** | Task IDs this requires first, or "none" |
 | **Files** | Key files the worker will read or modify |
-| **Model** | haiku (config/docs) / sonnet (standard) / opus (complex architecture) |
+| **Model** | haiku (config/docs) / sonnet (standard, default) / opus (only multi-file architecture synthesis) |
 | **Acceptance** | How to verify the task is done (objectively checkable) |
 
 **Decomposition rules:**
@@ -226,7 +226,7 @@ Run at the end of **every** execution -- op, dry-run, or error.
 | Max concurrent agents per wave | 5 (split larger waves) |
 | Failure handling | Mark dependent tasks BLOCKED, continue independent ones |
 | Context passing | Prior wave summaries, not full output |
-| Model selection | haiku: config/docs, sonnet: standard, opus: complex |
+| Model selection | haiku: config/docs, sonnet: standard (default), opus: synthesis only |
 
 ### Key Resources
 

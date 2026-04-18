@@ -1,0 +1,79 @@
+---
+title: "Setup"
+---
+
+The web UI runs as a standalone nginx service alongside the sandbox. Enable it by adding the compose overlay, then start the stack with `/provision`.
+
+## Prerequisites
+
+- Open Harness sandbox already provisioned (see [Getting Started](/open-harness/getting-started))
+- A cloudflared tunnel configured if you want public access (see [Cloudflared](/open-harness/guide/overlays))
+
+## Enable the overlay
+
+The web-ui overlay is registered in `.openharness/config.json` by default:
+
+```json
+{
+  "composeOverrides": [
+    ".devcontainer/docker-compose.web-ui.yml"
+  ]
+}
+```
+
+If it is missing, add `.devcontainer/docker-compose.web-ui.yml` to the `composeOverrides` array.
+
+## Start the stack
+
+Run the provision skill to build the image and start all services:
+
+```bash
+/provision
+```
+
+Or start the web-ui service directly:
+
+```bash
+docker compose \
+  -f .devcontainer/docker-compose.yml \
+  -f .devcontainer/docker-compose.web-ui.yml \
+  up -d --build web-ui
+```
+
+The first build takes a few minutes because pnpm installs all workspace dependencies and runs `vite build`.
+
+## Port configuration
+
+The UI listens on port `3001` by default. Override with the `WEB_UI_PORT` environment variable:
+
+```bash
+export WEB_UI_PORT=8080
+```
+
+Or set it in your `.env` file at the project root:
+
+```bash
+WEB_UI_PORT=8080
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WEB_UI_PORT` | `3001` | Host port mapped to nginx port 80 |
+| `SANDBOX_NAME` | `openharness` | Prefix for the container name (`<name>-web-ui`) |
+
+## Access the UI
+
+Open your browser at `http://localhost:3001` (or the port you configured).
+
+If you are running Open Harness on a remote server, point your cloudflared tunnel ingress at `http://web-ui:80` — the sandbox and web-ui containers share the compose network and can resolve each other by service name.
+
+## Configure API keys
+
+The web UI does not use credentials from the sandbox environment. Each user provides their own API keys through the settings dialog inside the app:
+
+1. Open the UI in your browser
+2. Click the settings icon in the top-right corner
+3. Enter your API key for the provider you want to use (Anthropic, OpenAI, etc.)
+4. Keys are saved to browser IndexedDB and persist across page loads
+
+No server-side configuration is required. See [Security](/open-harness/web-ui/security) for the implications of client-side key storage.

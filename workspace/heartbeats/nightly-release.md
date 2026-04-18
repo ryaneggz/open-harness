@@ -1,3 +1,8 @@
+---
+schedule: "50 23 * * *"
+agent: claude
+---
+
 # Nightly Release
 
 Cut a CalVer release if there are new commits since the last tag.
