@@ -1,0 +1,9 @@
+services:
+  web-ui:
+    container_name: ${SANDBOX_NAME:-openharness}-web-ui
+    build:
+      context: ..
+      dockerfile: packages/web-ui/example/Dockerfile
+    ports:
+      - "${WEB_UI_PORT:-3001}:80"
+    restart: unless-stopped
