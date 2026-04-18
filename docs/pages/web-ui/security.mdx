@@ -1,0 +1,52 @@
+# Security
+
+> API keys entered in the web UI are stored in your browser's IndexedDB. They never leave your device to Open Harness servers, but they are accessible to any JavaScript running on the same origin.
+
+## Phase 1 threat model
+
+In Phase 1 the web UI is a static SPA with no harness-side auth. The security properties are:
+
+| Property | Status |
+|----------|--------|
+| API keys stored server-side | No — client-side IndexedDB only |
+| Network transport | TLS via cloudflared tunnel (recommended) |
+| Access control | None — anyone who can reach the port can use the UI |
+| Key isolation | Per-browser-origin — keys do not roam across devices |
+
+## API key storage
+
+Keys are saved to IndexedDB under the page's origin. This means:
+
+- **Accessible to page JS** — any script injected into the page (XSS) can read them
+- **Not accessible cross-origin** — a different origin cannot read your IndexedDB
+- **Persists until cleared** — clearing browser data (site data, IndexedDB) removes them
+- **Does not sync** — keys on one device are not available on another
+
+Treat keys stored this way as equivalent to keys stored in a browser password manager.
+
+## Recommended mitigations (Phase 1)
+
+- Restrict network access to the web-ui port (`WEB_UI_PORT`) to trusted IPs using your firewall or cloudflared access policies
+- Use API keys scoped to the minimum permissions your workflow requires
+- Prefer provider keys that support spending limits or hard caps
+- Rotate keys periodically, especially if sharing the tunnel URL with others
+
+## Exposing publicly
+
+If you point a cloudflared tunnel at `http://web-ui:80`, the UI becomes publicly accessible at that URL. Without additional access controls, anyone with the URL can use the settings dialog to enter keys and make API calls.
+
+Options to restrict access:
+
+- **Cloudflare Access** — add a Zero Trust policy to the tunnel application requiring SSO login
+- **HTTP basic auth** — add `auth_basic` to the nginx `default.conf` (requires rebuilding the image)
+- **Private tunnel** — keep the tunnel URL private and share it only with trusted users
+
+## Phase 2 roadmap
+
+Phase 2 will replace client-side key storage with harness-bridged auth:
+
+- The sandbox holds provider credentials (already true for the Slack bot)
+- The web UI authenticates to a small harness API rather than calling providers directly
+- API keys never touch the browser
+
+Until Phase 2 is implemented, follow the Phase 1 mitigations above if you are running the UI on a shared or internet-accessible host.
