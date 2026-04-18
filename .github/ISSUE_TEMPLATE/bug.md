@@ -33,32 +33,7 @@ assignees: ""
 
 ---
 
-## Agent Assignment
-
-### Metadata
-
-> **IMPORTANT**: Validate this metadata before starting work.
-
-```yml
-agent: "orchestrator"
-branch: "agent/orchestrator"
-worktree_path: ".worktrees/agent/orchestrator"
-pull_request: "FROM agent/orchestrator TO development"
-```
-
-### Workflow
-
-```bash
-# Enter the sandbox
-openharness shell orchestrator
-claude
-
-# When complete — PR from agent branch to development
-cd .worktrees/agent/orchestrator
-git add -A && git commit -m "fix(<issue#>): <description>"
-git push -u origin agent/orchestrator
-gh pr create --base development --title "fix(<issue#>): <shortdesc>" --body "Closes #<issue#>"
-```
+> **Git workflow**: see [.claude/rules/git.md](../../.claude/rules/git.md)
 
 ---
 
@@ -69,4 +44,4 @@ gh pr create --base development --title "fix(<issue#>): <shortdesc>" --body "Clo
 - [ ] Lint + format + type-check pass
 - [ ] Verified via agent-browser at `https://oh.ruska.dev`
 - [ ] No regressions introduced
-- [ ] PR targets `development` branch
+- [ ] PR targets the default target branch (see `.claude/rules/git.md`)
