@@ -24,6 +24,7 @@ services:
       - SANDBOX_PASSWORD=${SANDBOX_PASSWORD:-changeme}
       - GIT_USER_NAME=${GIT_USER_NAME:-}
       - GIT_USER_EMAIL=${GIT_USER_EMAIL:-}
+      - INSTALL_AGENT_BROWSER=${INSTALL_AGENT_BROWSER:-false}
     stdin_open: true
     tty: true
     entrypoint: /usr/local/bin/entrypoint.sh

@@ -127,6 +127,16 @@ elif [ -f "$DAEMON_SCRIPT" ]; then
   echo "[entrypoint] heartbeat daemon started with watchdog via fallback (pid $!)"
 fi
 
+# ─── Optional: agent-browser (opt-in via INSTALL_AGENT_BROWSER=true) ──
+if [ "${INSTALL_AGENT_BROWSER:-false}" = "true" ] && ! command -v agent-browser &>/dev/null; then
+  echo "[entrypoint] Installing agent-browser (INSTALL_AGENT_BROWSER=true)..."
+  pnpm add -g agent-browser@0.8.5 \
+    && find "$PNPM_HOME" -name "agent-browser-linux-*" -exec chmod +x {} \; \
+    && agent-browser install --with-deps 2>&1 | tail -5 \
+    && echo "[entrypoint] agent-browser installed" \
+    || echo "[entrypoint] agent-browser install failed — skipping"
+fi
+
 # Run workspace startup (dev server + tunnel) as sandbox user
 STARTUP="/home/sandbox/harness/workspace/startup.sh"
 if [ -f "$STARTUP" ]; then

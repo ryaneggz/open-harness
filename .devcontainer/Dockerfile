@@ -53,15 +53,11 @@ RUN corepack enable && corepack prepare pnpm@latest --activate \
  && pnpm setup --force 2>/dev/null || true
 
 # ─── Agent CLIs ─────────────────────────────────────────────────────
-# pnpm v10+ requires explicit build script approval for postinstall execution.
-# Agent CLI packages need their postinstalls to download platform-native binaries.
-RUN pnpm config set onlyBuiltDependencies '@anthropic-ai/claude-code' '@openai/codex' '@mariozechner/pi-coding-agent' \
- && pnpm add -g @anthropic-ai/claude-code @openai/codex @mariozechner/pi-coding-agent
-
-# ─── Agent Browser + Chromium ──────────────────────────────────────
-RUN pnpm add -g agent-browser@0.8.5 \
- && find $PNPM_HOME -name "agent-browser-linux-*" -exec chmod +x {} \; \
- && agent-browser install --with-deps
+# Use npm (not pnpm) for global CLI installs. Agent CLI packages require
+# postinstall scripts to download platform-native binaries; npm executes these
+# by default without extra configuration.
+RUN npm install -g @anthropic-ai/claude-code @openai/codex @mariozechner/pi-coding-agent \
+ && claude --version && codex --version && pi --version
 
 # ─── Sandbox user ──────────────────────────────────────────────────
 RUN useradd -m -s /bin/bash sandbox \
