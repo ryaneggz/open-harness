@@ -3,10 +3,10 @@ name: compress
 description: |
   Compress workspace identity files and rules to reduce input tokens.
   Strips articles, filler, hedging while preserving code, URLs, paths,
-  tables, and technical terms. Creates .original.md backups.
+  tables, and technical terms. Works in-place on the target file.
   Inspired by Caveman (github.com/JuliusBrussee/caveman).
-  TRIGGER when: first session start (if .original.md backups don't exist),
-  after editing identity files, "compress", "reduce tokens", or "caveman compress".
+  TRIGGER when: after editing identity files, "compress", "reduce tokens",
+  or "caveman compress".
 argument-hint: "identity | rules | all | <file-path>"
 ---
 
@@ -32,10 +32,9 @@ If no argument, default to `all`.
 
 ### 2. For each target file
 
-a. Check if `.original.md` backup exists. If not, copy current file to `<name>.original.md`.
-   If backup exists, read the `.original.md` as source (always compress from original, not from already-compressed version).
+a. **Skip check**: Count filler words (articles, hedging, verbose phrases) as a fraction of total scannable words. If filler density is already < 0.02 (fewer than 2% filler), the file is already compressed — skip it and report "already compressed".
 
-b. Read the source content.
+b. Read the file content.
 
 c. Apply compression rules:
 
@@ -65,7 +64,7 @@ c. Apply compression rules:
 - "The Next.js project lives in projects/next-app/" → "Next.js project: projects/next-app/"
 - "Do not modify ~/install/ — those are provisioning scripts" → "Don't modify ~/install/ (provisioning scripts)"
 
-d. Write compressed version to the original file path.
+d. Write compressed version back to the same file.
 
 ### 3. Report savings
 
@@ -79,10 +78,11 @@ Summary:
 Total: <total_original> → <total_compressed> words (~<tokens_saved> tokens saved per turn)
 ```
 
-### 4. Verify freshness
+### 4. Score conciseness
 
-Run `/freshness audit` to confirm all pairs are in sync after compression.
-If any pair is flagged as drifted, report the discrepancy.
+Run `/eval-conciseness` on each compressed file as a post-check.
+Report per-file scores inline with the savings report.
+If any file fails a conciseness gate, show a `[WARN]` — compression already happened, the score is advisory.
 
 ### 5. Memory Protocol
 
@@ -90,8 +90,8 @@ Log compression run to `memory/YYYY-MM-DD.md`.
 
 ## Guidelines
 
-- Always compress from `.original.md` source, not from already-compressed version
-- If a file is already compressed (backup exists, content matches), skip it
+- The compressed file IS the source of truth — there are no backup copies
+- The skip check (step 2a) prevents re-compressing already-compressed files
 - Never compress IDENTITY.md (already terse metadata)
 - Never compress MEMORY.md (agent-managed, evolves at runtime)
 - Never compress README.md (human documentation)
@@ -101,7 +101,7 @@ Log compression run to `memory/YYYY-MM-DD.md`.
 
 ## Restore
 
-To restore a file to its uncompressed version:
+To restore a file to its pre-compression state:
 ```bash
-cp <name>.original.md <name>.md
+git checkout -- <file-path>
 ```

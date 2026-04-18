@@ -34,11 +34,11 @@ The `/compress` skill rewrites workspace files into terse form:
 /compress all         # Both
 ```
 
-Creates `.original.md` backups. Always compresses from original source, not from already-compressed version.
+Compresses files in-place — no backup copies. Skips files that are already compressed (filler density < 2%). Restore via `git checkout -- <file>`.
 
 ### Pre-compressed Templates
 
-Base workspace templates ship pre-compressed. New agents start with compressed files out of the box. Originals at `<filename>.original.md` for human reference.
+Base workspace templates ship pre-compressed. New agents start with compressed files out of the box.
 
 ## Intensity Levels
 
@@ -87,9 +87,9 @@ Agents can exit terse mode:
 - Say "normal mode" or "stop caveman"
 - Re-enter with "caveman" or "terse mode"
 
-To restore a file to its uncompressed version:
+To restore a file to its pre-compression version:
 ```bash
-cp AGENTS.original.md AGENTS.md
+git checkout -- workspace/AGENTS.md
 ```
 
 ## Session Behavior

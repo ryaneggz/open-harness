@@ -45,6 +45,6 @@ Back on: "caveman" or "terse mode".
 
 ## Compressed Files
 
-Identity files (AGENTS.md, SOUL.md, TOOLS.md, USER.md, HEARTBEAT.md) ship pre-compressed.
-Originals at `<filename>.original.md` for human reference.
-Run `/compress` to re-compress after manual edits.
+Identity files (AGENTS.md, SOUL.md, TOOLS.md, USER.md, HEARTBEAT.md) and rules are compressed in-place.
+No backup copies — compressed files are the single source of truth.
+Run `/compress` to re-compress after edits. Restore via `git checkout -- <file>`.

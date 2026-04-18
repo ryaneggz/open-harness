@@ -126,6 +126,7 @@ Wiki = persistent, LLM-maintained knowledge base for structured domain knowledge
 | `/wiki-ingest` | Process sources into wiki pages — `wiki/sources/` → `wiki/pages/` |
 | `/wiki-query` | Search wiki, synthesize answers, optionally file back as synthesis |
 | `/wiki-lint` | Health-check wiki — orphans, broken refs, stale pages, tag drift, index integrity |
+| `/eval-conciseness` | Score conciseness — filler-word density gate |
 
 After `git push` → `/ci-status`. Not done until CI green.
 
