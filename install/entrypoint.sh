@@ -17,6 +17,15 @@ if [ -d /home/sandbox/.claude ]; then
   chown -R sandbox:sandbox /home/sandbox/.claude 2>/dev/null || true
 fi
 
+# Initialize gh CLI auth from GH_TOKEN if provided
+if [ -n "${GH_TOKEN:-}" ]; then
+  echo "[entrypoint] Setting up gh CLI auth from GH_TOKEN..."
+  gosu sandbox gh auth login --with-token <<< "$GH_TOKEN" 2>/dev/null && \
+  gosu sandbox gh auth setup-git 2>/dev/null && \
+  echo "[entrypoint] gh CLI auth initialized" || \
+  echo "[entrypoint] WARNING: gh auth setup failed"
+fi
+
 # Start heartbeat daemon (replaces cron-based scheduling)
 DAEMON_SCRIPT="/home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
 if command -v heartbeat-daemon &>/dev/null; then

@@ -2,7 +2,6 @@
   "composeOverrides": [
     ".devcontainer/docker-compose.cloudflared.yml",
     ".devcontainer/docker-compose.slack.yml",
-    ".devcontainer/docker-compose.ssh-generate.yml",
-    ".devcontainer/docker-compose.git.yml"
+    ".devcontainer/docker-compose.ssh-generate.yml"
   ]
 }
