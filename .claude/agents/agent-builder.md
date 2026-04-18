@@ -187,11 +187,18 @@ disableModelInvocation: false # Optional: Prevent Claude from spawning this agen
 4. **Model Selection**:
    - Current model family: Claude 4.6 and 4.5
    - Model shortnames: `opus`, `sonnet`, `haiku` (these work in the frontmatter)
-   - **`opus`**: Most capable — complex architecture, nuanced judgment, synthesis
-   - **`sonnet`**: Complex reasoning, code generation, architecture decisions
+   - **`opus`**: Most capable — synthesis, judgment, advisory roles
+   - **`sonnet`**: Default executor — code generation, reasoning, architecture decisions
    - **`haiku`**: Fast searches, simple analysis, quick lookups
    - **`inherit`**: Use parent's model for consistency
    - **Omit**: Use default sub-agent model
+
+   **Advisor Strategy (direct API consumers only)**:
+   When building agents that make direct Anthropic API calls (e.g., Slack bot),
+   recommend Sonnet as executor with Opus advisor tool (`advisor_20260301`).
+   This achieves near-Opus quality at Sonnet cost. For Claude Code sub-agents
+   (Agent tool), traditional model selection still applies — the Agent tool
+   does not expose the advisor API parameter.
 
 5. **Permission Mode**:
    - **`default`**: Normal permission prompts

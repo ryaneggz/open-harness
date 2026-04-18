@@ -1,6 +1,12 @@
 {
   "lastChangelogVersion": "0.66.1",
   "defaultProvider": "anthropic",
-  "defaultModel": "claude-opus-4-6",
-  "defaultThinkingLevel": "high"
+  "defaultModel": "claude-sonnet-4-6",
+  "defaultThinkingLevel": "high",
+  "advisor": {
+    "enabled": true,
+    "model": "claude-opus-4-7",
+    "maxUses": 3,
+    "caching": false
+  }
 }
