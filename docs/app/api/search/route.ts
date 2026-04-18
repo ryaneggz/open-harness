@@ -1,7 +1,7 @@
-import { docsSource } from "@/lib/source";
+import { docsSource, wikiSource } from "@/lib/source";
 import { createFromSource } from "fumadocs-core/search/server";
 
-export const { GET } = createFromSource(docsSource, {
+export const { GET } = createFromSource(docsSource, wikiSource, {
   language: "english",
 });
 
