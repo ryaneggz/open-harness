@@ -36,23 +36,23 @@ assignees: ""
 > **IMPORTANT**: Validate this metadata before starting work.
 
 ```yml
-agent: "next-postgres-shadcn"
-branch: "agent/next-postgres-shadcn"
-worktree_path: ".worktrees/agent/next-postgres-shadcn"
-pull_request: "FROM agent/next-postgres-shadcn TO development"
+agent: "orchestrator"
+branch: "agent/orchestrator"
+worktree_path: ".worktrees/agent/orchestrator"
+pull_request: "FROM agent/orchestrator TO development"
 ```
 
 ### Workflow
 
 ```bash
 # Enter the sandbox
-openharness shell next-postgres-shadcn
+openharness shell orchestrator
 claude
 
 # When complete — PR from agent branch to development
-cd .worktrees/agent/next-postgres-shadcn
+cd .worktrees/agent/orchestrator
 git add -A && git commit -m "feat(<issue#>): <description>"
-git push -u origin agent/next-postgres-shadcn
+git push -u origin agent/orchestrator
 gh pr create --base development --title "feat(<issue#>): <shortdesc>" --body "Closes #<issue#>"
 ```
 
@@ -65,6 +65,6 @@ gh pr create --base development --title "feat(<issue#>): <shortdesc>" --body "Cl
 - [ ] Vitest tests added for new logic
 - [ ] Playwright E2E test covers the happy path
 - [ ] Lint + format + type-check pass (`pnpm run lint && pnpm run format:check && pnpm run type-check`)
-- [ ] Verified via agent-browser at `https://next-postgres-shadcn.ruska.dev`
+- [ ] Verified via agent-browser at `https://oh.ruska.dev`
 - [ ] Prisma migration included if schema changed
 - [ ] PR targets `development` branch

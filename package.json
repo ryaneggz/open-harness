@@ -11,6 +11,7 @@
     "lint": "pnpm -r run lint",
     "format:check": "pnpm -r run format:check",
     "format": "pnpm -r run format",
+    "dev": "pnpm --filter @openharness/docs dev & cd workspace/projects/next-app && pnpm dev",
     "docs:dev": "pnpm --filter @openharness/docs dev",
     "docs:build": "pnpm --filter @openharness/docs build"
   },

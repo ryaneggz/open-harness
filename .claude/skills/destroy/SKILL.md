@@ -1,7 +1,7 @@
 ---
 name: destroy
 description: |
-  Tear down the next-postgres-shadcn sandbox: stop containers, remove volumes,
+  Tear down the orchestrator sandbox: stop containers, remove volumes,
   and optionally prune the Docker image. Reads .openharness/config.json for
   compose overlays so all services are cleaned up.
   TRIGGER when: asked to tear down, destroy, clean up, stop, or remove the sandbox.

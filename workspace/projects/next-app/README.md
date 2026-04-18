@@ -1,15 +1,15 @@
-# OpenHarness: Next + Postgres + shadcn
+# OpenHarness
 
 A fully-provisioned Next.js + PostgreSQL + shadcn/ui harness for AI coding agents, built on [Open Harness](https://github.com/ryaneggz/open-harness).
 
-**Live Demo:** [next-postgres-shadcn.ruska.dev](https://next-postgres-shadcn.ruska.dev)
+**Live Demo:** [oh.ruska.dev](https://oh.ruska.dev)
 
 ## Quick Start
 
 ```bash
 # Clone the harness
-git clone https://github.com/ryaneggz/next-postgres-shadcn.git
-cd next-postgres-shadcn
+git clone https://github.com/ryaneggz/open-harness.git
+cd open-harness
 
 # Install dependencies and link the openharness CLI
 pnpm run setup
@@ -34,7 +34,7 @@ The agent will:
 - **shadcn/ui** + Tailwind CSS v4
 - **next-themes** (dark mode default)
 - **next-pwa** (Progressive Web App)
-- **Cloudflared** tunnel → `next-postgres-shadcn.ruska.dev`
+- **Cloudflared** tunnel → `oh.ruska.dev`
 
 ## Development
 

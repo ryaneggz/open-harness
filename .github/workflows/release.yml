@@ -68,8 +68,8 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          IMAGE=ghcr.io/ryaneggz/next-postgres-shadcn:${{ steps.parse.outputs.version }}
-          LATEST=ghcr.io/ryaneggz/next-postgres-shadcn:latest
+          IMAGE=ghcr.io/ryaneggz/openharness:${{ steps.parse.outputs.version }}
+          LATEST=ghcr.io/ryaneggz/openharness:latest
 
           docker build -f .devcontainer/Dockerfile -t $IMAGE -t $LATEST .
           docker push $IMAGE

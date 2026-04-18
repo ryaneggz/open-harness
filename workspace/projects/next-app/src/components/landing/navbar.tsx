@@ -27,7 +27,7 @@ export function Navbar() {
             GitHub
           </Link>
           <Link
-            href="https://ryaneggz.github.io/open-harness/"
+            href="https://oh-docs.ruska.dev"
             target="_blank"
             rel="noopener noreferrer"
             className={buttonVariants({ variant: "ghost", size: "sm" })}

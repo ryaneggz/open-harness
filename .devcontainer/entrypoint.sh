@@ -85,17 +85,8 @@ if echo "$@" | grep -q sshd; then
   fi
 fi
 
-# Start heartbeat daemon (replaces cron-based scheduling)
-DAEMON_SCRIPT="/home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
-if command -v heartbeat-daemon &>/dev/null; then
-  gosu sandbox heartbeat-daemon start >> /home/sandbox/harness/workspace/heartbeats/heartbeat.log 2>&1 &
-  echo "[entrypoint] heartbeat daemon started (pid $!)"
-elif [ -f "$DAEMON_SCRIPT" ]; then
-  gosu sandbox node "$DAEMON_SCRIPT" start >> /home/sandbox/harness/workspace/heartbeats/heartbeat.log 2>&1 &
-  echo "[entrypoint] heartbeat daemon started via fallback (pid $!)"
-fi
-
-# Build and link openharness CLI in background (from bind-mounted repo)
+# Build and link openharness CLI (from bind-mounted repo)
+# Must complete before heartbeat daemon check so the binary is available on first boot.
 HARNESS="/home/sandbox/harness"
 if [ -f "$HARNESS/packages/sandbox/package.json" ] && ! command -v openharness &>/dev/null; then
   (
@@ -106,7 +97,34 @@ if [ -f "$HARNESS/packages/sandbox/package.json" ] && ! command -v openharness &
     ln -sf "$HARNESS/packages/sandbox/dist/src/cli/heartbeat-daemon.js" /usr/local/bin/heartbeat-daemon
     chmod +x /usr/local/bin/openharness /usr/local/bin/heartbeat-daemon
     echo "[entrypoint] openharness CLI + heartbeat-daemon installed"
+  )
+fi
+
+# ─── Start heartbeat daemon (with watchdog) ──────────────────────
+WORKSPACE="/home/sandbox/harness/workspace"
+DAEMON_SCRIPT="/home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
+HB_LOG="$WORKSPACE/heartbeats/heartbeat.log"
+mkdir -p "$WORKSPACE/heartbeats"
+if command -v heartbeat-daemon &>/dev/null; then
+  (
+    while true; do
+      gosu sandbox heartbeat-daemon start 2>&1 | tee -a "$HB_LOG"
+      EXIT_CODE=$?
+      echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] heartbeat-daemon exited ($EXIT_CODE), restarting in 5s..." >> "$HB_LOG"
+      sleep 5
+    done
   ) &
+  echo "[entrypoint] heartbeat daemon started with watchdog (pid $!)"
+elif [ -f "$DAEMON_SCRIPT" ]; then
+  (
+    while true; do
+      gosu sandbox node "$DAEMON_SCRIPT" start 2>&1 | tee -a "$HB_LOG"
+      EXIT_CODE=$?
+      echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] heartbeat-daemon exited ($EXIT_CODE), restarting in 5s..." >> "$HB_LOG"
+      sleep 5
+    done
+  ) &
+  echo "[entrypoint] heartbeat daemon started with watchdog via fallback (pid $!)"
 fi
 
 # Run workspace startup (dev server + tunnel) as sandbox user

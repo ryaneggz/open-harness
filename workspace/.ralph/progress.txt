@@ -44,10 +44,10 @@ Started: Wed Apr  8 22:33:27 MDT 2026
 - Archived Ralph run to .ralph/archives/2026-04-08/og-meta-tags/
 - Verified dev server (localhost:3000 → 200) and public URL (ruska.dev → 200)
 - Created feature branch feat/5-og-meta-tags, pushed to remote
-- Created draft PR #8 to development: https://github.com/ryaneggz/next-postgres-shadcn/pull/8
-- CI triggered on agent/next-postgres-shadcn branch — passed all checks
-- CI run: https://github.com/ryaneggz/next-postgres-shadcn/actions/runs/24172931711
+- Created draft PR #8 to development: https://github.com/ryaneggz/open-harness/pull/8
+- CI triggered on agent/open-harness branch — passed all checks
+- CI run: https://github.com/ryaneggz/open-harness/actions/runs/24172931711
 - **Learnings for future iterations:**
-  - CI only triggers on pushes to development and agent/next-postgres-shadcn — feat/* branches don't trigger CI
-  - To trigger CI for a feature branch PR, push commits to agent/next-postgres-shadcn as well
+  - CI only triggers on pushes to development and agent/open-harness — feat/* branches don't trigger CI
+  - To trigger CI for a feature branch PR, push commits to agent/open-harness as well
 ---

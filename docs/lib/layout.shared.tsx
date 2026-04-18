@@ -8,6 +8,7 @@ export function baseOptions(): BaseLayoutProps {
     links: [
       { text: "Docs", url: "/docs", active: "nested-url" },
       { text: "Wiki", url: "/wiki", active: "nested-url" },
+      { text: "App", url: "https://oh.ruska.dev", active: "url" },
     ],
   };
 }
