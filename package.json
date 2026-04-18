@@ -12,7 +12,8 @@
     "format:check": "pnpm -r run format:check",
     "format": "pnpm -r run format",
     "docs:dev": "pnpm --filter @openharness/docs dev",
-    "docs:build": "pnpm --filter @openharness/docs build"
+    "docs:build": "pnpm --filter @openharness/docs build",
+    "build:web-ui": "pnpm --filter @openharness/web-ui build && pnpm --filter pi-web-ui-example build"
   },
   "devDependencies": {
     "vitest": "^3.0.0"
