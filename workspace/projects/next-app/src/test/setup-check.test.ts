@@ -5,7 +5,7 @@ import { resolve } from "path";
 
 const APP_DIR = resolve(__dirname, "../..");
 const DEV_URL = "http://localhost:3000";
-const PUBLIC_URL = "https://next-postgres-shadcn.ruska.dev";
+const PUBLIC_URL = "https://oh.ruska.dev";
 
 async function httpOk(url: string, timeoutMs = 10000): Promise<{ ok: boolean; status: number }> {
   try {

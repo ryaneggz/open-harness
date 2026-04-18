@@ -1,7 +1,7 @@
 ---
 name: provision
 description: |
-  Provision or rebuild the next-postgres-shadcn sandbox.
+  Provision or rebuild the orchestrator sandbox.
   Reads .openharness/config.json for compose overlays, builds the image,
   starts all services, waits for startup, and runs test:setup to validate.
   TRIGGER when: provisioning, rebuilding, or when asked to set up the sandbox.
@@ -10,7 +10,7 @@ argument-hint: "[--rebuild]"
 
 # Provision Sandbox
 
-Provision (or rebuild) the next-postgres-shadcn sandbox. One skill, zero manual steps.
+Provision (or rebuild) the orchestrator sandbox. One skill, zero manual steps.
 
 ## 0. Environment Guard
 
@@ -212,27 +212,27 @@ If no keypair exists, skip this step — git auth via `gh auth setup-git` is the
 ## 8. Report
 
 ```
-Sandbox 'next-postgres-shadcn' is ready!
+Sandbox 'orchestrator' is ready!
 
-  Branch:  agent/next-postgres-shadcn
-  URL:     https://next-postgres-shadcn.ruska.dev
+  Branch:  agent/orchestrator
+  URL:     https://oh.ruska.dev
   Tests:   8/8 passed
 
   Finish setup (one-time, inside the sandbox):
-    openharness shell next-postgres-shadcn
+    openharness shell orchestrator
     gh auth login                           # authenticate GitHub CLI
     gh auth setup-git                       # configure git auth (no SSH keys needed)
     claude                                  # authenticate Claude Code (OAuth)
 
   CLI (openharness):
     openharness list                            # list running sandboxes
-    openharness shell next-postgres-shadcn      # enter sandbox shell
+    openharness shell orchestrator      # enter sandbox shell
     openharness stop                            # stop container
     openharness run                             # start/restart container
     openharness clean                           # full teardown (containers + volumes)
-    openharness onboard next-postgres-shadcn    # one-time auth setup
-    openharness heartbeat sync next-postgres-shadcn   # install heartbeat crons
-    openharness heartbeat status next-postgres-shadcn # check heartbeat logs
+    openharness onboard orchestrator    # one-time auth setup
+    openharness heartbeat sync orchestrator   # install heartbeat crons
+    openharness heartbeat status orchestrator # check heartbeat logs
 
   Validate:
     /repair                 # repair and verify the stack anytime

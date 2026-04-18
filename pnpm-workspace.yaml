@@ -2,3 +2,4 @@ packages:
   - packages/sandbox
   - packages/slack
   - docs
+  - workspace/projects/next-app

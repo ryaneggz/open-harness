@@ -1,10 +1,10 @@
-name: "CI: next-postgres-shadcn"
+name: "CI: openharness"
 
 on:
   push:
     branches:
       - development
-      - agent/next-postgres-shadcn
+      - agent/orchestrator
     paths:
       - "workspace/projects/next-app/src/**"
       - "workspace/projects/next-app/public/**"

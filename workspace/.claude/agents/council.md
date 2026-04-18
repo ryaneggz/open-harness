@@ -76,9 +76,9 @@ Your output becomes the **PR body** directly. Format it as:
 > **IMPORTANT**: The very first step should _ALWAYS_ be validating this metadata section to maintain a **CLEAN** development workflow.
 
 \```yml
-agent: "next-postgres-shadcn"
+agent: "orchestrator"
 branch: "feat/<N>-<shortdesc>"
-worktree_path: ".worktrees/agent/next-postgres-shadcn"
+worktree_path: ".worktrees/agent/orchestrator"
 pull_request: "FROM feat/<N>-<shortdesc> TO development"
 \```
 
@@ -86,7 +86,7 @@ pull_request: "FROM feat/<N>-<shortdesc> TO development"
 
 \```bash
 # Enter the assigned agent's sandbox
-openharness shell next-postgres-shadcn
+openharness shell orchestrator
 claude
 
 # When complete — PR from feature branch to development
