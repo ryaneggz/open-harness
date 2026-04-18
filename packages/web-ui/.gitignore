@@ -1,2 +1,0 @@
-# Override root gitignore: commit dist (vendored library, dist is source of truth)
-!dist/

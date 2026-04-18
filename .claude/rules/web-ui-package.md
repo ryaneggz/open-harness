@@ -8,7 +8,7 @@
 
 1. **NEVER** restore dist files from the npm package `@mariozechner/pi-web-ui` — the fork is scoped to `@openharness` and may diverge with features the upstream lacks
 2. **NEVER** pull from npm for `@openharness/web-ui` — resolve via pnpm workspace (`workspace:*`)
-3. **ALL** source changes go in `packages/web-ui/src/`, rebuild dist, commit BOTH `src/` and `dist/`
+3. **ALL** source changes go in `packages/web-ui/src/`. `dist/` is a build-time artifact — NOT committed. Consumers (Dockerfile, CI, local dev) rebuild via `pnpm --filter @openharness/web-ui build`
 4. Sibling mariozechner deps (`@mariozechner/pi-ai`, `@mariozechner/pi-tui`) use EXACT version pins — no caret ranges (pinned to `0.62.0`)
 5. The example app references this package via `"@openharness/web-ui": "workspace:*"` — not a file path
 
