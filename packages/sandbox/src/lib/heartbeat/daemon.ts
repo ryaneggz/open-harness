@@ -80,7 +80,13 @@ function normalize(opts: DaemonOptions): NormalizedDaemonOptions {
 
 export class HeartbeatDaemon {
   private scheduler: HeartbeatScheduler;
-  private logger: HeartbeatLogger;
+  /**
+   * Per-root loggers keyed by `root.label`. Single-root deployments hold
+   * exactly one entry keyed by `""` pointing at the legacy
+   * `<heartbeatDir>/heartbeat.log` path, so existing consumers see no
+   * behavioural change.
+   */
+  private loggers: Map<string, HeartbeatLogger>;
   /** One watcher per root — all fire the same debounced sync. */
   private watchers: FSWatcher[] = [];
   private watchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -92,21 +98,30 @@ export class HeartbeatDaemon {
     this.normalized = normalize(options);
     this.primaryRoot = this.normalized.roots[0];
 
+    // Build one logger per root so each worktree's heartbeat events land in
+    // its own `heartbeats/heartbeat.log`. Keyed on `root.label` to match
+    // `entry.root.label` at run time (scheduler and runner both look up
+    // through this same keying).
+    this.loggers = new Map();
+    for (const root of this.normalized.roots) {
+      this.loggers.set(root.label, new HeartbeatLogger(join(root.heartbeatDir, "heartbeat.log")));
+    }
+
     const runnerOpts: RunnerOptions = {
       workspacePath: this.primaryRoot.workspacePath,
       heartbeatDir: this.primaryRoot.heartbeatDir,
       soulFile: this.primaryRoot.soulFile,
       memoryDir: this.primaryRoot.memoryDir,
+      loggers: this.loggers,
     };
     this.scheduler = new HeartbeatScheduler(runnerOpts);
-    this.logger = new HeartbeatLogger(join(this.primaryRoot.heartbeatDir, "heartbeat.log"));
   }
 
   /** Parse config across all roots, start scheduling, and watch each root. */
   async start(): Promise<void> {
     const entries = await this.parseAll();
     if (entries.length === 0) {
-      this.logger.log("No heartbeats configured — nothing to schedule");
+      this.primaryLogger().log("No heartbeats configured — nothing to schedule");
       console.log("No heartbeats configured.");
     } else {
       this.scheduler.start(entries);
@@ -176,7 +191,10 @@ export class HeartbeatDaemon {
           this.watchDebounceTimer = setTimeout(() => {
             this.watchDebounceTimer = null;
             this.sync().catch((err) => {
-              this.logger.log(
+              // Watcher errors are daemon-scope (not tied to a specific
+              // entry), so route them to the affected root's logger if we
+              // know it, otherwise the primary (parent) logger.
+              this.loggerFor(root.label).log(
                 `[watcher] Sync error: ${err instanceof Error ? err.message : String(err)}`,
               );
             });
@@ -184,12 +202,14 @@ export class HeartbeatDaemon {
         });
 
         watcher.on("error", (err) => {
-          this.logger.log(`[watcher:${root.label || "parent"}] Error: ${err.message}`);
+          this.loggerFor(root.label).log(
+            `[watcher:${root.label || "parent"}] Error: ${err.message}`,
+          );
         });
 
         this.watchers.push(watcher);
       } catch (err) {
-        this.logger.log(
+        this.loggerFor(root.label).log(
           `[watcher:${root.label || "parent"}] Failed to watch ${dir}: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
@@ -212,11 +232,44 @@ export class HeartbeatDaemon {
     this.watchers = [];
   }
 
-  /** Show status: daemon info, scheduled jobs, recent logs */
+  /**
+   * Show status: daemon info, scheduled jobs grouped by root, recent logs.
+   *
+   * Single-root (empty label) collapses to the legacy flat format — no
+   * "Roots:" header, bare slugs in the schedule list, one log tail — so
+   * existing scripts grepping `cronExpr → filePath` still match.
+   */
   status(): void {
     const statuses = this.scheduler.status();
     console.log(`Heartbeat daemon: running (pid ${process.pid})`);
     console.log("");
+
+    const isMulti = this.isMultiRoot();
+
+    if (isMulti) {
+      // Multi-root: render a "Roots:" section so operators can see which
+      // worktrees are active + how many schedules each contributes.
+      const schedulesByLabel = new Map<string, number>();
+      for (const s of statuses) {
+        const label = s.name.includes("::") ? s.name.split("::", 1)[0] : "";
+        schedulesByLabel.set(label, (schedulesByLabel.get(label) ?? 0) + 1);
+      }
+      console.log("Roots:");
+      const labelColWidth = Math.max(
+        ...this.normalized.roots.map((r) => (r.label || "parent").length),
+        6,
+      );
+      for (const root of this.normalized.roots) {
+        const displayLabel = root.label || "parent";
+        const count = schedulesByLabel.get(root.label) ?? 0;
+        const plural = count === 1 ? "" : "s";
+        console.log(
+          `  ${displayLabel.padEnd(labelColWidth)}  →  ${root.workspacePath} (${count} schedule${plural})`,
+        );
+      }
+      console.log("");
+    }
+
     if (statuses.length > 0) {
       console.log(`Heartbeat schedules: ${statuses.length}`);
       for (const s of statuses) {
@@ -225,12 +278,27 @@ export class HeartbeatDaemon {
     } else {
       console.log("Heartbeat schedules: none");
     }
-    // Recent logs
-    const recent = this.logger.tail(10);
-    if (recent) {
-      console.log("");
-      console.log("Recent log:");
-      console.log(recent);
+
+    if (isMulti) {
+      // Per-root log tails so operators can diff worktrees at a glance.
+      for (const root of this.normalized.roots) {
+        const logger = this.loggers.get(root.label);
+        if (!logger) continue;
+        const recent = logger.tail(10);
+        if (recent) {
+          console.log("");
+          console.log(`Recent log (${root.label || "parent"}):`);
+          console.log(recent);
+        }
+      }
+    } else {
+      // Legacy single-root: one log tail, unlabelled, exactly as pre-PR-3.
+      const recent = this.primaryLogger().tail(10);
+      if (recent) {
+        console.log("");
+        console.log("Recent log:");
+        console.log(recent);
+      }
     }
   }
 
@@ -308,5 +376,37 @@ ${existing}`;
    */
   private describeEntry(entry: HeartbeatEntry): string {
     return entry.root.label ? `${entry.root.label}::${entry.filePath}` : entry.filePath;
+  }
+
+  /**
+   * Primary logger = the one owned by the first root (typically the parent
+   * checkout). Daemon-scope operational messages without a clearer owner
+   * land here; spec § "Logger" option 1 explicitly avoids a new daemon-wide
+   * log file.
+   */
+  private primaryLogger(): HeartbeatLogger {
+    const logger = this.loggers.get(this.primaryRoot.label);
+    if (!logger) {
+      // Constructor guarantees a logger per root, so this would be a bug.
+      throw new Error(
+        `HeartbeatDaemon: no logger registered for primary root label "${this.primaryRoot.label}"`,
+      );
+    }
+    return logger;
+  }
+
+  /** Logger for a specific root label, with primary logger as fallback. */
+  private loggerFor(rootLabel: string): HeartbeatLogger {
+    return this.loggers.get(rootLabel) ?? this.primaryLogger();
+  }
+
+  /**
+   * True when the daemon is running under multi-root semantics. A single
+   * root with an empty label is the legacy back-compat shape and must
+   * render status() output byte-identically to pre-PR-3.
+   */
+  private isMultiRoot(): boolean {
+    if (this.normalized.roots.length !== 1) return true;
+    return this.normalized.roots[0].label !== "";
   }
 }

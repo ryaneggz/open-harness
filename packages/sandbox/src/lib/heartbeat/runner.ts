@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { basename, join } from "node:path";
 import { HeartbeatLogger } from "./logger.js";
 import { isActiveHours, isHeartbeatEmpty, isHeartbeatOk } from "./gates.js";
-import type { HeartbeatEntry } from "./config.js";
+import type { HeartbeatEntry, WorkspaceRoot } from "./config.js";
 
 /**
  * Legacy single-root runner options. Retained for back-compat — the daemon
@@ -23,6 +23,16 @@ export interface RunnerOptions {
    * disable the cap (legacy behaviour, unlimited concurrency).
    */
   maxConcurrent?: number;
+  /**
+   * Optional per-root logger map keyed by `root.label`. When provided, the
+   * runner writes every entry-scoped log line through the matching logger so
+   * each worktree's events land in its own `heartbeats/heartbeat.log`.
+   *
+   * Back-compat: when omitted, the runner constructs a single logger at
+   * `<heartbeatDir>/heartbeat.log` (keyed by label `""`) so legacy
+   * single-root consumers continue to write to the same file as before.
+   */
+  loggers?: Map<string, HeartbeatLogger>;
 }
 
 /**
@@ -34,7 +44,7 @@ export interface RunnerOptions {
 const ACQUIRE_TIMEOUT_MS = 300_000;
 
 export class HeartbeatRunner {
-  private logger: HeartbeatLogger;
+  private loggers: Map<string, HeartbeatLogger>;
   private running = new Set<string>();
   private maxConcurrent: number;
   private active = 0;
@@ -44,7 +54,15 @@ export class HeartbeatRunner {
   }> = [];
 
   constructor(private options: RunnerOptions) {
-    this.logger = new HeartbeatLogger(`${options.heartbeatDir}/heartbeat.log`);
+    // Either the caller wired up per-root loggers (multi-root) or we mint a
+    // single-root logger keyed by "" so entry lookup by `entry.root.label`
+    // works uniformly.
+    if (options.loggers && options.loggers.size > 0) {
+      this.loggers = options.loggers;
+    } else {
+      this.loggers = new Map();
+      this.loggers.set("", new HeartbeatLogger(`${options.heartbeatDir}/heartbeat.log`));
+    }
     // Options wins over env so callers can force a specific cap in tests.
     const fromEnv = parseInt(process.env.HEARTBEAT_MAX_CONCURRENT ?? "", 10);
     this.maxConcurrent = options.maxConcurrent ?? (Number.isFinite(fromEnv) ? fromEnv : 2);
@@ -59,6 +77,7 @@ export class HeartbeatRunner {
 
     const entryName = basename(filePath, ".md");
     const logLabel = entry.root.label ? `${entry.root.label}::${entryName}` : entryName;
+    const logger = this.getLoggerFor(entry.root);
 
     // 2. In-memory guard — composite key matches the scheduler's entryName
     //    so cross-root same-name entries don't collide, but single-root
@@ -67,8 +86,8 @@ export class HeartbeatRunner {
     const guardKey = entry.root.label ? `${entry.root.label}::${entryName}` : entryName;
 
     if (this.running.has(guardKey)) {
-      this.logger.log(`[${logLabel}] Skipping — previous execution still running`);
-      this.logger.rotate();
+      logger.log(`[${logLabel}] Skipping — previous execution still running`);
+      logger.rotate();
       return;
     }
 
@@ -77,13 +96,13 @@ export class HeartbeatRunner {
     try {
       // 3a. Check active hours gate
       if (!isActiveHours(entry.activeStart, entry.activeEnd)) {
-        this.logger.log(`[${logLabel}] Outside active hours, skipping`);
+        logger.log(`[${logLabel}] Outside active hours, skipping`);
         return;
       }
 
       // 3b. Check empty file gate
       if (isHeartbeatEmpty(filePath)) {
-        this.logger.log(`[${logLabel}] File is effectively empty, skipping`);
+        logger.log(`[${logLabel}] File is effectively empty, skipping`);
         return;
       }
 
@@ -122,11 +141,11 @@ export class HeartbeatRunner {
         acquired = await this.waitForSlot();
       }
       if (!acquired) {
-        this.logger.log(`[${logLabel}] Skipped (concurrency cap reached)`);
+        logger.log(`[${logLabel}] Skipped (concurrency cap reached)`);
         return;
       }
 
-      this.logger.log(`[${logLabel}] Running heartbeat (agent: ${entry.agent})`);
+      logger.log(`[${logLabel}] Running heartbeat (agent: ${entry.agent})`);
 
       try {
         // 7. Spawn agent with AbortSignal.timeout(300s). Pass cwd when the
@@ -134,14 +153,14 @@ export class HeartbeatRunner {
         //    resolves skills and relative paths inside the worktree's
         //    workspace. Single-root back-compat (label === "") preserves the
         //    legacy behaviour of inheriting the daemon's CWD.
-        const response = await this.spawnAgent(entry.agent, prompt, logLabel, entry);
+        const response = await this.spawnAgent(entry.agent, prompt, logLabel, entry, logger);
 
         // 8. Log result (response === null means timeout/failure handled inside spawnAgent)
         if (response !== null) {
           if (isHeartbeatOk(response)) {
-            this.logger.log(`[${logLabel}] HEARTBEAT_OK`);
+            logger.log(`[${logLabel}] HEARTBEAT_OK`);
           } else {
-            this.logger.log(`[${logLabel}] Response: ${response}`);
+            logger.log(`[${logLabel}] Response: ${response}`);
           }
         }
       } finally {
@@ -150,7 +169,7 @@ export class HeartbeatRunner {
     } finally {
       // Release guard + rotate log regardless of outcome
       this.running.delete(guardKey);
-      this.logger.rotate();
+      logger.rotate();
     }
   }
 
@@ -163,6 +182,7 @@ export class HeartbeatRunner {
     prompt: string,
     logLabel: string,
     entry: HeartbeatEntry,
+    logger: HeartbeatLogger,
   ): Promise<string | null> {
     return new Promise((resolve) => {
       let args: string[];
@@ -193,10 +213,10 @@ export class HeartbeatRunner {
         proc = spawn(agent, args, spawnOptions);
       } catch (err: unknown) {
         if (isAbortError(err)) {
-          this.logger.log(`[${logLabel}] Timed out (300s limit)`);
+          logger.log(`[${logLabel}] Timed out (300s limit)`);
         } else {
           const msg = err instanceof Error ? err.message : String(err);
-          this.logger.log(`[${logLabel}] Failed to spawn: ${msg}`);
+          logger.log(`[${logLabel}] Failed to spawn: ${msg}`);
         }
         resolve(null);
         return;
@@ -210,20 +230,20 @@ export class HeartbeatRunner {
 
       proc.on("error", (err: Error) => {
         if (isAbortError(err)) {
-          this.logger.log(`[${logLabel}] Timed out (300s limit)`);
+          logger.log(`[${logLabel}] Timed out (300s limit)`);
         } else {
-          this.logger.log(`[${logLabel}] Spawn error: ${err.message}`);
+          logger.log(`[${logLabel}] Spawn error: ${err.message}`);
         }
         resolve(null);
       });
 
       proc.on("close", (code: number | null) => {
         if (code === 124) {
-          this.logger.log(`[${logLabel}] Timed out (300s limit)`);
+          logger.log(`[${logLabel}] Timed out (300s limit)`);
           resolve(null);
         } else if (code !== 0) {
           const snippet = stdout.slice(0, 500);
-          this.logger.log(`[${logLabel}] Failed (exit code ${code ?? "null"}): ${snippet}`);
+          logger.log(`[${logLabel}] Failed (exit code ${code ?? "null"}): ${snippet}`);
           resolve(null);
         } else {
           resolve(stdout.trim());
@@ -232,8 +252,32 @@ export class HeartbeatRunner {
     });
   }
 
+  /**
+   * Legacy accessor — returns the primary logger. In single-root mode this
+   * is the sole logger (label `""`) writing to the original
+   * `heartbeats/heartbeat.log` path. In multi-root mode it's the first
+   * logger registered (typically the parent root). Prefer `getLoggerFor`
+   * when an owning root is known.
+   */
   getLogger(): HeartbeatLogger {
-    return this.logger;
+    const first = this.loggers.values().next().value;
+    if (!first) {
+      // Should not happen: constructor guarantees at least one logger.
+      throw new Error("HeartbeatRunner has no loggers registered");
+    }
+    return first;
+  }
+
+  /**
+   * Return the logger owned by `root`. Falls back to the primary logger if
+   * no per-label logger is registered — guarantees callers always get a
+   * usable logger even for unknown roots (e.g., entries from a root that
+   * was removed between discovery and execution).
+   */
+  getLoggerFor(root: WorkspaceRoot): HeartbeatLogger {
+    const byLabel = this.loggers.get(root.label);
+    if (byLabel) return byLabel;
+    return this.getLogger();
   }
 
   // ---------------------------------------------------------------------------

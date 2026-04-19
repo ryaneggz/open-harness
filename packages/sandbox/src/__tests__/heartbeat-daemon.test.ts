@@ -8,6 +8,7 @@ import { EventEmitter } from "node:events";
 // Mock node:fs — watch returns a controllable EventEmitter
 const mockWatch = vi.fn();
 const mockExistsSync = vi.fn();
+const mockReadFileSync = vi.fn().mockReturnValue("");
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
@@ -15,7 +16,7 @@ vi.mock("node:fs", async (importOriginal) => {
     ...actual,
     existsSync: (...args: unknown[]) => mockExistsSync(...args),
     watch: (...args: unknown[]) => mockWatch(...args),
-    readFileSync: vi.fn().mockReturnValue(""),
+    readFileSync: (...args: unknown[]) => mockReadFileSync(...args),
     writeFileSync: vi.fn(),
     mkdirSync: vi.fn(),
     appendFileSync: vi.fn(),
@@ -79,6 +80,7 @@ beforeEach(async () => {
   mockExistsSync.mockReturnValue(true);
   mockReaddir.mockResolvedValue([]);
   mockReadFile.mockResolvedValue("");
+  mockReadFileSync.mockReturnValue("");
 
   // Re-establish scheduler mock after clearAllMocks
   const { HeartbeatScheduler } = await import("../lib/heartbeat/scheduler.js");
@@ -400,6 +402,130 @@ describe("HeartbeatDaemon", () => {
       const daemon = new HeartbeatDaemon(DAEMON_OPTIONS);
       // Should not throw
       await expect(daemon.start()).resolves.not.toThrow();
+    });
+  });
+
+  describe("status()", () => {
+    /**
+     * Capture console.log output for one invocation so we can assert on
+     * the literal shape of the status report. The daemon emits everything
+     * via console.log (operators run this interactively), so stdout is
+     * the user contract we're protecting.
+     */
+    function captureStatus(fn: () => void): string {
+      const lines: string[] = [];
+      const spy = vi.spyOn(console, "log").mockImplementation((msg?: unknown) => {
+        lines.push(String(msg ?? ""));
+      });
+      try {
+        fn();
+      } finally {
+        spy.mockRestore();
+      }
+      return lines.join("\n");
+    }
+
+    it("renders legacy single-root format unchanged (no Roots: header, no label prefix, one log tail)", () => {
+      // Single-root (legacy) input — label implicitly "" via normalize().
+      mockSchedulerStatus.mockReturnValueOnce([
+        { name: "nightly-release", cronExpr: "50 23 * * *", nextRun: null, isRunning: true },
+        { name: "test-sys-metrics", cronExpr: "*/2 * * * *", nextRun: null, isRunning: true },
+      ]);
+
+      const daemon = new HeartbeatDaemon(DAEMON_OPTIONS);
+      const out = captureStatus(() => daemon.status());
+
+      // Must retain the exact pre-PR-3 contract: bare slug after `→`,
+      // existing scripts grep this format.
+      expect(out).toContain("Heartbeat daemon: running (pid");
+      expect(out).toContain("Heartbeat schedules: 2");
+      expect(out).toContain("50 23 * * *  →  nightly-release");
+      expect(out).toContain("*/2 * * * *  →  test-sys-metrics");
+
+      // No multi-root scaffolding leaks into single-root output.
+      expect(out).not.toContain("Roots:");
+      expect(out).not.toContain("Recent log (parent):");
+      expect(out).not.toMatch(/::/); // no label::slug names
+    });
+
+    it("renders multi-root status with Roots: section, namespaced schedules, and per-root log tails", () => {
+      mockSchedulerStatus.mockReturnValueOnce([
+        {
+          name: "parent::nightly-release",
+          cronExpr: "50 23 * * *",
+          nextRun: null,
+          isRunning: true,
+        },
+        {
+          name: "sdr-pallet::morning-pipeline",
+          cronExpr: "0 13 * * 1-5",
+          nextRun: null,
+          isRunning: true,
+        },
+        {
+          name: "sdr-pallet::stuck-lead-sweep",
+          cronExpr: "0 15 * * 1-5",
+          nextRun: null,
+          isRunning: true,
+        },
+      ]);
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [
+          {
+            workspacePath: "/home/sandbox/harness/workspace",
+            heartbeatDir: "/home/sandbox/harness/workspace/heartbeats",
+            label: "parent",
+          },
+          {
+            workspacePath: "/home/sandbox/harness/.worktrees/agent/sdr-pallet/workspace",
+            heartbeatDir: "/home/sandbox/harness/.worktrees/agent/sdr-pallet/workspace/heartbeats",
+            label: "sdr-pallet",
+          },
+        ],
+        defaultAgent: "claude",
+        defaultInterval: 1800,
+      });
+
+      const out = captureStatus(() => daemon.status());
+
+      expect(out).toContain("Heartbeat daemon: running (pid");
+      expect(out).toContain("Roots:");
+      // Each root is announced with its workspace path and schedule count.
+      expect(out).toMatch(/parent\s+→\s+\/home\/sandbox\/harness\/workspace \(1 schedule\)/);
+      expect(out).toMatch(/sdr-pallet\s+→\s+.*sdr-pallet\/workspace \(2 schedules\)/);
+      // Composite names preserved in the Schedules: section.
+      expect(out).toContain("parent::nightly-release");
+      expect(out).toContain("sdr-pallet::morning-pipeline");
+      // Per-root log tails, one heading per root — mocked fs returns "" so
+      // no log body lines appear, but absence of `Recent log (...)` would
+      // prove we regressed to single-tail output. We assert at least that
+      // the single-tail heading is NOT present in multi-root.
+      expect(out).not.toContain("\nRecent log:\n");
+    });
+
+    it("single-root with empty label stays in legacy format even when constructed via workspaceRoots", () => {
+      // Operators (or future code) could plausibly pass a one-element
+      // `workspaceRoots` with label "" — should still render the legacy
+      // layout because the multi-root flag is label-driven, not
+      // array-length driven.
+      mockSchedulerStatus.mockReturnValueOnce([
+        { name: "nightly", cronExpr: "0 0 * * *", nextRun: null, isRunning: true },
+      ]);
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [
+          {
+            workspacePath: "/tmp/workspace",
+            heartbeatDir: "/tmp/workspace/heartbeats",
+            label: "",
+          },
+        ],
+      });
+      const out = captureStatus(() => daemon.status());
+
+      expect(out).not.toContain("Roots:");
+      expect(out).toContain("0 0 * * *  →  nightly");
     });
   });
 });
