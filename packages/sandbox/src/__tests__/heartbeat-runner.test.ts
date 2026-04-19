@@ -523,6 +523,179 @@ describe("HeartbeatRunner", () => {
     });
   });
 
+  describe("multi-root cwd", () => {
+    it("passes cwd = entry.root.workspacePath to spawn when the root has a non-empty label", async () => {
+      const proc = makeChildProcess("HEARTBEAT_OK", 0);
+      mockSpawn.mockReturnValue(proc);
+      mockIsHeartbeatOk.mockReturnValue(true);
+
+      const runner = new HeartbeatRunner({
+        workspacePath,
+        heartbeatDir,
+        soulFile,
+      });
+      vi.spyOn(runner.getLogger(), "log").mockImplementation(() => {});
+      vi.spyOn(runner.getLogger(), "rotate").mockImplementation(() => {});
+
+      // Build an entry whose root is labelled (discovered worktree).
+      // Use the real tmp workspace so readFileSync for the heartbeat file
+      // still succeeds.
+      const discoveredRoot: WorkspaceRoot = {
+        workspacePath,
+        heartbeatDir,
+        soulFile,
+        label: "agent-sdr-pallet",
+      };
+      await runner.run(makeEntry({ root: discoveredRoot }));
+
+      expect(mockSpawn).toHaveBeenCalledOnce();
+      const spawnOptions = mockSpawn.mock.calls[0][2] as { cwd?: string };
+      expect(spawnOptions.cwd).toBe(workspacePath);
+    });
+
+    it("does NOT pass cwd for single-root (empty label) back-compat", async () => {
+      const proc = makeChildProcess("HEARTBEAT_OK", 0);
+      mockSpawn.mockReturnValue(proc);
+      mockIsHeartbeatOk.mockReturnValue(true);
+
+      const runner = new HeartbeatRunner({
+        workspacePath,
+        heartbeatDir,
+        soulFile,
+      });
+      vi.spyOn(runner.getLogger(), "log").mockImplementation(() => {});
+      vi.spyOn(runner.getLogger(), "rotate").mockImplementation(() => {});
+
+      // defaultRoot has label: "" — single-root back-compat.
+      await runner.run(makeEntry());
+
+      expect(mockSpawn).toHaveBeenCalledOnce();
+      const spawnOptions = mockSpawn.mock.calls[0][2] as { cwd?: string };
+      expect(spawnOptions.cwd).toBeUndefined();
+    });
+
+    it("allows same entry name in two roots to run concurrently (per-root guard)", async () => {
+      // Two roots, same entry filename.
+      const rootA: WorkspaceRoot = {
+        workspacePath,
+        heartbeatDir,
+        soulFile,
+        label: "root-a",
+      };
+      const rootB: WorkspaceRoot = {
+        workspacePath,
+        heartbeatDir,
+        soulFile,
+        label: "root-b",
+      };
+
+      const runner = new HeartbeatRunner({
+        workspacePath,
+        heartbeatDir,
+        soulFile,
+      });
+      vi.spyOn(runner.getLogger(), "log").mockImplementation(() => {});
+      vi.spyOn(runner.getLogger(), "rotate").mockImplementation(() => {});
+
+      // Pre-populate the guard set with rootA's composite key to simulate an
+      // in-flight run. RootB's composite key is distinct, so it must still
+      // reach spawn.
+      const runningSet = (runner as unknown as { running: Set<string> }).running;
+      runningSet.add(`root-a::${ENTRY_BASENAME}`);
+
+      const proc = makeChildProcess("HEARTBEAT_OK", 0);
+      mockSpawn.mockReturnValue(proc);
+      mockIsHeartbeatOk.mockReturnValue(true);
+
+      await runner.run(makeEntry({ root: rootB }));
+
+      expect(mockSpawn).toHaveBeenCalledOnce();
+
+      runningSet.delete(`root-a::${ENTRY_BASENAME}`);
+    });
+  });
+
+  describe("global concurrency cap", () => {
+    it("skips execution with a log when no slot is available and the wait expires", async () => {
+      vi.useFakeTimers();
+      try {
+        const runner = new HeartbeatRunner({
+          workspacePath,
+          heartbeatDir,
+          soulFile,
+          maxConcurrent: 1,
+        });
+        // Saturate the semaphore: simulate one already-running slot.
+        (runner as unknown as { active: number }).active = 1;
+
+        const logSpy = vi.spyOn(runner.getLogger(), "log").mockImplementation(() => {});
+        vi.spyOn(runner.getLogger(), "rotate").mockImplementation(() => {});
+
+        const runPromise = runner.run(makeEntry());
+        // Advance past the 300s waiter timeout to force the "cap reached"
+        // branch.
+        await vi.advanceTimersByTimeAsync(300_001);
+        await runPromise;
+
+        expect(mockSpawn).not.toHaveBeenCalled();
+        expect(logSpy).toHaveBeenCalledWith(
+          expect.stringContaining("Skipped (concurrency cap reached)"),
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("maxConcurrent=0 disables the cap (legacy unlimited behavior)", async () => {
+      const runner = new HeartbeatRunner({
+        workspacePath,
+        heartbeatDir,
+        soulFile,
+        maxConcurrent: 0,
+      });
+      // Even with many simulated "active" runs, a zero-cap runner must still spawn.
+      (runner as unknown as { active: number }).active = 999;
+
+      const proc = makeChildProcess("HEARTBEAT_OK", 0);
+      mockSpawn.mockReturnValue(proc);
+      mockIsHeartbeatOk.mockReturnValue(true);
+      vi.spyOn(runner.getLogger(), "log").mockImplementation(() => {});
+      vi.spyOn(runner.getLogger(), "rotate").mockImplementation(() => {});
+
+      await runner.run(makeEntry());
+
+      expect(mockSpawn).toHaveBeenCalledOnce();
+    });
+
+    it("releases the slot after run completes so the next entry can acquire", async () => {
+      const runner = new HeartbeatRunner({
+        workspacePath,
+        heartbeatDir,
+        soulFile,
+        maxConcurrent: 1,
+      });
+      vi.spyOn(runner.getLogger(), "log").mockImplementation(() => {});
+      vi.spyOn(runner.getLogger(), "rotate").mockImplementation(() => {});
+
+      mockIsHeartbeatOk.mockReturnValue(true);
+
+      // Need matching heartbeat files on disk for each run's readFileSync.
+      writeFileSync(join(workspacePath, "a.md"), "do a thing\n");
+      writeFileSync(join(workspacePath, "b.md"), "do another thing\n");
+
+      // First run acquires the sole slot, spawns, completes, releases.
+      mockSpawn.mockReturnValueOnce(makeChildProcess("HEARTBEAT_OK", 0));
+      await runner.run(makeEntry({ filePath: "a.md" }));
+
+      mockSpawn.mockReturnValueOnce(makeChildProcess("HEARTBEAT_OK", 0));
+      await runner.run(makeEntry({ filePath: "b.md" }));
+
+      // Both runs reached spawn → slot was correctly released between them.
+      expect(mockSpawn).toHaveBeenCalledTimes(2);
+      expect((runner as unknown as { active: number }).active).toBe(0);
+    });
+  });
+
   describe("lifecycle", () => {
     it("clears running guard in finally block even when an error occurs", async () => {
       // Make spawn throw an error

@@ -355,6 +355,91 @@ describe("HeartbeatScheduler", () => {
     });
   });
 
+  describe("multi-root namespacing", () => {
+    const ROOT_A: WorkspaceRoot = {
+      workspacePath: "/tmp/worktrees/agent/sdr-pallet/workspace",
+      heartbeatDir: "/tmp/worktrees/agent/sdr-pallet/workspace/heartbeats",
+      label: "agent-sdr-pallet",
+    };
+    const ROOT_B: WorkspaceRoot = {
+      workspacePath: "/tmp/worktrees/feat/foo/workspace",
+      heartbeatDir: "/tmp/worktrees/feat/foo/workspace/heartbeats",
+      label: "feat-foo",
+    };
+
+    it("schedules same-filename entries from two roots as independent jobs", () => {
+      const scheduler = new HeartbeatScheduler(RUNNER_OPTIONS);
+      const entries = [
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_A }),
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_B }),
+      ];
+
+      scheduler.start(entries);
+
+      // Two separate Cron instances — same filename but different labels.
+      expect(MockCron).toHaveBeenCalledTimes(2);
+      expect(scheduler.status()).toHaveLength(2);
+    });
+
+    it("derives composite `${label}::${slug}` name for multi-root entries", () => {
+      const scheduler = new HeartbeatScheduler(RUNNER_OPTIONS);
+      scheduler.start([makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_A })]);
+
+      expect(mockLoggerLog).toHaveBeenCalledWith(
+        expect.stringContaining("agent-sdr-pallet::heartbeats-ping"),
+      );
+    });
+
+    it("removing one root's entry does not stop another root's", () => {
+      const scheduler = new HeartbeatScheduler(RUNNER_OPTIONS);
+      scheduler.start([
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_A }),
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_B }),
+      ]);
+
+      vi.clearAllMocks();
+      mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      MockCron.mockImplementation((pattern: string, callback: () => Promise<void>) => {
+        lastCronCallback = callback;
+        mockCronGetPattern.mockReturnValue(pattern);
+        return {
+          stop: mockCronStop,
+          nextRun: mockCronNextRun,
+          isRunning: mockCronIsRunning,
+          getPattern: mockCronGetPattern,
+        };
+      });
+
+      // Drop ROOT_A's entry; keep ROOT_B's unchanged.
+      scheduler.sync([makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_B })]);
+
+      // Exactly one job stopped (A), no new jobs created (B unchanged).
+      expect(mockCronStop).toHaveBeenCalledTimes(1);
+      expect(MockCron).not.toHaveBeenCalled();
+      expect(scheduler.status()).toHaveLength(1);
+    });
+
+    it("unchanged multi-root entries are not recreated on sync (differential)", () => {
+      const scheduler = new HeartbeatScheduler(RUNNER_OPTIONS);
+      const initial = [
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_A }),
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_B }),
+      ];
+      scheduler.start(initial);
+
+      vi.clearAllMocks();
+      mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+
+      scheduler.sync([
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_A }),
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_B }),
+      ]);
+
+      expect(mockCronStop).not.toHaveBeenCalled();
+      expect(MockCron).not.toHaveBeenCalled();
+    });
+  });
+
   describe("status()", () => {
     it("returns an entry for each scheduled job", () => {
       const scheduler = new HeartbeatScheduler(RUNNER_OPTIONS);

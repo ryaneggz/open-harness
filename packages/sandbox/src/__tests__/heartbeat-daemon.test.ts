@@ -248,6 +248,138 @@ describe("HeartbeatDaemon", () => {
     });
   });
 
+  describe("multi-root watcher", () => {
+    it("starts one fs.watch per workspace root", async () => {
+      const watcherA = createFakeWatcher();
+      const watcherB = createFakeWatcher();
+      mockWatch.mockReturnValueOnce(watcherA).mockReturnValueOnce(watcherB);
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [
+          {
+            workspacePath: "/tmp/a/workspace",
+            heartbeatDir: "/tmp/a/workspace/heartbeats",
+            label: "agent-foo",
+          },
+          {
+            workspacePath: "/tmp/b/workspace",
+            heartbeatDir: "/tmp/b/workspace/heartbeats",
+            label: "feat-bar",
+          },
+        ],
+        defaultAgent: "claude",
+        defaultInterval: 1800,
+      });
+      await daemon.start();
+
+      expect(mockWatch).toHaveBeenCalledTimes(2);
+      expect(mockWatch).toHaveBeenCalledWith(
+        "/tmp/a/workspace/heartbeats",
+        { persistent: false },
+        expect.any(Function),
+      );
+      expect(mockWatch).toHaveBeenCalledWith(
+        "/tmp/b/workspace/heartbeats",
+        { persistent: false },
+        expect.any(Function),
+      );
+    });
+
+    it("closes every watcher on stop()", async () => {
+      const watcherA = createFakeWatcher();
+      const watcherB = createFakeWatcher();
+      mockWatch.mockReturnValueOnce(watcherA).mockReturnValueOnce(watcherB);
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [
+          {
+            workspacePath: "/tmp/a/workspace",
+            heartbeatDir: "/tmp/a/workspace/heartbeats",
+            label: "agent-foo",
+          },
+          {
+            workspacePath: "/tmp/b/workspace",
+            heartbeatDir: "/tmp/b/workspace/heartbeats",
+            label: "feat-bar",
+          },
+        ],
+      });
+      await daemon.start();
+      daemon.stop();
+
+      expect(watcherA.close).toHaveBeenCalledOnce();
+      expect(watcherB.close).toHaveBeenCalledOnce();
+    });
+
+    it("debounces events across roots into a single sync", async () => {
+      const watcherA = createFakeWatcher();
+      const watcherB = createFakeWatcher();
+      mockWatch.mockReturnValueOnce(watcherA).mockReturnValueOnce(watcherB);
+
+      mockReaddir.mockResolvedValue(["test.md"]);
+      mockReadFile.mockResolvedValue(`---\nschedule: "*/5 * * * *"\n---\n`);
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [
+          {
+            workspacePath: "/tmp/a/workspace",
+            heartbeatDir: "/tmp/a/workspace/heartbeats",
+            label: "agent-foo",
+          },
+          {
+            workspacePath: "/tmp/b/workspace",
+            heartbeatDir: "/tmp/b/workspace/heartbeats",
+            label: "feat-bar",
+          },
+        ],
+      });
+      await daemon.start();
+
+      const callbackA = mockWatch.mock.calls[0][2] as (event: string, filename: string) => void;
+      const callbackB = mockWatch.mock.calls[1][2] as (event: string, filename: string) => void;
+
+      // Each root parses once during start() — record baseline.
+      const callCountAfterStart = mockReaddir.mock.calls.length;
+
+      // Fire events from both roots rapidly — a single debounced sync must result.
+      callbackA("change", "a.md");
+      callbackB("change", "b.md");
+      callbackA("rename", "c.md");
+
+      await vi.advanceTimersByTimeAsync(600);
+
+      // A single sync() ran — re-parsing both roots once (2 readdir calls, one per root).
+      expect(mockReaddir.mock.calls.length).toBe(callCountAfterStart + 2);
+    });
+
+    it("skips roots whose heartbeatDir does not exist without aborting other roots", async () => {
+      const watcherA = createFakeWatcher();
+      mockWatch.mockReturnValue(watcherA);
+
+      // Only root A's dir exists.
+      mockExistsSync.mockImplementation((p) => String(p) === "/tmp/a/workspace/heartbeats");
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [
+          {
+            workspacePath: "/tmp/a/workspace",
+            heartbeatDir: "/tmp/a/workspace/heartbeats",
+            label: "agent-foo",
+          },
+          {
+            workspacePath: "/tmp/missing/workspace",
+            heartbeatDir: "/tmp/missing/workspace/heartbeats",
+            label: "missing",
+          },
+        ],
+      });
+      await daemon.start();
+
+      // Exactly one watcher started — the one whose dir exists.
+      expect(mockWatch).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("watcher error handling", () => {
     it("handles fs.watch errors gracefully", async () => {
       const fakeWatcher = createFakeWatcher();

@@ -1,7 +1,8 @@
 import {
   parseHeartbeatConfig,
-  parseHeartbeatConfigAsync,
+  parseHeartbeatConfigAcrossRoots,
   secondsToCron,
+  type HeartbeatEntry,
   type WorkspaceRoot,
 } from "./config.js";
 import { HeartbeatScheduler } from "./scheduler.js";
@@ -25,10 +26,9 @@ export interface LegacyDaemonOptions {
 }
 
 /**
- * Multi-root options — what PR-2 will exercise. PR-1 accepts this shape
- * through the constructor for forward-compatibility but, until PR-2 lands
- * the discovery/watcher/cwd changes, only the FIRST root is watched and
- * parsed (same single-root behaviour, now addressed by a structured root).
+ * Multi-root options — PR-2 exercises this fully. Each root gets its own
+ * `fs.watch` instance, entries are merged across roots, and the scheduler
+ * namespaces keys by `root.label`.
  */
 export interface MultiRootDaemonOptions {
   workspaceRoots: WorkspaceRoot[];
@@ -81,10 +81,11 @@ function normalize(opts: DaemonOptions): NormalizedDaemonOptions {
 export class HeartbeatDaemon {
   private scheduler: HeartbeatScheduler;
   private logger: HeartbeatLogger;
-  private watcher: FSWatcher | null = null;
+  /** One watcher per root — all fire the same debounced sync. */
+  private watchers: FSWatcher[] = [];
   private watchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private normalized: NormalizedDaemonOptions;
-  /** Primary root — single-root deployments use this for all operations. */
+  /** Primary root — used for logger, migrate, and legacy-shim scenarios. */
   private primaryRoot: WorkspaceRoot;
 
   constructor(options: DaemonOptions) {
@@ -101,13 +102,9 @@ export class HeartbeatDaemon {
     this.logger = new HeartbeatLogger(join(this.primaryRoot.heartbeatDir, "heartbeat.log"));
   }
 
-  /** Parse config, start scheduling, and watch for changes */
+  /** Parse config across all roots, start scheduling, and watch each root. */
   async start(): Promise<void> {
-    const entries = await parseHeartbeatConfigAsync(
-      this.primaryRoot,
-      this.normalized.defaultAgent,
-      this.normalized.defaultInterval,
-    );
+    const entries = await this.parseAll();
     if (entries.length === 0) {
       this.logger.log("No heartbeats configured — nothing to schedule");
       console.log("No heartbeats configured.");
@@ -115,7 +112,7 @@ export class HeartbeatDaemon {
       this.scheduler.start(entries);
       console.log(`Synced ${entries.length} heartbeat schedule(s)`);
       for (const entry of entries) {
-        console.log(`  ${entry.cronExpr}  →  ${entry.filePath}`);
+        console.log(`  ${entry.cronExpr}  →  ${this.describeEntry(entry)}`);
       }
     }
     this.startWatching();
@@ -123,84 +120,96 @@ export class HeartbeatDaemon {
 
   /** Re-sync: re-parse config and differentially update schedules */
   async sync(): Promise<void> {
-    const entries = await parseHeartbeatConfigAsync(
-      this.primaryRoot,
-      this.normalized.defaultAgent,
-      this.normalized.defaultInterval,
-    );
+    const entries = await this.parseAll();
     this.scheduler.sync(entries);
     console.log(`Synced ${entries.length} heartbeat schedule(s)`);
     for (const entry of entries) {
-      console.log(`  ${entry.cronExpr}  →  ${entry.filePath}`);
+      console.log(`  ${entry.cronExpr}  →  ${this.describeEntry(entry)}`);
     }
   }
 
   /**
    * One-shot sync using synchronous I/O. Used by the CLI `sync` command
    * which runs in a short-lived process and exits immediately.
+   *
+   * In multi-root mode this still delegates to the sync parser per-root to
+   * avoid awaiting promises from a CLI entry that expects to exit
+   * immediately — the parser accepts a WorkspaceRoot directly.
    */
   syncOnce(): void {
-    const entries = parseHeartbeatConfig(
-      this.primaryRoot,
-      this.normalized.defaultAgent,
-      this.normalized.defaultInterval,
-    );
+    const entries: HeartbeatEntry[] = [];
+    for (const root of this.normalized.roots) {
+      const rootEntries = parseHeartbeatConfig(
+        root,
+        this.normalized.defaultAgent,
+        this.normalized.defaultInterval,
+      );
+      for (const entry of rootEntries) entries.push(entry);
+    }
     this.scheduler.sync(entries);
     console.log(`Synced ${entries.length} heartbeat schedule(s)`);
     for (const entry of entries) {
-      console.log(`  ${entry.cronExpr}  →  ${entry.filePath}`);
+      console.log(`  ${entry.cronExpr}  →  ${this.describeEntry(entry)}`);
     }
   }
 
-  /** Stop all scheduled heartbeats and the file watcher */
+  /** Stop all scheduled heartbeats and every file watcher */
   stop(): void {
     this.stopWatching();
     this.scheduler.stop();
     console.log("Heartbeat schedules removed.");
   }
 
-  /** Start watching the heartbeats directory for file changes */
+  /** Start one file watcher per root's heartbeats directory. */
   private startWatching(): void {
-    const dir = this.primaryRoot.heartbeatDir;
-    if (!existsSync(dir)) return;
+    for (const root of this.normalized.roots) {
+      const dir = root.heartbeatDir;
+      if (!existsSync(dir)) continue;
 
-    try {
-      this.watcher = watch(dir, { persistent: false }, (_event, filename) => {
-        // Only react to .md file changes
-        if (!filename || !filename.endsWith(".md")) return;
+      try {
+        const watcher = watch(dir, { persistent: false }, (_event, filename) => {
+          // Only react to .md file changes
+          if (!filename || !filename.endsWith(".md")) return;
 
-        // Debounce: coalesce rapid events into a single sync
-        if (this.watchDebounceTimer) clearTimeout(this.watchDebounceTimer);
-        this.watchDebounceTimer = setTimeout(() => {
-          this.watchDebounceTimer = null;
-          this.sync().catch((err) => {
-            this.logger.log(
-              `[watcher] Sync error: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          });
-        }, 500);
-      });
+          // Debounce: coalesce rapid events (from any root) into a single sync
+          if (this.watchDebounceTimer) clearTimeout(this.watchDebounceTimer);
+          this.watchDebounceTimer = setTimeout(() => {
+            this.watchDebounceTimer = null;
+            this.sync().catch((err) => {
+              this.logger.log(
+                `[watcher] Sync error: ${err instanceof Error ? err.message : String(err)}`,
+              );
+            });
+          }, 500);
+        });
 
-      this.watcher.on("error", (err) => {
-        this.logger.log(`[watcher] Error: ${err.message}`);
-      });
-    } catch (err) {
-      this.logger.log(
-        `[watcher] Failed to watch ${dir}: ${err instanceof Error ? err.message : String(err)}`,
-      );
+        watcher.on("error", (err) => {
+          this.logger.log(`[watcher:${root.label || "parent"}] Error: ${err.message}`);
+        });
+
+        this.watchers.push(watcher);
+      } catch (err) {
+        this.logger.log(
+          `[watcher:${root.label || "parent"}] Failed to watch ${dir}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     }
   }
 
-  /** Stop the file watcher and clear any pending debounce timer */
+  /** Close every file watcher and clear any pending debounce timer */
   private stopWatching(): void {
     if (this.watchDebounceTimer) {
       clearTimeout(this.watchDebounceTimer);
       this.watchDebounceTimer = null;
     }
-    if (this.watcher) {
-      this.watcher.close();
-      this.watcher = null;
+    for (const watcher of this.watchers) {
+      try {
+        watcher.close();
+      } catch {
+        // ignore — watcher may already be closed
+      }
     }
+    this.watchers = [];
   }
 
   /** Show status: daemon info, scheduled jobs, recent logs */
@@ -278,5 +287,26 @@ ${existing}`;
 
   getScheduler(): HeartbeatScheduler {
     return this.scheduler;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal helpers
+  // ---------------------------------------------------------------------------
+
+  private parseAll(): Promise<HeartbeatEntry[]> {
+    return parseHeartbeatConfigAcrossRoots(
+      this.normalized.roots,
+      this.normalized.defaultAgent,
+      this.normalized.defaultInterval,
+    );
+  }
+
+  /**
+   * Human-readable description for console output. Single-root (label "")
+   * keeps the legacy `heartbeats/foo.md` form; multi-root prefixes with the
+   * label so operators can tell worktrees apart at a glance.
+   */
+  private describeEntry(entry: HeartbeatEntry): string {
+    return entry.root.label ? `${entry.root.label}::${entry.filePath}` : entry.filePath;
   }
 }
