@@ -45,44 +45,35 @@ without per-agent infrastructure.
 
 ## Topology
 
+```mermaid
+flowchart TB
+  subgraph host["Host filesystem — /home/sandbox/harness"]
+    direction TB
+    gitreg[".git/worktrees/<br/>(git's worktree registry)"]
+    parent["workspace/<br/>(parent-branch workspace)"]
+    pkgs["packages/sandbox/<br/>(harness source)"]
+    subgraph wts[".worktrees/"]
+      direction TB
+      wt1["agent/sdr-pallet/workspace/<br/>• heartbeats/<br/>• crm/<br/>• memory/<br/>• .claude/skills/"]
+      wt2["feat/71-mwh-pr1/workspace/<br/>(ephemeral PR worktree)"]
+      wt3["… more worktrees …"]
+    end
+  end
+  subgraph box["oh-remote container (bind-mounts host at /home/sandbox/harness)"]
+    direction TB
+    daemon["heartbeat-daemon<br/>(single Node process)"]
+    tools["Shared toolchain<br/>claude · codex · pi · pnpm · git · gh · docker"]
+    creds["Shared credentials<br/>~/.claude · ~/.pi · ~/.config/gh"]
+  end
+  daemon -. "top-level watch" .-> gitreg
+  daemon -. "heartbeats watch" .-> parent
+  daemon -. "heartbeats watch" .-> wt1
+  daemon -. "heartbeats watch" .-> wt2
+  box -.->|"bind mount"| host
 ```
-┌────────────────────── host filesystem ───────────────────────┐
-│                                                              │
-│  /home/sandbox/harness/              ← main checkout          │
-│  ├── .git/                                                    │
-│  │   └── worktrees/                  ← git's worktree registry│
-│  │       ├── agent/sdr-pallet/                                │
-│  │       └── feat/71-mwh-pr1/                                 │
-│  ├── workspace/                      ← parent checkout's      │
-│  │   ├── heartbeats/                   workspace (main branch)│
-│  │   ├── memory/                                              │
-│  │   └── .claude/skills/                                      │
-│  ├── packages/sandbox/               ← harness source         │
-│  └── .worktrees/                                              │
-│      ├── agent/                                               │
-│      │   └── sdr-pallet/                                      │
-│      │       └── workspace/          ← sdr-pallet's workspace │
-│      │           ├── heartbeats/                              │
-│      │           ├── crm/                                     │
-│      │           ├── memory/                                  │
-│      │           └── .claude/skills/                          │
-│      └── feat/                                                │
-│          └── 71-mwh-pr1/             ← ephemeral PR worktrees │
-│                                                               │
-│  ┌─── oh-remote container (bind-mounts /home/sandbox/harness)─┐│
-│  │                                                            ││
-│  │   heartbeat-daemon  (one process)                          ││
-│  │     ├── fs.watch .git/worktrees/                           ││
-│  │     ├── fs.watch workspace/heartbeats/        (parent)     ││
-│  │     ├── fs.watch .worktrees/agent/sdr-pallet/…/heartbeats/ ││
-│  │     └── fs.watch …each discovered worktree…                ││
-│  │                                                            ││
-│  │   claude, codex, pi, docker, pnpm, git, gh                 ││
-│  │   (shared toolchain; one credential set)                   ││
-│  │                                                            ││
-│  └────────────────────────────────────────────────────────────┘│
-└──────────────────────────────────────────────────────────────┘
-```
+
+One container. N git worktrees. One daemon watching N+1 directories
+(each root's `heartbeats/` + `.git/worktrees/` itself).
 
 ## Actors
 
@@ -176,45 +167,41 @@ without per-agent infrastructure.
 
 ## Lifecycle of a New Agent
 
-```
- orchestrator session                         sandbox (oh-remote)
- ────────────────────                         ───────────────────
- 1. gh issue create --label agent
-    "agent: pallet-sdr intake"
-        │
-        ▼
- 2. git worktree add -b agent/pallet-sdr \
-    .worktrees/agent/pallet-sdr development
-        │                                     git updates .git/worktrees/
-        ├────────────────────────────────────▶pallet-sdr/ (new dir)
-        ▼
- 3. Scaffold workspace/:
-      SOUL.md, MEMORY.md, USER.md
-      skills/, heartbeats/, crm/, etc.
-        │
-        ▼                                     daemon's top-level watcher
- 4. git commit -m "agent(#N): scaffold …"  ──▶fires, runs
-                                               discoverWorkspaceRoots()
-                                               finds new root
-                                               starts heartbeat-dir watcher
-                                               next sync() picks up
-                                               heartbeat entries
-        │
-        ▼
- 5. git push -u origin agent/pallet-sdr
-        │
-        ▼
- 6. PR against development
-        │
-        ▼
- 7. When heartbeats tick, daemon spawns
-    claude -p (cwd = pallet-sdr workspace)
-    Agent runs, writes to its own memory/,
-    crm/, etc.
+```mermaid
+sequenceDiagram
+  actor Orc as Orchestrator
+  participant Git as Git / Host FS
+  participant Daemon as Heartbeat Daemon<br/>(inside sandbox)
+  participant Agent as Spawned Agent<br/>(claude -p)
+
+  Orc->>Git: gh issue create --label agent
+  Note over Orc,Git: "agent(#N): pallet-sdr intake"
+
+  Orc->>Git: git worktree add -b agent/pallet-sdr<br/>.worktrees/agent/pallet-sdr development
+  Git-->>Git: .git/worktrees/pallet-sdr/ created
+  Git-->>Daemon: top-level watcher fires
+
+  Daemon->>Git: git worktree list --porcelain
+  Daemon->>Daemon: discoverWorkspaceRoots()<br/>start new per-root fs.watch
+
+  Orc->>Git: scaffold workspace/<br/>(SOUL.md, skills/, heartbeats/, crm/)
+  Orc->>Git: git commit + push
+  Git-->>Daemon: heartbeats/ watcher fires
+  Daemon->>Daemon: sync() — schedule new entries
+
+  Orc->>Git: gh pr create --base development
+  Note over Orc,Agent: orchestrator's job ends here
+
+  Note over Daemon,Agent: cron tick arrives
+  Daemon->>Agent: spawn claude -p<br/>(cwd = pallet-sdr workspace)
+  Agent->>Git: writes memory/YYYY-MM-DD.md<br/>crm/attention/YYYY-MM-DD.md
+  Agent-->>Daemon: stdout (HEARTBEAT_OK or body)
+  Daemon->>Daemon: logger.log(per-root log)
 ```
 
-The orchestrator's job ends at step 4. After that the agent is live and
-self-directing (per its heartbeat schedule + manual sessions).
+The orchestrator's job ends once the PR is opened. After that the agent
+is live and self-directing (per its heartbeat schedule + manual sessions
+inside the sandbox).
 
 ## Discovery Mechanism
 
@@ -260,6 +247,100 @@ Consequences:
 > **Back-compat**: single-root daemons (legacy construction path, label
 > `""`) do NOT pass `cwd`. Byte-identical to pre-multi-root behavior so
 > existing deployments don't regress.
+
+## Heartbeat Firing Flow
+
+What actually happens on each cron tick, top to bottom:
+
+```mermaid
+sequenceDiagram
+  participant Cron as Croner (per job)
+  participant Runner as HeartbeatRunner
+  participant Sem as Semaphore<br/>(HEARTBEAT_MAX_CONCURRENT)
+  participant Gates as Gates
+  participant Claude as claude CLI
+  participant Logger as Per-root Logger
+
+  Cron->>Runner: tick(entry)
+  Runner->>Sem: tryAcquireSlot()
+
+  alt slot queued > 300s
+    Runner->>Logger: [label::entry] Skipped<br/>(concurrency cap reached)
+  else slot granted
+    Runner->>Runner: concurrency guard<br/>(root, entryName) already running?
+    opt guard hit
+      Runner->>Logger: Skipping — previous still running
+    end
+
+    Runner->>Gates: isActiveHours(start,end)?
+    alt outside window
+      Runner->>Logger: Outside active hours, skipping
+    else active
+      Runner->>Gates: isHeartbeatEmpty(filePath)?
+      alt empty
+        Runner->>Logger: File effectively empty, skipping
+      else has body
+        Runner->>Runner: build prompt<br/>(SOUL.md + heartbeat body + HEARTBEAT_OK rule)
+        Runner->>Logger: Running heartbeat (agent: claude)
+        Runner->>Claude: spawn(claude, ["-p", prompt, "--dangerously-skip-permissions"],<br/>{ cwd: root.workspacePath, signal: 300s timeout })
+        Claude-->>Runner: stdout (trimmed)
+
+        alt exit 0 and contains HEARTBEAT_OK and <300 chars
+          Runner->>Logger: HEARTBEAT_OK
+        else exit 0 with body
+          Runner->>Logger: Response: <full body>
+        else timeout / non-zero exit
+          Runner->>Logger: Timed out / Failed (exit N)
+        end
+      end
+    end
+
+    Runner->>Sem: releaseSlot()
+    Runner->>Logger: rotate() — trim if >1000 lines
+  end
+```
+
+Key invariants:
+
+- `cwd` is set per entry, never shared across worktrees.
+- The semaphore is daemon-global and FIFO; the concurrency guard is
+  per-`(root, entryName)` composite key.
+- All log writes go to the root's own `heartbeats/heartbeat.log`.
+
+## Module Dependencies
+
+Source layout inside `packages/sandbox/src/lib/heartbeat/` and the CLI entry:
+
+```mermaid
+flowchart LR
+  cli[cli/heartbeat-daemon.ts<br/>CLI entry]
+  discovery[lib/heartbeat/<br/>discovery.ts]
+  daemon[lib/heartbeat/<br/>daemon.ts]
+  config[lib/heartbeat/<br/>config.ts]
+  scheduler[lib/heartbeat/<br/>scheduler.ts]
+  runner[lib/heartbeat/<br/>runner.ts]
+  logger[lib/heartbeat/<br/>logger.ts]
+  gates[lib/heartbeat/<br/>gates.ts]
+
+  cli -->|startup discovery| discovery
+  cli -->|construct + start| daemon
+  discovery -.->|WorkspaceRoot[]| daemon
+  daemon -->|parseHeartbeatConfigAcrossRoots| config
+  daemon -->|sync/start/stop| scheduler
+  daemon -->|own per-root Map| logger
+  scheduler -->|run(entry)| runner
+  runner -->|gate checks| gates
+  runner -->|per-root log line| logger
+  runner -->|spawn claude| Spawn{{"child_process.spawn<br/>cwd=root.workspacePath"}}
+
+  classDef external fill:#eee,stroke-dasharray:3 3
+  class Spawn external
+```
+
+- Types and discovery are "leaf" modules with no dependencies on
+  scheduler/runner — safe to evolve independently.
+- The runner is the only module that actually spawns an agent; all spawn
+  policy (timeout, cwd, arg shape) lives there.
 
 ## Isolation Properties
 
@@ -365,6 +446,71 @@ git worktree remove .worktrees/agent/<name>
 # Daemon auto-drops it on next .git/worktrees/ mutation event
 # PR merge (or abandon) on the branch is a separate concern
 ```
+
+## Where to Change What
+
+Concrete change targets for common modifications. Paths are relative to
+the harness repo root (`/home/sandbox/harness`). If you add something
+here, keep the table alphabetical within each section.
+
+### Adding or modifying agents
+
+| Change | Touch | Notes |
+|--------|-------|-------|
+| Add a new worktree agent | `git worktree add -b agent/<name> .worktrees/agent/<name> development` then scaffold `workspace/` | Daemon auto-discovers within ~500 ms of commit |
+| Retire a worktree agent | `git worktree remove .worktrees/agent/<name>` | Daemon drops it; branch lifecycle separate |
+| Rename an agent's branch | `git branch -m agent/<old> agent/<new>` then `git worktree move` | Changes the daemon label; heartbeats re-namespace under the new label |
+| Scaffold content for a new agent | `workspace/` inside the new worktree — seed SOUL.md, skills/, heartbeats/, CRM data, etc. | Orchestrator writes this once, agent owns it afterward |
+| Share a skill across all agents | Write to each worktree's `workspace/.claude/skills/<name>/` (or add to a template under the parent workspace that new agents copy from) | There is no central "shared skills" dir today — by design, for isolation |
+
+### Heartbeat daemon behavior
+
+| Change | Touch | Notes |
+|--------|-------|-------|
+| Frontmatter schema (add/remove a field) | `packages/sandbox/src/lib/heartbeat/config.ts` — `parseFrontmatter`, `buildEntry`, `HeartbeatEntry` | Update `src/__tests__/heartbeat-config.test.ts` |
+| Discovery rule (include a different subdir than `workspace/`) | `packages/sandbox/src/lib/heartbeat/discovery.ts` — `discoverWorkspaceRoots` | Update `src/__tests__/heartbeat-discovery.test.ts` |
+| Label format / sanitization | `packages/sandbox/src/lib/heartbeat/discovery.ts` — `sanitizeBranch` | Keep `""` empty label back-compat for legacy single-root |
+| Default concurrency cap | `packages/sandbox/src/lib/heartbeat/runner.ts` — `HEARTBEAT_MAX_CONCURRENT` default (or set env in `install/entrypoint.sh`) | `0` disables the cap |
+| Per-spawn timeout (currently 300 s) | `packages/sandbox/src/lib/heartbeat/runner.ts` — `AbortSignal.timeout(300_000)` | Applies to every spawn |
+| Active-hours / empty-file gates | `packages/sandbox/src/lib/heartbeat/gates.ts` | Covered by `heartbeat-gates.test.ts` |
+| Log file name or path per root | `packages/sandbox/src/lib/heartbeat/logger.ts` + call site in `daemon.ts` | Current: `<root.heartbeatDir>/heartbeat.log` |
+| Log rotation threshold | `packages/sandbox/src/lib/heartbeat/logger.ts` — `rotate()` constants (1000 keep 500) | |
+| Add a new agent CLI (beyond `claude`/`codex`) | `packages/sandbox/src/lib/heartbeat/runner.ts` — `spawnAgent` switch | Register the new arg shape |
+| Watcher debounce window (currently 500 ms) | `packages/sandbox/src/lib/heartbeat/daemon.ts` — `startWatching` setTimeout | |
+| `.git/worktrees/` hot add/remove behavior | `packages/sandbox/src/lib/heartbeat/daemon.ts` — `startTopLevelWatcher`, `rediscoverRoots` | |
+| Status CLI output format | `packages/sandbox/src/lib/heartbeat/daemon.ts` — `status()` | Single-root legacy format is load-bearing for scripts |
+| CLI entry (env-var surface) | `packages/sandbox/src/cli/heartbeat-daemon.ts` | Reads `HEARTBEAT_ROOTS`, `HEARTBEAT_AGENT`, `HEARTBEAT_INTERVAL`, `HEARTBEAT_MAX_CONCURRENT` |
+
+### Sandbox / container
+
+| Change | Touch | Notes |
+|--------|-------|-------|
+| Bind mounts | `.devcontainer/docker-compose.yml` + overlays (`docker-compose.cloudflared.yml`, `docker-compose.slack.yml`) | Daemon discovery picks up new paths automatically if they're worktrees |
+| Base image / toolchain | `.devcontainer/Dockerfile` | Rebuild via `/provision` |
+| Boot sequence (daemon watchdog, other services) | `install/entrypoint.sh` | |
+| Onboarding script | `install/onboard.sh` | Runs `gh auth` + `pi` OAuth once at first shell |
+| Default env vars | `.devcontainer/.example.env` → copied to `.env` at `/provision` time | |
+| Sandbox lifecycle skills | `.claude/skills/{provision,destroy,repair}/SKILL.md` | Orchestrator-only |
+
+### Orchestrator surface
+
+| Change | Touch | Notes |
+|--------|-------|-------|
+| Orchestrator-only skill | `/home/sandbox/harness/.claude/skills/<name>/SKILL.md` on `development` | Not loaded by agent sessions inside workspaces |
+| Orchestrator-wide coding rule | `/home/sandbox/harness/.claude/rules/<name>.md` | Auto-loaded |
+| Git workflow conventions | `.claude/rules/git.md` | Source of truth for branch/issue/PR format |
+| Advisor-model briefing template | `.claude/rules/advisor-model.md` | Used by `/delegate` |
+| Project-root playbook | `/home/sandbox/harness/CLAUDE.md` | Auto-loaded at orchestrator session start |
+| Issue templates | `.github/ISSUE_TEMPLATE/*.md` | Prefixes must match `.claude/rules/git.md` |
+
+### Specs and decision records
+
+| Change | Touch | Notes |
+|--------|-------|-------|
+| This architecture spec | `.claude/specs/orchestrator-worktree-architecture.md` | Update `Historical Note` if the topology itself changes |
+| Heartbeat daemon spec | `.claude/specs/multi-worktree-heartbeats-spec.md` | |
+| Slack package spec | `.claude/specs/slack-package-spec.md` | Vendored fork of pi-mom |
+| New architecture decision | Add a new file under `.claude/specs/<topic>.md` | Keep one topic per file |
 
 ## Failure Modes and Mitigations
 
