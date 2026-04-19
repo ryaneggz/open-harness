@@ -21,6 +21,13 @@ const daemon = discovered.length
       workspaceRoots: discovered,
       defaultAgent: process.env.HEARTBEAT_AGENT ?? "claude",
       defaultInterval: parseInt(process.env.HEARTBEAT_INTERVAL ?? "1800", 10),
+      // PR-4 — enable hot worktree add/remove. The daemon watches
+      // `<HOME>/harness/.git/worktrees/` and re-runs the same discovery
+      // call (with the same overrides) whenever git mutates that dir.
+      rediscover: {
+        home: HOME,
+        rootsEnv: process.env.HEARTBEAT_ROOTS,
+      },
     })
   : new HeartbeatDaemon({
       workspacePath: WORKSPACE,

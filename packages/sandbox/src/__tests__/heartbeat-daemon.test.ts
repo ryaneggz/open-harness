@@ -47,6 +47,13 @@ vi.mock("../lib/heartbeat/scheduler.js", () => ({
   })),
 }));
 
+// Mock discovery so PR-4 tests can script what `rediscoverRoots()` sees on
+// each call without standing up a real git repo.
+const mockDiscoverWorkspaceRoots = vi.fn();
+vi.mock("../lib/heartbeat/discovery.js", () => ({
+  discoverWorkspaceRoots: (...args: unknown[]) => mockDiscoverWorkspaceRoots(...args),
+}));
+
 // ---------------------------------------------------------------------------
 // Dynamic import of the module under test
 // ---------------------------------------------------------------------------
@@ -81,6 +88,7 @@ beforeEach(async () => {
   mockReaddir.mockResolvedValue([]);
   mockReadFile.mockResolvedValue("");
   mockReadFileSync.mockReturnValue("");
+  mockDiscoverWorkspaceRoots.mockReturnValue([]);
 
   // Re-establish scheduler mock after clearAllMocks
   const { HeartbeatScheduler } = await import("../lib/heartbeat/scheduler.js");
@@ -526,6 +534,267 @@ describe("HeartbeatDaemon", () => {
 
       expect(out).not.toContain("Roots:");
       expect(out).toContain("0 0 * * *  →  nightly");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // PR-4 — top-level `.git/worktrees/` watcher + rediscoverRoots()
+  // ---------------------------------------------------------------------------
+  describe("top-level worktrees watcher (PR-4)", () => {
+    const ROOT_A = {
+      workspacePath: "/tmp/a/workspace",
+      heartbeatDir: "/tmp/a/workspace/heartbeats",
+      label: "agent-foo",
+    };
+    const ROOT_B = {
+      workspacePath: "/tmp/b/workspace",
+      heartbeatDir: "/tmp/b/workspace/heartbeats",
+      label: "feat-bar",
+    };
+    const ROOT_C = {
+      workspacePath: "/tmp/c/workspace",
+      heartbeatDir: "/tmp/c/workspace/heartbeats",
+      label: "agent-baz",
+    };
+
+    it("does NOT install the top-level watcher for legacy single-root construction", async () => {
+      const fakeWatcher = createFakeWatcher();
+      mockWatch.mockReturnValue(fakeWatcher);
+
+      const daemon = new HeartbeatDaemon(DAEMON_OPTIONS);
+      await daemon.start();
+
+      // Only the heartbeat-dir watcher was created — no second `fs.watch`
+      // call for `.git/worktrees/`.
+      expect(mockWatch).toHaveBeenCalledTimes(1);
+      expect(mockWatch.mock.calls[0][0]).toBe(DAEMON_OPTIONS.heartbeatDir);
+
+      // Discovery must not have been consulted at all for a legacy daemon.
+      expect(mockDiscoverWorkspaceRoots).not.toHaveBeenCalled();
+
+      daemon.stop();
+    });
+
+    it("does NOT install the top-level watcher when multi-root opts omit `rediscover`", async () => {
+      const fakeWatcher = createFakeWatcher();
+      mockWatch.mockReturnValue(fakeWatcher);
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [ROOT_A],
+      });
+      await daemon.start();
+
+      expect(mockWatch).toHaveBeenCalledTimes(1);
+      expect(mockWatch).toHaveBeenCalledWith(
+        ROOT_A.heartbeatDir,
+        { persistent: false },
+        expect.any(Function),
+      );
+
+      daemon.stop();
+    });
+
+    it("installs a watcher on <home>/harness/.git/worktrees/ when `rediscover` is set", async () => {
+      // Return a distinct fake watcher per call so we can tell which is which.
+      const heartbeatWatcher = createFakeWatcher();
+      const worktreesWatcher = createFakeWatcher();
+      mockWatch.mockReturnValueOnce(heartbeatWatcher).mockReturnValueOnce(worktreesWatcher);
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [ROOT_A],
+        rediscover: { home: "/fake/home" },
+      });
+      await daemon.start();
+
+      expect(mockWatch).toHaveBeenCalledTimes(2);
+      expect(mockWatch).toHaveBeenCalledWith(
+        "/fake/home/harness/.git/worktrees",
+        { persistent: false },
+        expect.any(Function),
+      );
+
+      daemon.stop();
+    });
+
+    it("skips the top-level watcher silently when `.git/worktrees/` does not exist", async () => {
+      // Heartbeat dir exists; worktrees dir does not.
+      mockExistsSync.mockImplementation((p) => {
+        if (String(p) === "/fake/home/harness/.git/worktrees") return false;
+        return true;
+      });
+
+      const heartbeatWatcher = createFakeWatcher();
+      mockWatch.mockReturnValue(heartbeatWatcher);
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [ROOT_A],
+        rediscover: { home: "/fake/home" },
+      });
+      await daemon.start();
+
+      // Only heartbeat-dir watcher — worktrees dir was missing so no watch.
+      expect(mockWatch).toHaveBeenCalledTimes(1);
+      expect(mockWatch.mock.calls[0][0]).toBe(ROOT_A.heartbeatDir);
+
+      daemon.stop();
+    });
+
+    it("rediscoverRoots() adds a new root: installs its watcher + picks up its entries", async () => {
+      const heartbeatWatcherA = createFakeWatcher();
+      const worktreesWatcher = createFakeWatcher();
+      const heartbeatWatcherC = createFakeWatcher();
+      mockWatch
+        .mockReturnValueOnce(heartbeatWatcherA) // root A heartbeat dir
+        .mockReturnValueOnce(worktreesWatcher) // .git/worktrees dir
+        .mockReturnValueOnce(heartbeatWatcherC); // root C heartbeat dir (post-rediscovery)
+
+      // Startup discovery would have returned [A]; the constructor accepts
+      // that via `workspaceRoots`. Prime the mock so the next `rediscover`
+      // call returns [A, C] — simulating `git worktree add` for C.
+      mockDiscoverWorkspaceRoots.mockReturnValue([ROOT_A, ROOT_C]);
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [ROOT_A],
+        rediscover: { home: "/fake/home", rootsEnv: "OVERRIDE=x" },
+      });
+      await daemon.start();
+
+      // Fire the top-level watcher — capture the callback registered by
+      // the second `fs.watch` call (the worktrees one).
+      const worktreesCallback = mockWatch.mock.calls[1][2] as (
+        event: string,
+        filename: string,
+      ) => void;
+      worktreesCallback("rename", "new-worktree-dir");
+
+      // Advance past the 500ms debounce; rediscovery kicks off.
+      await vi.advanceTimersByTimeAsync(600);
+      // Flush pending microtasks from the async rediscoverRoots call chain.
+      await vi.runAllTimersAsync();
+
+      // Discovery was consulted with the same (home, rootsEnv) the CLI used.
+      expect(mockDiscoverWorkspaceRoots).toHaveBeenCalledWith("/fake/home", "OVERRIDE=x");
+
+      // A heartbeat-dir watcher was installed for the newly-added root C.
+      const watchCalls = mockWatch.mock.calls.map((c) => c[0]);
+      expect(watchCalls).toContain(ROOT_C.heartbeatDir);
+
+      // Scheduler.sync was called (differential re-sync after root changes).
+      expect(mockSchedulerSync).toHaveBeenCalled();
+
+      daemon.stop();
+    });
+
+    it("rediscoverRoots() removes a vanished root: closes its watcher + drops its logger entry", async () => {
+      const heartbeatWatcherA = createFakeWatcher();
+      const heartbeatWatcherB = createFakeWatcher();
+      const worktreesWatcher = createFakeWatcher();
+      mockWatch
+        .mockReturnValueOnce(heartbeatWatcherA)
+        .mockReturnValueOnce(heartbeatWatcherB)
+        .mockReturnValueOnce(worktreesWatcher);
+
+      // Fresh discovery now returns only [A] — B vanished (e.g., `git worktree remove`).
+      mockDiscoverWorkspaceRoots.mockReturnValue([ROOT_A]);
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [ROOT_A, ROOT_B],
+        rediscover: { home: "/fake/home" },
+      });
+      await daemon.start();
+
+      const worktreesCallback = mockWatch.mock.calls[2][2] as (
+        event: string,
+        filename: string,
+      ) => void;
+      worktreesCallback("rename", "removed-dir");
+
+      await vi.advanceTimersByTimeAsync(600);
+      await vi.runAllTimersAsync();
+
+      // Root B's heartbeat-dir watcher must have been closed.
+      expect(heartbeatWatcherB.close).toHaveBeenCalled();
+      // Root A's heartbeat-dir watcher must still be open.
+      expect(heartbeatWatcherA.close).not.toHaveBeenCalled();
+      // Scheduler was re-synced so it drops B's entries on next pass.
+      expect(mockSchedulerSync).toHaveBeenCalled();
+
+      daemon.stop();
+    });
+
+    it("rediscoverRoots() is a no-op when `rediscover` is unset", async () => {
+      const daemon = new HeartbeatDaemon(DAEMON_OPTIONS);
+      await daemon.start();
+
+      // Direct call — should return immediately and never consult discovery.
+      await daemon.rediscoverRoots();
+      expect(mockDiscoverWorkspaceRoots).not.toHaveBeenCalled();
+
+      daemon.stop();
+    });
+
+    it("stop() closes the top-level watcher too", async () => {
+      const heartbeatWatcher = createFakeWatcher();
+      const worktreesWatcher = createFakeWatcher();
+      mockWatch.mockReturnValueOnce(heartbeatWatcher).mockReturnValueOnce(worktreesWatcher);
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [ROOT_A],
+        rediscover: { home: "/fake/home" },
+      });
+      await daemon.start();
+      daemon.stop();
+
+      expect(heartbeatWatcher.close).toHaveBeenCalledOnce();
+      expect(worktreesWatcher.close).toHaveBeenCalledOnce();
+    });
+
+    it("debounces rapid top-level events into a single rediscovery", async () => {
+      const heartbeatWatcher = createFakeWatcher();
+      const worktreesWatcher = createFakeWatcher();
+      mockWatch.mockReturnValueOnce(heartbeatWatcher).mockReturnValueOnce(worktreesWatcher);
+
+      mockDiscoverWorkspaceRoots.mockReturnValue([ROOT_A]);
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [ROOT_A],
+        rediscover: { home: "/fake/home" },
+      });
+      await daemon.start();
+
+      const worktreesCallback = mockWatch.mock.calls[1][2] as (
+        event: string,
+        filename: string,
+      ) => void;
+
+      // Burst — git emits multiple events during `worktree add`.
+      worktreesCallback("rename", "a");
+      worktreesCallback("rename", "b");
+      worktreesCallback("rename", "c");
+
+      await vi.advanceTimersByTimeAsync(600);
+      await vi.runAllTimersAsync();
+
+      // Discovery consulted exactly once despite three events.
+      expect(mockDiscoverWorkspaceRoots).toHaveBeenCalledTimes(1);
+
+      daemon.stop();
+    });
+
+    it("top-level watcher errors do not throw", async () => {
+      const heartbeatWatcher = createFakeWatcher();
+      const worktreesWatcher = createFakeWatcher();
+      mockWatch.mockReturnValueOnce(heartbeatWatcher).mockReturnValueOnce(worktreesWatcher);
+
+      const daemon = new HeartbeatDaemon({
+        workspaceRoots: [ROOT_A],
+        rediscover: { home: "/fake/home" },
+      });
+      await daemon.start();
+
+      expect(() => worktreesWatcher.emit("error", new Error("ENOSPC"))).not.toThrow();
+
+      daemon.stop();
     });
   });
 });
