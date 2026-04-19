@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { HeartbeatEntry } from "../lib/heartbeat/config.js";
+import type { HeartbeatEntry, WorkspaceRoot } from "../lib/heartbeat/config.js";
 
 // ---------------------------------------------------------------------------
 // Mocks — must be declared before any dynamic imports
@@ -40,11 +40,18 @@ const { HeartbeatRunner } = await import("../lib/heartbeat/runner.js");
 // Helpers
 // ---------------------------------------------------------------------------
 
+const DEFAULT_ROOT: WorkspaceRoot = {
+  workspacePath: "/tmp/workspace",
+  heartbeatDir: "/tmp/heartbeat",
+  label: "",
+};
+
 function makeEntry(overrides: Partial<HeartbeatEntry> = {}): HeartbeatEntry {
   return {
     cronExpr: "*/5 * * * *",
     filePath: "HEARTBEAT.md",
     agent: "claude",
+    root: DEFAULT_ROOT,
     ...overrides,
   };
 }

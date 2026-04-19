@@ -1,11 +1,21 @@
-import { parseHeartbeatConfig, parseHeartbeatConfigAsync, secondsToCron } from "./config.js";
+import {
+  parseHeartbeatConfig,
+  parseHeartbeatConfigAsync,
+  secondsToCron,
+  type WorkspaceRoot,
+} from "./config.js";
 import { HeartbeatScheduler } from "./scheduler.js";
 import { HeartbeatLogger } from "./logger.js";
 import type { RunnerOptions } from "./runner.js";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, watch, type FSWatcher } from "node:fs";
 import { join } from "node:path";
 
-export interface DaemonOptions {
+/**
+ * Legacy single-root options — a bare workspace + heartbeat directory.
+ * Kept verbatim so existing callers (`cli/heartbeat-daemon.ts`, test
+ * harnesses) compile and behave identically.
+ */
+export interface LegacyDaemonOptions {
   workspacePath: string; // ~/harness/workspace
   heartbeatDir: string; // ~/harness/workspace/heartbeats
   soulFile?: string; // ~/harness/workspace/SOUL.md
@@ -14,29 +24,89 @@ export interface DaemonOptions {
   defaultInterval?: number; // 1800
 }
 
+/**
+ * Multi-root options — what PR-2 will exercise. PR-1 accepts this shape
+ * through the constructor for forward-compatibility but, until PR-2 lands
+ * the discovery/watcher/cwd changes, only the FIRST root is watched and
+ * parsed (same single-root behaviour, now addressed by a structured root).
+ */
+export interface MultiRootDaemonOptions {
+  workspaceRoots: WorkspaceRoot[];
+  defaultAgent?: string;
+  defaultInterval?: number;
+}
+
+export type DaemonOptions = LegacyDaemonOptions | MultiRootDaemonOptions;
+
+/**
+ * Shape of the normalized options the daemon actually operates on.
+ * Internally we always have at least one root; the helpers below mint one
+ * from legacy options if needed.
+ */
+interface NormalizedDaemonOptions {
+  roots: WorkspaceRoot[];
+  defaultAgent?: string;
+  defaultInterval?: number;
+}
+
+function isMultiRoot(opts: DaemonOptions): opts is MultiRootDaemonOptions {
+  return "workspaceRoots" in opts;
+}
+
+function normalize(opts: DaemonOptions): NormalizedDaemonOptions {
+  if (isMultiRoot(opts)) {
+    return {
+      roots: opts.workspaceRoots,
+      defaultAgent: opts.defaultAgent,
+      defaultInterval: opts.defaultInterval,
+    };
+  }
+  // Legacy shape → wrap into a single-root array with label "" so composite
+  // schedule/runner keys collapse back to the legacy slug, preserving
+  // byte-identical output for single-root deployments.
+  const root: WorkspaceRoot = {
+    workspacePath: opts.workspacePath,
+    heartbeatDir: opts.heartbeatDir,
+    soulFile: opts.soulFile,
+    memoryDir: opts.memoryDir,
+    label: "",
+  };
+  return {
+    roots: [root],
+    defaultAgent: opts.defaultAgent,
+    defaultInterval: opts.defaultInterval,
+  };
+}
+
 export class HeartbeatDaemon {
   private scheduler: HeartbeatScheduler;
   private logger: HeartbeatLogger;
   private watcher: FSWatcher | null = null;
   private watchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private normalized: NormalizedDaemonOptions;
+  /** Primary root — single-root deployments use this for all operations. */
+  private primaryRoot: WorkspaceRoot;
 
-  constructor(private options: DaemonOptions) {
+  constructor(options: DaemonOptions) {
+    this.normalized = normalize(options);
+    this.primaryRoot = this.normalized.roots[0];
+
     const runnerOpts: RunnerOptions = {
-      workspacePath: options.workspacePath,
-      heartbeatDir: options.heartbeatDir,
-      soulFile: options.soulFile,
-      memoryDir: options.memoryDir,
+      workspacePath: this.primaryRoot.workspacePath,
+      heartbeatDir: this.primaryRoot.heartbeatDir,
+      soulFile: this.primaryRoot.soulFile,
+      memoryDir: this.primaryRoot.memoryDir,
     };
     this.scheduler = new HeartbeatScheduler(runnerOpts);
-    this.logger = new HeartbeatLogger(join(options.heartbeatDir, "heartbeat.log"));
+    this.logger = new HeartbeatLogger(join(this.primaryRoot.heartbeatDir, "heartbeat.log"));
   }
 
   /** Parse config, start scheduling, and watch for changes */
   async start(): Promise<void> {
     const entries = await parseHeartbeatConfigAsync(
-      this.options.workspacePath,
-      this.options.defaultAgent,
-      this.options.defaultInterval,
+      this.primaryRoot,
+      this.normalized.defaultAgent,
+      this.normalized.defaultInterval,
     );
     if (entries.length === 0) {
       this.logger.log("No heartbeats configured — nothing to schedule");
@@ -54,9 +124,9 @@ export class HeartbeatDaemon {
   /** Re-sync: re-parse config and differentially update schedules */
   async sync(): Promise<void> {
     const entries = await parseHeartbeatConfigAsync(
-      this.options.workspacePath,
-      this.options.defaultAgent,
-      this.options.defaultInterval,
+      this.primaryRoot,
+      this.normalized.defaultAgent,
+      this.normalized.defaultInterval,
     );
     this.scheduler.sync(entries);
     console.log(`Synced ${entries.length} heartbeat schedule(s)`);
@@ -71,9 +141,9 @@ export class HeartbeatDaemon {
    */
   syncOnce(): void {
     const entries = parseHeartbeatConfig(
-      this.options.workspacePath,
-      this.options.defaultAgent,
-      this.options.defaultInterval,
+      this.primaryRoot,
+      this.normalized.defaultAgent,
+      this.normalized.defaultInterval,
     );
     this.scheduler.sync(entries);
     console.log(`Synced ${entries.length} heartbeat schedule(s)`);
@@ -91,7 +161,7 @@ export class HeartbeatDaemon {
 
   /** Start watching the heartbeats directory for file changes */
   private startWatching(): void {
-    const dir = this.options.heartbeatDir;
+    const dir = this.primaryRoot.heartbeatDir;
     if (!existsSync(dir)) return;
 
     try {
@@ -157,8 +227,8 @@ export class HeartbeatDaemon {
 
   /** Migrate legacy HEARTBEAT.md into heartbeats/ with frontmatter */
   migrate(): void {
-    const heartbeatsDir = join(this.options.workspacePath, "heartbeats");
-    const legacyFile = join(this.options.workspacePath, "HEARTBEAT.md");
+    const heartbeatsDir = join(this.primaryRoot.workspacePath, "heartbeats");
+    const legacyFile = join(this.primaryRoot.workspacePath, "HEARTBEAT.md");
     const targetFile = join(heartbeatsDir, "default.md");
 
     if (existsSync(targetFile)) {
@@ -171,8 +241,8 @@ export class HeartbeatDaemon {
       return;
     }
 
-    const interval = this.options.defaultInterval ?? 1800;
-    const agent = this.options.defaultAgent ?? "claude";
+    const interval = this.normalized.defaultInterval ?? 1800;
+    const agent = this.normalized.defaultAgent ?? "claude";
     const cronExpr = secondsToCron(interval);
 
     mkdirSync(heartbeatsDir, { recursive: true });

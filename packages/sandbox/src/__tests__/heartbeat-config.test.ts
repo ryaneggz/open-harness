@@ -152,7 +152,7 @@ describe("parseHeartbeatConfig", () => {
     const result = parseHeartbeatConfig(workspacePath);
     expect(result).toHaveLength(2);
 
-    expect(result[0]).toEqual({
+    expect(result[0]).toMatchObject({
       cronExpr: "*/30 * * * *",
       filePath: "heartbeats/build-health.md",
       agent: "claude",
@@ -160,7 +160,7 @@ describe("parseHeartbeatConfig", () => {
       activeEnd: 21,
     });
 
-    expect(result[1]).toEqual({
+    expect(result[1]).toMatchObject({
       cronExpr: "50 23 * * *",
       filePath: "heartbeats/nightly.md",
       agent: "claude",
@@ -235,7 +235,7 @@ describe("parseHeartbeatConfig", () => {
 
       const result = parseHeartbeatConfig(workspacePath);
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      expect(result[0]).toMatchObject({
         cronExpr: "*/30 * * * *",
         filePath: "HEARTBEAT.md",
         agent: "claude",
@@ -290,7 +290,7 @@ describe("parseHeartbeatConfigAsync", () => {
     const result = await parseHeartbeatConfigAsync(workspacePath);
     expect(result).toHaveLength(2);
 
-    expect(result[0]).toEqual({
+    expect(result[0]).toMatchObject({
       cronExpr: "*/30 * * * *",
       filePath: "heartbeats/build-health.md",
       agent: "claude",
@@ -298,7 +298,7 @@ describe("parseHeartbeatConfigAsync", () => {
       activeEnd: 21,
     });
 
-    expect(result[1]).toEqual({
+    expect(result[1]).toMatchObject({
       cronExpr: "50 23 * * *",
       filePath: "heartbeats/nightly.md",
       agent: "claude",
@@ -337,7 +337,7 @@ describe("parseHeartbeatConfigAsync", () => {
 
     const result = await parseHeartbeatConfigAsync(workspacePath);
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
+    expect(result[0]).toMatchObject({
       cronExpr: "*/30 * * * *",
       filePath: "HEARTBEAT.md",
       agent: "claude",

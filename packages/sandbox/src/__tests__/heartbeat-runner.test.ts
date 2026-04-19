@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, basename } from "node:path";
 import type { ChildProcess } from "node:child_process";
-import type { HeartbeatEntry } from "../lib/heartbeat/config.js";
+import type { HeartbeatEntry, WorkspaceRoot } from "../lib/heartbeat/config.js";
 
 // ---------------------------------------------------------------------------
 // Mocks — must be declared before any dynamic imports
@@ -122,6 +122,7 @@ let workspacePath: string;
 let heartbeatDir: string;
 let soulFile: string;
 let heartbeatFile: string;
+let defaultRoot: WorkspaceRoot;
 
 const ENTRY_BASENAME = "HEARTBEAT";
 
@@ -130,6 +131,7 @@ function makeEntry(overrides: Partial<HeartbeatEntry> = {}): HeartbeatEntry {
     cronExpr: "* * * * *",
     filePath: `${ENTRY_BASENAME}.md`,
     agent: "claude",
+    root: defaultRoot,
     ...overrides,
   };
 }
@@ -140,6 +142,12 @@ beforeEach(() => {
   heartbeatDir = join(tmpDir, "heartbeat");
   soulFile = join(workspacePath, "SOUL.md");
   heartbeatFile = join(workspacePath, `${ENTRY_BASENAME}.md`);
+  defaultRoot = {
+    workspacePath,
+    heartbeatDir,
+    soulFile,
+    label: "",
+  };
 
   mkdirSync(workspacePath, { recursive: true });
   mkdirSync(heartbeatDir, { recursive: true });

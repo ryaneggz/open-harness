@@ -5,6 +5,12 @@ import { HeartbeatLogger } from "./logger.js";
 import { isActiveHours, isHeartbeatEmpty, isHeartbeatOk } from "./gates.js";
 import type { HeartbeatEntry } from "./config.js";
 
+/**
+ * Legacy single-root runner options. Retained for back-compat — the daemon
+ * still constructs the scheduler (which owns the runner) with these fields.
+ * Per-entry paths resolve off `entry.root` in PR-2; PR-1 only threads the
+ * type through and does not change spawn behaviour.
+ */
 export interface RunnerOptions {
   workspacePath: string;
   heartbeatDir: string;
@@ -28,14 +34,19 @@ export class HeartbeatRunner {
 
     const entryName = basename(filePath, ".md");
 
-    // 2. In-memory guard — skip if already running
-    if (this.running.has(entryName)) {
+    // 2. In-memory guard — composite key matches the scheduler's entryName
+    //    so cross-root same-name entries don't collide, but single-root
+    //    (label === "") collapses to bare `entryName` and stays identical
+    //    to the legacy behaviour.
+    const guardKey = entry.root.label ? `${entry.root.label}::${entryName}` : entryName;
+
+    if (this.running.has(guardKey)) {
       this.logger.log(`[${entryName}] Skipping — previous execution still running`);
       this.logger.rotate();
       return;
     }
 
-    this.running.add(entryName);
+    this.running.add(guardKey);
 
     try {
       // 3a. Check active hours gate
@@ -74,7 +85,10 @@ export class HeartbeatRunner {
 
       this.logger.log(`[${entryName}] Running heartbeat (agent: ${entry.agent})`);
 
-      // 6. Spawn agent with AbortSignal.timeout(300s)
+      // 6. Spawn agent with AbortSignal.timeout(300s).
+      //    Note: PR-2 will add `cwd: entry.root.workspacePath` so the agent
+      //    CLI resolves skills and relative paths inside the worktree. PR-1
+      //    keeps spawn behaviour byte-identical to avoid behavioural change.
       const response = await this.spawnAgent(entry.agent, prompt, entryName);
 
       // 7. Log result (response === null means timeout/failure handled inside spawnAgent)
@@ -87,7 +101,7 @@ export class HeartbeatRunner {
       }
     } finally {
       // 8. Release guard
-      this.running.delete(entryName);
+      this.running.delete(guardKey);
       // 9. Rotate log
       this.logger.rotate();
     }

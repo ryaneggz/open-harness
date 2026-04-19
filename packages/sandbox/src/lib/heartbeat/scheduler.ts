@@ -70,12 +70,24 @@ export class HeartbeatScheduler {
     }
   }
 
+  /**
+   * Composite schedule key: `<label>::<slug>` when label is non-empty,
+   * otherwise just `<slug>`. The empty-label branch keeps single-root slugs
+   * byte-identical to the legacy `filePath → slug` mapping so existing
+   * consumers (logs, status output, tests) see no change.
+   */
   private entryName(entry: HeartbeatEntry): string {
-    return entry.filePath.replace(/\.md$/, "").replace(/\//g, "-");
+    const slug = entry.filePath.replace(/\.md$/, "").replace(/\//g, "-");
+    return entry.root.label ? `${entry.root.label}::${slug}` : slug;
   }
 
+  /**
+   * Fingerprint includes the root's workspacePath so the same filename in
+   * two different worktrees produces distinct fingerprints — a path change
+   * forces a reschedule even if cronExpr/agent/active didn't move.
+   */
   private fingerprint(entry: HeartbeatEntry): string {
-    return `${entry.cronExpr}|${entry.agent}|${entry.activeStart ?? ""}|${entry.activeEnd ?? ""}`;
+    return `${entry.root.workspacePath}|${entry.cronExpr}|${entry.agent}|${entry.activeStart ?? ""}|${entry.activeEnd ?? ""}`;
   }
 
   private createJob(name: string, entry: HeartbeatEntry): Cron {
