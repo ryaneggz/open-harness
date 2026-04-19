@@ -1,0 +1,64 @@
+{
+  "version": "1",
+  "initial": "new",
+  "terminal": ["closed_won", "closed_lost"],
+  "states": [
+    { "name": "new",          "description": "Row created; no outreach yet", "owner_action": "lead-research queued" },
+    { "name": "researched",   "description": "Account one-pager written to drafts/<id>/research.md; fit_score computed", "owner_action": "cold-email queued if fit_score>=40 and state in {NC,SC,VA,GA,TN}" },
+    { "name": "contacted",    "description": "First outbound touch sent (email/call/LinkedIn); last_touch_date stamped", "owner_action": "execute 8-touch cadence per spec 04" },
+    { "name": "engaged",      "description": "Prospect replied (any non-autoresponder); discovery scheduled or substantive questions asked", "owner_action": "discovery-call drafted" },
+    { "name": "qualified",    "description": "BANT cleared; fit_score >= 60; all four BANT dimensions non-unknown", "owner_action": "handoff-packet compiled for human owner" },
+    { "name": "quoted",       "description": "Owner-delivered quote acknowledged; pallet_interest and est_volume_weekly locked", "owner_action": "owner follows up; agent only records transition" },
+    { "name": "closed_won",   "description": "PO or signed agreement received — TERMINAL", "owner_action": "post-sale handoff" },
+    { "name": "closed_lost",  "description": "dq_reason populated — TERMINAL except reactivatable subset", "owner_action": "log reason; eligible for reactivation if dq_reason in reactivatable_set" }
+  ],
+  "transitions": {
+    "new":         ["researched", "closed_lost"],
+    "researched":  ["contacted", "closed_lost"],
+    "contacted":   ["engaged", "closed_lost"],
+    "engaged":     ["qualified", "contacted", "closed_lost"],
+    "qualified":   ["quoted", "closed_lost"],
+    "quoted":      ["closed_won", "closed_lost", "qualified"],
+    "closed_won":  [],
+    "closed_lost": ["new"]
+  },
+  "forbidden_transitions": [
+    { "from": "new",         "to": "contacted",   "why": "skips research; prevents spray-and-pray" },
+    { "from": "new",         "to": "engaged",     "why": "skips touch logging; breaks attribution" },
+    { "from": "new",         "to": "qualified",   "why": "skips discovery entirely" },
+    { "from": "new",         "to": "quoted",      "why": "would quote an unresearched unqualified lead" },
+    { "from": "researched",  "to": "engaged",     "why": "reply without logged touch is data corruption" },
+    { "from": "researched",  "to": "qualified",   "why": "no discovery means no qualification" },
+    { "from": "contacted",   "to": "qualified",   "why": "reply must be processed (→ engaged) before BANT" },
+    { "from": "contacted",   "to": "quoted",      "why": "same" },
+    { "from": "engaged",     "to": "quoted",      "why": "BANT must clear first" },
+    { "from": "qualified",   "to": "closed_won",  "why": "quote is a mandatory audit trail" },
+    { "from": "quoted",      "to": "contacted",   "why": "re-scope routes to qualified" },
+    { "from": "quoted",      "to": "engaged",     "why": "same" }
+  ],
+  "entry_requirements": {
+    "researched": ["contact_email", "vertical", "fit_score"],
+    "contacted":  ["last_touch_date", "touches_count>=1"],
+    "engaged":    ["non_autoresponder_reply_logged_in_history"],
+    "qualified":  ["bant_cleared", "fit_score>=60"],
+    "quoted":     ["pallet_interest", "est_volume_weekly", "handoff_packet_ref"]
+  },
+  "stuck_thresholds_days": {
+    "new":        3,
+    "researched": 2,
+    "contacted":  7,
+    "engaged":    5,
+    "qualified":  10,
+    "quoted":     21
+  },
+  "auto_close_rules": [
+    { "rule": "contacted_exhausted", "condition": "stage=contacted AND touches_count>=8 AND no_reply", "transition_to": "closed_lost", "dq_reason": "no_reply_exhausted" },
+    { "rule": "quoted_ghosted",      "condition": "stage=quoted AND days_in_stage>30",                 "transition_to": "closed_lost", "dq_reason": "ghosted_post_quote" }
+  ],
+  "reactivatable_dq_reasons": ["timing_not_now", "contract_locked", "no_reply_exhausted", "ghosted_post_quote"],
+  "notes": [
+    "Transitions whitelist per spec 01 § 4.2 (+ C2 resolution: no demo_booked / proposal / disqualified).",
+    "stuck_thresholds_days align with spec 04's 8-touch / 21-day cadence (contacted=7, quoted=21).",
+    "Closed_lost → new only via reactivation skill; must change source=reactivation and clear dq_reason."
+  ]
+}
