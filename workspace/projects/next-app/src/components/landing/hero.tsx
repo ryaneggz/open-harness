@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { GitFork, ExternalLink } from "lucide-react";
+import { GitFork } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 
 export function Hero() {
@@ -20,19 +20,10 @@ export function Hero() {
       </p>
       <div className="mt-8 flex items-center gap-4">
         <Link
-          href="https://openharness.ruska.dev"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={buttonVariants({ size: "lg" })}
-        >
-          <ExternalLink className="mr-2 h-4 w-4" />
-          Live Demo
-        </Link>
-        <Link
           href="https://github.com/ryaneggz/open-harness"
           target="_blank"
           rel="noopener noreferrer"
-          className={buttonVariants({ variant: "outline", size: "lg" })}
+          className={buttonVariants({ size: "lg" })}
         >
           <GitFork className="mr-2 h-4 w-4" />
           View on GitHub
