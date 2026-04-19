@@ -95,7 +95,7 @@ CONFIG_FILE="$HOME/.cloudflared/config-${TUNNEL_NAME}.yml"
     hostname="${pair%%:*}"
     port="${pair##*:}"
     echo "  - hostname: $hostname"
-    echo "    service: http://localhost:$port"
+    echo "    service: http://0.0.0.0:$port"
   done
   echo "  - service: http_status:404"
 } > "$CONFIG_FILE"
@@ -135,7 +135,7 @@ Tunnel '$TUNNEL_NAME' is configured!
   Creds:      $CREDS_FILE
 
   Ingress rules:
-    <hostname> → localhost:<port>    (for each pair)
+    <hostname> → 0.0.0.0:<port>    (for each pair)
 
   To run:
     cloudflared tunnel --config $CONFIG_FILE run $TUNNEL_NAME
