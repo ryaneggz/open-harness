@@ -20,6 +20,38 @@ for dir in .claude .cloudflared .config/gh .ssh .pi .openharness; do
   fi
 done
 
+# ─── Host UID reconciliation ────────────────────────────────────────
+# The repo is bind-mounted at /home/sandbox/harness with its host UID/GID.
+# If the host user's UID differs from the container sandbox user (1000),
+# pnpm / git operations would fail with EACCES. Add sandbox to the host
+# owning group so it can write via group permissions (repo is mode 775).
+HARNESS_DIR="/home/sandbox/harness"
+if [ -d "$HARNESS_DIR" ]; then
+  HOST_UID=$(stat -c '%u' "$HARNESS_DIR")
+  HOST_GID=$(stat -c '%g' "$HARNESS_DIR")
+  SANDBOX_UID=$(id -u sandbox)
+  if [ "$HOST_UID" != "$SANDBOX_UID" ]; then
+    if ! getent group "$HOST_GID" >/dev/null 2>&1; then
+      groupadd -g "$HOST_GID" hostuser 2>/dev/null || true
+    fi
+    HOST_GROUP=$(getent group "$HOST_GID" | cut -d: -f1)
+    if [ -n "$HOST_GROUP" ] && ! id -nG sandbox | tr ' ' '\n' | grep -qx "$HOST_GROUP"; then
+      usermod -aG "$HOST_GROUP" sandbox
+      echo "[entrypoint] sandbox added to host group $HOST_GROUP (gid=$HOST_GID) for bind-mount write access"
+    fi
+  fi
+fi
+
+# ─── Attach banner wiring (idempotent) ──────────────────────────────
+# Source install/banner.sh from the sandbox user's .bashrc so every
+# interactive shell (docker exec, SSH via sshd overlay, VS Code) shows
+# sandbox + onboarding status. Safe to run on every boot.
+BASHRC="/home/sandbox/.bashrc"
+if [ -f "$BASHRC" ] && ! grep -q 'source.*install/banner.sh' "$BASHRC"; then
+  gosu sandbox bash -c 'echo "source /home/sandbox/harness/install/banner.sh 2>/dev/null" >> ~/.bashrc'
+  echo "[entrypoint] attach banner wired into .bashrc"
+fi
+
 # ─── Git worktree resolution ────────────────────────────────────────
 # When the sandbox runs from a git worktree, .git is a file (not a dir)
 # pointing to the main repo's .git/worktrees/<name>. The main .git/ is
@@ -93,18 +125,32 @@ if echo "$@" | grep -q sshd; then
 fi
 
 # Build and link openharness CLI (from bind-mounted repo)
-# Must complete before heartbeat daemon check so the binary is available on first boot.
-HARNESS="/home/sandbox/harness"
-if [ -f "$HARNESS/packages/sandbox/package.json" ] && ! command -v openharness &>/dev/null; then
-  (
-    cd "$HARNESS"
-    gosu sandbox pnpm install --frozen-lockfile 2>/dev/null || gosu sandbox pnpm install 2>/dev/null || true
-    gosu sandbox pnpm --filter @openharness/sandbox run build 2>/dev/null || true
-    ln -sf "$HARNESS/packages/sandbox/dist/src/cli/index.js" /usr/local/bin/openharness
-    ln -sf "$HARNESS/packages/sandbox/dist/src/cli/heartbeat-daemon.js" /usr/local/bin/heartbeat-daemon
+# Runs on every boot: install deps + build only if dist is missing or stale,
+# always re-symlink so container recreation (fresh /usr/local/bin/) re-establishes PATH entries.
+CLI_TARGET="$HARNESS/packages/sandbox/dist/src/cli/index.js"
+HB_TARGET="$HARNESS/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
+
+if [ -f "$HARNESS/packages/sandbox/package.json" ]; then
+  if [ ! -f "$CLI_TARGET" ] || [ "$HARNESS/packages/sandbox/package.json" -nt "$CLI_TARGET" ]; then
+    echo "[entrypoint] building openharness CLI..."
+    (
+      cd "$HARNESS"
+      gosu sandbox pnpm install --frozen-lockfile \
+        || gosu sandbox pnpm install \
+        || echo "[entrypoint] WARN: pnpm install failed"
+      gosu sandbox pnpm --filter @openharness/sandbox run build \
+        || echo "[entrypoint] WARN: pnpm build failed"
+    )
+  fi
+
+  if [ -f "$CLI_TARGET" ]; then
+    ln -sf "$CLI_TARGET" /usr/local/bin/openharness
+    ln -sf "$HB_TARGET" /usr/local/bin/heartbeat-daemon
     chmod +x /usr/local/bin/openharness /usr/local/bin/heartbeat-daemon
     echo "[entrypoint] openharness CLI + heartbeat-daemon installed"
-  )
+  else
+    echo "[entrypoint] ERROR: $CLI_TARGET not found after build — CLI not installed"
+  fi
 fi
 
 # ─── Start heartbeat daemon (with watchdog) ──────────────────────
@@ -112,6 +158,10 @@ WORKSPACE="/home/sandbox/harness/workspace"
 DAEMON_SCRIPT="/home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
 HB_LOG="$WORKSPACE/heartbeats/heartbeat.log"
 mkdir -p "$WORKSPACE/heartbeats"
+# Ensure heartbeat.log is sandbox-writable (entrypoint's tee runs as root and
+# would otherwise create it root-owned, making the daemon crash-loop on EACCES).
+touch "$HB_LOG" 2>/dev/null || true
+chown sandbox:sandbox "$HB_LOG" 2>/dev/null || true
 if command -v heartbeat-daemon &>/dev/null; then
   (
     while true; do

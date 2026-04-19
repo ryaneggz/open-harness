@@ -30,6 +30,17 @@ Use the first of these that exists in the repo:
 
 Detect with `git show-ref --verify --quiet refs/heads/<name>` (or remote `refs/remotes/origin/<name>`). All PRs target this same branch; all new branches are cut from it.
 
+## Git Authentication
+
+Inside the sandbox, run `gh auth login && gh auth setup-git` during onboarding. The GitHub CLI installs a credential helper so `git push` / `git fetch` use your GitHub token — no SSH keys required.
+
+Advanced opt-ins (only when you explicitly need git-over-SSH):
+
+- `docker-compose.ssh.yml` — mounts host `~/.ssh` read-only (reuses your existing keys)
+- `docker-compose.ssh-generate.yml` — generates a persistent ED25519 keypair in a named volume (must be added to GitHub manually)
+
+Mutually exclusive — pick at most one. Both are off by default.
+
 ## PR Titles
 
 Format: `FROM <source-branch> TO <target-branch>` (literal)

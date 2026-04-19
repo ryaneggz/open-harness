@@ -74,18 +74,9 @@ The `sshd` overlay runs sshd as the main process and maps port 2222:22.
 The entrypoint auto-configures password auth and host keys when this overlay is active.
 Password is set from `SANDBOX_PASSWORD` env var (default: `changeme`).
 
-**SSH key strategy** (mutually exclusive — pick at most one):
-```
-SSH keys for git authentication (optional — gh auth setup-git is the recommended alternative):
-  ( ) docker-compose.ssh.yml          — Mount host ~/.ssh read-only (no GitHub setup needed)
-  ( ) docker-compose.ssh-generate.yml — Generate new keypair in a persistent volume (must add to GitHub)
-```
+**Git authentication**: the default path is `gh auth setup-git` during onboarding — no SSH keys needed. See `.claude/rules/git.md § Git Authentication` for the full policy.
 
-**Note:** The SSH *key* overlays (`ssh.yml`, `ssh-generate.yml`) manage SSH client keys for git.
-The `sshd.yml` overlay manages the SSH *server* for remote access. They serve different purposes.
-
-If the user changes selections, update `.openharness/config.json` accordingly.
-Ensure only one SSH key overlay is enabled — if the user picks `ssh.yml`, remove `ssh-generate.yml` and vice versa.
+Only enable `docker-compose.ssh.yml` or `docker-compose.ssh-generate.yml` if the user has explicitly asked for git-over-SSH. They are mutually exclusive and both off by default. If the user does opt in, ensure only one SSH-key overlay is active in `.openharness/config.json`.
 
 ### 2c. Build compose file list
 
@@ -198,10 +189,11 @@ Check logs and remediate:
 
 Re-run `pnpm run test:setup` after fixing. Do not loop more than once.
 
-## 7. Retrieve SSH public key (if ssh-generate overlay is active)
+## 7. Retrieve SSH public key (advanced — only if `ssh-generate` is enabled)
 
-If the `ssh-generate` overlay is enabled, the sandbox generates an ED25519 keypair on first boot.
-Read the public key so the user can add it to GitHub / GitLab:
+**Default**: git auth is handled by `gh auth setup-git` during onboarding (see `.claude/rules/git.md § Git Authentication`). Skip this step unless the user explicitly opted into the `ssh-generate` overlay.
+
+If `ssh-generate` IS enabled in `.openharness/config.json`, the sandbox generated an ED25519 keypair on first boot. Read the public key so the user can add it to GitHub / GitLab:
 
 ```bash
 docker exec -u sandbox "$SANDBOX_NAME" cat ~/.ssh/id_ed25519.pub 2>/dev/null || echo "(no SSH keypair — using gh auth for git)"
