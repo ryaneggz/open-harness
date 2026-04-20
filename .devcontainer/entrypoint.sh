@@ -145,9 +145,10 @@ if [ -f "$HARNESS/packages/sandbox/package.json" ]; then
 
   if [ -f "$CLI_TARGET" ]; then
     ln -sf "$CLI_TARGET" /usr/local/bin/openharness
+    ln -sf "$CLI_TARGET" /usr/local/bin/oh
     ln -sf "$HB_TARGET" /usr/local/bin/heartbeat-daemon
-    chmod +x /usr/local/bin/openharness /usr/local/bin/heartbeat-daemon
-    echo "[entrypoint] openharness CLI + heartbeat-daemon installed"
+    chmod +x /usr/local/bin/openharness /usr/local/bin/oh /usr/local/bin/heartbeat-daemon
+    echo "[entrypoint] openharness CLI (alias: oh) + heartbeat-daemon installed"
   else
     echo "[entrypoint] ERROR: $CLI_TARGET not found after build — CLI not installed"
   fi

@@ -27,7 +27,7 @@ docker compose --env-file .devcontainer/.env -f .devcontainer/docker-compose.yml
 
 **Option A — Terminal (works everywhere):**
 ```bash
-docker exec -it -u sandbox openharness bash   # use your SANDBOX_NAME
+docker exec -it -u sandbox oh-local bash   # use your SANDBOX_NAME
 ```
 
 **Option B — VS Code Attach to Container (local):**

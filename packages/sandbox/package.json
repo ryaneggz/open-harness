@@ -5,6 +5,7 @@
   "type": "module",
   "bin": {
     "openharness": "./dist/src/cli/index.js",
+    "oh": "./dist/src/cli/index.js",
     "heartbeat-daemon": "./dist/src/cli/heartbeat-daemon.js"
   },
   "keywords": [
