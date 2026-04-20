@@ -1,4 +1,4 @@
 {
   "title": "Architecture",
-  "pages": ["overview", "structure", "how-it-works"]
+  "pages": ["overview", "structure", "orchestrator-worktrees", "how-it-works"]
 }
