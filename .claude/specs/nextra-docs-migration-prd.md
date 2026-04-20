@@ -43,16 +43,18 @@ Primary user (sole docs consumer) prefers the Nextra 2 reading experience that s
 
 ## Acceptance criteria
 
-- [ ] `docs/` uses `nextra@^2.13` and `nextra-theme-docs@^2.13` (match `85c9aba` baseline)
+- [ ] `docs/` uses `nextra@^3.3` and `nextra-theme-docs@^3.3` (bumped from 2.13 baseline due to zod/mermaid dep incompatibility — see spec decision D1)
 - [ ] `docs/pages/` restored as Pages Router content root
 - [ ] `docs/pages/wiki` symlink resolves to `workspace/wiki/pages`
-- [ ] All 29 MDX pages from `docs/content/docs/**` migrated under `docs/pages/**` with Fumadocs-only imports removed
-- [ ] `<Mermaid chart={...} />` components converted back to ```` ```mermaid ```` fenced code blocks
+- [ ] `docs/pages/_app.tsx` imports `nextra-theme-docs/style.css` (satisfies Next.js global-CSS guard on symlinked external content)
+- [ ] All 28 MDX pages from `docs/content/docs/**` migrated under `docs/pages/**` with Fumadocs-only imports removed
 - [ ] Fumadocs dependencies (`fumadocs-core`, `fumadocs-mdx`, `fumadocs-ui`, `tailwindcss`, `@tailwindcss/postcss`, Orama) removed from `docs/package.json`
-- [ ] `docs/app/`, `docs/content/`, `docs/lib/`, `docs/source.config.ts`, `docs/postcss.config.mjs` deleted
-- [ ] `docs/next.config.mjs` returns to `withNextra({ output: "export", basePath: "/open-harness" })`
-- [ ] `theme.config.tsx` matches the `85c9aba` shape (logo, project link, docsRepositoryBase, footer)
+- [ ] `docs/app/`, `docs/content/`, `docs/lib/`, `docs/components/`, `docs/source.config.ts`, `docs/postcss.config.mjs` deleted
+- [ ] `docs/next.config.mjs` returns to `withNextra({ output: "export", basePath: "/open-harness", experimental: { externalDir, esmExternals:'loose' } })`
+- [ ] `theme.config.tsx` uses Nextra 3 shape (`footer.content`, `head`, no `useNextSeoProps`)
 - [ ] `docs/tsconfig.json` reverted to Pages-Router shape
+- [ ] `_meta.json` files converted to `_meta.js` with Nextra-shape (flat `slug → label` map)
+- [ ] Root `package.json` has `pnpm.overrides.d3-shape: "^3.2.0"` (mermaid dep pinning)
 - [ ] `pnpm-lock.yaml` regenerated; `pnpm install` clean
 - [ ] `pnpm --filter @openharness/docs build` exits 0; exported HTML under `docs/out/`
 - [ ] `.github/workflows/docs.yml` runs green (no workflow changes required)

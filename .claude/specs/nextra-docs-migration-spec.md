@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft — 2026-04-19
+Approved — 2026-04-19 (revised from Nextra 2 to Nextra 3 after dep-hell discovery during implementation)
 
 ## Motivation
 
@@ -40,31 +40,37 @@ docs/
 
 ```
 docs/
-  pages/               # Pages Router (Nextra 2 requirement)
-    _meta.json
+  pages/               # Pages Router (Nextra 3 requirement)
+    _app.tsx           # imports "nextra-theme-docs/style.css"
+    _meta.js
     index.mdx
-    getting-started/   _meta.json + 4 mdx
-    guide/             _meta.json + 9 mdx
-    cli/               _meta.json + 1 mdx
-    architecture/      _meta.json + 3 mdx
-    slack/             _meta.json + 8 mdx
-    wiki/              _meta.json + dynamic (symlinked)
-  theme.config.tsx     # logo, project link, footer, docsRepositoryBase
-  next.config.mjs      # withNextra({ output: export, basePath: /open-harness })
-  package.json         # nextra@2, nextra-theme-docs@2, next@14, react@18
+    getting-started/   _meta.js + 4 mdx
+    guide/             _meta.js + 11 mdx
+    cli/               _meta.js + 1 mdx
+    architecture/      _meta.js + 3 mdx
+    slack/             _meta.js + 8 mdx
+    wiki/              symlink → ../../workspace/wiki/pages
+  theme.config.tsx     # logo, project link, docsRepositoryBase, footer.content, head
+  next.config.mjs      # withNextra + experimental.{externalDir,esmExternals:'loose'}
+  package.json         # nextra@^3.3, nextra-theme-docs@^3.3, next@^14.2, react@^18.3
   tsconfig.json
+```
+Root `package.json` gains:
+```json
+"pnpm": { "overrides": { "d3-shape": "^3.2.0" } }
 ```
 
 Remove: `app/`, `components/` (Mermaid handled via remark plugin), `content/`, `lib/`, `source.config.ts`, `postcss.config.mjs`, `globals.css`.
 
 ## Architecture decisions
 
-### D1. Nextra 2 vs Nextra 4
-- **Choose Nextra 2.13.x** — matches the proven `85c9aba` baseline; Pages Router; minimum churn.
-- Nextra 4 (App Router) is rejected for this migration — the user's stated preference is "the previous Nextra style," i.e. Nextra 2.
+### D1. Nextra version
+- **Choose Nextra 3.3.x** — preserves the Nextra sidebar/theme user prefers; still Pages Router; modern dep tree (native Next 14, zod ≥ 3.24, mermaid 11).
+- **Nextra 2.13.x rejected** after empirical build failure: Nextra 2's `zod@^3.22.3` requires `.deepPartial()` (removed in zod 3.25+), and the monorepo transitively pulls zod 4 via `@anthropic-ai/sdk` / `openai` / `@modelcontextprotocol/sdk`. With `esmExternals:'loose'` (required to bundle Nextra 2's `@theguild/remark-mermaid@0.0.5` + mermaid 11 + d3-shape ESM), webpack leaks zod 4 into nextra's chunk, breaking `.deepPartial()` at prerender. pnpm overrides fail to contain this.
+- **Nextra 4 (App Router) rejected** — user preference is "previous Nextra style," i.e. Pages Router.
 
 ### D2. Next.js version
-- **Next 14.2.x + React 18.3.x** — pinned to match PR #31. Nextra 2 does not support Next 16.
+- **Next 14.2.x + React 18.3.x** — Nextra 3 peers `next >= 13`; Next 14.2 is the safest target that avoids unrelated Next 15/16 migration churn.
 - `next@16` and `react@19` are removed from `docs/package.json`.
 
 ### D3. Tailwind
@@ -74,7 +80,8 @@ Remove: `app/`, `components/` (Mermaid handled via remark plugin), `content/`, `
 - **Drop Orama** — Nextra 2 ships Flexsearch-based search built into the theme. Free, works with `output: export`.
 
 ### D5. Mermaid
-- **Remark plugin** (same approach as commit `34bf212`) — transforms ```` ```mermaid ```` fences at build time. Works with static export. No runtime `<Mermaid>` component.
+- **Nextra 3's bundled `@theguild/remark-mermaid`** — transforms ```` ```mermaid ```` fences at build time. Works with static export. No runtime `<Mermaid>` component.
+- pnpm override `d3-shape ^3.2.0` required so the hoisted d3-shape exports `curveBumpX/Y` that mermaid needs.
 
 ### D6. Wiki content
 - **Symlink preserved**: `docs/pages/wiki -> ../../workspace/wiki/pages`.
@@ -92,7 +99,8 @@ All 29 MDX pages under `docs/content/docs/**` move back under `docs/pages/**` wi
 - **Import hoists removed** — Fumadocs injects `<Mermaid>` via provider; Nextra uses remark, so the `import Mermaid from '@/components/Mermaid'` lines get stripped.
 - **`<Mermaid chart={...} />` → ```` ```mermaid ```` fences** (inverse of what `cdd2c74` did for the Fuma migration — restoring Nextra's native form).
 - **Internal links** revert to `/open-harness/...` prefix (matching `basePath`).
-- **`meta.json` → `_meta.json`** (Nextra filename convention; content identical).
+- **`meta.json` → `_meta.js`** (Nextra 3 dropped `_meta.json` — must be `_meta.{js,jsx,ts,tsx}` with a `default export`).
+- **Meta format rewrite** — Fumadocs' `{ title, pages: [...] }` shape becomes Nextra's flat `{ slug: "Label", ... }` shape.
 
 ## Out of scope
 

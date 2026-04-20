@@ -21,7 +21,11 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "dependencies": {
-    "mermaid": "^11.14.0"
+  "pnpm": {
+    "overrides": {
+      "d3-array": "^3.2.0",
+      "d3-shape": "^3.2.0",
+      "d3-path": "^3.1.0"
+    }
   }
 }
