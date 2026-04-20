@@ -60,6 +60,7 @@ services:
       - INSTALL_AGENT_BROWSER=${INSTALL_AGENT_BROWSER:-false}
     stdin_open: true
     tty: true
+    init: true
     entrypoint: /usr/local/bin/entrypoint.sh
     command: sleep infinity
     restart: unless-stopped
