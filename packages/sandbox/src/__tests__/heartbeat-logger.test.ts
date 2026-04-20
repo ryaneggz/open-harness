@@ -157,6 +157,58 @@ describe("HeartbeatLogger", () => {
     });
   });
 
+  describe("multiple instances", () => {
+    it("two loggers at different paths write to their own files independently", () => {
+      // Each instance is a pure wrapper around a path — verify that
+      // independent instances produce independent appendFileSync calls
+      // with the path they were constructed with. This is the invariant
+      // PR-3 relies on for per-root log routing.
+      const pathA = "/tmp/root-a/heartbeats/heartbeat.log";
+      const pathB = "/tmp/root-b/heartbeats/heartbeat.log";
+
+      const loggerA = new HeartbeatLogger(pathA);
+      const loggerB = new HeartbeatLogger(pathB);
+
+      loggerA.log("from A");
+      loggerB.log("from B");
+      loggerA.log("from A again");
+
+      expect(mockAppendFileSync).toHaveBeenCalledTimes(3);
+
+      const calls = mockAppendFileSync.mock.calls as Array<[string, string]>;
+      // Call 0 → pathA with "from A"; call 1 → pathB with "from B"; call 2 → pathA with "from A again".
+      expect(calls[0][0]).toBe(pathA);
+      expect(calls[0][1]).toContain("from A");
+      expect(calls[1][0]).toBe(pathB);
+      expect(calls[1][1]).toContain("from B");
+      expect(calls[2][0]).toBe(pathA);
+      expect(calls[2][1]).toContain("from A again");
+    });
+
+    it("each logger caches its own dir-existence flag independently", () => {
+      // First log() call per logger checks existsSync once; further calls
+      // on the same instance skip the check. Instances must not share
+      // that cache — otherwise the second logger would think its dir
+      // exists when it might not.
+      mockExistsSync.mockReturnValue(true);
+
+      const loggerA = new HeartbeatLogger("/tmp/a/heartbeats/heartbeat.log");
+      const loggerB = new HeartbeatLogger("/tmp/b/heartbeats/heartbeat.log");
+
+      loggerA.log("first A");
+      expect(mockExistsSync).toHaveBeenCalledTimes(1);
+
+      mockExistsSync.mockClear();
+      loggerB.log("first B");
+      expect(mockExistsSync).toHaveBeenCalledTimes(1);
+
+      mockExistsSync.mockClear();
+      loggerA.log("second A");
+      loggerB.log("second B");
+      expect(mockExistsSync).not.toHaveBeenCalled();
+    });
+  });
+
   describe("tail()", () => {
     it("returns last n lines from log file (default 10)", () => {
       const lines = Array.from({ length: 20 }, (_, i) => `line ${i + 1}`);

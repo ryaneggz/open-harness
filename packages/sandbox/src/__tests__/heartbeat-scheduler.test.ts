@@ -24,6 +24,7 @@ vi.mock("croner", () => ({
 const mockRunnerRun = vi.fn().mockResolvedValue(undefined);
 const mockLoggerLog = vi.fn();
 const mockGetLogger = vi.fn();
+const mockGetLoggerFor = vi.fn();
 
 vi.mock("../lib/heartbeat/runner.js", () => ({
   HeartbeatRunner: vi.fn(),
@@ -76,11 +77,13 @@ beforeEach(() => {
   mockRunnerRun.mockResolvedValue(undefined);
 
   // Restore HeartbeatRunner constructor mock
+  mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
   vi.mocked(HeartbeatRunner).mockImplementation(
     () =>
       ({
         run: mockRunnerRun,
         getLogger: mockGetLogger,
+        getLoggerFor: mockGetLoggerFor,
       }) as unknown as InstanceType<typeof HeartbeatRunner>,
   );
 
@@ -227,6 +230,7 @@ describe("HeartbeatScheduler", () => {
 
       vi.clearAllMocks();
       mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
 
       scheduler.stop();
 
@@ -248,6 +252,7 @@ describe("HeartbeatScheduler", () => {
 
       vi.clearAllMocks();
       mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
 
       // Restore MockCron constructor mock after clearAllMocks
       MockCron.mockImplementation((pattern: string, callback: () => Promise<void>) => {
@@ -287,6 +292,7 @@ describe("HeartbeatScheduler", () => {
 
       vi.clearAllMocks();
       mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
 
       // Sync with identical entry — should be a no-op
       scheduler.sync([makeEntry({ filePath: "stable.md", cronExpr: "*/5 * * * *" })]);
@@ -305,6 +311,7 @@ describe("HeartbeatScheduler", () => {
 
       vi.clearAllMocks();
       mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
       MockCron.mockImplementation((pattern: string, callback: () => Promise<void>) => {
         lastCronCallback = callback;
         mockCronGetPattern.mockReturnValue(pattern);
@@ -337,6 +344,7 @@ describe("HeartbeatScheduler", () => {
 
       vi.clearAllMocks();
       mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
       MockCron.mockImplementation((pattern: string, callback: () => Promise<void>) => {
         lastCronCallback = callback;
         mockCronGetPattern.mockReturnValue(pattern);
@@ -399,6 +407,7 @@ describe("HeartbeatScheduler", () => {
 
       vi.clearAllMocks();
       mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
       MockCron.mockImplementation((pattern: string, callback: () => Promise<void>) => {
         lastCronCallback = callback;
         mockCronGetPattern.mockReturnValue(pattern);
@@ -429,6 +438,7 @@ describe("HeartbeatScheduler", () => {
 
       vi.clearAllMocks();
       mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
 
       scheduler.sync([
         makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_A }),
