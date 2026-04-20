@@ -13,6 +13,7 @@ import {
   HOST_ONLY_COMMANDS,
   isInsideContainer,
   parseToolArgs,
+  resolveSubcommand,
   helpText,
 } from "./cli.js";
 
@@ -207,17 +208,15 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
     }
 
     case "heartbeat": {
-      const action = params.name; // first positional is action for heartbeat
-      const name = params.action; // second positional is name
-      if (!action || !name) {
-        console.error("Usage: openharness heartbeat <sync|stop|status|migrate> <name>");
+      const tools = await import("../tools/index.js");
+      const resolved = resolveSubcommand("heartbeat", cmdArgs, tools);
+      if ("error" in resolved) {
+        console.error(resolved.error);
         process.exit(1);
       }
-      // Heartbeat still goes through the tool since it has complex logic
-      const { heartbeatTool } = await import("../tools/index.js");
-      const result = await heartbeatTool.execute(
+      const result = await resolved.tool.execute(
         "cli",
-        { name, action },
+        resolved.params,
         undefined,
         undefined,
         undefined as never,

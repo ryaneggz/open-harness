@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Open Harness — AI Agent Sandbox Orchestrator",
-  "packageManager": "pnpm@10.12.1",
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "setup": "pnpm install && pnpm -r run build && pnpm link --global ./packages/sandbox",
     "build": "pnpm -r run build",
@@ -11,6 +11,7 @@
     "lint": "pnpm -r run lint",
     "format:check": "pnpm -r run format:check",
     "format": "pnpm -r run format",
+    "dev": "pnpm --filter @openharness/docs dev & cd workspace/projects/next-app && pnpm dev",
     "docs:dev": "pnpm --filter @openharness/docs dev",
     "docs:build": "pnpm --filter @openharness/docs build"
   },

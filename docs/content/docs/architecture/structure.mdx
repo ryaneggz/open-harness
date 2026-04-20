@@ -1,0 +1,78 @@
+---
+title: "Project Structure"
+---
+
+
+```
+open-harness/
+├── .devcontainer/
+│   ├── Dockerfile              # sandbox image: Debian + Node 22 + agent CLIs + pnpm
+│   ├── docker-compose.yml      # base compose: SSH + workspace mount
+│   ├── docker-compose.*.yml    # overlays: postgres, cloudflared, docker, ssh, git, slack
+│   ├── entrypoint.sh           # Docker GID matching + heartbeat daemon + CLI install
+│   └── init-env.sh             # seed .devcontainer/.env on first provision (SANDBOX_NAME, GIT_COMMON_DIR)
+├── packages/sandbox/           # @openharness/sandbox (CLI + container lifecycle tools)
+│   ├── src/
+│   │   ├── cli/
+│   │   │   ├── cli.ts          # subcommand routing, arg parsing, help text
+│   │   │   └── index.ts        # CLI entry point (argv, exit codes)
+│   │   ├── lib/
+│   │   │   ├── config.ts       # SandboxConfig: name, compose files, env
+│   │   │   ├── docker.ts       # compose command builders
+│   │   │   └── exec.ts         # run/runSafe/capture helpers
+│   │   └── tools/              # sandbox, run, stop, clean, shell, list, etc.
+│   └── extensions/
+│       └── sandbox.ts          # Pi Agent extension (tool + command registration)
+├── install/
+│   ├── onboard.sh              # interactive first-time setup wizard
+│   ├── entrypoint.sh           # late-stage container setup (starts heartbeat daemon)
+│   ├── setup.sh                # environment setup utilities
+│   ├── tmux-agent.sh           # tmux session management for agents
+│   ├── cloudflared-tunnel.sh   # cloudflare tunnel configuration
+│   └── slack-manifest.json     # Slack app manifest for Socket Mode
+├── workspace/                  # template workspace for all agent sandboxes
+│   ├── AGENTS.md               # operating procedures — decision rules, skills, sub-agents
+│   ├── CLAUDE.md               # symlink → AGENTS.md (Claude Code reads this automatically)
+│   ├── SOUL.md                 # agent personality, tone, values, guardrails
+│   ├── IDENTITY.md             # name, role, mission, tech stack, URLs
+│   ├── USER.md                 # owner preferences, constraints, goals
+│   ├── TOOLS.md                # environment, available tools, service endpoints
+│   ├── HEARTBEAT.md            # meta-maintenance routines
+│   ├── MEMORY.md               # long-term memory (learned decisions, lessons)
+│   ├── heartbeats/             # heartbeat task definitions (frontmatter .md files)
+│   ├── startup.sh              # runs on container boot after onboarding
+│   ├── memory/                 # daily activity logs (YYYY-MM-DD.md)
+│   ├── .claude/
+│   │   ├── rules/              # coding standards (git, code-quality, nextjs, api, etc.)
+│   │   ├── skills/             # reusable skill definitions
+│   │   └── agents/             # sub-agent prompts (implementer, critic, pm, council)
+│   ├── .slack/
+│   │   └── MEMORY.md           # Slack-specific memory
+│   └── projects/
+│       └── next-app/           # Next.js project template
+├── docs/                       # Nextra documentation site (this site)
+├── .github/
+│   ├── workflows/              # CI, Build, Release, Docs
+│   └── ISSUE_TEMPLATE/         # agent, audit, bug, feature, skill, task
+├── .openharness/
+│   └── config.json             # compose overlay selection
+└── .claude/skills/             # orchestrator skills (/provision, /repair, /release, etc.)
+```
+
+## Workspace identity files
+
+The `workspace/` directory contains markdown files that define the agent's identity, procedures, and memory. The orchestrator scaffolds these during provisioning; the agent owns and evolves them once running.
+
+| File | Purpose | Owner |
+|------|---------|-------|
+| `IDENTITY.md` | Name, role, mission, tech stack, URLs | Orchestrator → Agent |
+| `SOUL.md` | Personality, tone, values, guardrails | Orchestrator → Agent |
+| `USER.md` | Owner preferences, constraints, goals | User |
+| `TOOLS.md` | Environment, tools, service endpoints | Orchestrator |
+| `AGENTS.md` | Decision rules, skills, sub-agents | Orchestrator → Agent |
+| `HEARTBEAT.md` | Meta-maintenance routines | Agent |
+| `MEMORY.md` | Learned facts, decisions, lessons | Agent |
+
+`CLAUDE.md` is a symlink to `AGENTS.md` so Claude Code loads operating procedures automatically.
+
+See the [Workspace guide](/docs/guide/workspace) for full details on each file and the ownership model.

@@ -1,0 +1,15 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "---Getting Started---",
+    "getting-started",
+    "---Guide---",
+    "guide",
+    "---Slack Bot---",
+    "slack",
+    "---Reference---",
+    "cli",
+    "architecture"
+  ]
+}

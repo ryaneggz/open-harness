@@ -60,7 +60,7 @@ Read the following to build the briefing:
 - `MEMORY.md` — past decisions, lessons learned
 - `next-app/prisma/schema.prisma` — current data models
 - `next-app/src/app/` — list current routes
-- Open issues: `gh api "repos/ryaneggz/next-postgres-shadcn/issues?state=open&per_page=50"`
+- Open issues: `gh api "repos/ryaneggz/open-harness/issues?state=open&per_page=50"`
 - Repo stats: `gh api repos/ryaneggz/open-harness --jq '{stars: .stargazers_count, forks: .forks_count}'`
 
 ### 3. Compose the Current State Briefing
@@ -160,25 +160,25 @@ The council's final output becomes the pinned issue body.
 
 Search for existing:
 ```bash
-gh api "repos/ryaneggz/next-postgres-shadcn/issues?state=open&labels=roadmap&per_page=10" \
+gh api "repos/ryaneggz/open-harness/issues?state=open&labels=roadmap&per_page=10" \
   --jq '[.[] | select(.title == "Product Roadmap")] | first'
 ```
 
 If none exists:
 ```bash
-gh label create roadmap --repo ryaneggz/next-postgres-shadcn \
+gh label create roadmap --repo ryaneggz/open-harness \
   --description "Product roadmap tracking" --color "0075ca" 2>/dev/null || true
 
-gh issue create --repo ryaneggz/next-postgres-shadcn \
+gh issue create --repo ryaneggz/open-harness \
   --title "Product Roadmap" --label roadmap \
   --body "<council output>"
 ```
 
-Then pin it: `gh issue pin <NUMBER> --repo ryaneggz/next-postgres-shadcn`
+Then pin it: `gh issue pin <NUMBER> --repo ryaneggz/open-harness`
 
 If it already exists, update:
 ```bash
-gh issue edit <NUMBER> --repo ryaneggz/next-postgres-shadcn --body "<council output>"
+gh issue edit <NUMBER> --repo ryaneggz/open-harness --body "<council output>"
 ```
 
 ### 9. Write roadmap data to src/data/roadmap.ts

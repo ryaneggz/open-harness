@@ -24,11 +24,15 @@ You see the issue through the lens of **how to decompose and delegate**. You car
 
 ## Model Delegation Guide
 
-| Model | Best For | Cost |
-|-------|----------|------|
-| **opus** | Complex architecture, multi-file refactors, ambiguous requirements | highest |
-| **sonnet** | Standard features, API routes, component work, migrations | medium |
-| **haiku** | Simple edits, config changes, boilerplate, formatting, docs | lowest |
+| Model | Best For | Cost | Note |
+|-------|----------|------|------|
+| **opus** | Synthesis, judgment, ambiguous requirements | highest | Advisor role — consult, don't execute |
+| **sonnet** | Standard features, API routes, execution, migrations | medium | Default executor |
+| **haiku** | Simple edits, config changes, boilerplate, docs | lowest | No advisor needed |
+
+> **Advisor strategy**: For direct API consumers, prefer Sonnet executor + Opus advisor
+> over running Opus directly. Achieves near-Opus quality at ~50-85% lower cost.
+> See [Anthropic advisor docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/advisor-tool).
 
 ## Project Context
 

@@ -139,14 +139,72 @@ Output a summary table:
 
 Status values: **OK** (passed first run), **FIXED** (failed then remediated), **FAIL** (could not fix).
 
-## Step 6 — Verify with agent-browser
+## Step 6 — Front-to-back URL check (every run)
 
-As a final check, open the public URL with agent-browser and take a screenshot:
+Verify every tunnel-exposed hostname end-to-end — public URL first, local origin second — so failures are attributed to the right layer.
+
+### 6a — Enumerate targets from cloudflared config
+
+Parse each `~/.cloudflared/config-*.yml` to discover `hostname → service` pairs. On the host, prefix with `docker exec -u sandbox $SANDBOX_NAME`.
 
 ```bash
-agent-browser open "https://next-postgres-shadcn.ruska.dev"
-agent-browser screenshot .claude/screenshots/repair-dod.png
-agent-browser close
+python3 - <<'PY'
+import glob, re, os
+pairs = []
+for path in sorted(glob.glob(os.path.expanduser("~/.cloudflared/config-*.yml"))):
+    host = None
+    for line in open(path):
+        m = re.match(r"\s*-\s*hostname:\s*(\S+)", line)
+        if m: host = m.group(1); continue
+        m = re.match(r"\s*service:\s*(https?://\S+)", line)
+        if m and host: pairs.append((host, m.group(1))); host = None
+with open("/tmp/tunnel-targets.tsv", "w") as f:
+    for h, s in pairs:
+        f.write(f"{h}\t{s}\n")
+        print(f"{h}\t{s}")
+PY
 ```
 
-If the screenshot shows the app, the stack is fully operational.
+### 6b — Front check with `/agent-browser` (primary)
+
+For every hostname in `/tmp/tunnel-targets.tsv`, invoke the **`/agent-browser`** skill on the public URL — this exercises the real user path (DNS → Cloudflare edge → tunnel → origin → render) and saves a screenshot per host:
+
+```
+/agent-browser https://<hostname>/
+```
+
+Record pass/fail per hostname based on whether the skill reports a healthy page load (non-empty snapshot, HTTP-equivalent success). The skill itself handles DNS, health-check, and screenshot — do not reimplement.
+
+### 6c — Back check with curl (only when browser check fails)
+
+For any hostname that failed in 6b, run a curl pair to localize the fault:
+
+| Public | Local | Diagnosis |
+|---|---|---|
+| 2xx/3xx | 2xx/3xx | **Browser-only issue** (DNS/cert/JS) — inspect `/agent-browser` trace |
+| 5xx/000 | 2xx/3xx | **Tunnel problem** — restart cloudflared |
+| any     | 5xx/000 | **Origin problem** — check dev-server log, restart service |
+
+```bash
+# container: run directly.  host: wrap with docker exec -u sandbox $SANDBOX_NAME bash -c '...'
+while IFS=$'\t' read -r host service; do
+  pub=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "https://${host}/")
+  loc=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5  "${service/0.0.0.0/127.0.0.1}/")
+  echo "$host  public=$pub  local=$loc"
+done < /tmp/tunnel-targets.tsv
+```
+
+### 6d — Report
+
+Append a front-to-back table to the Step 5 summary — one row per hostname:
+
+```
+| Hostname            | Browser | Public | Local | Verdict        |
+|---------------------|---------|--------|-------|----------------|
+| oh.ruska.dev        | OK      | —      | —     | OK             |
+| oh-docs.ruska.dev   | FAIL    | 502    | 307   | Tunnel problem |
+```
+
+`Browser` comes from 6b, `Public`/`Local` only filled in when 6b failed and 6c ran. If any row is not **OK**, apply the matching remediation from the Step 2c/3h tables and re-run 6b once. If it still fails, stop and report — do not loop.
+
+Screenshots from `/agent-browser` land in `.claude/screenshots/<hostname>*.png` for visual confirmation.

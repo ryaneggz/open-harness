@@ -1,7 +1,6 @@
 {
   "composeOverrides": [
     ".devcontainer/docker-compose.cloudflared.yml",
-    ".devcontainer/docker-compose.docker.yml",
     ".devcontainer/docker-compose.slack.yml"
   ]
 }

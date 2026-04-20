@@ -9,11 +9,11 @@ paths:
 
 # Testing
 
-- Unit/integration: Vitest + React Testing Library — files named `*.test.ts` or `*.test.tsx`
-- E2E: Playwright — files in `src/e2e/`, hit `https://next-postgres-shadcn.ruska.dev`
-- Test behavior, not implementation — avoid testing internal state or private methods
-- Use `screen.getByRole` over `getByTestId` — tests should mirror how users interact
-- Mock external dependencies (APIs, third-party services), not internal modules
-- Each test file should be self-contained — no shared mutable state between tests
-- Run `pnpm test` for Vitest, `pnpm run test:e2e` for Playwright
-- `passWithNoTests: true` is set in vitest config — CI won't fail on missing tests
+- Unit/integration: Vitest + RTL — `*.test.ts(x)`
+- E2E: Playwright — `src/e2e/`
+- Test behavior, not implementation
+- `screen.getByRole` > `getByTestId`
+- Mock external deps, not internal modules
+- Self-contained tests — no shared mutable state
+- `pnpm test` (Vitest), `pnpm run test:e2e` (Playwright)
+- `passWithNoTests: true` — CI won't fail on missing tests

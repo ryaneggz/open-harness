@@ -4,40 +4,36 @@
 
 - **OS**: Debian Bookworm (slim)
 - **User**: `sandbox` (passwordless sudo)
-- **Working directory**: `/home/sandbox/workspace` (persisted via bind mount)
-- **Docker**: CLI + Compose available; host Docker socket mounted for container management
-- **Permissions**: `--dangerously-skip-permissions` is the default for Claude Code (aliased in `.bashrc`)
+- **Workdir**: `/home/sandbox/workspace` (bind mount, persists)
+- **Docker**: CLI + Compose, host socket mounted
+- **Perms**: `--dangerously-skip-permissions` default
 
 ## Installed Tools
 
-All tools are installed system-wide in `/usr/local/bin` or via apt:
-
-| Tool | Version | Usage |
-|------|---------|-------|
-| Node.js | 22.x | `node`, `pnpm`, `pnpm exec` |
+| Tool | Version | Command |
+|------|---------|---------|
+| Node.js | 22.x | `node`, `pnpm` |
 | Bun | latest | `bun` |
-| uv | latest | `uv` (Python package manager) |
+| uv | latest | `uv` (Python) |
 | GitHub CLI | latest | `gh` |
 | Docker | latest | `docker`, `docker compose` |
 | tmux | latest | `tmux` |
-| nano | latest | `nano` |
 | ripgrep | latest | `rg` |
 | git | latest | `git` |
 | jq | latest | `jq` |
 
-### Optional Agents (installed if selected)
+### Optional Agents
 
-| Agent | Command | Docs |
-|-------|---------|------|
-| Claude Code | `claude` | https://docs.anthropic.com/en/docs/claude-code |
-| OpenAI Codex | `codex` | https://github.com/openai/codex |
-| Pi Agent | `pi` | https://shittycodingagent.ai |
-| AgentMail | `agentmail` | https://docs.agentmail.to/integrations/cli |
+| Agent | Command |
+|-------|---------|
+| Claude Code | `claude` |
+| OpenAI Codex | `codex` |
+| Pi Agent | `pi` |
+| AgentMail | `agentmail` |
 
-## Tool Use Principles
+## Principles
 
-- Use `uv` for Python projects (e.g. `uv init`, `uv add`, `uv run`)
-- Use `pnpm` for JavaScript/TypeScript projects
-- Use `docker compose` to manage services; the sandbox can reach host containers via `host.docker.internal`
-- You have full sudo access if you need to install additional system packages
-- Agent config directories (`.openharness/`, `.claude/`, `.codex/`) are in the workspace root
+- Python → `uv`. JS/TS → `pnpm`.
+- Services → `docker compose`. Host containers via `host.docker.internal`.
+- Full sudo if needed.
+- Config dirs: `.openharness/`, `.claude/`, `.codex/` in workspace root.

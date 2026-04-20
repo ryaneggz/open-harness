@@ -86,32 +86,7 @@ description: |
 
 ---
 
-## Agent Assignment
-
-### Metadata
-
-> **IMPORTANT**: The very first step should _ALWAYS_ be validating this metadata section to maintain a **CLEAN** development workflow.
-
-```yml
-agent: "<agent-name>"
-branch: "agent/<agent-name>"
-worktree_path: ".worktrees/<agent-name>"
-pull_request: "FROM agent/<agent-name> TO development"
-```
-
-### Workflow
-
-```bash
-# Enter the assigned agent's sandbox
-make NAME=<agent-name> shell
-claude
-
-# When complete — PR from agent branch to development
-cd .worktrees/<agent-name>
-git add -A && git commit -m "skill(<issue#>): <description>"
-git push -u origin agent/<agent-name>
-gh pr create --base development --title "skill(<issue#>): <shortdesc>" --body "Closes #<issue#>"
-```
+> **Git workflow**: see [.claude/rules/git.md](../../.claude/rules/git.md)
 
 ---
 
@@ -121,4 +96,4 @@ gh pr create --base development --title "skill(<issue#>): <shortdesc>" --body "C
 - [ ] SKILL.md has valid YAML frontmatter
 - [ ] Skill triggers correctly on matching user requests
 - [ ] Does not trigger on unrelated requests
-- [ ] PR targets `development` branch
+- [ ] PR targets the default target branch (see `.claude/rules/git.md`)

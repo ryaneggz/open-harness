@@ -14,7 +14,7 @@ Isolated, pre-configured sandbox containers for AI coding agents — [Claude Cod
 
 ```bash
 git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
-cp .devcontainer/.example.env .devcontainer/.env        # configure name, password, etc.
+cp .devcontainer/.example.env .devcontainer/.env   # configure name, password, etc.
 ```
 
 ### 2. Start the sandbox
@@ -27,7 +27,7 @@ docker compose --env-file .devcontainer/.env -f .devcontainer/docker-compose.yml
 
 **Option A — Terminal (works everywhere):**
 ```bash
-docker exec -it -u sandbox openharness bash   # use your SANDBOX_NAME
+docker exec -it -u sandbox oh-local bash   # use your SANDBOX_NAME
 ```
 
 **Option B — VS Code Attach to Container (local):**
@@ -95,10 +95,10 @@ The sandbox user has passwordless `sudo` and full Docker socket access (with the
 Copy the example env file and edit to taste:
 
 ```bash
-cp .devcontainer/.example.env .env
+cp .devcontainer/.example.env .devcontainer/.env
 ```
 
-Docker Compose reads `.env` automatically from the project root.
+Docker Compose and the `openharness` CLI read `.devcontainer/.env` directly.
 
 ### Sandbox
 
@@ -110,15 +110,14 @@ Docker Compose reads `.env` automatically from the project root.
 
 ### Heartbeats (autonomous scheduling)
 
-Heartbeats are cron-scheduled tasks that run an AI agent CLI on a recurring schedule (e.g., hourly issue triage). Task definitions live in `workspace/heartbeats.conf`.
+Heartbeats are cron-scheduled tasks that run an AI agent CLI on a recurring schedule (e.g., hourly issue triage). Each heartbeat is a markdown file in `workspace/heartbeats/` with YAML frontmatter defining its schedule, agent, and active hours.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HEARTBEAT_AGENT` | `claude` | Which agent CLI runs heartbeat tasks (`claude`, `codex`, `pi`) |
-| `HEARTBEAT_ACTIVE_START` | _(empty)_ | Hour (0-23) when heartbeats start firing (e.g., `8` for 8 AM) |
-| `HEARTBEAT_ACTIVE_END` | _(empty)_ | Hour (0-23) when heartbeats stop firing (e.g., `18` for 6 PM) |
+| `HEARTBEAT_AGENT` | `claude` | Default agent CLI for heartbeats without an `agent` frontmatter field |
+| `HEARTBEAT_INTERVAL` | `1800` | Default interval (seconds) for legacy `HEARTBEAT.md` fallback |
 
-When both `ACTIVE_START` and `ACTIVE_END` are set, heartbeats only fire during that window. When empty, heartbeats run at any hour.
+Per-heartbeat scheduling and active hours are configured via YAML frontmatter (`schedule`, `agent`, `active` fields) — see [Heartbeats](#heartbeats) below.
 
 ### SSH
 
@@ -146,7 +145,6 @@ Toggle overlays in `.openharness/config.json`:
 ```json
 {
   "composeOverrides": [
-    ".devcontainer/docker-compose.docker.yml",
     ".devcontainer/docker-compose.slack.yml"
   ]
 }
@@ -155,7 +153,6 @@ Toggle overlays in `.openharness/config.json`:
 | Overlay | File | What it adds |
 |---------|------|-------------|
 | **postgres** | `docker-compose.postgres.yml` | Postgres 16 on a bridge network. Sets `DATABASE_URL`, `PGHOST`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` automatically. Data persisted in a `pgdata` volume. |
-| **docker** | `docker-compose.docker.yml` | Mounts the host Docker socket so agents can run containers from inside the sandbox (Docker-in-Docker). |
 | **ssh** | `docker-compose.ssh.yml` | Mounts `HOST_SSH_DIR` read-only so git can authenticate with your existing SSH keys. Auto-enabled when `HOST_SSH_DIR` is set in `.env`. |
 | **ssh-generate** | `docker-compose.ssh-generate.yml` | Persists `~/.ssh` in a named volume so generated keys survive container rebuilds. Use this instead of `ssh` if the sandbox should have its own keys. |
 | **sshd** | `docker-compose.sshd.yml` | Runs an SSH server inside the sandbox on port `2222:22`. Enables direct SSH access for remote workflows and multi-sandbox setups. Uses `SANDBOX_PASSWORD` for auth. |
@@ -274,8 +271,7 @@ workspace/
   HEARTBEAT.md          # Meta-maintenance routines
   MEMORY.md             # Long-term memory (learned decisions, lessons)
 
-  heartbeats.conf       # Cron schedule for autonomous tasks
-  heartbeats/           # Task definitions (markdown files)
+  heartbeats/           # Heartbeat task definitions (frontmatter .md files)
   startup.sh            # Runs on container boot after onboarding
 
   memory/               # Daily activity logs (YYYY-MM-DD.md)
@@ -305,36 +301,62 @@ The orchestrator scaffolds these files during provisioning. Once the agent is ru
 
 ## Heartbeats
 
-Heartbeats are cron-scheduled autonomous tasks. The agent CLI runs a prompt from a markdown file on a recurring schedule.
+Heartbeats are cron-scheduled autonomous tasks. A TypeScript daemon watches `workspace/heartbeats/` and runs each heartbeat's prompt via an AI agent CLI on its configured schedule.
 
 ### Configuration
 
-`workspace/heartbeats.conf` uses a 5-field cron expression:
+Each heartbeat is a markdown file in `workspace/heartbeats/` with YAML frontmatter:
+
+```markdown
+---
+schedule: "*/30 * * * *"
+agent: claude
+active: 9-21
+---
+
+# Build Health Check
+
+Run a quick health check on the project...
+```
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `schedule` | Yes | — | Standard 5-field cron expression (`min hour dom mon dow`) |
+| `agent` | No | `claude` | Which CLI to use (`claude`, `codex`, `pi`) |
+| `active` | No | _(always)_ | `START-END` hour range (24h) — heartbeat only fires in this window |
+
+Comment out the `schedule` field (prefix with `#`) to disable a heartbeat without deleting it.
+
+### Creating heartbeats
+
+Use the `/heartbeat` skill inside the sandbox to create a new heartbeat:
 
 ```
-# cron expression | task file | agent | active_hours
-*/30 * * * * | heartbeats/build-health.md | claude | 9-21
-50 23 * * *  | heartbeats/nightly-release.md | claude
-0 * * * *    | heartbeats/documentation-drift-delegate.md
+/heartbeat check build health every 30 minutes during business hours
 ```
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| Cron expression | Yes | Standard 5-field cron (`min hour dom mon dow`) |
-| Task file | Yes | Markdown file with the prompt to run |
-| Agent | No | Which CLI to use (defaults to `HEARTBEAT_AGENT` env var) |
-| Active hours | No | `START-END` range (24h) — overrides env vars per-task |
+This writes the `.md` file and the daemon auto-detects it within 500ms — no manual sync needed.
 
 ### Management
 
+From the host, use the `openharness` CLI:
+
 ```bash
-# Inside the sandbox:
-heartbeat.sh sync      # Install cron entries from heartbeats.conf
-heartbeat.sh status    # Show active cron jobs and last run times
-heartbeat.sh stop      # Remove all heartbeat cron entries
+openharness heartbeat status <sandbox-name>   # Show running schedules and recent logs
+openharness heartbeat sync <sandbox-name>     # Force re-read of all heartbeat files
+openharness heartbeat stop <sandbox-name>     # Remove all heartbeat schedules
 ```
 
-Logs are written to `~/.heartbeat/heartbeat.log` inside the container.
+Inside the sandbox, use the `heartbeat-daemon` binary directly:
+
+```bash
+heartbeat-daemon status    # Show running schedules and recent logs
+heartbeat-daemon sync      # Force re-read of all heartbeat files
+```
+
+The daemon starts automatically on container boot, watches the `heartbeats/` directory for file changes (`fs.watch`), and performs differential sync — only restarting jobs whose schedule or config actually changed.
+
+Logs are written to `workspace/heartbeats/heartbeat.log`.
 
 ---
 
@@ -371,15 +393,18 @@ curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/ma
 ```
 .devcontainer/                # Sandbox environment
   Dockerfile                  # Debian bookworm-slim + all tooling
+  devcontainer.json           # Dev Container metadata
   docker-compose.yml          # Base sandbox service
   docker-compose.*.yml        # Compose overlays (postgres, sshd, slack, etc.)
   entrypoint.sh               # Container bootstrap script
+  init-env.sh                 # Seed .devcontainer/.env on first provision (SANDBOX_NAME, GIT_COMMON_DIR)
   .example.env                # Environment variable template
 
 install/                      # Provisioning scripts
-  onboard.sh                  # First-time auth wizard (6 steps)
-  heartbeat.sh                # Cron scheduler for autonomous tasks
-  entrypoint.sh               # Late-stage container setup
+  onboard.sh                  # First-time auth wizard
+  entrypoint.sh               # Late-stage container setup (starts heartbeat daemon)
+  setup.sh                    # Environment setup utilities
+  tmux-agent.sh               # tmux session management for agents
   cloudflared-tunnel.sh       # Cloudflare Tunnel configuration
   slack-manifest.json         # Slack app manifest for Socket Mode
 

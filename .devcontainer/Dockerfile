@@ -4,7 +4,7 @@ ENV TZ=America/Denver
 
 # ─── System packages ────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openssh-server ca-certificates cron curl wget sudo gosu git jq gnupg \
+    openssh-server ca-certificates curl wget sudo gosu git jq gnupg \
     lsb-release nano ripgrep tmux unzip bash-completion procps less \
  && rm -rf /var/lib/apt/lists/*
 
@@ -49,16 +49,16 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env INSTALLER_NO_MODIFY_PATH=1 
 # ─── pnpm (via corepack) ───────────────────────────────────────────
 ENV PNPM_HOME="/usr/local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable && corepack prepare pnpm@latest --activate \
  && pnpm setup --force 2>/dev/null || true
 
 # ─── Agent CLIs ─────────────────────────────────────────────────────
-RUN pnpm add -g @anthropic-ai/claude-code @openai/codex @mariozechner/pi-coding-agent
-
-# ─── Agent Browser + Chromium ──────────────────────────────────────
-RUN pnpm add -g agent-browser@0.8.5 \
- && find $PNPM_HOME -name "agent-browser-linux-*" -exec chmod +x {} \; \
- && agent-browser install --with-deps
+# Use npm (not pnpm) for global CLI installs. Agent CLI packages require
+# postinstall scripts to download platform-native binaries; npm executes these
+# by default without extra configuration.
+RUN npm install -g @anthropic-ai/claude-code @openai/codex @mariozechner/pi-coding-agent \
+ && claude --version && codex --version && pi --version
 
 # ─── Sandbox user ──────────────────────────────────────────────────
 RUN useradd -m -s /bin/bash sandbox \

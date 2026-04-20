@@ -1,3 +1,34 @@
+# Main Sandbox Docker Compose Configuration
+# ===========================================
+# Purpose: Define the base sandbox container and core mounts/environment.
+# This is the primary compose file; all optional features are separate overlay files.
+#
+# Core volumes:
+#   - ..:/home/sandbox/harness — Project root (bind-mount)
+#   - ../.openharness:/home/sandbox/.openharness — Config overlay
+#   - /var/run/docker.sock:/var/run/docker.sock — Docker daemon access (nested docker)
+#   - claude-auth:/home/sandbox/.claude — Persistent Claude CLI auth
+#   - cloudflared-auth:/home/sandbox/.cloudflared — Cloudflare credentials
+#   - gh-config:/home/sandbox/.config/gh — GitHub CLI config
+#
+# Core env vars (see .openharness/config.json for overlay toggles):
+#   - TZ: Timezone (default America/Denver)
+#   - GIT_USER_NAME, GIT_USER_EMAIL: Git commit author
+#   - GH_TOKEN: GitHub token for `gh auth` automation
+#   - INSTALL_AGENT_BROWSER: Set to "true" to install Chromium (opt-in)
+#   - SANDBOX_PASSWORD: SSH password if using docker-compose.sshd.yml
+#
+# Entrypoint: /usr/local/bin/entrypoint.sh — Initializes git config, installs tools, runs onboarding
+# Default command: sleep infinity — Container stays alive for manual interaction
+#
+# Usage:
+#   Basic: docker compose -f .devcontainer/docker-compose.yml up -d
+#   With overlays: docker compose -f .devcontainer/docker-compose.yml \
+#                    -f .devcontainer/docker-compose.postgres.yml \
+#                    -f .devcontainer/docker-compose.slack.yml up -d
+#
+# Overlays in .openharness/config.json composeOverrides are auto-loaded by the /provision skill
+
 name: ${SANDBOX_NAME:-openharness}
 
 services:
@@ -9,20 +40,27 @@ services:
     volumes:
       - ..:/home/sandbox/harness
       - ../.openharness:/home/sandbox/.openharness
+      - /var/run/docker.sock:/var/run/docker.sock
       - claude-auth:/home/sandbox/.claude
       - cloudflared-auth:/home/sandbox/.cloudflared
       - gh-config:/home/sandbox/.config/gh
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
+      - SANDBOX_NAME=${SANDBOX_NAME:-openharness}
       - TZ=${TZ:-America/Denver}
       - CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS=true
       - HEARTBEAT_ACTIVE_START=${HEARTBEAT_ACTIVE_START:-}
       - HEARTBEAT_ACTIVE_END=${HEARTBEAT_ACTIVE_END:-}
       - HEARTBEAT_AGENT=${HEARTBEAT_AGENT:-claude}
       - SANDBOX_PASSWORD=${SANDBOX_PASSWORD:-changeme}
+      - GIT_USER_NAME=${GIT_USER_NAME:-}
+      - GIT_USER_EMAIL=${GIT_USER_EMAIL:-}
+      - GH_TOKEN=${GH_TOKEN:-}
+      - INSTALL_AGENT_BROWSER=${INSTALL_AGENT_BROWSER:-false}
     stdin_open: true
     tty: true
+    init: true
     entrypoint: /usr/local/bin/entrypoint.sh
     command: sleep infinity
     restart: unless-stopped

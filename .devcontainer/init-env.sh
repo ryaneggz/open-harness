@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 # Resolve SANDBOX_NAME from git remote (repo name) or directory name.
-# Writes .devcontainer/.env so docker compose picks it up.
+# Seeds .devcontainer/.env on first provision. Non-destructive: if the
+# file already exists, this script does nothing.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+ENV_FILE="$SCRIPT_DIR/.env"
+
+# Respect user-authored .env — do not clobber
+if [ -f "$ENV_FILE" ]; then
+  exit 0
+fi
 
 if git -C "$REPO_ROOT" remote get-url origin &>/dev/null; then
   SANDBOX_NAME="$(basename -s .git "$(git -C "$REPO_ROOT" remote get-url origin)")"
@@ -13,14 +20,10 @@ else
 fi
 
 # Resolve GIT_COMMON_DIR for worktree mounts
-# If .git is a file (worktree), resolve the parent .git directory
 GIT_ENTRY="$REPO_ROOT/.git"
 if [ -f "$GIT_ENTRY" ]; then
-  # Worktree: .git file contains "gitdir: /path/to/.git/worktrees/<name>"
   GITDIR="$(sed 's/^gitdir: //' "$GIT_ENTRY")"
-  # Make absolute if relative
   [[ "$GITDIR" != /* ]] && GITDIR="$REPO_ROOT/$GITDIR"
-  # The common dir is two levels up from .git/worktrees/<name>
   GIT_COMMON_DIR="$(cd "$GITDIR/../.." && pwd)"
 else
   GIT_COMMON_DIR=""
@@ -29,17 +32,9 @@ fi
 {
   echo "SANDBOX_NAME=$SANDBOX_NAME"
   [ -n "$GIT_COMMON_DIR" ] && echo "GIT_COMMON_DIR=$GIT_COMMON_DIR"
+} > "$ENV_FILE"
 
-  # Forward vars from root .env (Slack tokens, provider config, etc.)
-  ROOT_ENV="$REPO_ROOT/.env"
-  if [ -f "$ROOT_ENV" ]; then
-    grep -v '^\s*#' "$ROOT_ENV" | grep -v '^\s*$' | while IFS= read -r line; do
-      echo "$line"
-    done
-  fi
-} > "$SCRIPT_DIR/.env"
-
-echo "Resolved SANDBOX_NAME=$SANDBOX_NAME"
+echo "Seeded $ENV_FILE with SANDBOX_NAME=$SANDBOX_NAME"
 [ -n "$GIT_COMMON_DIR" ] && echo "Resolved GIT_COMMON_DIR=$GIT_COMMON_DIR (worktree)"
 
 # Warn if git overlay is configured but GIT_COMMON_DIR is empty (not a worktree)

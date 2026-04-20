@@ -1,12 +1,13 @@
-import nextra from "nextra";
+import { createMDX } from "fumadocs-mdx/next";
 
-const withNextra = nextra({
-  theme: "nextra-theme-docs",
-  themeConfig: "./theme.config.tsx",
-});
-
-export default withNextra({
-  output: "export",
+/** @type {import('next').NextConfig} */
+const config = {
+  reactStrictMode: true,
+  output: process.env.STATIC_EXPORT === "true" ? "export" : undefined,
+  basePath: process.env.DOCS_BASE_PATH || "",
   images: { unoptimized: true },
-  basePath: "/open-harness",
-});
+};
+
+const withMDX = createMDX();
+
+export default withMDX(config);

@@ -182,7 +182,7 @@ export function helpText(version: string): string {
   let text = `${b}openharness${r} — AI-powered sandbox orchestrator ${d}(built on pi ${version})${r}
 
 ${b}Usage:${r}
-  openharness <command> [options]
+  openharness <command> [options]            ${d}(alias: oh)${r}
   openharness [pi-options] [messages...]     ${d}Launch AI agent mode${r}
 
 ${b}Commands:${r}

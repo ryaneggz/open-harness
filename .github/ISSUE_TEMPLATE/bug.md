@@ -33,32 +33,7 @@ assignees: ""
 
 ---
 
-## Agent Assignment
-
-### Metadata
-
-> **IMPORTANT**: Validate this metadata before starting work.
-
-```yml
-agent: "next-postgres-shadcn"
-branch: "agent/next-postgres-shadcn"
-worktree_path: ".worktrees/agent/next-postgres-shadcn"
-pull_request: "FROM agent/next-postgres-shadcn TO development"
-```
-
-### Workflow
-
-```bash
-# Enter the sandbox
-openharness shell next-postgres-shadcn
-claude
-
-# When complete — PR from agent branch to development
-cd .worktrees/agent/next-postgres-shadcn
-git add -A && git commit -m "fix(<issue#>): <description>"
-git push -u origin agent/next-postgres-shadcn
-gh pr create --base development --title "fix(<issue#>): <shortdesc>" --body "Closes #<issue#>"
-```
+> **Git workflow**: see [.claude/rules/git.md](../../.claude/rules/git.md)
 
 ---
 
@@ -67,6 +42,6 @@ gh pr create --base development --title "fix(<issue#>): <shortdesc>" --body "Clo
 - [ ] Bug is fixed and no longer reproducible
 - [ ] Regression test added (Vitest or Playwright)
 - [ ] Lint + format + type-check pass
-- [ ] Verified via agent-browser at `https://next-postgres-shadcn.ruska.dev`
+- [ ] Verified via agent-browser at `https://oh.ruska.dev`
 - [ ] No regressions introduced
-- [ ] PR targets `development` branch
+- [ ] PR targets the default target branch (see `.claude/rules/git.md`)

@@ -1,31 +1,27 @@
 # Workspace Maintenance
 
-This file defines meta-maintenance routines for the workspace itself.
-Technical heartbeats (periodic tasks) live in `heartbeats/` with `heartbeats.conf`.
+Technical heartbeats (periodic tasks) in `heartbeats/` with `heartbeats.conf`.
 
-## Periodic Workspace Audit
+## Periodic Audit
 
-When performing maintenance (manually or during idle heartbeats):
-
-1. **SOUL.md** — still personality only? No procedures or coding standards crept in?
-2. **MEMORY.md** — any duplicated context from IDENTITY.md? Daily logs need distilling?
-3. **AGENTS.md** — operating rules still accurate? Any new decision rules needed?
-4. **TOOLS.md** — tools/services still current? Versions correct?
-5. **USER.md** — owner preferences still accurate?
+1. **SOUL.md** — personality only? No procedures crept in?
+2. **MEMORY.md** — duplicated from IDENTITY.md? Logs need distilling?
+3. **AGENTS.md** — rules accurate? New decision rules needed?
+4. **TOOLS.md** — tools current? Versions correct?
+5. **USER.md** — preferences accurate?
 
 ## Drift Detection
 
 Watch for:
 - Stack info duplicated between IDENTITY.md and MEMORY.md
-- Procedures appearing in SOUL.md (should be in AGENTS.md)
-- Environment details appearing in AGENTS.md (should be in TOOLS.md)
-- Growing content in root files that should be extracted to subdirectories
-- Daily memory logs (`memory/`) that haven't been distilled into MEMORY.md
+- Procedures in SOUL.md (belongs in AGENTS.md)
+- Environment details in AGENTS.md (belongs in TOOLS.md)
+- Growing root files → extract to subdirs
+- Undistilled daily logs in `memory/`
 
 ## Memory Distillation
 
-During heartbeats or when asked:
-1. Read recent `memory/YYYY-MM-DD.md` files
-2. Extract durable patterns, recurring lessons, confirmed decisions
-3. Update MEMORY.md with distilled insights
-4. Keep daily logs as-is (they are the audit trail)
+1. Read recent `memory/YYYY-MM-DD.md`
+2. Extract durable patterns, lessons, decisions
+3. Update MEMORY.md
+4. Keep daily logs as-is (audit trail)
