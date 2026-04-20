@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { HeartbeatEntry } from "../lib/heartbeat/config.js";
+import type { HeartbeatEntry, WorkspaceRoot } from "../lib/heartbeat/config.js";
 
 // ---------------------------------------------------------------------------
 // Mocks — must be declared before any dynamic imports
@@ -24,6 +24,7 @@ vi.mock("croner", () => ({
 const mockRunnerRun = vi.fn().mockResolvedValue(undefined);
 const mockLoggerLog = vi.fn();
 const mockGetLogger = vi.fn();
+const mockGetLoggerFor = vi.fn();
 
 vi.mock("../lib/heartbeat/runner.js", () => ({
   HeartbeatRunner: vi.fn(),
@@ -40,11 +41,18 @@ const { HeartbeatRunner } = await import("../lib/heartbeat/runner.js");
 // Helpers
 // ---------------------------------------------------------------------------
 
+const DEFAULT_ROOT: WorkspaceRoot = {
+  workspacePath: "/tmp/workspace",
+  heartbeatDir: "/tmp/heartbeat",
+  label: "",
+};
+
 function makeEntry(overrides: Partial<HeartbeatEntry> = {}): HeartbeatEntry {
   return {
     cronExpr: "*/5 * * * *",
     filePath: "HEARTBEAT.md",
     agent: "claude",
+    root: DEFAULT_ROOT,
     ...overrides,
   };
 }
@@ -69,11 +77,13 @@ beforeEach(() => {
   mockRunnerRun.mockResolvedValue(undefined);
 
   // Restore HeartbeatRunner constructor mock
+  mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
   vi.mocked(HeartbeatRunner).mockImplementation(
     () =>
       ({
         run: mockRunnerRun,
         getLogger: mockGetLogger,
+        getLoggerFor: mockGetLoggerFor,
       }) as unknown as InstanceType<typeof HeartbeatRunner>,
   );
 
@@ -220,6 +230,7 @@ describe("HeartbeatScheduler", () => {
 
       vi.clearAllMocks();
       mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
 
       scheduler.stop();
 
@@ -241,6 +252,7 @@ describe("HeartbeatScheduler", () => {
 
       vi.clearAllMocks();
       mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
 
       // Restore MockCron constructor mock after clearAllMocks
       MockCron.mockImplementation((pattern: string, callback: () => Promise<void>) => {
@@ -280,6 +292,7 @@ describe("HeartbeatScheduler", () => {
 
       vi.clearAllMocks();
       mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
 
       // Sync with identical entry — should be a no-op
       scheduler.sync([makeEntry({ filePath: "stable.md", cronExpr: "*/5 * * * *" })]);
@@ -298,6 +311,7 @@ describe("HeartbeatScheduler", () => {
 
       vi.clearAllMocks();
       mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
       MockCron.mockImplementation((pattern: string, callback: () => Promise<void>) => {
         lastCronCallback = callback;
         mockCronGetPattern.mockReturnValue(pattern);
@@ -330,6 +344,7 @@ describe("HeartbeatScheduler", () => {
 
       vi.clearAllMocks();
       mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
       MockCron.mockImplementation((pattern: string, callback: () => Promise<void>) => {
         lastCronCallback = callback;
         mockCronGetPattern.mockReturnValue(pattern);
@@ -345,6 +360,93 @@ describe("HeartbeatScheduler", () => {
       scheduler.sync([makeEntry({ filePath: "keep.md", cronExpr: "*/5 * * * *" })]);
 
       expect(mockLoggerLog).toHaveBeenCalledWith(expect.stringContaining("removed"));
+    });
+  });
+
+  describe("multi-root namespacing", () => {
+    const ROOT_A: WorkspaceRoot = {
+      workspacePath: "/tmp/worktrees/agent/sdr-pallet/workspace",
+      heartbeatDir: "/tmp/worktrees/agent/sdr-pallet/workspace/heartbeats",
+      label: "agent-sdr-pallet",
+    };
+    const ROOT_B: WorkspaceRoot = {
+      workspacePath: "/tmp/worktrees/feat/foo/workspace",
+      heartbeatDir: "/tmp/worktrees/feat/foo/workspace/heartbeats",
+      label: "feat-foo",
+    };
+
+    it("schedules same-filename entries from two roots as independent jobs", () => {
+      const scheduler = new HeartbeatScheduler(RUNNER_OPTIONS);
+      const entries = [
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_A }),
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_B }),
+      ];
+
+      scheduler.start(entries);
+
+      // Two separate Cron instances — same filename but different labels.
+      expect(MockCron).toHaveBeenCalledTimes(2);
+      expect(scheduler.status()).toHaveLength(2);
+    });
+
+    it("derives composite `${label}::${slug}` name for multi-root entries", () => {
+      const scheduler = new HeartbeatScheduler(RUNNER_OPTIONS);
+      scheduler.start([makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_A })]);
+
+      expect(mockLoggerLog).toHaveBeenCalledWith(
+        expect.stringContaining("agent-sdr-pallet::heartbeats-ping"),
+      );
+    });
+
+    it("removing one root's entry does not stop another root's", () => {
+      const scheduler = new HeartbeatScheduler(RUNNER_OPTIONS);
+      scheduler.start([
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_A }),
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_B }),
+      ]);
+
+      vi.clearAllMocks();
+      mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
+      MockCron.mockImplementation((pattern: string, callback: () => Promise<void>) => {
+        lastCronCallback = callback;
+        mockCronGetPattern.mockReturnValue(pattern);
+        return {
+          stop: mockCronStop,
+          nextRun: mockCronNextRun,
+          isRunning: mockCronIsRunning,
+          getPattern: mockCronGetPattern,
+        };
+      });
+
+      // Drop ROOT_A's entry; keep ROOT_B's unchanged.
+      scheduler.sync([makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_B })]);
+
+      // Exactly one job stopped (A), no new jobs created (B unchanged).
+      expect(mockCronStop).toHaveBeenCalledTimes(1);
+      expect(MockCron).not.toHaveBeenCalled();
+      expect(scheduler.status()).toHaveLength(1);
+    });
+
+    it("unchanged multi-root entries are not recreated on sync (differential)", () => {
+      const scheduler = new HeartbeatScheduler(RUNNER_OPTIONS);
+      const initial = [
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_A }),
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_B }),
+      ];
+      scheduler.start(initial);
+
+      vi.clearAllMocks();
+      mockGetLogger.mockReturnValue({ log: mockLoggerLog });
+      mockGetLoggerFor.mockReturnValue({ log: mockLoggerLog });
+
+      scheduler.sync([
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_A }),
+        makeEntry({ filePath: "heartbeats/ping.md", root: ROOT_B }),
+      ]);
+
+      expect(mockCronStop).not.toHaveBeenCalled();
+      expect(MockCron).not.toHaveBeenCalled();
     });
   });
 
