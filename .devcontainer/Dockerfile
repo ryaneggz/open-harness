@@ -49,6 +49,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env INSTALLER_NO_MODIFY_PATH=1 
 # ─── pnpm (via corepack) ───────────────────────────────────────────
 ENV PNPM_HOME="/usr/local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable && corepack prepare pnpm@latest --activate \
  && pnpm setup --force 2>/dev/null || true
 
