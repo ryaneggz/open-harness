@@ -1,4 +1,6 @@
 import nextra from "nextra";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const withNextra = nextra({
   theme: "nextra-theme-docs",
@@ -9,9 +11,30 @@ export default withNextra({
   output: "export",
   images: { unoptimized: true },
   basePath: "/open-harness",
-  experimental: { externalDir: true, esmExternals: "loose" },
+  trailingSlash: true,
+  experimental: { externalDir: true },
+  transpilePackages: [
+    "mermaid",
+    "@theguild/remark-mermaid",
+    "d3",
+    "d3-array",
+    "d3-shape",
+    "d3-path",
+    "d3-contour",
+    "d3-sankey",
+  ],
   webpack: (config) => {
-    config.resolve.symlinks = false;
+    const reactDir = path.dirname(
+      fileURLToPath(import.meta.resolve("react/package.json")),
+    );
+    const reactDomDir = path.dirname(
+      fileURLToPath(import.meta.resolve("react-dom/package.json")),
+    );
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      react: reactDir,
+      "react-dom": reactDomDir,
+    };
     return config;
   },
 });
