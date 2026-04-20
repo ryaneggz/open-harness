@@ -100,7 +100,7 @@ export const roadmap: RoadmapItem[] = [
     phase: "next",
     complexity: "M",
     signal: "infrastructure",
-    dependencies: ["Branch protection"],
+    dependencies: ["Branch protection + required status checks"],
   },
   {
     rank: 9,
@@ -120,7 +120,7 @@ export const roadmap: RoadmapItem[] = [
     phase: "next",
     complexity: "M",
     signal: "infrastructure",
-    dependencies: ["Auth"],
+    dependencies: ["Auth (Clerk or Supabase)"],
   },
   {
     rank: 11,
@@ -141,7 +141,7 @@ export const roadmap: RoadmapItem[] = [
     phase: "next",
     complexity: "S",
     signal: "infrastructure",
-    dependencies: ["Architecture README"],
+    dependencies: ["Architecture README + Mermaid diagrams"],
   },
   {
     rank: 13,
@@ -162,7 +162,7 @@ export const roadmap: RoadmapItem[] = [
     phase: "next",
     complexity: "S",
     signal: "infrastructure",
-    dependencies: ["ToS + AUP"],
+    dependencies: ["Legal / ToS + Acceptable Use Policy"],
   },
   {
     rank: 15,
@@ -174,7 +174,12 @@ export const roadmap: RoadmapItem[] = [
     complexity: "L",
     signal: "#66",
     issueNumber: 66,
-    dependencies: ["Auth", "ToS + AUP", "Fork moderation policy", "CVE scanning"],
+    dependencies: [
+      "Auth (Clerk or Supabase)",
+      "Legal / ToS + Acceptable Use Policy",
+      "Fork moderation policy",
+      "CVE scanning in CI",
+    ],
   },
   {
     rank: 16,
@@ -217,7 +222,7 @@ export const roadmap: RoadmapItem[] = [
     phase: "later",
     complexity: "M",
     signal: "0 reactions, speculative",
-    dependencies: ["Fork registry"],
+    dependencies: ["Fork registry data model + submission flow"],
   },
   {
     rank: 20,
@@ -228,7 +233,7 @@ export const roadmap: RoadmapItem[] = [
     phase: "later",
     complexity: "M",
     signal: "0 reactions, speculative",
-    dependencies: ["Architecture README", "Contributor onboarding"],
+    dependencies: ["Architecture README + Mermaid diagrams", "Contributor onboarding guide"],
   },
   {
     rank: 21,
@@ -250,7 +255,7 @@ export const roadmap: RoadmapItem[] = [
     phase: "later",
     complexity: "L",
     signal: "infrastructure",
-    dependencies: ["Auth"],
+    dependencies: ["Auth (Clerk or Supabase)"],
   },
   {
     rank: 23,
@@ -261,7 +266,7 @@ export const roadmap: RoadmapItem[] = [
     phase: "later",
     complexity: "L",
     signal: "infrastructure",
-    dependencies: ["Auth", "Agent-workspace isolation"],
+    dependencies: ["Auth (Clerk or Supabase)", "Agent-workspace isolation"],
   },
   {
     rank: 24,
@@ -282,7 +287,7 @@ export const roadmap: RoadmapItem[] = [
     phase: "later",
     complexity: "L",
     signal: "0 reactions, speculative",
-    dependencies: ["Auth", "Agent-workspace isolation"],
+    dependencies: ["Auth (Clerk or Supabase)", "Agent-workspace isolation"],
   },
   {
     rank: 26,
@@ -293,7 +298,7 @@ export const roadmap: RoadmapItem[] = [
     phase: "later",
     complexity: "L",
     signal: "0 reactions, speculative",
-    dependencies: ["Provisioning latency"],
+    dependencies: ["Provisioning latency optimization"],
   },
   {
     rank: 27,
@@ -304,6 +309,11 @@ export const roadmap: RoadmapItem[] = [
     phase: "later",
     complexity: "M",
     signal: "0 reactions, speculative",
-    dependencies: ["Auth", "Fork registry", "Agent task telemetry", "Observability API"],
+    dependencies: [
+      "Auth (Clerk or Supabase)",
+      "Fork registry data model + submission flow",
+      "Agent task telemetry",
+      "Observability / metrics API",
+    ],
   },
 ];
