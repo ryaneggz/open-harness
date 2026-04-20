@@ -9,37 +9,37 @@ Format: `<prefix>(<issue#>): <shortdesc>`
 
 Example: `feat(#42): slack thread replies`
 
-> Create the issue first so `<issue#>` exists, then branch.
+> Create issue first so `<issue#>` exists, then branch.
 
 ## Branch Names
 
 Format: `<prefix>/<issue#>-<short-desc>`
 
 - `<short-desc>`: kebab-case, ≤5 words
-- Base off the default target branch (see below)
+- Base off default target branch (see below)
 
 Example: `feat/42-slack-thread-replies`
 
 ## Default Target Branch
 
-Use the first of these that exists in the repo:
+Use first of these existing in repo:
 
 1. `development` (preferred)
 2. `main` (fallback)
 3. `master` (fallback)
 
-Detect with `git show-ref --verify --quiet refs/heads/<name>` (or remote `refs/remotes/origin/<name>`). All PRs target this same branch; all new branches are cut from it.
+Detect via `git show-ref --verify --quiet refs/heads/<name>` (or remote `refs/remotes/origin/<name>`). All PRs target this branch; all new branches cut from it.
 
 ## Git Authentication
 
-Inside the sandbox, run `gh auth login && gh auth setup-git` during onboarding. The GitHub CLI installs a credential helper so `git push` / `git fetch` use your GitHub token — no SSH keys required.
+Inside sandbox, run `gh auth login && gh auth setup-git` during onboarding. GitHub CLI installs credential helper — `git push` / `git fetch` use your GitHub token — no SSH keys required.
 
-Advanced opt-ins (only when you explicitly need git-over-SSH):
+Advanced opt-ins (only when git-over-SSH explicitly needed):
 
-- `docker-compose.ssh.yml` — mounts host `~/.ssh` read-only (reuses your existing keys)
-- `docker-compose.ssh-generate.yml` — generates a persistent ED25519 keypair in a named volume (must be added to GitHub manually)
+- `docker-compose.ssh.yml` — mounts host `~/.ssh` read-only (reuses existing keys)
+- `docker-compose.ssh-generate.yml` — generates persistent ED25519 keypair in named volume (add to GitHub manually)
 
-Mutually exclusive — pick at most one. Both are off by default.
+Mutually exclusive — pick at most one. Both off by default.
 
 ## PR Titles
 
@@ -49,8 +49,8 @@ Example: `FROM feat/42-slack-thread-replies TO development`
 
 ## PR Bodies
 
-- Link the issue: `Closes #<issue#>` (or `Fixes`/`Resolves`)
-- Target the default target branch (`development` → `main` → `master`, whichever exists)
+- Link issue: `Closes #<issue#>` (or `Fixes`/`Resolves`)
+- Target default target branch (`development` → `main` → `master`, whichever exists)
 
 ## Commit Messages
 
@@ -58,7 +58,7 @@ Format: `<type>: <description>` where `<type>` ∈ `feat` · `fix` · `task` · 
 
 ## Worktrees
 
-Default path: `.worktrees/<branch>` at the project root. Create the `.worktrees/` directory if it does not already exist.
+Default path: `.worktrees/<branch>` at project root. Create `.worktrees/` if missing.
 
 ```bash
 mkdir -p .worktrees
@@ -69,20 +69,20 @@ git worktree add -b <prefix>/<issue#>-<short-desc> \
 
 Example path: `.worktrees/feat/42-slack-thread-replies`
 
-Clean up when done: `git worktree remove .worktrees/<branch>`.
+Cleanup: `git worktree remove .worktrees/<branch>`.
 
-`.worktrees/` contents are gitignored (see `.gitignore`); only `.worktrees/.gitkeep` is tracked.
+`.worktrees/` gitignored (see `.gitignore`); only `.worktrees/.gitkeep` tracked.
 
 ## Releases
 
-Versioning: **CalVer** `YYYY.M.D` for the first release of the day, then `YYYY.M.D-N` (N starts at 2) for subsequent releases.
+Versioning: **CalVer** `YYYY.M.D` for first release of day, then `YYYY.M.D-N` (N starts at 2) for subsequent releases.
 
 Release branch: `release/<VERSION>` (e.g., `release/2026.4.18-2`).
 
-Pushing the tag triggers `.github/workflows/release.yml` — it runs lint + type-check + tests, builds `ghcr.io/ryaneggz/openharness:<VERSION>`, pushes to GHCR, and creates a GitHub Release.
+Pushing tag triggers `.github/workflows/release.yml` — runs lint + type-check + tests, builds `ghcr.io/ryaneggz/openharness:<VERSION>`, pushes to GHCR, creates GitHub Release.
 
 Pre-flight before tagging:
-- On the intended source branch, no uncommitted changes
+- On intended source branch, no uncommitted changes
 - `pnpm run lint && pnpm run format:check && pnpm run type-check && pnpm test` pass in `workspace/projects/next-app`
 
 Procedure:
@@ -94,11 +94,11 @@ git push origin "release/$VERSION"
 git tag "$VERSION" && git push origin "$VERSION"          # triggers CI release
 ```
 
-After pushing the tag, monitor `.github/workflows/release.yml` and verify both the GitHub Release and the GHCR image. Use the `/release` skill for the full automated procedure (version detection, pre-flight, tag, CI polling, verification).
+After pushing tag, monitor `.github/workflows/release.yml` and verify both GitHub Release and GHCR image. Use `/release` skill for full automated procedure (version detection, pre-flight, tag, CI polling, verification).
 
 ## After Push
 
-If `.claude/skills/ci-status/` exists, invoke `/ci-status` after every `git push` to confirm the pipeline is green before declaring work done. A push that fails CI is not done.
+If `.claude/skills/ci-status/` exists, invoke `/ci-status` after every `git push` to confirm pipeline green before declaring work done. Push failing CI is not done.
 
 ## Workflow
 
@@ -107,5 +107,5 @@ Let `$BASE` = default target branch (detected per rule above).
 1. Create GitHub issue → record `<issue#>`
 2. `git checkout -b <prefix>/<issue#>-<short-desc> $BASE`
 3. Commit with `<type>: <description>`
-4. `git push -u origin <branch>` → then `/ci-status` (if the skill exists)
+4. `git push -u origin <branch>` → then `/ci-status` (if skill exists)
 5. `gh pr create --base $BASE --title "FROM <branch> TO $BASE" --body "Closes #<issue#>"`
