@@ -178,6 +178,23 @@ export async function parseHeartbeatConfigAsync(
   return [];
 }
 
+/**
+ * Parse heartbeat config across N roots concurrently and concatenate the
+ * results in root order. The scheduler treats each returned entry as
+ * namespaced by `entry.root.label`, so cross-root filename collisions are
+ * fine — they produce distinct composite keys.
+ */
+export async function parseHeartbeatConfigAcrossRoots(
+  roots: WorkspaceRoot[],
+  defaultAgent = "claude",
+  defaultInterval = 1800,
+): Promise<HeartbeatEntry[]> {
+  const groups = await Promise.all(
+    roots.map((root) => parseHeartbeatConfigAsync(root, defaultAgent, defaultInterval)),
+  );
+  return groups.flat();
+}
+
 // ---------------------------------------------------------------------------
 // Internal
 // ---------------------------------------------------------------------------
