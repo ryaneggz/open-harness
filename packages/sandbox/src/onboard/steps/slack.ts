@@ -1,5 +1,5 @@
 /**
- * Step 2/6 — Slack (Mom Bot). Port of `install/onboard.sh:121-290`.
+ * Step 3/6 — Slack (Mom Bot). Port of `install/onboard.sh:121-290`.
  *
  * Responsibilities, top to bottom:
  *   1. Load Slack tokens from host `~/harness/.env` into deps.env if missing.
@@ -24,7 +24,7 @@ const ERROR_MARKERS = [/Run error/, /Error/, /Missing env/];
 
 export const slackStep: Step = {
   id: "slack",
-  label: "Step 2/6 — Slack (Mom Bot)",
+  label: "Step 3/6 — Slack (Mom Bot)",
   async run(deps): Promise<StepResult> {
     const { io, fs, home, env } = deps;
     const hostEnvPath = `${home}/harness/.env`;

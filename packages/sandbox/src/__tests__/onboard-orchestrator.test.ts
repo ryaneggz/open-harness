@@ -13,9 +13,9 @@ function stubStep(id: StepId, status: StepStatus, label?: string): Step {
 
 const allSteps: Step[] = [
   stubStep("llm", "done", "Step 1/6 — LLM Provider (OpenAI)"),
-  stubStep("slack", "skipped", "Step 2/6 — Slack (Mom Bot)"),
-  stubStep("ssh", "done", "Step 3/6 — SSH Key"),
-  stubStep("github", "done", "Step 4/6 — GitHub CLI"),
+  stubStep("github", "done", "Step 2/6 — GitHub CLI"),
+  stubStep("slack", "skipped", "Step 3/6 — Slack (Mom Bot)"),
+  stubStep("ssh", "done", "Step 4/6 — SSH Key"),
   stubStep("cloudflare", "skipped", "Step 5/6 — Cloudflare Tunnel"),
   stubStep("claude", "done", "Step 6/6 — Claude Code"),
 ];
@@ -58,7 +58,7 @@ describe("runOnboarding", () => {
   });
 
   it("--only with failed step → exit 1", async () => {
-    const failing: Step[] = [stubStep("github", "failed", "Step 4/6 — GitHub CLI")];
+    const failing: Step[] = [stubStep("github", "failed", "Step 2/6 — GitHub CLI")];
     const deps = makeFakeDeps();
     const { exitCode } = await runOnboarding(failing, deps, {
       force: false,
@@ -104,7 +104,7 @@ describe("runOnboarding", () => {
   it("a step that throws is caught and recorded as failed", async () => {
     const throwing: Step = {
       id: "ssh",
-      label: "Step 3/6 — SSH Key",
+      label: "Step 4/6 — SSH Key",
       run: async () => {
         throw new Error("boom");
       },

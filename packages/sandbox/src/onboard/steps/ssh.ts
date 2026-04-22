@@ -1,12 +1,17 @@
 /**
- * Step 3/6 — SSH Key. Port of `install/onboard.sh:295-329`.
+ * Step 4/6 — SSH Key.
+ *
+ * Runs after GitHub CLI so that `gh auth login` has had the chance to
+ * generate and upload a key. In the common path the key is already on disk
+ * and registered with GitHub, so this step is pure verification.
  *
  *   - If `~/.ssh/id_ed25519.pub` exists, print it and run `ssh -T git@github.com`
  *     to verify GitHub access:
  *       - "successfully authenticated" in output → done
  *       - otherwise → prompt user to add the key, wait for Enter, re-verify.
- *   - Else, generate a new key with `ssh-keygen -t ed25519 -N ""`, print it,
- *     instruct the user to add it to GitHub, wait for Enter, return done.
+ *   - Else (user declined SSH at the `gh` prompt), generate a new key with
+ *     `ssh-keygen -t ed25519 -N ""`, print it, instruct the user to add it
+ *     to GitHub, wait for Enter, return done.
  */
 
 import type { Step, StepResult } from "../types.js";
@@ -19,7 +24,7 @@ function combine(result: { stdout: string; stderr: string }): string {
 
 export const sshStep: Step = {
   id: "ssh",
-  label: "Step 3/6 — SSH Key",
+  label: "Step 4/6 — SSH Key",
   async run(deps): Promise<StepResult> {
     const { io, fs, exec, home } = deps;
     const keyPath = `${home}/.ssh/id_ed25519`;

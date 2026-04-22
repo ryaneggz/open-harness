@@ -52,7 +52,7 @@ export async function runOnboarding(
     io.raw(`  Completed: ${completedAt}\n`);
     io.raw(`\n  Run with \x1b[1m--force\x1b[0m to re-verify all steps,\n`);
     io.raw(
-      `  or \x1b[1m--only <step>\x1b[0m (llm|slack|ssh|github|cloudflare|claude) to re-run one.\n\n`,
+      `  or \x1b[1m--only <step>\x1b[0m (llm|github|slack|ssh|cloudflare|claude) to re-run one.\n\n`,
     );
     return { results, exitCode: 0 };
   }
@@ -108,9 +108,9 @@ function printSummary(deps: Deps, results: Record<string, StepStatus>): void {
   io.raw("\n");
   const rows: [string, StepId][] = [
     ["LLM", "llm"],
+    ["GitHub", "github"],
     ["Slack", "slack"],
     ["SSH", "ssh"],
-    ["GitHub", "github"],
     ["Cloudflare", "cloudflare"],
     ["Claude", "claude"],
   ];

@@ -18,7 +18,7 @@ export const onboardTool: ToolDefinition = {
     only: Type.Optional(
       Type.String({
         description:
-          "Run only one step (llm|slack|ssh|github|cloudflare|claude); skips the marker short-circuit",
+          "Run only one step (llm|github|slack|ssh|cloudflare|claude); skips the marker short-circuit",
       }),
     ),
   }),
