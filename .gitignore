@@ -42,3 +42,4 @@ workspace/startup.sh
 **/.claude/plans
 **/auth.json
 **/.credentials.json
+**/scheduled_tasks.lock
