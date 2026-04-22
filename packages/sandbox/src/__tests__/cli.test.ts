@@ -231,16 +231,16 @@ describe("resolveSubcommand", () => {
       expect(result).toEqual({ tool: sandbox.onboardTool, params: { force: true } });
     });
 
-    it("routes a step name as step, not name (inside container)", () => {
+    it("routes a step name as only, not name (inside container)", () => {
       const result = resolveSubcommand("onboard", ["slack"], sandbox);
-      expect(result).toEqual({ tool: sandbox.onboardTool, params: { step: "slack" } });
+      expect(result).toEqual({ tool: sandbox.onboardTool, params: { only: "slack" } });
     });
 
-    it("routes sandbox-name + step as name + step", () => {
+    it("routes sandbox-name + step as name + only", () => {
       const result = resolveSubcommand("onboard", ["my-agent", "slack"], sandbox);
       expect(result).toEqual({
         tool: sandbox.onboardTool,
-        params: { name: "my-agent", step: "slack" },
+        params: { name: "my-agent", only: "slack" },
       });
     });
 
@@ -248,7 +248,7 @@ describe("resolveSubcommand", () => {
       for (const step of ONBOARD_STEPS) {
         const result = resolveSubcommand("onboard", [step], sandbox);
         if ("tool" in result) {
-          expect(result.params).toEqual({ step });
+          expect(result.params).toEqual({ only: step });
         } else {
           expect.fail(`expected success for step "${step}"`);
         }
@@ -264,7 +264,7 @@ describe("resolveSubcommand", () => {
       const result = resolveSubcommand("onboard", ["slack", "--force"], sandbox);
       expect(result).toEqual({
         tool: sandbox.onboardTool,
-        params: { step: "slack", force: true },
+        params: { only: "slack", force: true },
       });
     });
   });

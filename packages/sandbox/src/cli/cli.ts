@@ -131,14 +131,15 @@ export function resolveSubcommand(
   }
 
   // onboard: name is optional; a positional matching a known step
-  // (e.g. `oh onboard slack`) becomes `step`, not `name`.
+  // (e.g. `oh onboard slack`) becomes `only`, not `name`. Matches the
+  // TS `sandbox_onboard` tool schema.
   if (command === "onboard") {
     const params = parseToolArgs(args);
     if (typeof params.name === "string" && ONBOARD_STEPS.has(params.name)) {
-      params.step = params.name;
+      params.only = params.name;
       delete params.name;
     } else if (typeof params.action === "string" && ONBOARD_STEPS.has(params.action)) {
-      params.step = params.action;
+      params.only = params.action;
       delete params.action;
     }
     return { tool: sandbox.onboardTool, params };

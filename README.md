@@ -444,7 +444,6 @@ curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/ma
   .example.env                # Environment variable template
 
 install/                      # Provisioning scripts
-  onboard.sh                  # First-time auth wizard
   entrypoint.sh               # Late-stage container setup (starts heartbeat daemon)
   setup.sh                    # Environment setup utilities
   tmux-agent.sh               # tmux session management for agents

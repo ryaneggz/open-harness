@@ -11,7 +11,6 @@ import { main, VERSION } from "@mariozechner/pi-coding-agent";
 import {
   SUBCOMMANDS,
   HOST_ONLY_COMMANDS,
-  ONBOARD_STEPS,
   isInsideContainer,
   parseToolArgs,
   resolveSubcommand,
@@ -179,44 +178,15 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
     }
 
     case "onboard": {
-      // A bare positional that matches a known step (e.g. `oh onboard slack`)
-      // is a step selector, not a container name.
-      if (typeof params.name === "string" && ONBOARD_STEPS.has(params.name)) {
-        params.step = params.name;
-        delete params.name;
-      } else if (typeof params.action === "string" && ONBOARD_STEPS.has(params.action)) {
-        params.step = params.action;
-        delete params.action;
-      }
+      const { runOnboardCommand } = await import("./onboard.js");
       const name = params.name as string | undefined;
-      const step = params.step as string | undefined;
-      const scriptArgs: string[] = [];
-      if (params.force) scriptArgs.push("--force");
-      if (step) scriptArgs.push(step);
-      if (name) {
-        const cmd = execCmd(name, ["bash", "/home/sandbox/install/onboard.sh", ...scriptArgs], {
-          user: "sandbox",
-          interactive: true,
-          env: { HOME: "/home/sandbox" },
-        });
-        const { spawnSync } = await import("node:child_process");
-        const result = spawnSync(cmd[0], cmd.slice(1), { stdio: "inherit" });
-        if (result.status !== 0) {
-          console.error(
-            `Error: container '${name}' is not running. Start it first: openharness sandbox`,
-          );
-          process.exit(1);
-        }
-      } else {
-        const { existsSync } = await import("node:fs");
-        const script = "/home/sandbox/install/onboard.sh";
-        if (!existsSync(script)) {
-          console.error("Error: onboard.sh not found. Are you inside a sandbox container?");
-          process.exit(1);
-        }
-        const { spawnSync } = await import("node:child_process");
-        spawnSync("bash", [script, ...scriptArgs], { stdio: "inherit" });
-      }
+      const only = typeof params.action === "string" ? params.action : undefined;
+      const exitCode = await runOnboardCommand({
+        name,
+        force: params.force as boolean | undefined,
+        only,
+      });
+      if (exitCode !== 0) process.exit(exitCode);
       break;
     }
 
