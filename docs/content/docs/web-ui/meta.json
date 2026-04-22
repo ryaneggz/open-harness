@@ -1,0 +1,9 @@
+{
+  "title": "Web UI",
+  "pages": [
+    "overview",
+    "setup",
+    "how-it-works",
+    "security"
+  ]
+}
