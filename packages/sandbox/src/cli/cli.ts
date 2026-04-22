@@ -34,6 +34,9 @@ export const SUBCOMMANDS = new Set([
 
 export const HEARTBEAT_ACTIONS = ["sync", "stop", "status", "migrate"] as const;
 
+/** Named steps accepted by `openharness onboard <step>` — matches install/onboard.sh. */
+export const ONBOARD_STEPS = new Set(["llm", "slack", "ssh", "github", "cloudflare", "claude"]);
+
 // ─── Types ─────────────────────────────────────────────────────────
 
 export interface ToolResult {
@@ -127,9 +130,18 @@ export function resolveSubcommand(
     return { tool: sandbox.listTool, params: {} };
   }
 
-  // onboard: name is optional
+  // onboard: name is optional; a positional matching a known step
+  // (e.g. `oh onboard slack`) becomes `only`, not `name`. Matches the
+  // TS `sandbox_onboard` tool schema.
   if (command === "onboard") {
     const params = parseToolArgs(args);
+    if (typeof params.name === "string" && ONBOARD_STEPS.has(params.name)) {
+      params.only = params.name;
+      delete params.name;
+    } else if (typeof params.action === "string" && ONBOARD_STEPS.has(params.action)) {
+      params.only = params.action;
+      delete params.action;
+    }
     return { tool: sandbox.onboardTool, params };
   }
 
@@ -192,7 +204,7 @@ ${h(pad("shell <name>"), "Open interactive bash shell")}
 ${h(pad("stop [name]"), "Stop and remove container")}
 ${h(pad("clean [name]"), "Full cleanup (containers + volumes)")}
 ${h(pad("list"), "List running sandboxes")}
-  ${b}${pad("onboard [name] [--force]")}${r}Interactive first-time setup wizard
+  ${b}${pad("onboard [name|step] [--force]")}${r}Setup wizard — or one step (slack, llm, ssh, github, cloudflare, claude)
   ${b}${pad("heartbeat <action> <name>")}${r}Manage heartbeats (sync|stop|status|migrate)
 
 ${b}Advanced:${r}
