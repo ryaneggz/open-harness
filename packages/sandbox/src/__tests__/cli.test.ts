@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   SUBCOMMANDS,
   HEARTBEAT_ACTIONS,
+  ONBOARD_STEPS,
   parseToolArgs,
   formatResult,
   resolveSubcommand,
@@ -228,6 +229,51 @@ describe("resolveSubcommand", () => {
     it("resolves with --force only (no name)", () => {
       const result = resolveSubcommand("onboard", ["--force"], sandbox);
       expect(result).toEqual({ tool: sandbox.onboardTool, params: { force: true } });
+    });
+
+    it("routes a step name as step, not name (inside container)", () => {
+      const result = resolveSubcommand("onboard", ["slack"], sandbox);
+      expect(result).toEqual({ tool: sandbox.onboardTool, params: { step: "slack" } });
+    });
+
+    it("routes sandbox-name + step as name + step", () => {
+      const result = resolveSubcommand("onboard", ["my-agent", "slack"], sandbox);
+      expect(result).toEqual({
+        tool: sandbox.onboardTool,
+        params: { name: "my-agent", step: "slack" },
+      });
+    });
+
+    it("accepts every documented step", () => {
+      for (const step of ONBOARD_STEPS) {
+        const result = resolveSubcommand("onboard", [step], sandbox);
+        if ("tool" in result) {
+          expect(result.params).toEqual({ step });
+        } else {
+          expect.fail(`expected success for step "${step}"`);
+        }
+      }
+    });
+
+    it("treats unknown positional as sandbox name (host mode)", () => {
+      const result = resolveSubcommand("onboard", ["my-agent-42"], sandbox);
+      expect(result).toEqual({ tool: sandbox.onboardTool, params: { name: "my-agent-42" } });
+    });
+
+    it("combines step with --force", () => {
+      const result = resolveSubcommand("onboard", ["slack", "--force"], sandbox);
+      expect(result).toEqual({
+        tool: sandbox.onboardTool,
+        params: { step: "slack", force: true },
+      });
+    });
+  });
+
+  describe("ONBOARD_STEPS", () => {
+    it("includes the six documented step names", () => {
+      expect([...ONBOARD_STEPS].sort()).toEqual(
+        ["claude", "cloudflare", "github", "llm", "slack", "ssh"].sort(),
+      );
     });
   });
 
