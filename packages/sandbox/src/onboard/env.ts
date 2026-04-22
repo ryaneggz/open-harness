@@ -55,9 +55,19 @@ export function loadEnvInto(
 }
 
 /**
- * Upsert a set of KEY=VALUE pairs into `.env`, removing any prior lines for
- * those keys first. Creates the file if it doesn't exist. Returns the new
- * file contents.
+ * Upsert a set of KEY=VALUE pairs into `.env`.
+ *
+ * For each key, any existing uncommented `KEY=…` line is **commented out in
+ * place** (prefixed with `# `) and the new value is inserted on the line
+ * directly after the last such occurrence. Keys with no existing match are
+ * appended at the end.
+ *
+ * Rationale: onboarding often runs against a `.devcontainer/.env` that the
+ * user has pre-populated with defaults. Stripping the old line hides the
+ * fact that the value changed; leaving it commented preserves diff context
+ * and makes reverts obvious. Already-commented lines are left untouched.
+ *
+ * Creates the file if it doesn't exist. Returns the new file contents.
  */
 export function upsertEnvFile(
   fs: FsDeps,
@@ -65,23 +75,40 @@ export function upsertEnvFile(
   updates: Record<string, string>,
 ): string {
   const existing = fs.exists(envPath) ? fs.readFile(envPath) : "";
-  const keys = new Set(Object.keys(updates));
-  const kept = existing
-    .split("\n")
-    .filter((line) => {
-      const eq = line.indexOf("=");
-      if (eq === -1) return true;
-      const key = line.slice(0, eq);
-      return !keys.has(key);
-    })
-    .join("\n")
-    .replace(/\n+$/, "");
+  const lines = existing.split("\n");
+  while (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
 
-  const appended = Object.entries(updates)
-    .map(([k, v]) => `${k}=${v}`)
-    .join("\n");
+  const lastMatchIdx: Record<string, number> = {};
+  const rewritten = lines.map((line, idx) => {
+    const trimmed = line.trimStart();
+    if (!trimmed || trimmed.startsWith("#")) return line;
+    const eq = line.indexOf("=");
+    if (eq === -1) return line;
+    const key = line.slice(0, eq).trim();
+    if (Object.prototype.hasOwnProperty.call(updates, key)) {
+      lastMatchIdx[key] = idx;
+      return `# ${line}`;
+    }
+    return line;
+  });
 
-  const next = [kept, appended].filter((s) => s.length > 0).join("\n") + "\n";
+  const insertionsAt: Record<number, string[]> = {};
+  const unmatched = new Set(Object.keys(updates));
+  for (const [key, idx] of Object.entries(lastMatchIdx)) {
+    (insertionsAt[idx] ||= []).push(`${key}=${updates[key]}`);
+    unmatched.delete(key);
+  }
+
+  const out: string[] = [];
+  for (let i = 0; i < rewritten.length; i++) {
+    out.push(rewritten[i]);
+    if (insertionsAt[i]) out.push(...insertionsAt[i]);
+  }
+  for (const key of unmatched) {
+    out.push(`${key}=${updates[key]}`);
+  }
+
+  const next = out.join("\n") + "\n";
   fs.writeFile(envPath, next);
   return next;
 }

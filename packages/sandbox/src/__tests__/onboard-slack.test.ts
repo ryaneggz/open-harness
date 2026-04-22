@@ -71,10 +71,10 @@ describe("slack step", () => {
     });
   });
 
-  it("tokens missing + user accepts + provides tokens → persists to .env and connects", async () => {
+  it("tokens missing + user accepts + provides tokens → persists to .devcontainer/.env and connects", async () => {
     const deps = makeFakeDeps({
       home: "/home/sandbox",
-      files: { "/home/sandbox/harness": "dir" },
+      files: { "/home/sandbox/harness/.devcontainer": "dir" },
       which: { mom: "/usr/local/bin/mom" },
       askAnswers: ["y", "xapp-new", "xoxb-new"],
       execStubs: [
@@ -89,8 +89,35 @@ describe("slack step", () => {
     });
     const result = await slackStep.run(deps, { force: false });
     expect(result.status).toBe("done");
-    const envContents = deps.files.get("/home/sandbox/harness/.env") ?? "";
+    const envContents = deps.files.get("/home/sandbox/harness/.devcontainer/.env") ?? "";
     expect(envContents).toContain("SLACK_APP_TOKEN=xapp-new");
+    expect(envContents).toContain("SLACK_BOT_TOKEN=xoxb-new");
+  });
+
+  it("prompts + persists against .devcontainer/.env with preconfigured value: comments old line, inserts new after", async () => {
+    const deps = makeFakeDeps({
+      home: "/home/sandbox",
+      files: {
+        "/home/sandbox/harness/.devcontainer": "dir",
+        "/home/sandbox/harness/.devcontainer/.env": "SLACK_APP_TOKEN=xapp-preconfigured\n",
+      },
+      which: { mom: "/usr/local/bin/mom" },
+      askAnswers: ["y", "xapp-new", "xoxb-new"],
+      execStubs: [
+        { match: /^tmux has-session -t slack$/, result: { status: 1, stdout: "", stderr: "" } },
+        { match: /^tmux kill-session -t slack$/, result: { status: 0, stdout: "", stderr: "" } },
+        { match: /^tmux new-session -d -s slack /, result: { status: 0, stdout: "", stderr: "" } },
+        {
+          match: /^tmux capture-pane -t slack -p$/,
+          result: { status: 0, stdout: "connected and listening", stderr: "" },
+        },
+      ],
+    });
+    const result = await slackStep.run(deps, { force: false });
+    expect(result.status).toBe("done");
+    const envContents = deps.files.get("/home/sandbox/harness/.devcontainer/.env") ?? "";
+    expect(envContents).toContain("# SLACK_APP_TOKEN=xapp-preconfigured");
+    expect(envContents).toMatch(/# SLACK_APP_TOKEN=xapp-preconfigured\nSLACK_APP_TOKEN=xapp-new/);
     expect(envContents).toContain("SLACK_BOT_TOKEN=xoxb-new");
   });
 

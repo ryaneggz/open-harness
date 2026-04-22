@@ -2,10 +2,13 @@
  * Step 3/6 — Slack (Mom Bot). Port of `install/onboard.sh:121-290`.
  *
  * Responsibilities, top to bottom:
- *   1. Load Slack tokens from host `~/harness/.env` into deps.env if missing.
+ *   1. Load Slack tokens from host `~/harness/.devcontainer/.env` into
+ *      deps.env if missing. This is the file docker-compose reads on
+ *      rebuild; tokens persisted anywhere else are lost.
  *   2. Resolve the `mom` command: global CLI, then `node <dist>/main.js`,
  *      then build the dist on demand.
- *   3. If tokens missing, prompt + collect, persist to host `.env`.
+ *   3. If tokens missing, prompt + collect, persist to
+ *      `~/harness/.devcontainer/.env`.
  *   4. Bootstrap `~/.openharness/agent/{settings,auth}.json` symlinks from
  *      `~/.pi/agent/…`.
  *   5. Ensure Mom has LLM auth (`~/.pi/slack/auth.json` symlink).
@@ -27,7 +30,7 @@ export const slackStep: Step = {
   label: "Step 3/6 — Slack (Mom Bot)",
   async run(deps): Promise<StepResult> {
     const { io, fs, home, env } = deps;
-    const hostEnvPath = `${home}/harness/.env`;
+    const hostEnvPath = `${home}/harness/.devcontainer/.env`;
 
     if (!env.SLACK_APP_TOKEN) {
       loadEnvInto(fs, hostEnvPath, env);
@@ -146,10 +149,10 @@ function printSlackAppInstructions(deps: Deps): void {
 
 function persistTokens(deps: Deps, hostEnvPath: string, appToken: string, botToken: string): void {
   const { io, fs, home } = deps;
-  const hostDir = `${home}/harness`;
-  if (!fs.exists(hostDir)) {
+  const devcontainerDir = `${home}/harness/.devcontainer`;
+  if (!fs.exists(devcontainerDir)) {
     io.warn(`Cannot write to ${hostEnvPath} — tokens valid for this session only`);
-    io.raw("    Add manually to .env on the host:\n");
+    io.raw("    Add manually to .devcontainer/.env on the host:\n");
     io.raw(`      SLACK_APP_TOKEN=${appToken}\n`);
     io.raw(`      SLACK_BOT_TOKEN=${botToken}\n`);
     return;
@@ -159,10 +162,10 @@ function persistTokens(deps: Deps, hostEnvPath: string, appToken: string, botTok
       SLACK_APP_TOKEN: appToken,
       SLACK_BOT_TOKEN: botToken,
     });
-    io.ok("Tokens saved to .env (persist across rebuilds)");
+    io.ok("Tokens saved to .devcontainer/.env (persist across rebuilds)");
   } catch {
     io.warn(`Cannot write to ${hostEnvPath} — tokens valid for this session only`);
-    io.raw("    Add manually to .env on the host:\n");
+    io.raw("    Add manually to .devcontainer/.env on the host:\n");
     io.raw(`      SLACK_APP_TOKEN=${appToken}\n`);
     io.raw(`      SLACK_BOT_TOKEN=${botToken}\n`);
   }
