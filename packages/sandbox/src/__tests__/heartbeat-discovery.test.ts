@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -10,6 +10,16 @@ import { discoverWorkspaceRoots, sanitizeBranch } from "../lib/heartbeat/discove
 // Helpers: build a real, throwaway multi-worktree git repo on disk so we can
 // exercise `git worktree list --porcelain` end-to-end (no parsing mocks).
 // ---------------------------------------------------------------------------
+
+// Husky pre-commit hooks export GIT_DIR/GIT_INDEX_FILE, which leak into every
+// child `git` process — both the test helper below and the production
+// `discoverWorkspaceRoots` call — and silently retarget them at the real repo.
+// Strip them once for the whole file so the tests are hermetic.
+beforeAll(() => {
+  for (const key of Object.keys(process.env)) {
+    if (key.startsWith("GIT_")) delete process.env[key];
+  }
+});
 
 function run(cwd: string, ...args: string[]): string {
   return execFileSync("git", ["-C", cwd, ...args], {
