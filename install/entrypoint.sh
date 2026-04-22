@@ -73,14 +73,17 @@ if [ -f "$STARTUP" ]; then
   gosu sandbox bash "$STARTUP" 2>&1 | sed 's/^/  /' || true
 fi
 
-# Build and link Slack bot from bind-mount (replaces /opt/slack image copy)
-if [ -f "$HOME/harness/packages/slack/package.json" ]; then
-  echo "Building and linking Slack bot package..."
-  cd "$HOME/harness/packages/slack"
-  pnpm install 2>/dev/null
-  pnpm run build 2>/dev/null
-  pnpm link --global 2>/dev/null
-  cd "$HOME/harness"
+# Build and link Slack bot from bind-mount (replaces /opt/slack image copy).
+# Entrypoint runs as root, so $HOME is /root — use the sandbox user's absolute
+# path and run pnpm as that user so the global link lands on their PATH.
+SLACK_PKG="/home/sandbox/harness/packages/slack"
+if [ -f "$SLACK_PKG/package.json" ]; then
+  echo "[entrypoint] Building and linking Slack bot package..."
+  if gosu sandbox bash -c "cd '$SLACK_PKG' && pnpm install && pnpm run build && pnpm link --global"; then
+    echo "[entrypoint] Slack bot linked ($(gosu sandbox bash -lc 'command -v mom || echo missing'))"
+  else
+    echo "[entrypoint] WARNING: Slack bot build/link failed — mom CLI will be unavailable"
+  fi
 fi
 
 exec gosu sandbox "$@"
