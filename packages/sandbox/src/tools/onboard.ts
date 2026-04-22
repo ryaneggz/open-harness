@@ -18,12 +18,21 @@ export const onboardTool: ToolDefinition = {
     force: Type.Optional(
       Type.Boolean({ description: "Re-verify all steps even if already onboarded" }),
     ),
+    step: Type.Optional(
+      Type.String({
+        description:
+          "Run only one step: llm, slack, ssh, github, cloudflare, or claude. Skips the all-or-nothing wizard.",
+      }),
+    ),
   }),
 
   async execute(_toolCallId, params: Record<string, unknown>) {
     const name = params.name as string | undefined;
     const force = params.force as boolean | undefined;
-    const args = force ? ["--force"] : [];
+    const step = params.step as string | undefined;
+    const args: string[] = [];
+    if (force) args.push("--force");
+    if (step) args.push(step);
 
     if (name) {
       // Host mode: exec into the named container

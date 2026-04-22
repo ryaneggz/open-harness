@@ -11,6 +11,7 @@ import { main, VERSION } from "@mariozechner/pi-coding-agent";
 import {
   SUBCOMMANDS,
   HOST_ONLY_COMMANDS,
+  ONBOARD_STEPS,
   isInsideContainer,
   parseToolArgs,
   resolveSubcommand,
@@ -178,10 +179,22 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
     }
 
     case "onboard": {
+      // A bare positional that matches a known step (e.g. `oh onboard slack`)
+      // is a step selector, not a container name.
+      if (typeof params.name === "string" && ONBOARD_STEPS.has(params.name)) {
+        params.step = params.name;
+        delete params.name;
+      } else if (typeof params.action === "string" && ONBOARD_STEPS.has(params.action)) {
+        params.step = params.action;
+        delete params.action;
+      }
       const name = params.name as string | undefined;
-      const force = params.force ? ["--force"] : [];
+      const step = params.step as string | undefined;
+      const scriptArgs: string[] = [];
+      if (params.force) scriptArgs.push("--force");
+      if (step) scriptArgs.push(step);
       if (name) {
-        const cmd = execCmd(name, ["bash", "/home/sandbox/install/onboard.sh", ...force], {
+        const cmd = execCmd(name, ["bash", "/home/sandbox/install/onboard.sh", ...scriptArgs], {
           user: "sandbox",
           interactive: true,
           env: { HOME: "/home/sandbox" },
@@ -202,7 +215,7 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
           process.exit(1);
         }
         const { spawnSync } = await import("node:child_process");
-        spawnSync("bash", [script, ...force], { stdio: "inherit" });
+        spawnSync("bash", [script, ...scriptArgs], { stdio: "inherit" });
       }
       break;
     }

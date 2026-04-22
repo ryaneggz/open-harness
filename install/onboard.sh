@@ -14,26 +14,56 @@ ask()    { printf "\n  ${B}%s${NC} " "$*"; }
 # ─── Config ─────────────────────────────────────────────────────────
 ONBOARD_MARKER="$HOME/.claude/.onboarded"
 FORCE=false
-[[ "${1:-}" == "--force" ]] && FORCE=true
+ONLY=""
+KNOWN_STEPS="llm slack ssh github cloudflare claude"
+
+# Parse flags. Supports:
+#   onboard.sh                → full wizard
+#   onboard.sh --force        → full wizard, re-verify
+#   onboard.sh --only slack   → run only the slack step (idempotent)
+#   onboard.sh slack          → alias for --only slack
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --force) FORCE=true; shift ;;
+    --only) ONLY="${2:-}"; shift 2 ;;
+    --only=*) ONLY="${1#--only=}"; shift ;;
+    llm|slack|ssh|github|cloudflare|claude) ONLY="$1"; shift ;;
+    *) shift ;;
+  esac
+done
+
+if [ -n "$ONLY" ] && ! printf '%s\n' $KNOWN_STEPS | grep -qx "$ONLY"; then
+  fail "Unknown step: $ONLY (valid: $KNOWN_STEPS)"
+  exit 2
+fi
 
 APP_DIR="$HOME/harness/workspace/projects/next-app"
 
+# Step gate: true if we should run step $1
+should_run() { [ -z "$ONLY" ] || [ "$ONLY" = "$1" ]; }
+
 # ─── Already onboarded? ─────────────────────────────────────────────
-if [ -f "$ONBOARD_MARKER" ] && [ "$FORCE" = false ]; then
+# --only skips this check so a single step can be re-verified any time.
+if [ -z "$ONLY" ] && [ -f "$ONBOARD_MARKER" ] && [ "$FORCE" = false ]; then
   banner "Already onboarded"
   printf "  Completed: %s\n" "$(jq -r '.completedAt // "unknown"' "$ONBOARD_MARKER" 2>/dev/null || echo 'unknown')"
-  printf "\n  Run with ${B}--force${NC} to re-verify all steps.\n\n"
+  printf "\n  Run with ${B}--force${NC} to re-verify all steps,\n"
+  printf "  or ${B}--only <step>${NC} (llm|slack|ssh|github|cloudflare|claude) to re-run one.\n\n"
   exit 0
 fi
 
 # ─── Welcome ────────────────────────────────────────────────────────
-printf "\n"
-printf "  ${B}${CYAN}Open Harness — First-Time Setup${NC}\n"
-printf "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-printf "\n"
-printf "  This wizard walks you through one-time authentication\n"
-printf "  for all services used by this sandbox.\n"
-printf "\n"
+if [ -z "$ONLY" ]; then
+  printf "\n"
+  printf "  ${B}${CYAN}Open Harness — First-Time Setup${NC}\n"
+  printf "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+  printf "\n"
+  printf "  This wizard walks you through one-time authentication\n"
+  printf "  for all services used by this sandbox.\n"
+  printf "\n"
+else
+  printf "\n  ${B}${CYAN}Open Harness — onboarding step: ${ONLY}${NC}\n\n"
+fi
 
 # Track step results
 declare -A STEPS
@@ -41,6 +71,7 @@ declare -A STEPS
 # ═══════════════════════════════════════════════════════════════════════
 # Step 1: LLM Provider — must be first, everything else depends on it
 # ═══════════════════════════════════════════════════════════════════════
+if should_run llm; then
 banner "Step 1/6 — LLM Provider (OpenAI)"
 
 printf "  This sandbox uses ${B}openharness${NC} (Pi agent) for AI tasks.\n"
@@ -82,14 +113,46 @@ else
     STEPS[llm]="skipped"
   fi
 fi
+fi  # end should_run llm
 
 # ═══════════════════════════════════════════════════════════════════════
 # Step 2: Slack (Mom Bot) — early so we can validate before continuing
 # ═══════════════════════════════════════════════════════════════════════
+if should_run slack; then
 banner "Step 2/6 — Slack (Mom Bot)"
+
+# Load persisted tokens from host .env so --only slack works after rebuild
+# (container env misses tokens set between container start and .env edit).
+if [ -z "${SLACK_APP_TOKEN:-}" ] && [ -s "$HOME/harness/.env" ]; then
+  # shellcheck disable=SC1090
+  set -a && . "$HOME/harness/.env" 2>/dev/null && set +a || true
+fi
 
 SLACK_APP_TOKEN="${SLACK_APP_TOKEN:-}"
 SLACK_BOT_TOKEN="${SLACK_BOT_TOKEN:-}"
+
+# Resolve how to run mom. Prefer the globally-linked CLI (set up by the
+# entrypoint as root); fall back to `node <dist>/main.js` when that link
+# is absent — onboard.sh runs as sandbox user and can't pnpm link --global
+# (that needs root to write PNPM_HOME). Build the dist on demand if needed.
+SLACK_PKG="/home/sandbox/harness/packages/slack"
+MOM_CMD=""
+if command -v mom &>/dev/null; then
+  MOM_CMD="mom"
+elif [ -f "$SLACK_PKG/dist/main.js" ]; then
+  warn "mom CLI not on PATH — using direct node invocation"
+  MOM_CMD="node $SLACK_PKG/dist/main.js"
+elif [ -f "$SLACK_PKG/package.json" ]; then
+  warn "Building Slack bot dist..."
+  if (cd "$SLACK_PKG" && pnpm install && pnpm run build) >/tmp/mom-install.log 2>&1; then
+    MOM_CMD="node $SLACK_PKG/dist/main.js"
+    ok "Built (rebuild the container to restore the global 'mom' command)"
+  else
+    fail "Slack bot build failed — see /tmp/mom-install.log"
+  fi
+else
+  fail "packages/slack not found at $SLACK_PKG — cannot run mom"
+fi
 
 if [ -n "$SLACK_APP_TOKEN" ] && [ -n "$SLACK_BOT_TOKEN" ]; then
   ok "Slack tokens detected from environment"
@@ -158,7 +221,7 @@ mkdir -p "$OHARNESS_AGENT"
 
 # Start Mom and validate if tokens are available
 if [ -n "$SLACK_APP_TOKEN" ] && [ -n "$SLACK_BOT_TOKEN" ]; then
-  if command -v mom &>/dev/null; then
+  if [ -n "$MOM_CMD" ]; then
     # Ensure LLM auth exists for Mom
     SLACKDIR="$HOME/.pi/slack"
     if [ ! -s "$SLACKDIR/auth.json" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
@@ -187,7 +250,7 @@ if [ -n "$SLACK_APP_TOKEN" ] && [ -n "$SLACK_BOT_TOKEN" ]; then
       # Not running or not connected — (re)start
       tmux kill-session -t slack 2>/dev/null || true
       SLACK_APP_TOKEN="$SLACK_APP_TOKEN" SLACK_BOT_TOKEN="$SLACK_BOT_TOKEN" \
-        tmux new-session -d -s slack 'mom --sandbox=host ~/harness/workspace/.slack'
+        tmux new-session -d -s slack "$MOM_CMD --sandbox=host ~/harness/workspace/.slack"
 
       # Validate: wait for Mom to connect or fail
       printf "\n  Validating Slack connection"
@@ -218,16 +281,18 @@ if [ -n "$SLACK_APP_TOKEN" ] && [ -n "$SLACK_BOT_TOKEN" ]; then
       fi
     fi
   else
-    fail "mom CLI not found — reinstall with: pnpm add -g @mariozechner/pi-mom"
+    fail "Could not locate or build mom — see /tmp/mom-install.log"
     STEPS[slack]="failed"
   fi
 elif [ "${STEPS[slack]:-}" != "skipped" ]; then
   STEPS[slack]="skipped"
 fi
+fi  # end should_run slack
 
 # ═══════════════════════════════════════════════════════════════════════
 # Step 3: SSH Key
 # ═══════════════════════════════════════════════════════════════════════
+if should_run ssh; then
 banner "Step 3/6 — SSH Key"
 
 if [ -f "$HOME/.ssh/id_ed25519.pub" ]; then
@@ -261,10 +326,12 @@ else
   read -r
   STEPS[ssh]="done"
 fi
+fi  # end should_run ssh
 
 # ═══════════════════════════════════════════════════════════════════════
 # Step 4: GitHub CLI
 # ═══════════════════════════════════════════════════════════════════════
+if should_run github; then
 banner "Step 4/6 — GitHub CLI"
 
 if gh auth status &>/dev/null; then
@@ -284,10 +351,12 @@ else
     STEPS[github]="failed"
   fi
 fi
+fi  # end should_run github
 
 # ═══════════════════════════════════════════════════════════════════════
 # Step 5: Cloudflare Tunnel
 # ═══════════════════════════════════════════════════════════════════════
+if should_run cloudflare; then
 banner "Step 5/6 — Cloudflare Tunnel"
 
 if ! command -v cloudflared &>/dev/null; then
@@ -341,10 +410,12 @@ else
     fi
   fi
 fi
+fi  # end should_run cloudflare
 
 # ═══════════════════════════════════════════════════════════════════════
 # Step 6: Claude Code
 # ═══════════════════════════════════════════════════════════════════════
+if should_run claude; then
 banner "Step 6/6 — Claude Code"
 
 if [ -f "$HOME/.claude/.credentials.json" ] || [ -f "$HOME/.claude/credentials.json" ]; then
@@ -363,6 +434,19 @@ else
     skip "Skipped — run 'claude' later to authenticate"
     STEPS[claude]="skipped"
   fi
+fi
+fi  # end should_run claude
+
+# --only mode: single-step report + exit, skipping app startup and marker.
+if [ -n "$ONLY" ]; then
+  STATUS="${STEPS[$ONLY]:-unknown}"
+  printf "\n  ${B}${ONLY}${NC}: %s\n\n" "$STATUS"
+  case "$STATUS" in
+    done) exit 0 ;;
+    skipped) exit 0 ;;  # user opted out; still a clean exit
+    failed) exit 1 ;;
+    *) exit 1 ;;
+  esac
 fi
 
 # ═══════════════════════════════════════════════════════════════════════
