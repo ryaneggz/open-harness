@@ -12,7 +12,7 @@ import { makeRealDeps } from "../onboard/deps.js";
 import { runOnboarding } from "../onboard/orchestrator.js";
 import { parseArgs } from "../onboard/args.js";
 import { ALL_STEPS } from "../onboard/steps/index.js";
-import { UnknownStepError } from "../onboard/types.js";
+import { STEP_IDS, UnknownStepError } from "../onboard/types.js";
 
 export interface OnboardInvocationOptions {
   /** Sandbox container name. When set, runs host-mode (docker exec). */
@@ -22,11 +22,24 @@ export interface OnboardInvocationOptions {
   only?: string;
 }
 
-export async function runOnboardCommand(opts: OnboardInvocationOptions): Promise<number> {
-  if (opts.name) {
-    return runHostMode(opts);
+/**
+ * A bare positional matching a step id (e.g. `oh onboard slack`) is a
+ * step selector, not a container name. Without this rewrite the CLI
+ * would docker-exec into a sandbox literally called "slack".
+ */
+export function normalizeOnboardOpts(opts: OnboardInvocationOptions): OnboardInvocationOptions {
+  if (opts.name && !opts.only && (STEP_IDS as readonly string[]).includes(opts.name)) {
+    return { ...opts, only: opts.name, name: undefined };
   }
-  return runInContainerMode(opts);
+  return opts;
+}
+
+export async function runOnboardCommand(opts: OnboardInvocationOptions): Promise<number> {
+  const normalized = normalizeOnboardOpts(opts);
+  if (normalized.name) {
+    return runHostMode(normalized);
+  }
+  return runInContainerMode(normalized);
 }
 
 function runHostMode(opts: OnboardInvocationOptions): number {
