@@ -47,6 +47,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
+      - SANDBOX_NAME=${SANDBOX_NAME:-openharness}
       - TZ=${TZ:-America/Denver}
       - CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS=true
       - HEARTBEAT_ACTIVE_START=${HEARTBEAT_ACTIVE_START:-}
@@ -59,6 +60,7 @@ services:
       - INSTALL_AGENT_BROWSER=${INSTALL_AGENT_BROWSER:-false}
     stdin_open: true
     tty: true
+    init: true
     entrypoint: /usr/local/bin/entrypoint.sh
     command: sleep infinity
     restart: unless-stopped

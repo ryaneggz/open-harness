@@ -8,19 +8,21 @@
     "start": "next start -p 3001"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4",
     "fumadocs-core": "latest",
     "fumadocs-mdx": "latest",
     "fumadocs-ui": "latest",
+    "mermaid": "^11.14.0",
     "next": "^16",
     "react": "^19",
     "react-dom": "^19",
     "tailwindcss": "^4",
-    "@tailwindcss/postcss": "^4"
+    "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {
     "@types/mdx": "^2",
     "@types/react": "^19",
-    "typescript": "^5",
-    "postcss": "^8"
+    "postcss": "^8",
+    "typescript": "^5"
   }
 }

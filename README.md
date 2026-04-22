@@ -27,7 +27,7 @@ docker compose --env-file .devcontainer/.env -f .devcontainer/docker-compose.yml
 
 **Option A — Terminal (works everywhere):**
 ```bash
-docker exec -it -u sandbox openharness bash   # use your SANDBOX_NAME
+docker exec -it -u sandbox oh-local bash   # use your SANDBOX_NAME
 ```
 
 **Option B — VS Code Attach to Container (local):**
@@ -71,6 +71,49 @@ pi                               # automations — Slack, heartbeats, extensions
 ```bash
 docker compose -f .devcontainer/docker-compose.yml down -v
 ```
+
+---
+
+## Architecture
+
+Open Harness runs **one sandbox container, N git worktrees, one heartbeat daemon**. The container is the shared runtime (toolchain, credentials, processes). Each agent lives on its own branch under `.worktrees/`, shipping its own `workspace/` (SOUL.md, skills, heartbeats, memory, projects). A single Node daemon inside the sandbox watches every worktree's `heartbeats/` directory and spawns scheduled agent runs with the correct `cwd`, so each agent's skills and relative paths resolve to its own subtree. This gives every agent a stable identity and independent schedule without duplicating containers, credentials, or toolchains.
+
+### Topology
+
+```mermaid
+flowchart TB
+  subgraph host["Host filesystem — /home/sandbox/harness"]
+    direction TB
+    parent["workspace/<br/>(parent-branch workspace)"]
+    gitreg[".git/worktrees/<br/>(git's worktree registry)"]
+    subgraph wts[".worktrees/"]
+      direction TB
+      wt1["agent/sdr-pallet/workspace/<br/>• heartbeats/ • skills/ • memory/"]
+      wt2["feat/71-…/workspace/<br/>(ephemeral PR worktree)"]
+      wt3["… more worktrees …"]
+    end
+  end
+  subgraph box["sandbox container (bind-mounts host root)"]
+    direction TB
+    daemon["heartbeat-daemon<br/>(single Node process)"]
+    tools["Shared toolchain<br/>claude · codex · pi · git · gh"]
+    creds["Shared credentials<br/>~/.claude · ~/.pi · ~/.config/gh"]
+  end
+  daemon -. "top-level watch" .-> gitreg
+  daemon -. "heartbeats watch" .-> parent
+  daemon -. "heartbeats watch" .-> wt1
+  daemon -. "heartbeats watch" .-> wt2
+  box -.->|"bind mount"| host
+```
+
+### Actors
+
+- **Orchestrator** — the session at the project root. Scaffolds agents, manages git/issues/PRs, runs sandbox lifecycle skills (`/provision`, `/destroy`, `/repair`). Does not write application code.
+- **Worktree agent** — a `claude`/`codex` session (or heartbeat spawn) with `cwd` inside a worktree's `workspace/`. Owns its subtree: SOUL.md, skills, heartbeats, memory, branch history.
+- **Sandbox** — one Docker container with the host's project root bind-mounted in. All worktrees are visible automatically; toolchain and credentials are shared.
+- **Heartbeat daemon** — single Node process inside the sandbox. Discovers worktrees via `git worktree list`, watches each `heartbeats/` directory, and spawns scheduled runs with per-root `cwd` and per-root logs.
+
+For the deep reference, see [`.claude/specs/orchestrator-worktree-architecture.md`](./.claude/specs/orchestrator-worktree-architecture.md) and the docs-site architecture page: [`/docs/architecture/orchestrator-worktrees`](https://ryaneggz.github.io/open-harness/architecture/orchestrator-worktrees).
 
 ---
 
@@ -401,7 +444,6 @@ curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/ma
   .example.env                # Environment variable template
 
 install/                      # Provisioning scripts
-  onboard.sh                  # First-time auth wizard
   entrypoint.sh               # Late-stage container setup (starts heartbeat daemon)
   setup.sh                    # Environment setup utilities
   tmux-agent.sh               # tmux session management for agents

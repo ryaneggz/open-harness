@@ -89,7 +89,7 @@ banner "Writing config: $CONFIG_FILE (${#INGRESS_PAIRS[@]} ingress rules)"
   for pair in "${INGRESS_PAIRS[@]}"; do
     hostname="${pair%%:*}"
     port="${pair##*:}"
-    printf "  - hostname: %s\n    service: http://localhost:%s\n" "$hostname" "$port"
+    printf "  - hostname: %s\n    service: http://0.0.0.0:%s\n" "$hostname" "$port"
   done
   printf "  - service: http_status:404\n"
 } > "$CONFIG_FILE"

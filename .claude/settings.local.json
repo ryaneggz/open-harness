@@ -48,5 +48,6 @@
       }
     ]
   },
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "model": "claude-opus-4-7[1m]"
 }

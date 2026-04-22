@@ -113,7 +113,7 @@ Remove an agent sandbox.
 
 ```
 .devcontainer/        # Sandbox environment (Dockerfile, compose, overlays, entrypoint)
-install/              # Provisioning scripts (onboard.sh, entrypoint.sh)
+install/              # Provisioning scripts (entrypoint.sh, cloudflared-tunnel.sh, setup.sh, tmux-agent.sh)
 workspace/            # Template for all agent workspaces
   AGENTS.md           # In-sandbox agent instructions (separate from this file)
   SOUL.md             # Agent persona template
