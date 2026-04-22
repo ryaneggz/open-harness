@@ -1,4 +1,4 @@
-# Open Harness
+# 🏗️ Open Harness
 
 Isolated, pre-configured sandbox containers for AI coding agents — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenAI Codex](https://github.com/openai/codex), [Pi Agent](https://shittycodingagent.ai), and more.
 
@@ -8,7 +8,7 @@ Isolated, pre-configured sandbox containers for AI coding agents — [Claude Cod
 
 ---
 
-## Quickstart
+## 🚀 Quickstart
 
 ### 1. Clone and configure
 
@@ -74,7 +74,7 @@ docker compose -f .devcontainer/docker-compose.yml down -v
 
 ---
 
-## What's in the box
+## 📦 What's in the box
 
 The sandbox image (Debian bookworm-slim) comes pre-installed with:
 
@@ -90,7 +90,7 @@ The sandbox user has passwordless `sudo` and full Docker socket access (with the
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
 Copy the example env file and edit to taste:
 
@@ -136,7 +136,7 @@ The Slack bot (Mom) connects to a workspace via Socket Mode and delegates messag
 
 ---
 
-## Compose overlays
+## 🧩 Compose overlays
 
 The base `docker-compose.yml` provides the sandbox container with bind-mounted workspace and persistent auth volumes. Overlays add optional services and capabilities.
 
@@ -164,7 +164,7 @@ Multiple overlays can be combined. Order doesn't matter.
 
 ---
 
-## Multi-sandbox SSH
+## 🔐 Multi-sandbox SSH
 
 Run multiple sandboxes on a single host, each reachable via SSH on a unique port. This enables:
 
@@ -232,7 +232,7 @@ This is useful for orchestration patterns where one agent delegates work to othe
 
 ---
 
-## Volumes and persistence
+## 💾 Volumes and persistence
 
 The base compose file creates three named Docker volumes that persist across container rebuilds:
 
@@ -256,7 +256,7 @@ Overlays may add additional volumes:
 
 ---
 
-## Workspace structure
+## 📁 Workspace structure
 
 The `workspace/` directory is the agent's home. It's bind-mounted into the container at `/home/sandbox/harness/workspace/`.
 
@@ -299,7 +299,7 @@ The orchestrator scaffolds these files during provisioning. Once the agent is ru
 
 ---
 
-## Heartbeats
+## ❤️ Heartbeats
 
 Heartbeats are cron-scheduled autonomous tasks. A TypeScript daemon watches `workspace/heartbeats/` and runs each heartbeat's prompt via an AI agent CLI on its configured schedule.
 
@@ -360,7 +360,7 @@ Logs are written to `workspace/heartbeats/heartbeat.log`.
 
 ---
 
-## CLI commands
+## 🛠️ CLI commands
 
 The `openharness` CLI runs on the host (outside the container).
 
@@ -388,7 +388,7 @@ curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/ma
 
 ---
 
-## Project structure
+## 🗂️ Project structure
 
 ```
 .devcontainer/                # Sandbox environment
@@ -421,7 +421,7 @@ docs/                         # Documentation site (Nextra)
 
 ---
 
-## Releases
+## 🚢 Releases
 
 CalVer: `YYYY.M.D` (e.g., `2026.4.4`). Push a tag to build and publish to `ghcr.io/ryaneggz/open-harness`.
 
