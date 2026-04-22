@@ -178,15 +178,32 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
     }
 
     case "onboard": {
-      const { runOnboardCommand } = await import("./onboard.js");
       const name = params.name as string | undefined;
-      const only = typeof params.action === "string" ? params.action : undefined;
-      const exitCode = await runOnboardCommand({
-        name,
-        force: params.force as boolean | undefined,
-        only,
-      });
-      if (exitCode !== 0) process.exit(exitCode);
+      const force = params.force ? ["--force"] : [];
+      if (name) {
+        const cmd = execCmd(name, ["bash", "/home/sandbox/install/onboard.sh", ...force], {
+          user: "sandbox",
+          interactive: true,
+          env: { HOME: "/home/sandbox" },
+        });
+        const { spawnSync } = await import("node:child_process");
+        const result = spawnSync(cmd[0], cmd.slice(1), { stdio: "inherit" });
+        if (result.status !== 0) {
+          console.error(
+            `Error: container '${name}' is not running. Start it first: openharness sandbox`,
+          );
+          process.exit(1);
+        }
+      } else {
+        const { existsSync } = await import("node:fs");
+        const script = "/home/sandbox/install/onboard.sh";
+        if (!existsSync(script)) {
+          console.error("Error: onboard.sh not found. Are you inside a sandbox container?");
+          process.exit(1);
+        }
+        const { spawnSync } = await import("node:child_process");
+        spawnSync("bash", [script, ...force], { stdio: "inherit" });
+      }
       break;
     }
 

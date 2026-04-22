@@ -488,7 +488,7 @@ here, keep the table alphabetical within each section.
 | Bind mounts | `.devcontainer/docker-compose.yml` + overlays (`docker-compose.cloudflared.yml`, `docker-compose.slack.yml`) | Daemon discovery picks up new paths automatically if they're worktrees |
 | Base image / toolchain | `.devcontainer/Dockerfile` | Rebuild via `/provision` |
 | Boot sequence (daemon watchdog, other services) | `install/entrypoint.sh` | |
-| Onboarding wizard | `packages/sandbox/src/onboard/` (`openharness onboard`) | Runs `gh auth` + `pi` OAuth once at first shell |
+| Onboarding script | `install/onboard.sh` | Runs `gh auth` + `pi` OAuth once at first shell |
 | Default env vars | `.devcontainer/.example.env` → copied to `.env` at `/provision` time | |
 | Sandbox lifecycle skills | `.claude/skills/{provision,destroy,repair}/SKILL.md` | Orchestrator-only |
 

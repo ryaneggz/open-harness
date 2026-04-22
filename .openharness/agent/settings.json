@@ -1,13 +1,12 @@
 {
   "lastChangelogVersion": "0.66.1",
-  "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.4",
+  "defaultProvider": "anthropic",
+  "defaultModel": "claude-sonnet-4-6",
   "defaultThinkingLevel": "high",
   "advisor": {
     "enabled": true,
     "model": "claude-opus-4-7",
     "maxUses": 3,
-    "caching": true
+    "caching": false
   }
 }
-  
