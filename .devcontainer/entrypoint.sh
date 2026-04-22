@@ -227,7 +227,7 @@ if [ ! -f "/home/sandbox/.claude/.onboarded" ]; then
   echo "  │  First boot detected. Complete setup:           │"
   echo "  │    openharness onboard <name>                   │"
   echo "  │  Or from inside the container:                  │"
-  echo "  │    bash ~/install/onboard.sh                    │"
+  echo "  │    openharness onboard                          │"
   echo "  └─────────────────────────────────────────────────┘"
   echo ""
 fi

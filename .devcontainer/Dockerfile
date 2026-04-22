@@ -66,6 +66,9 @@ RUN useradd -m -s /bin/bash sandbox \
  && chmod 0440 /etc/sudoers.d/sandbox \
  && groupadd -f docker && usermod -aG docker sandbox
 
+# Default tmux config for sandbox user
+COPY --chown=sandbox:sandbox install/.tmux.conf /home/sandbox/.tmux.conf
+
 # Ensure PNPM_HOME is on PATH for login shells (SSH, openharness shell)
 RUN echo 'export PNPM_HOME="/usr/local/share/pnpm"' >> /home/sandbox/.profile \
  && echo 'export PATH="$PNPM_HOME:$PATH"' >> /home/sandbox/.profile

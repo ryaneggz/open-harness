@@ -1,5 +1,5 @@
 import { Agent, type AgentEvent } from "@mariozechner/pi-agent-core";
-import { getModel, streamSimple, type ImageContent } from "@mariozechner/pi-ai";
+import { getModel, type ImageContent } from "@mariozechner/pi-ai";
 import {
 	AgentSession,
 	AuthStorage,
@@ -24,38 +24,24 @@ import type { ChannelStore } from "./store.js";
 import { createMomTools, setUploadFunction } from "./tools/index.js";
 import { resolveAgentDir, resolveLegacyAgentDir } from "./config.js";
 
-interface AdvisorConfig {
-	enabled: boolean;
-	model: string;
-	maxUses: number;
-	caching: boolean;
-}
-
-interface AgentDefaults {
-	provider?: string;
-	model?: string;
-	advisor?: AdvisorConfig;
-}
-
-function parseSettings(raw: string): AgentDefaults {
-	const settings = JSON.parse(raw);
-	return {
-		provider: settings.defaultProvider || undefined,
-		model: settings.defaultModel || undefined,
-		advisor: settings.advisor || undefined,
-	};
-}
-
 // Read defaults from agent settings.json (same config the CLI uses)
-function readAgentDefaults(): AgentDefaults {
+function readAgentDefaults(): { provider?: string; model?: string } {
 	try {
 		const raw = readFileSync(join(resolveAgentDir(), "settings.json"), "utf-8");
-		return parseSettings(raw);
+		const settings = JSON.parse(raw);
+		return {
+			provider: settings.defaultProvider || undefined,
+			model: settings.defaultModel || undefined,
+		};
 	} catch {
 		// Fall back to legacy .pi path
 		try {
 			const raw = readFileSync(join(resolveLegacyAgentDir(), "settings.json"), "utf-8");
-			return parseSettings(raw);
+			const settings = JSON.parse(raw);
+			return {
+				provider: settings.defaultProvider || undefined,
+				model: settings.defaultModel || undefined,
+			};
 		} catch {
 			return {};
 		}
@@ -76,21 +62,6 @@ if (!model) {
 	if (process.env.NODE_ENV !== "test") process.exit(1);
 }
 console.log(`Provider: ${slackProvider}/${slackModelId} (from settings.json)`);
-
-// Advisor strategy: Sonnet/Haiku executor + Opus advisor for near-Opus quality at lower cost
-const advisorToolDef = agentDefaults.advisor?.enabled
-	? {
-			type: "advisor_20260301" as const,
-			name: "advisor" as const,
-			model: agentDefaults.advisor.model,
-			max_uses: agentDefaults.advisor.maxUses,
-			...(agentDefaults.advisor.caching ? { caching: { type: "ephemeral", ttl: "5m" } } : {}),
-		}
-	: null;
-
-if (advisorToolDef) {
-	console.log(`Advisor: ${advisorToolDef.model} (max_uses: ${advisorToolDef.max_uses})`);
-}
 
 /** Resolve auth.json path: openharness dir > legacy .pi/agent > legacy .pi/mom. */
 function resolveAuthPath(): string {
@@ -398,29 +369,7 @@ grep '"userName":"mario"' log.jsonl | tail -20 | jq -c '{date: .date[0:19], text
 - edit: Surgical file edits
 - attach: Share files to Slack
 
-Each tool requires a "label" parameter (shown to user).
-${
-	advisorToolDef
-		? `
-## Advisor
-You have access to an \`advisor\` tool backed by a stronger model. It takes NO parameters —
-when you call advisor(), your entire conversation history is forwarded automatically.
-
-Call advisor BEFORE substantive work — before writing code, before committing to an approach.
-If the task requires orientation first (finding files, reading context), do that, then call advisor.
-
-Also call advisor:
-- When you believe a complex task is complete (write the result first, then call advisor to validate)
-- When stuck — errors recurring, approach not converging
-- When considering a change of approach
-
-For simple tasks (greetings, quick lookups, status checks), do NOT call the advisor.
-You have up to ${advisorToolDef.max_uses} advisor calls per request. Use them wisely.
-
-Give the advice serious weight. If a step fails empirically, adapt.
-`
-		: ""
-}`;
+Each tool requires a "label" parameter (shown to user).`;
 }
 
 function truncate(text: string, maxLen: number): string {
@@ -526,7 +475,7 @@ function createRunner(sandboxConfig: SandboxConfig, channelId: string, channelDi
 	const authStorage = AuthStorage.create(resolveAuthPath());
 	const modelRegistry = new ModelRegistry(authStorage);
 
-	// Create agent — with advisor tool injection when enabled
+	// Create agent
 	const agent = new Agent({
 		initialState: {
 			systemPrompt,
@@ -536,31 +485,6 @@ function createRunner(sandboxConfig: SandboxConfig, channelId: string, channelDi
 		},
 		convertToLlm,
 		getApiKey: async () => getApiKeyForProvider(authStorage),
-		// Inject advisor tool into raw API payload
-		...(advisorToolDef
-			? {
-					onPayload: (payload: unknown) => {
-						const p = payload as Record<string, unknown>;
-						if (Array.isArray(p.tools)) {
-							p.tools.push(advisorToolDef);
-						} else {
-							p.tools = [advisorToolDef];
-						}
-						return p;
-					},
-					// Wrap streamSimple to add advisor beta header
-					streamFn: ((mdl: any, context: any, options?: any) =>
-						streamSimple(mdl, context, {
-							...options,
-							headers: {
-								...options?.headers,
-								"anthropic-beta": [options?.headers?.["anthropic-beta"], "advisor-tool-2026-03-01"]
-									.filter(Boolean)
-									.join(","),
-							},
-						})) as any,
-				}
-			: {}),
 	});
 
 	// Load existing messages

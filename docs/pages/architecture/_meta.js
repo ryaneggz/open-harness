@@ -2,4 +2,5 @@ export default {
   overview: "Overview",
   structure: "Project Structure",
   "how-it-works": "How It Works",
+  "orchestrator-worktrees": "Orchestrator + Worktrees",
 };

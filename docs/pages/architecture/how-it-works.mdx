@@ -18,7 +18,7 @@ When you start a sandbox (`openharness sandbox` or `docker compose up`), this se
    - Matches the container's Docker group GID to the host socket GID (fixes DinD permissions)
    - Fixes volume ownership (root → sandbox user)
    - Runs conditional SSH server setup if sshd overlay is active
-   - Starts the heartbeat daemon (`heartbeat-daemon start`) to watch `heartbeats/` for scheduled tasks
+   - Starts the heartbeat daemon (`heartbeat-daemon start`) to watch every worktree's `heartbeats/` directory for scheduled tasks — see [Orchestrator + Worktrees](/open-harness/architecture/orchestrator-worktrees)
    - Runs `workspace/startup.sh` as the sandbox user
    - Prints first-boot onboarding message if not yet onboarded
    - Execs the container command (`sleep infinity` by default, or `sshd -D` with the sshd overlay)
