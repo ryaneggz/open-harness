@@ -4,6 +4,7 @@ export default {
   permissions: "Permissions & Security",
   workspace: "Workspace",
   "multi-sandbox-ssh": "Multi-Sandbox SSH",
+  exposure: "Exposing Apps",
   heartbeats: "Heartbeats",
   identity: "Identity & Memory",
   wiki: "Wiki",
