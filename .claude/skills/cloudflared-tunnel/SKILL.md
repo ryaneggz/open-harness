@@ -13,6 +13,13 @@ argument-hint: "<tunnel-name> <hostname:port> [<hostname:port> ...] [--run]"
 
 Create a named Cloudflare tunnel, write multi-ingress config, route DNS, and optionally start it. Supports multiple hostname:port pairs for routing several services through one tunnel.
 
+> **Relationship to `oh expose`**: `oh expose <name> <port>` is the primary
+> way to route a sandbox app (Caddy-backed, see
+> `.claude/rules/gateway-routing.md`). This skill is the *one-time setup*
+> for a persistent named tunnel when remote mode (`PUBLIC_DOMAIN` set) is
+> configured behind NAT or wants Cloudflare Access auth. Run it during
+> onboarding, not per-exposure.
+
 ## Instructions
 
 ### Step 1 — Parse arguments
@@ -25,13 +32,13 @@ Arguments received: `$ARGUMENTS`
 
 Supports two formats:
 - **Multi-ingress**: `<tunnel-name> <hostname:port> [<hostname:port> ...] [--run]`
-  - Example: `openharness oh.ruska.dev:3000 oh-docs.ruska.dev:3001`
+  - Example: `myproject app.<your-domain>:3000 api.<your-domain>:3001`
 - **Legacy single-ingress**: `<tunnel-name> <hostname> <port> [--run]`
-  - Example: `openharness oh.ruska.dev 3000`
+  - Example: `myproject app.<your-domain> 3000`
 
 If no ingress pairs provided, suggest defaults:
 - Tunnel name: derived from the project or sandbox name
-- Hostname: `<tunnel-name>.ruska.dev:3000`
+- Hostname: `<tunnel-name>.<your-domain>:3000` (operator supplies domain)
 
 ### Step 2 — Check prerequisites
 

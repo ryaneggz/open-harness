@@ -8,6 +8,10 @@ import { sandboxTool } from "./sandbox.js";
 import { heartbeatTool } from "./heartbeat.js";
 import { worktreeTool } from "./worktree.js";
 import { onboardTool } from "./onboard.js";
+import { portsTool } from "./ports.js";
+import { exposeTool } from "./expose.js";
+import { unexposeTool } from "./unexpose.js";
+import { openTool } from "./open.js";
 
 export const sandboxTools: ToolDefinition[] = [
   listTool,
@@ -19,6 +23,10 @@ export const sandboxTools: ToolDefinition[] = [
   heartbeatTool,
   worktreeTool,
   onboardTool,
+  portsTool,
+  exposeTool,
+  unexposeTool,
+  openTool,
 ];
 
 export {
@@ -31,4 +39,8 @@ export {
   heartbeatTool,
   worktreeTool,
   onboardTool,
+  portsTool,
+  exposeTool,
+  unexposeTool,
+  openTool,
 };

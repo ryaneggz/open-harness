@@ -22,9 +22,13 @@ beforeAll(() => {
 });
 
 function run(cwd: string, ...args: string[]): string {
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([k]) => !k.startsWith("GIT_")),
+  ) as NodeJS.ProcessEnv;
   return execFileSync("git", ["-C", cwd, ...args], {
     encoding: "utf-8",
     stdio: ["ignore", "pipe", "ignore"],
+    env,
   });
 }
 

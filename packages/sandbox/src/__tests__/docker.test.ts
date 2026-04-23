@@ -56,6 +56,26 @@ describe("docker command builders", () => {
       const cmd = composeUp(config);
       expect(cmd.slice(-3)).toEqual(["up", "-d", "--build"]);
     });
+
+    it("omits --build when build: false", () => {
+      const config = makeConfig();
+      const cmd = composeUp(config, { build: false });
+      expect(cmd.slice(-2)).toEqual(["up", "-d"]);
+      expect(cmd).not.toContain("--build");
+    });
+
+    it("appends --force-recreate when forceRecreate: true", () => {
+      const config = makeConfig();
+      const cmd = composeUp(config, { build: false, forceRecreate: true });
+      expect(cmd.slice(-3)).toEqual(["up", "-d", "--force-recreate"]);
+      expect(cmd).not.toContain("--build");
+    });
+
+    it("combines --build and --force-recreate", () => {
+      const config = makeConfig();
+      const cmd = composeUp(config, { build: true, forceRecreate: true });
+      expect(cmd.slice(-4)).toEqual(["up", "-d", "--build", "--force-recreate"]);
+    });
   });
 
   describe("composeDown", () => {
