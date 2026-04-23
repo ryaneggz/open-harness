@@ -3,12 +3,16 @@ import { dirname, resolve } from "node:path";
 
 const EXPOSURES_PATH = ".openharness/exposures.json";
 
+export type Scope = "local" | "public" | "route";
+
 export interface Exposure {
   port: number;
-  scope: "local" | "public";
+  scope: Scope;
   hostPort?: number;
   url?: string;
   session?: string;
+  /** Route name — only set when scope === "route". */
+  routeName?: string;
   createdAt: string;
 }
 
@@ -46,11 +50,17 @@ export function writeExposures(file: ExposuresFile): void {
 
 export function upsertExposure(e: Exposure): void {
   const file = readExposures();
-  const others = file.exposures.filter((x) => !(x.port === e.port && x.scope === e.scope));
+  // Route scope dedupes by routeName; local/public dedupe by (port, scope).
+  const others = file.exposures.filter((x) => {
+    if (e.scope === "route" && x.scope === "route") {
+      return x.routeName !== e.routeName;
+    }
+    return !(x.port === e.port && x.scope === e.scope);
+  });
   writeExposures({ version: 1, exposures: [...others, e] });
 }
 
-export function removeExposure(port: number, scope: "local" | "public"): void {
+export function removeExposure(port: number, scope: Scope): void {
   const file = readExposures();
   const next = file.exposures.filter((x) => !(x.port === port && x.scope === scope));
   if (next.length !== file.exposures.length) {
@@ -58,11 +68,24 @@ export function removeExposure(port: number, scope: "local" | "public"): void {
   }
 }
 
-export function findExposure(port: number, scope?: "local" | "public"): Exposure | undefined {
+export function removeRoute(routeName: string): boolean {
+  const file = readExposures();
+  const next = file.exposures.filter((x) => !(x.scope === "route" && x.routeName === routeName));
+  if (next.length === file.exposures.length) return false;
+  writeExposures({ version: 1, exposures: next });
+  return true;
+}
+
+export function findExposure(port: number, scope?: Scope): Exposure | undefined {
   const file = readExposures();
   if (scope) return file.exposures.find((x) => x.port === port && x.scope === scope);
   return (
     file.exposures.find((x) => x.port === port && x.scope === "public") ??
+    file.exposures.find((x) => x.port === port && x.scope === "route") ??
     file.exposures.find((x) => x.port === port && x.scope === "local")
   );
+}
+
+export function listRoutes(): Exposure[] {
+  return readExposures().exposures.filter((x) => x.scope === "route");
 }

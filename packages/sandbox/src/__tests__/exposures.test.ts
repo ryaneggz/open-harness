@@ -174,7 +174,12 @@ describe("findExposure", () => {
 
   it("prefers public over local when no scope specified", () => {
     const local = { port: 3000, scope: "local" as const, createdAt: "2026-01-01T00:00:00.000Z" };
-    const pub = { port: 3000, scope: "public" as const, url: "https://pub.example.com", createdAt: "2026-01-01T00:00:00.000Z" };
+    const pub = {
+      port: 3000,
+      scope: "public" as const,
+      url: "https://pub.example.com",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    };
     upsertExposure(local);
     upsertExposure(pub);
 
@@ -192,7 +197,12 @@ describe("findExposure", () => {
 
   it("returns specific scope when scope is specified", () => {
     const local = { port: 3000, scope: "local" as const, createdAt: "2026-01-01T00:00:00.000Z" };
-    const pub = { port: 3000, scope: "public" as const, url: "https://pub.example.com", createdAt: "2026-01-01T00:00:00.000Z" };
+    const pub = {
+      port: 3000,
+      scope: "public" as const,
+      url: "https://pub.example.com",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    };
     upsertExposure(local);
     upsertExposure(pub);
 

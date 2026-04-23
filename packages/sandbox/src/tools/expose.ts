@@ -3,41 +3,49 @@ import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
 import { SandboxConfig } from "../lib/config.js";
 import { composeUp, composeEnv, execCmd } from "../lib/docker.js";
 import { captureSafe, run, runSafe } from "../lib/exec.js";
-import { upsertExposure } from "../lib/exposures.js";
+import { listRoutes, upsertExposure, type Exposure } from "../lib/exposures.js";
 import { startQuickTunnel } from "../lib/cloudflared.js";
+import {
+  detectMode,
+  hostFor,
+  reloadCaddy,
+  renderCaddyfile,
+  validateRouteName,
+  writeCaddyfile,
+  type Route,
+} from "../lib/caddy.js";
 
-const OVERLAY_PATH = ".devcontainer/docker-compose.expose.yml";
+const EXPOSE_OVERLAY_PATH = ".devcontainer/docker-compose.expose.yml";
+const GATEWAY_OVERLAY_PATH = ".devcontainer/docker-compose.gateway.yml";
+
+const DEPRECATION_NOTE =
+  "Note: --local and --public are deprecated. Prefer: `openharness expose <name> <port>` " +
+  "(Caddy-backed, TLS, no container recreate).";
 
 export const exposeTool: ToolDefinition = {
   name: "sandbox_expose",
   label: "Expose App",
   description:
-    "Expose an app running inside the sandbox — either locally (host port publish) or publicly (Cloudflare quick tunnel).",
-  promptSnippet: "sandbox_expose — publish or tunnel a sandbox app port",
+    "Expose an app running inside the sandbox. Primary: `expose <name> <port>` → Caddy route. Legacy: `--local` host-port publish or `--public` Cloudflare quick tunnel.",
+  promptSnippet:
+    "sandbox_expose — publish a sandbox app (Caddy route, host-port, or public tunnel)",
   parameters: Type.Object({
-    name: Type.Optional(
-      Type.String({ description: "Sandbox name (auto-resolved if omitted)" }),
-    ),
+    name: Type.Optional(Type.String({ description: "Sandbox name (auto-resolved if omitted)" })),
     port: Type.Number({ description: "Container port to expose" }),
-    scope: Type.Union([Type.Literal("local"), Type.Literal("public")], {
-      description: "local = host port publish; public = Cloudflare quick tunnel",
+    scope: Type.Union([Type.Literal("local"), Type.Literal("public"), Type.Literal("route")], {
+      description: "route = Caddy gateway (default); local = host publish; public = quick tunnel",
     }),
-    hostPort: Type.Optional(
-      Type.String({ description: "(Phase 2) override host port for --local" }),
+    routeName: Type.Optional(
+      Type.String({ description: "Route name (required when scope === 'route')" }),
     ),
+    hostPort: Type.Optional(Type.String({ description: "Override host port for --local" })),
   }),
 
   async execute(_toolCallId, params: Record<string, unknown>) {
     const port = params.port as number;
-    const scope = params.scope as "local" | "public";
+    const scope = params.scope as "local" | "public" | "route";
     const config = new SandboxConfig({ name: params.name as string | undefined });
     const lines: string[] = [];
-
-    if (params.hostPort) {
-      lines.push(
-        `Note: --host-port is not yet honored in Phase 1 (defaults to ${port}:${port}).`,
-      );
-    }
 
     // Listening pre-check — warning only, non-fatal.
     const ssOut = captureSafe(execCmd(config.name, ["ss", "-tln"], { user: "sandbox" }));
@@ -49,11 +57,62 @@ export const exposeTool: ToolDefinition = {
       );
     }
 
+    if (scope === "route") {
+      const routeName = params.routeName as string | undefined;
+      if (!routeName) {
+        throw new Error("scope='route' requires a routeName.");
+      }
+      validateRouteName(routeName);
+
+      const mode = detectMode();
+      const route: Route = { name: routeName, port, sandbox: config.name };
+
+      // Activate gateway overlay on first route (idempotent).
+      SandboxConfig.addOverride(GATEWAY_OVERLAY_PATH);
+
+      const host = hostFor(route, mode);
+      const suffix = mode.mode === "remote" ? "" : ":8443";
+      const exposure: Exposure = {
+        port,
+        scope: "route",
+        routeName,
+        url: `https://${host}${suffix}`,
+        createdAt: new Date().toISOString(),
+      };
+      upsertExposure(exposure);
+
+      // Re-read the full set of routes and rewrite the Caddyfile.
+      const routes: Route[] = listRoutes().map((e) => ({
+        name: e.routeName!,
+        port: e.port,
+        sandbox: config.name,
+      }));
+      writeCaddyfile(renderCaddyfile(routes, mode));
+
+      const reloaded = reloadCaddy(config.name);
+      if (!reloaded) {
+        lines.push(
+          `Warning: caddy reload failed. If the gateway isn't running yet, run 'openharness run' to start it.`,
+        );
+      }
+
+      lines.push(`Route: ${exposure.url}`);
+      return {
+        content: [{ type: "text" as const, text: lines.join("\n") }],
+        details: undefined,
+      };
+    }
+
+    // ── legacy paths ──────────────────────────────────────────────
+    lines.push(DEPRECATION_NOTE);
+
+    if (params.hostPort) {
+      lines.push(`Note: --host-port is not yet honored (defaults to ${port}:${port}).`);
+    }
+
     if (scope === "local") {
-      SandboxConfig.addOverride(OVERLAY_PATH);
-      lines.push(
-        `Recreating container '${config.name}' to apply port mapping (no rebuild)…`,
-      );
+      SandboxConfig.addOverride(EXPOSE_OVERLAY_PATH);
+      lines.push(`Recreating container '${config.name}' to apply port mapping (no rebuild)…`);
       run([...composeUp(config, { build: false, forceRecreate: true }), "sandbox"], {
         env: composeEnv(config),
       });
@@ -74,7 +133,7 @@ export const exposeTool: ToolDefinition = {
       });
       lines.push(`Local: http://localhost:${port}`);
     } else {
-      // Verify cloudflared is available inside the sandbox.
+      // scope === "public"
       const hasCloudflared = runSafe(
         execCmd(config.name, ["which", "cloudflared"], { user: "sandbox" }),
         { stdio: "pipe" },

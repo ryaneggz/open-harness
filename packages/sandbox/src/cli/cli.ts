@@ -145,13 +145,32 @@ export function resolveSubcommand(
     return { tool: sandbox.portsTool, params: { name: params.name } };
   }
 
-  // expose/unexpose: first positional is port, require --local or --public
-  if (command === "expose" || command === "unexpose") {
+  // expose: primary `openharness expose <name> <port>` → Caddy route.
+  //         legacy `openharness expose <port> --local|--public` still works.
+  if (command === "expose") {
     const params = parseToolArgs(args);
-    const port = Number(params.name);
-    if (!params.name || Number.isNaN(port)) {
+    const first = params.name as string | undefined;
+    const second = params.action as string | undefined;
+
+    // New form: <name> <port> (non-numeric first, numeric second).
+    if (first && second && Number.isNaN(Number(first)) && Number.isFinite(Number(second))) {
       return {
-        error: `Usage: openharness ${command} <port> --local|--public [--host-port N]`,
+        tool: sandbox.exposeTool,
+        params: {
+          scope: "route",
+          routeName: first,
+          port: Number(second),
+        },
+      };
+    }
+
+    // Legacy form: <port> --local|--public
+    const port = Number(first);
+    if (!first || Number.isNaN(port)) {
+      return {
+        error:
+          `Usage: openharness expose <name> <port>   (Caddy route, recommended)\n` +
+          `       openharness expose <port> --local|--public   (legacy)`,
       };
     }
     const scope: "local" | "public" | undefined = params.local
@@ -160,16 +179,52 @@ export function resolveSubcommand(
         ? "public"
         : undefined;
     if (!scope) {
-      return { error: "Specify --local or --public" };
+      return {
+        error: "Specify --local or --public, or use the new form: openharness expose <name> <port>",
+      };
     }
-    const tool = command === "expose" ? sandbox.exposeTool : sandbox.unexposeTool;
     return {
-      tool,
-      params: {
-        port,
-        scope,
-        hostPort: params.hostPort,
-      },
+      tool: sandbox.exposeTool,
+      params: { port, scope, hostPort: params.hostPort },
+    };
+  }
+
+  // unexpose: primary `openharness unexpose <name>` → remove Caddy route.
+  //           legacy `openharness unexpose <port> --local|--public`.
+  if (command === "unexpose") {
+    const params = parseToolArgs(args);
+    const first = params.name as string | undefined;
+    if (!first) {
+      return {
+        error:
+          `Usage: openharness unexpose <name>   (remove Caddy route)\n` +
+          `       openharness unexpose <port> --local|--public   (legacy)`,
+      };
+    }
+
+    // New form: single non-numeric positional is a route name.
+    if (Number.isNaN(Number(first))) {
+      return {
+        tool: sandbox.unexposeTool,
+        params: { scope: "route", routeName: first },
+      };
+    }
+
+    // Legacy form: <port> --local|--public
+    const port = Number(first);
+    const scope: "local" | "public" | undefined = params.local
+      ? "local"
+      : params.public
+        ? "public"
+        : undefined;
+    if (!scope) {
+      return {
+        error: "Specify --local or --public, or pass a route name (new form).",
+      };
+    }
+    return {
+      tool: sandbox.unexposeTool,
+      params: { port, scope },
     };
   }
 
@@ -269,10 +324,12 @@ ${b}Advanced:${r}
   ${b}${pad("worktree <name> [--base-branch]")}${r}Create git worktree for branch isolation
 
 ${b}Exposure:${r}
-  ${b}${pad("ports [name]")}${r}Inspect port exposures for a sandbox
-  ${b}${pad("expose <port> --local|--public")}${r}Expose a sandbox app port (local = host publish; public = Cloudflare quick tunnel)
-  ${b}${pad("unexpose <port> --local|--public")}${r}Stop an exposure (Phase 2)
+  ${b}${pad("ports [name]")}${r}Inspect ports, routes, and listeners
+  ${b}${pad("expose <name> <port>")}${r}Expose an app via Caddy route ${d}(primary)${r}
+  ${b}${pad("unexpose <name>")}${r}Remove a Caddy route
   ${b}${pad("open <port>")}${r}Open an exposed app URL
+  ${d}${pad("expose <port> --local|--public")}${r}${d}legacy — deprecated${r}
+  ${d}${pad("unexpose <port> --local|--public")}${r}${d}legacy — deprecated${r}
 `;
 
   if (inside) {

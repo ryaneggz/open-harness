@@ -69,7 +69,10 @@ export function capture(cmd: string[], opts: Omit<RunOptions, "stdio"> = {}): st
  * Run a command and capture stdout.
  * Returns undefined on failure (non-zero exit or spawn error) instead of throwing.
  */
-export function captureSafe(cmd: string[], opts: Omit<RunOptions, "stdio"> = {}): string | undefined {
+export function captureSafe(
+  cmd: string[],
+  opts: Omit<RunOptions, "stdio"> = {},
+): string | undefined {
   const command = cmd.join(" ");
   try {
     return execSync(command, {

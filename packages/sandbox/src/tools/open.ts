@@ -24,12 +24,16 @@ export const openTool: ToolDefinition = {
     }
 
     const url =
-      exposure.scope === "public" && exposure.url
+      (exposure.scope === "public" || exposure.scope === "route") && exposure.url
         ? exposure.url
         : `http://localhost:${exposure.hostPort ?? port}`;
 
-    lines.push(`${exposure.scope === "public" ? "Public" : "Local"}: ${url}`);
-    runSafe(["xdg-open", url], { stdio: "pipe" }) || runSafe(["open", url], { stdio: "pipe" });
+    const scopeLabel =
+      exposure.scope === "public" ? "Public" : exposure.scope === "route" ? "Route" : "Local";
+    lines.push(`${scopeLabel}: ${url}`);
+    const opened =
+      runSafe(["xdg-open", url], { stdio: "pipe" }) || runSafe(["open", url], { stdio: "pipe" });
+    if (!opened) lines.push(`(could not auto-open; copy the URL above)`);
 
     return { content: [{ type: "text" as const, text: lines.join("\n") }], details: undefined };
   },

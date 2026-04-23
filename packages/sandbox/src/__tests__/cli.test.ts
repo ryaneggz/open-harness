@@ -412,7 +412,11 @@ describe("resolveSubcommand", () => {
     });
 
     it("accepts --host-port", () => {
-      const result = resolveSubcommand("expose", ["3000", "--local", "--host-port", "3300"], sandbox);
+      const result = resolveSubcommand(
+        "expose",
+        ["3000", "--local", "--host-port", "3300"],
+        sandbox,
+      );
       if ("tool" in result) {
         expect(result.params).toEqual({ port: 3000, scope: "local", hostPort: "3300" });
       } else expect.fail("expected success");
@@ -429,19 +433,65 @@ describe("resolveSubcommand", () => {
       if ("error" in result) expect(result.error).toContain("--local");
     });
 
-    it("errors on non-numeric port", () => {
+    it("errors on non-numeric port with --local", () => {
+      // Legacy path rejection: single positional, non-numeric, with --local
       const result = resolveSubcommand("expose", ["abc", "--local"], sandbox);
+      // Single non-numeric positional + --local is ambiguous — it's close to
+      // "new form without port". The resolver routes to legacy since there's
+      // only one positional, and the error explains the new form.
       expect("error" in result).toBe(true);
+    });
+
+    // ── new form: oh expose <name> <port> ───────────────────
+    it("resolves route form: <name> <port> → scope=route", () => {
+      const result = resolveSubcommand("expose", ["docs", "8080"], sandbox);
+      if ("tool" in result) {
+        expect(result.tool).toBe(sandbox.exposeTool);
+        expect(result.params).toEqual({
+          scope: "route",
+          routeName: "docs",
+          port: 8080,
+        });
+      } else expect.fail("expected success");
+    });
+
+    it("route form rejects without port", () => {
+      const result = resolveSubcommand("expose", ["docs"], sandbox);
+      expect("error" in result).toBe(true);
+    });
+
+    it("route form: kebab-case name is accepted by the parser", () => {
+      const result = resolveSubcommand("expose", ["my-app", "3000"], sandbox);
+      if ("tool" in result) {
+        expect(result.params).toMatchObject({ routeName: "my-app", port: 3000 });
+      } else expect.fail("expected success");
     });
   });
 
   describe("unexpose command", () => {
-    it("resolves with port + scope", () => {
+    it("resolves with port + scope (legacy)", () => {
       const result = resolveSubcommand("unexpose", ["3000", "--public"], sandbox);
       if ("tool" in result) {
         expect(result.tool).toBe(sandbox.unexposeTool);
-        expect(result.params).toEqual({ port: 3000, scope: "public", hostPort: undefined });
+        expect(result.params).toEqual({ port: 3000, scope: "public" });
       } else expect.fail("expected success");
+    });
+
+    it("resolves route form: <name> → scope=route", () => {
+      const result = resolveSubcommand("unexpose", ["docs"], sandbox);
+      if ("tool" in result) {
+        expect(result.params).toEqual({ scope: "route", routeName: "docs" });
+      } else expect.fail("expected success");
+    });
+
+    it("errors with no arguments", () => {
+      const result = resolveSubcommand("unexpose", [], sandbox);
+      expect("error" in result).toBe(true);
+    });
+
+    it("errors on numeric without --local/--public", () => {
+      const result = resolveSubcommand("unexpose", ["3000"], sandbox);
+      expect("error" in result).toBe(true);
     });
   });
 

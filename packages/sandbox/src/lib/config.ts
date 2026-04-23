@@ -73,9 +73,7 @@ export class SandboxConfig {
         const raw = readFileSync(CONFIG_PATH, "utf-8");
         const parsed = JSON.parse(raw) as { composeOverrides?: string[] };
         config = {
-          composeOverrides: Array.isArray(parsed.composeOverrides)
-            ? parsed.composeOverrides
-            : [],
+          composeOverrides: Array.isArray(parsed.composeOverrides) ? parsed.composeOverrides : [],
         };
       } catch {
         // Ignore parse errors — start fresh
@@ -99,9 +97,7 @@ export class SandboxConfig {
       const raw = readFileSync(CONFIG_PATH, "utf-8");
       const parsed = JSON.parse(raw) as { composeOverrides?: string[] };
       config = {
-        composeOverrides: Array.isArray(parsed.composeOverrides)
-          ? parsed.composeOverrides
-          : [],
+        composeOverrides: Array.isArray(parsed.composeOverrides) ? parsed.composeOverrides : [],
       };
     } catch {
       return; // Unparseable — nothing to remove
@@ -150,7 +146,6 @@ export class SandboxConfig {
     writeFileSync(tmp, JSON.stringify(config, null, 2) + "\n", "utf-8");
     renameSync(tmp, CONFIG_PATH);
   }
-
 }
 
 /**
