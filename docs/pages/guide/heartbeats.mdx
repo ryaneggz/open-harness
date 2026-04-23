@@ -5,7 +5,7 @@ title: "Heartbeats"
 
 Heartbeats are cron-scheduled tasks that let agents wake, perform work, and go back to sleep. Each heartbeat is a `.md` file in `workspace/heartbeats/` with YAML frontmatter defining its schedule, agent, and active hours.
 
-A single heartbeat daemon inside the sandbox watches every worktree's `heartbeats/` directory at once — see [Orchestrator + Worktrees](/open-harness/architecture/orchestrator-worktrees) for the topology.
+A single heartbeat daemon inside the sandbox watches every worktree's `heartbeats/` directory at once — see [Orchestrator + Worktrees](/architecture/orchestrator-worktrees) for the topology.
 
 ## Managing heartbeats
 
