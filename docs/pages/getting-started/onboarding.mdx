@@ -73,6 +73,7 @@ If a service is already configured, onboarding marks it as done and moves on. Th
 - Runs `claude --version` to trigger OAuth if needed
 - Required for using Claude Code as your terminal coding agent
 - **Skipped if** credentials already exist
+- **Short-circuited entirely** if the [`claude-host` overlay](/guide/overlays#sharing-host-claude-state-claude-host) is active — host `~/.claude/.onboarded` is read directly, so no sandbox auth is needed
 
 ## After onboarding
 
