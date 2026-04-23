@@ -30,6 +30,10 @@ export const SUBCOMMANDS = new Set([
   "heartbeat",
   "worktree",
   "onboard",
+  "ports",
+  "expose",
+  "unexpose",
+  "open",
 ]);
 
 export const HEARTBEAT_ACTIONS = ["sync", "stop", "status", "migrate"] as const;
@@ -53,6 +57,10 @@ export interface SandboxModule {
   heartbeatTool: ToolDefinition;
   worktreeTool: ToolDefinition;
   onboardTool: ToolDefinition;
+  portsTool: ToolDefinition;
+  exposeTool: ToolDefinition;
+  unexposeTool: ToolDefinition;
+  openTool: ToolDefinition;
 }
 
 // ─── Argument parsing ──────────────────────────────────────────────
@@ -70,6 +78,12 @@ export function parseToolArgs(args: string[]): Record<string, string | boolean> 
       params.force = true;
     } else if (arg === "--base-branch" && args[i + 1]) {
       params.baseBranch = args[++i];
+    } else if (arg === "--local") {
+      params.local = true;
+    } else if (arg === "--public") {
+      params.public = true;
+    } else if (arg === "--host-port" && args[i + 1]) {
+      params.hostPort = args[++i];
     } else if (!arg.startsWith("-")) {
       if (positionalIndex === 0) {
         params.name = arg;
@@ -123,6 +137,50 @@ export function resolveSubcommand(
       return { error: "Usage: openharness heartbeat <sync|stop|status|migrate> <name>" };
     }
     return { tool: sandbox.heartbeatTool, params: { name, action } };
+  }
+
+  // ports: name optional, extra args ignored
+  if (command === "ports") {
+    const params = parseToolArgs(args);
+    return { tool: sandbox.portsTool, params: { name: params.name } };
+  }
+
+  // expose/unexpose: first positional is port, require --local or --public
+  if (command === "expose" || command === "unexpose") {
+    const params = parseToolArgs(args);
+    const port = Number(params.name);
+    if (!params.name || Number.isNaN(port)) {
+      return {
+        error: `Usage: openharness ${command} <port> --local|--public [--host-port N]`,
+      };
+    }
+    const scope: "local" | "public" | undefined = params.local
+      ? "local"
+      : params.public
+        ? "public"
+        : undefined;
+    if (!scope) {
+      return { error: "Specify --local or --public" };
+    }
+    const tool = command === "expose" ? sandbox.exposeTool : sandbox.unexposeTool;
+    return {
+      tool,
+      params: {
+        port,
+        scope,
+        hostPort: params.hostPort,
+      },
+    };
+  }
+
+  // open: first positional is port
+  if (command === "open") {
+    const params = parseToolArgs(args);
+    const port = Number(params.name);
+    if (!params.name || Number.isNaN(port)) {
+      return { error: "Usage: openharness open <port>" };
+    }
+    return { tool: sandbox.openTool, params: { port } };
   }
 
   // list: no name required
@@ -209,6 +267,12 @@ ${h(pad("list"), "List running sandboxes")}
 
 ${b}Advanced:${r}
   ${b}${pad("worktree <name> [--base-branch]")}${r}Create git worktree for branch isolation
+
+${b}Exposure:${r}
+  ${b}${pad("ports [name]")}${r}Inspect port exposures for a sandbox
+  ${b}${pad("expose <port> --local|--public")}${r}Expose a sandbox app port (local = host publish; public = Cloudflare quick tunnel)
+  ${b}${pad("unexpose <port> --local|--public")}${r}Stop an exposure (Phase 2)
+  ${b}${pad("open <port>")}${r}Open an exposed app URL
 `;
 
   if (inside) {

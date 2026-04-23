@@ -1,0 +1,15 @@
+# App Exposure Overlay (opt-in).
+# Activated by `openharness expose <port> --local`, which adds this file
+# to .openharness/config.json composeOverrides. Phase 1 publishes a fixed
+# set of common dev ports; Phase 3 will generate per-sandbox overlays
+# supporting arbitrary ports.
+services:
+  sandbox:
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+      - "5173:5173"
+      - "8000:8000"
+      - "8080:8080"
+      - "8081:8081"
+      - "8501:8501"

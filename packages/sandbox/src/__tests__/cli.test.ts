@@ -34,6 +34,10 @@ function makeMockSandbox(): SandboxModule {
     heartbeatTool: makeMockTool("sandbox_heartbeat"),
     worktreeTool: makeMockTool("sandbox_worktree"),
     onboardTool: makeMockTool("sandbox_onboard"),
+    portsTool: makeMockTool("sandbox_ports"),
+    exposeTool: makeMockTool("sandbox_expose"),
+    unexposeTool: makeMockTool("sandbox_unexpose"),
+    openTool: makeMockTool("sandbox_open"),
   };
 }
 
@@ -50,6 +54,10 @@ describe("SUBCOMMANDS", () => {
     "heartbeat",
     "worktree",
     "onboard",
+    "ports",
+    "expose",
+    "unexpose",
+    "open",
   ];
 
   it("contains all expected subcommands", () => {
@@ -106,6 +114,22 @@ describe("parseToolArgs", () => {
     expect(parseToolArgs(["my-agent", "--base-branch", "main"])).toEqual({
       name: "my-agent",
       baseBranch: "main",
+    });
+  });
+
+  it("parses --local boolean flag", () => {
+    expect(parseToolArgs(["3000", "--local"])).toEqual({ name: "3000", local: true });
+  });
+
+  it("parses --public boolean flag", () => {
+    expect(parseToolArgs(["3000", "--public"])).toEqual({ name: "3000", public: true });
+  });
+
+  it("parses --host-port flag with value", () => {
+    expect(parseToolArgs(["3000", "--local", "--host-port", "3300"])).toEqual({
+      name: "3000",
+      local: true,
+      hostPort: "3300",
     });
   });
 
@@ -356,6 +380,83 @@ describe("resolveSubcommand", () => {
     it("maps onboard to onboardTool", () => {
       const result = resolveSubcommand("onboard", ["x"], sandbox);
       expect("tool" in result && result.tool).toBe(sandbox.onboardTool);
+    });
+  });
+
+  describe("ports command", () => {
+    it("resolves with no args", () => {
+      const result = resolveSubcommand("ports", [], sandbox);
+      expect(result).toEqual({ tool: sandbox.portsTool, params: { name: undefined } });
+    });
+
+    it("resolves with name", () => {
+      const result = resolveSubcommand("ports", ["my-agent"], sandbox);
+      expect(result).toEqual({ tool: sandbox.portsTool, params: { name: "my-agent" } });
+    });
+  });
+
+  describe("expose command", () => {
+    it("resolves port + --local", () => {
+      const result = resolveSubcommand("expose", ["3000", "--local"], sandbox);
+      if ("tool" in result) {
+        expect(result.tool).toBe(sandbox.exposeTool);
+        expect(result.params).toEqual({ port: 3000, scope: "local", hostPort: undefined });
+      } else expect.fail("expected success");
+    });
+
+    it("resolves port + --public", () => {
+      const result = resolveSubcommand("expose", ["3000", "--public"], sandbox);
+      if ("tool" in result) {
+        expect(result.params).toEqual({ port: 3000, scope: "public", hostPort: undefined });
+      } else expect.fail("expected success");
+    });
+
+    it("accepts --host-port", () => {
+      const result = resolveSubcommand("expose", ["3000", "--local", "--host-port", "3300"], sandbox);
+      if ("tool" in result) {
+        expect(result.params).toEqual({ port: 3000, scope: "local", hostPort: "3300" });
+      } else expect.fail("expected success");
+    });
+
+    it("errors without a port", () => {
+      const result = resolveSubcommand("expose", ["--local"], sandbox);
+      expect("error" in result).toBe(true);
+    });
+
+    it("errors without --local or --public", () => {
+      const result = resolveSubcommand("expose", ["3000"], sandbox);
+      expect("error" in result).toBe(true);
+      if ("error" in result) expect(result.error).toContain("--local");
+    });
+
+    it("errors on non-numeric port", () => {
+      const result = resolveSubcommand("expose", ["abc", "--local"], sandbox);
+      expect("error" in result).toBe(true);
+    });
+  });
+
+  describe("unexpose command", () => {
+    it("resolves with port + scope", () => {
+      const result = resolveSubcommand("unexpose", ["3000", "--public"], sandbox);
+      if ("tool" in result) {
+        expect(result.tool).toBe(sandbox.unexposeTool);
+        expect(result.params).toEqual({ port: 3000, scope: "public", hostPort: undefined });
+      } else expect.fail("expected success");
+    });
+  });
+
+  describe("open command", () => {
+    it("resolves with a port", () => {
+      const result = resolveSubcommand("open", ["3000"], sandbox);
+      if ("tool" in result) {
+        expect(result.tool).toBe(sandbox.openTool);
+        expect(result.params).toEqual({ port: 3000 });
+      } else expect.fail("expected success");
+    });
+
+    it("errors without a port", () => {
+      const result = resolveSubcommand("open", [], sandbox);
+      expect("error" in result).toBe(true);
     });
   });
 });

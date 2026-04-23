@@ -1,0 +1,68 @@
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+
+const EXPOSURES_PATH = ".openharness/exposures.json";
+
+export interface Exposure {
+  port: number;
+  scope: "local" | "public";
+  hostPort?: number;
+  url?: string;
+  session?: string;
+  createdAt: string;
+}
+
+export interface ExposuresFile {
+  version: 1;
+  exposures: Exposure[];
+}
+
+const EMPTY: ExposuresFile = { version: 1, exposures: [] };
+
+export function readExposures(): ExposuresFile {
+  const path = resolve(EXPOSURES_PATH);
+  if (!existsSync(path)) return { ...EMPTY, exposures: [] };
+  try {
+    const raw = readFileSync(path, "utf-8");
+    const parsed = JSON.parse(raw) as Partial<ExposuresFile>;
+    if (parsed.version !== 1) {
+      console.warn(`[exposures] unknown version ${parsed.version} — treating as empty`);
+      return { ...EMPTY, exposures: [] };
+    }
+    return { version: 1, exposures: parsed.exposures ?? [] };
+  } catch (err) {
+    console.warn(`[exposures] failed to parse ${EXPOSURES_PATH}: ${(err as Error).message}`);
+    return { ...EMPTY, exposures: [] };
+  }
+}
+
+export function writeExposures(file: ExposuresFile): void {
+  const path = resolve(EXPOSURES_PATH);
+  mkdirSync(dirname(path), { recursive: true });
+  const tmp = `${path}.tmp`;
+  writeFileSync(tmp, JSON.stringify(file, null, 2) + "\n", "utf-8");
+  renameSync(tmp, path);
+}
+
+export function upsertExposure(e: Exposure): void {
+  const file = readExposures();
+  const others = file.exposures.filter((x) => !(x.port === e.port && x.scope === e.scope));
+  writeExposures({ version: 1, exposures: [...others, e] });
+}
+
+export function removeExposure(port: number, scope: "local" | "public"): void {
+  const file = readExposures();
+  const next = file.exposures.filter((x) => !(x.port === port && x.scope === scope));
+  if (next.length !== file.exposures.length) {
+    writeExposures({ version: 1, exposures: next });
+  }
+}
+
+export function findExposure(port: number, scope?: "local" | "public"): Exposure | undefined {
+  const file = readExposures();
+  if (scope) return file.exposures.find((x) => x.port === port && x.scope === scope);
+  return (
+    file.exposures.find((x) => x.port === port && x.scope === "public") ??
+    file.exposures.find((x) => x.port === port && x.scope === "local")
+  );
+}
