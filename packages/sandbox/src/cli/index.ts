@@ -178,32 +178,15 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
     }
 
     case "onboard": {
+      const { runOnboardCommand } = await import("./onboard.js");
       const name = params.name as string | undefined;
-      const force = params.force ? ["--force"] : [];
-      if (name) {
-        const cmd = execCmd(name, ["bash", "/home/sandbox/install/onboard.sh", ...force], {
-          user: "sandbox",
-          interactive: true,
-          env: { HOME: "/home/sandbox" },
-        });
-        const { spawnSync } = await import("node:child_process");
-        const result = spawnSync(cmd[0], cmd.slice(1), { stdio: "inherit" });
-        if (result.status !== 0) {
-          console.error(
-            `Error: container '${name}' is not running. Start it first: openharness sandbox`,
-          );
-          process.exit(1);
-        }
-      } else {
-        const { existsSync } = await import("node:fs");
-        const script = "/home/sandbox/install/onboard.sh";
-        if (!existsSync(script)) {
-          console.error("Error: onboard.sh not found. Are you inside a sandbox container?");
-          process.exit(1);
-        }
-        const { spawnSync } = await import("node:child_process");
-        spawnSync("bash", [script, ...force], { stdio: "inherit" });
-      }
+      const only = typeof params.action === "string" ? params.action : undefined;
+      const exitCode = await runOnboardCommand({
+        name,
+        force: params.force as boolean | undefined,
+        only,
+      });
+      if (exitCode !== 0) process.exit(exitCode);
       break;
     }
 
@@ -236,6 +219,29 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
       const result = await worktreeTool.execute(
         "cli",
         params,
+        undefined,
+        undefined,
+        undefined as never,
+      );
+      for (const item of result.content) {
+        if (item.type === "text" && "text" in item) console.log(item.text);
+      }
+      break;
+    }
+
+    case "ports":
+    case "expose":
+    case "unexpose":
+    case "open": {
+      const tools = await import("../tools/index.js");
+      const resolved = resolveSubcommand(command, cmdArgs, tools);
+      if ("error" in resolved) {
+        console.error(resolved.error);
+        process.exit(1);
+      }
+      const result = await resolved.tool.execute(
+        "cli",
+        resolved.params,
         undefined,
         undefined,
         undefined as never,

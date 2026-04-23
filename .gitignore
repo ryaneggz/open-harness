@@ -3,8 +3,9 @@
 !.worktrees/.gitkeep
 
 # Build artifacts
-node_modules/
-dist/
+**/.venv/
+**/node_modules/
+**/dist/
 *.tsbuildinfo
 
 # IDE
@@ -16,7 +17,7 @@ dist/
 !**/.claude/screenshots/.gitkeep
 
 # Heartbeat runtime log
-workspace/heartbeats/heartbeat.log
+**/heartbeat.log
 
 # Ralph runtime files (keep prd.json + progress.txt tracked for recovery)
 workspace/.ralph/.last-branch
@@ -39,3 +40,6 @@ workspace/.pi/
 workspace/startup.sh
 **/.pnpm-store
 **/.claude/plans
+**/auth.json
+**/.credentials.json
+**/scheduled_tasks.lock

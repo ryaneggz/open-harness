@@ -102,7 +102,7 @@ agent-browser close
 
 ### Step 2d — DNS resolution check (tunnel hostnames)
 
-If the URL contains a hostname that routes through a cloudflared tunnel (e.g., `oh.ruska.dev`, `oh-docs.ruska.dev`), the container's DNS may not resolve it. Check and fix:
+If the URL contains a hostname that routes through a cloudflared tunnel (any `<name>.<your-domain>` served via cloudflared — not the default `ryaneggz.github.io/open-harness/` docs URL, which resolves normally), the container's DNS may not resolve it. Check and fix:
 
 ```bash
 HOSTNAME=$(echo "$URL" | sed 's|https\?://||; s|/.*||; s|:.*||')
@@ -156,7 +156,7 @@ FILENAME=$(echo "$URL" | sed 's|https\?://||; s|/|--|g; s|--$||; s|[^a-zA-Z0-9._
 agent-browser screenshot ".claude/screenshots/${FILENAME}.png"
 ```
 
-Example: `https://oh-docs.ruska.dev/docs` → `.claude/screenshots/oh-docs.ruska.dev--docs.png`
+Example: `https://ryaneggz.github.io/open-harness/guide/exposure/` → `.claude/screenshots/ryaneggz.github.io--open-harness--guide--exposure.png`
 
 ### Step 5 — Report
 

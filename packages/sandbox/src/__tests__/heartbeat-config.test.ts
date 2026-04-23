@@ -19,8 +19,13 @@ const mockReaddirSync = vi.mocked(readdirSync);
 const mockReaddir = vi.mocked(readdir);
 const mockReadFile = vi.mocked(readFile);
 
-const { secondsToCron, parseFrontmatter, parseHeartbeatConfig, parseHeartbeatConfigAsync } =
-  await import("../lib/heartbeat/config.js");
+const {
+  secondsToCron,
+  parseFrontmatter,
+  parseHeartbeatConfig,
+  parseHeartbeatConfigAsync,
+  parseHeartbeatConfigAcrossRoots,
+} = await import("../lib/heartbeat/config.js");
 
 describe("secondsToCron", () => {
   it("returns * * * * * for 0 seconds", () => {
@@ -152,7 +157,7 @@ describe("parseHeartbeatConfig", () => {
     const result = parseHeartbeatConfig(workspacePath);
     expect(result).toHaveLength(2);
 
-    expect(result[0]).toEqual({
+    expect(result[0]).toMatchObject({
       cronExpr: "*/30 * * * *",
       filePath: "heartbeats/build-health.md",
       agent: "claude",
@@ -160,7 +165,7 @@ describe("parseHeartbeatConfig", () => {
       activeEnd: 21,
     });
 
-    expect(result[1]).toEqual({
+    expect(result[1]).toMatchObject({
       cronExpr: "50 23 * * *",
       filePath: "heartbeats/nightly.md",
       agent: "claude",
@@ -235,7 +240,7 @@ describe("parseHeartbeatConfig", () => {
 
       const result = parseHeartbeatConfig(workspacePath);
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      expect(result[0]).toMatchObject({
         cronExpr: "*/30 * * * *",
         filePath: "HEARTBEAT.md",
         agent: "claude",
@@ -290,7 +295,7 @@ describe("parseHeartbeatConfigAsync", () => {
     const result = await parseHeartbeatConfigAsync(workspacePath);
     expect(result).toHaveLength(2);
 
-    expect(result[0]).toEqual({
+    expect(result[0]).toMatchObject({
       cronExpr: "*/30 * * * *",
       filePath: "heartbeats/build-health.md",
       agent: "claude",
@@ -298,7 +303,7 @@ describe("parseHeartbeatConfigAsync", () => {
       activeEnd: 21,
     });
 
-    expect(result[1]).toEqual({
+    expect(result[1]).toMatchObject({
       cronExpr: "50 23 * * *",
       filePath: "heartbeats/nightly.md",
       agent: "claude",
@@ -337,7 +342,7 @@ describe("parseHeartbeatConfigAsync", () => {
 
     const result = await parseHeartbeatConfigAsync(workspacePath);
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
+    expect(result[0]).toMatchObject({
       cronExpr: "*/30 * * * *",
       filePath: "HEARTBEAT.md",
       agent: "claude",
@@ -351,5 +356,59 @@ describe("parseHeartbeatConfigAsync", () => {
 
     const result = await parseHeartbeatConfigAsync(workspacePath, "codex");
     expect(result[0].agent).toBe("codex");
+  });
+});
+
+describe("parseHeartbeatConfigAcrossRoots", () => {
+  const rootA = {
+    workspacePath: "/tmp/a/workspace",
+    heartbeatDir: "/tmp/a/workspace/heartbeats",
+    label: "root-a",
+  };
+  const rootB = {
+    workspacePath: "/tmp/b/workspace",
+    heartbeatDir: "/tmp/b/workspace/heartbeats",
+    label: "root-b",
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("merges entries from every root and tags them with their root", async () => {
+    mockExistsSync.mockImplementation((p) => {
+      const s = String(p);
+      return s === rootA.heartbeatDir || s === rootB.heartbeatDir;
+    });
+    mockReaddir.mockImplementation((p) => {
+      const s = String(p);
+      if (s === rootA.heartbeatDir) return Promise.resolve(["ping.md"] as unknown as string[]);
+      if (s === rootB.heartbeatDir)
+        return Promise.resolve(["ping.md", "other.md"] as unknown as string[]);
+      return Promise.resolve([] as unknown as string[]);
+    });
+    mockReadFile.mockResolvedValue(`---\nschedule: "*/5 * * * *"\n---\n\n# x`);
+
+    const entries = await parseHeartbeatConfigAcrossRoots([rootA, rootB]);
+
+    expect(entries).toHaveLength(3);
+    expect(entries.filter((e) => e.root.label === "root-a")).toHaveLength(1);
+    expect(entries.filter((e) => e.root.label === "root-b")).toHaveLength(2);
+  });
+
+  it("returns empty array when all roots have no heartbeats/ and no legacy file", async () => {
+    mockExistsSync.mockReturnValue(false);
+    const entries = await parseHeartbeatConfigAcrossRoots([rootA, rootB]);
+    expect(entries).toEqual([]);
+  });
+
+  it("tolerates a root with a missing heartbeats/ alongside a root with entries", async () => {
+    mockExistsSync.mockImplementation((p) => String(p) === rootB.heartbeatDir);
+    mockReaddir.mockResolvedValue(["ping.md"] as unknown as string[]);
+    mockReadFile.mockResolvedValue(`---\nschedule: "*/5 * * * *"\n---\n`);
+
+    const entries = await parseHeartbeatConfigAcrossRoots([rootA, rootB]);
+    expect(entries).toHaveLength(1);
+    expect(entries[0].root.label).toBe("root-b");
   });
 });

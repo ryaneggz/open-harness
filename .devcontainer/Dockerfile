@@ -6,6 +6,7 @@ ENV TZ=America/Denver
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-server ca-certificates curl wget sudo gosu git jq gnupg \
     lsb-release nano ripgrep tmux unzip bash-completion procps less \
+    iproute2 zsh \
  && rm -rf /var/lib/apt/lists/*
 
 # ─── Node.js 22.x ──────────────────────────────────────────────────
@@ -61,16 +62,34 @@ RUN npm install -g @anthropic-ai/claude-code @openai/codex @mariozechner/pi-codi
  && claude --version && codex --version && pi --version
 
 # ─── Sandbox user ──────────────────────────────────────────────────
-RUN useradd -m -s /bin/bash sandbox \
+RUN useradd -m -s /bin/zsh sandbox \
  && echo "sandbox ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/sandbox \
  && chmod 0440 /etc/sudoers.d/sandbox \
  && groupadd -f docker && usermod -aG docker sandbox
 
-# Ensure PNPM_HOME is on PATH for login shells (SSH, openharness shell)
-RUN echo 'export PNPM_HOME="/usr/local/share/pnpm"' >> /home/sandbox/.profile \
- && echo 'export PATH="$PNPM_HOME:$PATH"' >> /home/sandbox/.profile
+# ─── oh-my-zsh + plugins ───────────────────────────────────────────
+# Install as sandbox so $HOME resolves and files land with correct ownership.
+# RUNZSH/CHSH=no keeps the installer from trying to exec zsh or re-run chsh.
+RUN su - sandbox -c "RUNZSH=no CHSH=no KEEP_ZSHRC=yes sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\" --unattended" \
+ && su - sandbox -c "git clone --depth 1 https://github.com/zsh-users/zsh-autosuggestions         /home/sandbox/.oh-my-zsh/custom/plugins/zsh-autosuggestions" \
+ && su - sandbox -c "git clone --depth 1 https://github.com/zsh-users/zsh-syntax-highlighting     /home/sandbox/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting" \
+ && su - sandbox -c "git clone --depth 1 https://github.com/zsh-users/zsh-history-substring-search /home/sandbox/.oh-my-zsh/custom/plugins/zsh-history-substring-search"
 
-# Shell aliases for agent CLIs
+# Default tmux config for sandbox user
+COPY --chown=sandbox:sandbox install/.tmux.conf /home/sandbox/.tmux.conf
+
+# Default .zshrc for sandbox user (overrides the oh-my-zsh template)
+COPY --chown=sandbox:sandbox install/.zshrc /home/sandbox/.zshrc
+
+# Ensure PNPM_HOME is on PATH for login shells (SSH, openharness shell).
+# bash reads .profile; zsh reads .zprofile — mirror the exports into both.
+RUN printf '%s\n' \
+      'export PNPM_HOME="/usr/local/share/pnpm"' \
+      'export PATH="$PNPM_HOME:$PATH"' \
+      | tee -a /home/sandbox/.profile /home/sandbox/.zprofile \
+ && chown sandbox:sandbox /home/sandbox/.profile /home/sandbox/.zprofile
+
+# Shell aliases for agent CLIs (bash fallback — .zshrc ships with these baked in)
 RUN echo "alias claude='claude --dangerously-skip-permissions'" >> /home/sandbox/.bashrc \
  && echo "alias codex='codex --full-auto'" >> /home/sandbox/.bashrc \
  && echo "alias pi='pi'" >> /home/sandbox/.bashrc \
@@ -79,7 +98,7 @@ RUN echo "alias claude='claude --dangerously-skip-permissions'" >> /home/sandbox
 # Git safe.directory for bind-mounted project
 RUN su - sandbox -c "git config --global --add safe.directory /home/sandbox/harness"
 
-# Default working directory for interactive shells (SSH + terminal attach)
+# Default working directory for interactive shells (SSH + terminal attach, bash fallback)
 RUN echo 'cd ~/harness 2>/dev/null' >> /home/sandbox/.bashrc
 
 # Image-level devcontainer config — VS Code reads this on "Attach to Running Container"

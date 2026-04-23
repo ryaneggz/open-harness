@@ -22,7 +22,7 @@ Provision a new agent sandbox. The sandbox uses `.devcontainer/` as the base env
 
    **Option A — Terminal:**
    ```bash
-   docker exec -it -u sandbox openharness bash
+   docker exec -it -u sandbox openharness zsh     # default; bash also available
    ```
 
    **Option B — VS Code Attach to Container (local):**
@@ -91,6 +91,16 @@ Remove an agent sandbox.
 | `/heartbeat` | Create a new heartbeat and sync daemon — immediately live |
 | `/strategic-proposal` | 5 experts + AI council → roadmap |
 
+## Exposing apps
+
+`oh expose <name> <port>` routes a sandbox app through a Caddy gateway.
+Laptop mode → `https://<name>.<sandbox>.localhost:8443`; remote mode
+(when `PUBLIC_DOMAIN` is set) → `https://<name>.<sandbox>.<PUBLIC_DOMAIN>`.
+See `.claude/rules/gateway-routing.md` for invariants.
+
+Long-running apps inside the sandbox go in named tmux sessions, related
+apps as stacked panes — see `.claude/rules/sandbox-processes.md`.
+
 ## What You Do
 
 - Commit and push changes to the harness itself (.devcontainer/, install/, workspace/ templates)
@@ -113,7 +123,7 @@ Remove an agent sandbox.
 
 ```
 .devcontainer/        # Sandbox environment (Dockerfile, compose, overlays, entrypoint)
-install/              # Provisioning scripts (onboard.sh, entrypoint.sh)
+install/              # Provisioning scripts (entrypoint.sh, cloudflared-tunnel.sh, setup.sh, tmux-agent.sh)
 workspace/            # Template for all agent workspaces
   AGENTS.md           # In-sandbox agent instructions (separate from this file)
   SOUL.md             # Agent persona template

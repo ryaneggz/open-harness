@@ -6,15 +6,16 @@ import { run } from "../lib/exec.js";
 export const shellTool: ToolDefinition = {
   name: "sandbox_shell",
   label: "Shell into Sandbox",
-  description: "Open an interactive bash shell inside a running sandbox container.",
-  promptSnippet: "sandbox_shell — open interactive bash shell in a sandbox",
+  description:
+    "Open an interactive login shell inside a running sandbox container. Uses the user's $SHELL (zsh by default), falling back to bash.",
+  promptSnippet: "sandbox_shell — open interactive login shell ($SHELL, default zsh) in a sandbox",
   parameters: Type.Object({
     name: Type.String({ description: "Sandbox name" }),
   }),
 
   async execute(_toolCallId, params: Record<string, unknown>) {
     const name = params.name as string;
-    const cmd = execCmd(name, ["bash", "--login"], {
+    const cmd = execCmd(name, ["/bin/sh", "-lc", 'exec "${SHELL:-/bin/zsh}" -l'], {
       user: "sandbox",
       interactive: true,
       workdir: "/home/sandbox/workspace",

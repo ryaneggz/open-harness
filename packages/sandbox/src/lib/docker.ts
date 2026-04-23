@@ -22,10 +22,20 @@ export function composeEnv(config: SandboxConfig): Record<string, string> {
 }
 
 /**
- * Build the `docker compose up -d --build` command.
+ * Build the `docker compose up` command.
+ *
+ * @param config  Sandbox configuration.
+ * @param opts.build          Append `--build` (default: true).
+ * @param opts.forceRecreate  Append `--force-recreate` (default: false).
  */
-export function composeUp(config: SandboxConfig): string[] {
-  return [...composeCmd(config), "up", "-d", "--build"];
+export function composeUp(
+  config: SandboxConfig,
+  opts: { build?: boolean; forceRecreate?: boolean } = {},
+): string[] {
+  const cmd = [...composeCmd(config), "up", "-d"];
+  if (opts.build ?? true) cmd.push("--build");
+  if (opts.forceRecreate) cmd.push("--force-recreate");
+  return cmd;
 }
 
 /**
