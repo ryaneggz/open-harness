@@ -1,7 +1,8 @@
 # Completion (zsh native)
 autoload -Uz compinit && compinit
 
-# Git info in RPROMPT: (branch @short-hash) — empty outside a repo.
+# Git info in RPROMPT: [sandbox] (branch @short-hash) — empty outside a repo.
+#   sandbox — cyan, only shown when $SANDBOX_NAME is set (inside a sandbox)
 #   branch  — yellow
 #   @hash   — dim (first 7 chars of HEAD)
 #   action  — red during rebase/merge/cherry-pick
@@ -18,10 +19,16 @@ zstyle ':vcs_info:git+set-message:*' hooks shorten-rev
 precmd() { vcs_info }
 
 # Bash-like left prompt (Ubuntu default: green user@host, blue path).
-# Branch lives in RPROMPT in yellow.
+# Sandbox + branch live in RPROMPT.
 setopt PROMPT_SUBST
 PROMPT='%B%F{green}%n@%m%f%b:%B%F{blue}%~%f%b$ '
-RPROMPT='${vcs_info_msg_0_}'
+# $SANDBOX_NAME is exported by docker-compose inside the sandbox; empty on the host.
+if [[ -n "$SANDBOX_NAME" ]]; then
+  _sandbox_prompt="%F{cyan}[$SANDBOX_NAME]%f "
+else
+  _sandbox_prompt=""
+fi
+RPROMPT='${_sandbox_prompt}${vcs_info_msg_0_}'
 
 # History — dedup + share across sessions
 HISTFILE=~/.zsh_history
