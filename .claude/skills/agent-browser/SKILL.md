@@ -44,19 +44,40 @@ Run each check sequentially. If any check fails, **stop immediately** and report
 command -v agent-browser && agent-browser --version 2>&1 || echo "FAIL: agent-browser not found in PATH"
 ```
 
-If not found, report:
+If not found, install it — **use npm (not pnpm)** and **pin to 0.8.5**:
 
-```
-agent-browser is not installed.
-
-Fix (inside container):
-  pnpm add -g agent-browser@0.8.5
-  agent-browser install --with-deps
-
-Or rebuild with INSTALL_BROWSER=true in your compose overlay.
+```bash
+sudo npm install -g agent-browser@0.8.5
 ```
 
-**Stop here** — do not continue.
+Then install Chromium + system deps. `agent-browser install --with-deps`
+shells out to a `playwright` binary that isn't bundled with this package,
+so on a fresh image you'll also need the playwright CLI available:
+
+```bash
+agent-browser install --with-deps    # installs system libs (apt)
+# If it ends with "sh: 1: playwright: not found":
+sudo npm install -g playwright@latest
+npx playwright install chromium
+```
+
+Verify:
+
+```bash
+agent-browser --version     # → agent-browser 0.8.5
+agent-browser open about:blank && agent-browser close
+```
+
+Rationale for the pins:
+- **npm, not pnpm** — `PNPM_HOME` is `/usr/local/share/pnpm`, owned by
+  root; `pnpm add -g` as the sandbox user fails with `EACCES`.
+- **0.8.5** — later majors have breaking CLI changes; the rest of this
+  skill targets 0.8.5's flags.
+
+Or rebuild the image with `INSTALL_BROWSER=true` in the compose overlay
+to bake this in.
+
+After installing, resume the health check from step 2b — **do not stop**.
 
 #### 2b. Check Chromium launches
 
