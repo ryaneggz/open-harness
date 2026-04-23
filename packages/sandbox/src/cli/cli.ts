@@ -78,12 +78,6 @@ export function parseToolArgs(args: string[]): Record<string, string | boolean> 
       params.force = true;
     } else if (arg === "--base-branch" && args[i + 1]) {
       params.baseBranch = args[++i];
-    } else if (arg === "--local") {
-      params.local = true;
-    } else if (arg === "--public") {
-      params.public = true;
-    } else if (arg === "--host-port" && args[i + 1]) {
-      params.hostPort = args[++i];
     } else if (!arg.startsWith("-")) {
       if (positionalIndex === 0) {
         params.name = arg;
@@ -145,97 +139,57 @@ export function resolveSubcommand(
     return { tool: sandbox.portsTool, params: { name: params.name } };
   }
 
-  // expose: primary `openharness expose <name> <port>` → Caddy route.
-  //         legacy `openharness expose <port> --local|--public` still works.
+  // expose: `openharness expose <name> <port>` → Caddy route.
   if (command === "expose") {
     const params = parseToolArgs(args);
     const first = params.name as string | undefined;
     const second = params.action as string | undefined;
 
-    // New form: <name> <port> (non-numeric first, numeric second).
-    if (first && second && Number.isNaN(Number(first)) && Number.isFinite(Number(second))) {
-      return {
-        tool: sandbox.exposeTool,
-        params: {
-          scope: "route",
-          routeName: first,
-          port: Number(second),
-        },
-      };
+    if (!first || !second) {
+      return { error: "Usage: openharness expose <name> <port>" };
     }
-
-    // Legacy form: <port> --local|--public
-    const port = Number(first);
-    if (!first || Number.isNaN(port)) {
+    const port = Number(second);
+    if (!Number.isFinite(port)) {
+      return { error: `Port must be a number, got '${second}'.` };
+    }
+    if (!Number.isNaN(Number(first))) {
       return {
         error:
-          `Usage: openharness expose <name> <port>   (Caddy route, recommended)\n` +
-          `       openharness expose <port> --local|--public   (legacy)`,
-      };
-    }
-    const scope: "local" | "public" | undefined = params.local
-      ? "local"
-      : params.public
-        ? "public"
-        : undefined;
-    if (!scope) {
-      return {
-        error: "Specify --local or --public, or use the new form: openharness expose <name> <port>",
+          `Usage: openharness expose <name> <port>\n` +
+          `(The first positional is the route name, not a port. Example: openharness expose docs 8080)`,
       };
     }
     return {
       tool: sandbox.exposeTool,
-      params: { port, scope, hostPort: params.hostPort },
+      params: { routeName: first, port },
     };
   }
 
-  // unexpose: primary `openharness unexpose <name>` → remove Caddy route.
-  //           legacy `openharness unexpose <port> --local|--public`.
+  // unexpose: `openharness unexpose <name>` → remove Caddy route.
   if (command === "unexpose") {
     const params = parseToolArgs(args);
     const first = params.name as string | undefined;
     if (!first) {
-      return {
-        error:
-          `Usage: openharness unexpose <name>   (remove Caddy route)\n` +
-          `       openharness unexpose <port> --local|--public   (legacy)`,
-      };
-    }
-
-    // New form: single non-numeric positional is a route name.
-    if (Number.isNaN(Number(first))) {
-      return {
-        tool: sandbox.unexposeTool,
-        params: { scope: "route", routeName: first },
-      };
-    }
-
-    // Legacy form: <port> --local|--public
-    const port = Number(first);
-    const scope: "local" | "public" | undefined = params.local
-      ? "local"
-      : params.public
-        ? "public"
-        : undefined;
-    if (!scope) {
-      return {
-        error: "Specify --local or --public, or pass a route name (new form).",
-      };
+      return { error: "Usage: openharness unexpose <name>" };
     }
     return {
       tool: sandbox.unexposeTool,
-      params: { port, scope },
+      params: { routeName: first },
     };
   }
 
-  // open: first positional is port
+  // open: `openharness open <name>` or `openharness open <port>`
   if (command === "open") {
     const params = parseToolArgs(args);
-    const port = Number(params.name);
-    if (!params.name || Number.isNaN(port)) {
-      return { error: "Usage: openharness open <port>" };
+    const first = params.name as string | undefined;
+    if (!first) {
+      return { error: "Usage: openharness open <name|port>" };
     }
-    return { tool: sandbox.openTool, params: { port } };
+    const maybePort = Number(first);
+    return {
+      tool: sandbox.openTool,
+      params: Number.isFinite(maybePort) ? { port: maybePort } : { routeName: first },
+    };
   }
 
   // list: no name required
@@ -324,12 +278,10 @@ ${b}Advanced:${r}
   ${b}${pad("worktree <name> [--base-branch]")}${r}Create git worktree for branch isolation
 
 ${b}Exposure:${r}
-  ${b}${pad("ports [name]")}${r}Inspect ports, routes, and listeners
-  ${b}${pad("expose <name> <port>")}${r}Expose an app via Caddy route ${d}(primary)${r}
+  ${b}${pad("ports [name]")}${r}Inspect listeners and routes
+  ${b}${pad("expose <name> <port>")}${r}Expose an app via Caddy route
   ${b}${pad("unexpose <name>")}${r}Remove a Caddy route
-  ${b}${pad("open <port>")}${r}Open an exposed app URL
-  ${d}${pad("expose <port> --local|--public")}${r}${d}legacy — deprecated${r}
-  ${d}${pad("unexpose <port> --local|--public")}${r}${d}legacy — deprecated${r}
+  ${b}${pad("open <name|port>")}${r}Open a route's URL
 `;
 
   if (inside) {

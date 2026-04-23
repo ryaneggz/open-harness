@@ -117,22 +117,6 @@ describe("parseToolArgs", () => {
     });
   });
 
-  it("parses --local boolean flag", () => {
-    expect(parseToolArgs(["3000", "--local"])).toEqual({ name: "3000", local: true });
-  });
-
-  it("parses --public boolean flag", () => {
-    expect(parseToolArgs(["3000", "--public"])).toEqual({ name: "3000", public: true });
-  });
-
-  it("parses --host-port flag with value", () => {
-    expect(parseToolArgs(["3000", "--local", "--host-port", "3300"])).toEqual({
-      name: "3000",
-      local: true,
-      hostPort: "3300",
-    });
-  });
-
   it("returns empty object for empty args", () => {
     expect(parseToolArgs([])).toEqual({});
   });
@@ -396,101 +380,57 @@ describe("resolveSubcommand", () => {
   });
 
   describe("expose command", () => {
-    it("resolves port + --local", () => {
-      const result = resolveSubcommand("expose", ["3000", "--local"], sandbox);
-      if ("tool" in result) {
-        expect(result.tool).toBe(sandbox.exposeTool);
-        expect(result.params).toEqual({ port: 3000, scope: "local", hostPort: undefined });
-      } else expect.fail("expected success");
-    });
-
-    it("resolves port + --public", () => {
-      const result = resolveSubcommand("expose", ["3000", "--public"], sandbox);
-      if ("tool" in result) {
-        expect(result.params).toEqual({ port: 3000, scope: "public", hostPort: undefined });
-      } else expect.fail("expected success");
-    });
-
-    it("accepts --host-port", () => {
-      const result = resolveSubcommand(
-        "expose",
-        ["3000", "--local", "--host-port", "3300"],
-        sandbox,
-      );
-      if ("tool" in result) {
-        expect(result.params).toEqual({ port: 3000, scope: "local", hostPort: "3300" });
-      } else expect.fail("expected success");
-    });
-
-    it("errors without a port", () => {
-      const result = resolveSubcommand("expose", ["--local"], sandbox);
-      expect("error" in result).toBe(true);
-    });
-
-    it("errors without --local or --public", () => {
-      const result = resolveSubcommand("expose", ["3000"], sandbox);
-      expect("error" in result).toBe(true);
-      if ("error" in result) expect(result.error).toContain("--local");
-    });
-
-    it("errors on non-numeric port with --local", () => {
-      // Legacy path rejection: single positional, non-numeric, with --local
-      const result = resolveSubcommand("expose", ["abc", "--local"], sandbox);
-      // Single non-numeric positional + --local is ambiguous — it's close to
-      // "new form without port". The resolver routes to legacy since there's
-      // only one positional, and the error explains the new form.
-      expect("error" in result).toBe(true);
-    });
-
-    // ── new form: oh expose <name> <port> ───────────────────
-    it("resolves route form: <name> <port> → scope=route", () => {
+    it("resolves <name> <port> → routeName + port", () => {
       const result = resolveSubcommand("expose", ["docs", "8080"], sandbox);
       if ("tool" in result) {
         expect(result.tool).toBe(sandbox.exposeTool);
-        expect(result.params).toEqual({
-          scope: "route",
-          routeName: "docs",
-          port: 8080,
-        });
+        expect(result.params).toEqual({ routeName: "docs", port: 8080 });
       } else expect.fail("expected success");
     });
 
-    it("route form rejects without port", () => {
+    it("accepts kebab-case route names", () => {
+      const result = resolveSubcommand("expose", ["my-app", "3000"], sandbox);
+      if ("tool" in result) {
+        expect(result.params).toEqual({ routeName: "my-app", port: 3000 });
+      } else expect.fail("expected success");
+    });
+
+    it("errors with no arguments", () => {
+      const result = resolveSubcommand("expose", [], sandbox);
+      expect("error" in result).toBe(true);
+    });
+
+    it("errors with only a name (missing port)", () => {
       const result = resolveSubcommand("expose", ["docs"], sandbox);
       expect("error" in result).toBe(true);
     });
 
-    it("route form: kebab-case name is accepted by the parser", () => {
-      const result = resolveSubcommand("expose", ["my-app", "3000"], sandbox);
-      if ("tool" in result) {
-        expect(result.params).toMatchObject({ routeName: "my-app", port: 3000 });
-      } else expect.fail("expected success");
+    it("errors with a non-numeric port", () => {
+      const result = resolveSubcommand("expose", ["docs", "abc"], sandbox);
+      expect("error" in result).toBe(true);
+      if ("error" in result) expect(result.error.toLowerCase()).toContain("number");
+    });
+
+    it("errors when first positional is numeric (common mistake)", () => {
+      const result = resolveSubcommand("expose", ["3000", "8080"], sandbox);
+      expect("error" in result).toBe(true);
+      if ("error" in result) {
+        expect(result.error).toContain("route name");
+      }
     });
   });
 
   describe("unexpose command", () => {
-    it("resolves with port + scope (legacy)", () => {
-      const result = resolveSubcommand("unexpose", ["3000", "--public"], sandbox);
-      if ("tool" in result) {
-        expect(result.tool).toBe(sandbox.unexposeTool);
-        expect(result.params).toEqual({ port: 3000, scope: "public" });
-      } else expect.fail("expected success");
-    });
-
-    it("resolves route form: <name> → scope=route", () => {
+    it("resolves <name> → routeName", () => {
       const result = resolveSubcommand("unexpose", ["docs"], sandbox);
       if ("tool" in result) {
-        expect(result.params).toEqual({ scope: "route", routeName: "docs" });
+        expect(result.tool).toBe(sandbox.unexposeTool);
+        expect(result.params).toEqual({ routeName: "docs" });
       } else expect.fail("expected success");
     });
 
     it("errors with no arguments", () => {
       const result = resolveSubcommand("unexpose", [], sandbox);
-      expect("error" in result).toBe(true);
-    });
-
-    it("errors on numeric without --local/--public", () => {
-      const result = resolveSubcommand("unexpose", ["3000"], sandbox);
       expect("error" in result).toBe(true);
     });
   });

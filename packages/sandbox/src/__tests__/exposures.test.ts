@@ -19,199 +19,145 @@ vi.mock("node:fs", () => ({
 
 beforeEach(() => fs.clear());
 
-// Dynamic import after mocks — required for vi.mock hoisting to take effect
-const { readExposures, writeExposures, upsertExposure, removeExposure, findExposure } =
-  await import("../lib/exposures.js");
+const {
+  readExposures,
+  writeExposures,
+  upsertExposure,
+  removeRoute,
+  findRouteByName,
+  findRouteByPort,
+  listRoutes,
+} = await import("../lib/exposures.js");
+
+function mkRoute(routeName: string, port: number, sandbox = "oh-local") {
+  return {
+    routeName,
+    port,
+    sandbox,
+    url: `https://${routeName}.${sandbox}.localhost:8443`,
+    createdAt: "2026-04-22T00:00:00.000Z",
+  };
+}
 
 describe("readExposures", () => {
   it("returns empty file when path does not exist", () => {
-    const result = readExposures();
-    expect(result).toEqual({ version: 1, exposures: [] });
+    expect(readExposures()).toEqual({ version: 1, exposures: [] });
   });
 
-  it("returns empty file and warns on malformed JSON", async () => {
+  it("returns empty and warns on malformed JSON", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    // Seed the resolved path that readExposures will compute
     const { resolve } = await import("node:path");
-    const path = resolve(".openharness/exposures.json");
-    fs.set(path, "not valid json {{");
+    fs.set(resolve(".openharness/exposures.json"), "not valid json {{");
 
-    const result = readExposures();
-    expect(result).toEqual({ version: 1, exposures: [] });
+    expect(readExposures()).toEqual({ version: 1, exposures: [] });
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("failed to parse"));
     warnSpy.mockRestore();
   });
 
-  it("returns empty file and warns on unknown version", async () => {
+  it("returns empty and warns on unknown version", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { resolve } = await import("node:path");
-    const path = resolve(".openharness/exposures.json");
-    fs.set(path, JSON.stringify({ version: 99, exposures: [] }));
+    fs.set(resolve(".openharness/exposures.json"), JSON.stringify({ version: 99, exposures: [] }));
 
-    const result = readExposures();
-    expect(result).toEqual({ version: 1, exposures: [] });
+    expect(readExposures()).toEqual({ version: 1, exposures: [] });
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("unknown version"));
     warnSpy.mockRestore();
+  });
+
+  it("silently drops entries that do not match the current schema", async () => {
+    const { resolve } = await import("node:path");
+    // Legacy scope-union entries (no routeName) must be filtered out.
+    const legacy = { port: 3000, scope: "local", hostPort: 3000, createdAt: "x" };
+    const ok = mkRoute("docs", 8080);
+    fs.set(
+      resolve(".openharness/exposures.json"),
+      JSON.stringify({ version: 1, exposures: [legacy, ok] }),
+    );
+    expect(readExposures().exposures).toEqual([ok]);
   });
 });
 
 describe("writeExposures / readExposures round-trip", () => {
-  it("persists and reads back exposures correctly", () => {
-    const exposure = {
-      port: 3000,
-      scope: "public" as const,
-      url: "https://example.com",
-      createdAt: new Date().toISOString(),
-    };
-    writeExposures({ version: 1, exposures: [exposure] });
-    const result = readExposures();
-    expect(result.version).toBe(1);
-    expect(result.exposures).toHaveLength(1);
-    expect(result.exposures[0]).toEqual(exposure);
+  it("persists and reads back a route correctly", () => {
+    const r = mkRoute("docs", 8080);
+    writeExposures({ version: 1, exposures: [r] });
+    expect(readExposures()).toEqual({ version: 1, exposures: [r] });
   });
 
   it("writes via tmp file then renames atomically", async () => {
     const { resolve } = await import("node:path");
     const finalPath = resolve(".openharness/exposures.json");
-    const tmpPath = `${finalPath}.tmp`;
-
     writeExposures({ version: 1, exposures: [] });
-
-    // After write, only the final path should exist — tmp should be gone
     expect(fs.has(finalPath)).toBe(true);
-    expect(fs.has(tmpPath)).toBe(false);
+    expect(fs.has(`${finalPath}.tmp`)).toBe(false);
   });
 });
 
 describe("upsertExposure", () => {
-  it("adds a new exposure when none exists", () => {
-    const e = { port: 8080, scope: "local" as const, createdAt: new Date().toISOString() };
-    upsertExposure(e);
-    const result = readExposures();
-    expect(result.exposures).toHaveLength(1);
-    expect(result.exposures[0]).toEqual(e);
+  it("adds a new route when none exists", () => {
+    const r = mkRoute("docs", 8080);
+    upsertExposure(r);
+    expect(readExposures().exposures).toEqual([r]);
   });
 
-  it("replaces existing entry with same (port, scope) tuple", () => {
-    const original = { port: 8080, scope: "local" as const, createdAt: "2026-01-01T00:00:00.000Z" };
-    upsertExposure(original);
-
-    const updated = {
-      port: 8080,
-      scope: "local" as const,
-      url: "http://localhost:8080",
-      createdAt: "2026-06-01T00:00:00.000Z",
-    };
+  it("replaces an existing entry with the same routeName", () => {
+    upsertExposure(mkRoute("docs", 8080));
+    const updated = { ...mkRoute("docs", 9000), createdAt: "2026-06-01T00:00:00.000Z" };
     upsertExposure(updated);
-
-    const result = readExposures();
-    expect(result.exposures).toHaveLength(1);
-    expect(result.exposures[0]).toEqual(updated);
+    expect(readExposures().exposures).toEqual([updated]);
   });
 
-  it("does not replace entry with different scope", () => {
-    const local = { port: 8080, scope: "local" as const, createdAt: "2026-01-01T00:00:00.000Z" };
-    const pub = { port: 8080, scope: "public" as const, createdAt: "2026-01-01T00:00:00.000Z" };
-    upsertExposure(local);
-    upsertExposure(pub);
-
-    const result = readExposures();
-    expect(result.exposures).toHaveLength(2);
-  });
-
-  it("does not replace entry with different port", () => {
-    const a = { port: 3000, scope: "local" as const, createdAt: "2026-01-01T00:00:00.000Z" };
-    const b = { port: 4000, scope: "local" as const, createdAt: "2026-01-01T00:00:00.000Z" };
-    upsertExposure(a);
-    upsertExposure(b);
-
-    const result = readExposures();
-    expect(result.exposures).toHaveLength(2);
+  it("does not replace entries with different routeNames", () => {
+    upsertExposure(mkRoute("docs", 8080));
+    upsertExposure(mkRoute("api", 3000));
+    expect(readExposures().exposures).toHaveLength(2);
   });
 });
 
-describe("removeExposure", () => {
-  it("removes an existing exposure", () => {
-    upsertExposure({ port: 3000, scope: "public", createdAt: new Date().toISOString() });
-    removeExposure(3000, "public");
-    const result = readExposures();
-    expect(result.exposures).toHaveLength(0);
+describe("removeRoute", () => {
+  it("removes an existing route and returns true", () => {
+    upsertExposure(mkRoute("docs", 8080));
+    expect(removeRoute("docs")).toBe(true);
+    expect(readExposures().exposures).toHaveLength(0);
   });
 
-  it("is a no-op when the entry does not exist", () => {
-    upsertExposure({ port: 3000, scope: "public", createdAt: new Date().toISOString() });
-    // Remove a different port — should be silent no-op
-    removeExposure(9999, "public");
-    const result = readExposures();
-    expect(result.exposures).toHaveLength(1);
+  it("returns false when route does not exist", () => {
+    upsertExposure(mkRoute("docs", 8080));
+    expect(removeRoute("api")).toBe(false);
+    expect(readExposures().exposures).toHaveLength(1);
   });
 
-  it("is a no-op on empty exposures file", () => {
-    expect(() => removeExposure(3000, "local")).not.toThrow();
-    const result = readExposures();
-    expect(result.exposures).toHaveLength(0);
-  });
-
-  it("only removes the matching (port, scope) and leaves others intact", () => {
-    upsertExposure({ port: 3000, scope: "local", createdAt: new Date().toISOString() });
-    upsertExposure({ port: 3000, scope: "public", createdAt: new Date().toISOString() });
-    removeExposure(3000, "local");
-    const result = readExposures();
-    expect(result.exposures).toHaveLength(1);
-    expect(result.exposures[0].scope).toBe("public");
+  it("leaves unrelated routes intact", () => {
+    upsertExposure(mkRoute("docs", 8080));
+    upsertExposure(mkRoute("api", 3000));
+    removeRoute("docs");
+    expect(readExposures().exposures.map((e) => e.routeName)).toEqual(["api"]);
   });
 });
 
-describe("findExposure", () => {
-  it("returns undefined when no exposures exist", () => {
-    expect(findExposure(3000)).toBeUndefined();
+describe("findRouteByName / findRouteByPort / listRoutes", () => {
+  beforeEach(() => {
+    upsertExposure(mkRoute("docs", 8080));
+    upsertExposure(mkRoute("api", 3000));
   });
 
-  it("returns undefined when port does not match", () => {
-    upsertExposure({ port: 4000, scope: "local", createdAt: new Date().toISOString() });
-    expect(findExposure(3000)).toBeUndefined();
+  it("finds by name", () => {
+    expect(findRouteByName("docs")?.port).toBe(8080);
   });
 
-  it("prefers public over local when no scope specified", () => {
-    const local = { port: 3000, scope: "local" as const, createdAt: "2026-01-01T00:00:00.000Z" };
-    const pub = {
-      port: 3000,
-      scope: "public" as const,
-      url: "https://pub.example.com",
-      createdAt: "2026-01-01T00:00:00.000Z",
-    };
-    upsertExposure(local);
-    upsertExposure(pub);
-
-    const result = findExposure(3000);
-    expect(result).toEqual(pub);
+  it("finds by port", () => {
+    expect(findRouteByPort(3000)?.routeName).toBe("api");
   });
 
-  it("returns local when only local exists and no scope specified", () => {
-    const local = { port: 3000, scope: "local" as const, createdAt: "2026-01-01T00:00:00.000Z" };
-    upsertExposure(local);
-
-    const result = findExposure(3000);
-    expect(result).toEqual(local);
+  it("returns undefined for unknown name", () => {
+    expect(findRouteByName("nope")).toBeUndefined();
   });
 
-  it("returns specific scope when scope is specified", () => {
-    const local = { port: 3000, scope: "local" as const, createdAt: "2026-01-01T00:00:00.000Z" };
-    const pub = {
-      port: 3000,
-      scope: "public" as const,
-      url: "https://pub.example.com",
-      createdAt: "2026-01-01T00:00:00.000Z",
-    };
-    upsertExposure(local);
-    upsertExposure(pub);
-
-    expect(findExposure(3000, "local")).toEqual(local);
-    expect(findExposure(3000, "public")).toEqual(pub);
+  it("returns undefined for unknown port", () => {
+    expect(findRouteByPort(9999)).toBeUndefined();
   });
 
-  it("returns undefined when scoped scope does not exist", () => {
-    upsertExposure({ port: 3000, scope: "local", createdAt: new Date().toISOString() });
-    expect(findExposure(3000, "public")).toBeUndefined();
+  it("lists all routes", () => {
+    expect(listRoutes()).toHaveLength(2);
   });
 });

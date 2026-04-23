@@ -4,15 +4,12 @@ import { SandboxConfig } from "../lib/config.js";
 import { execCmd } from "../lib/docker.js";
 import { captureSafe } from "../lib/exec.js";
 import { readExposures } from "../lib/exposures.js";
-import { isQuickTunnelAlive } from "../lib/cloudflared.js";
 
 interface Row {
   port: number;
   listening: boolean;
-  local?: string;
-  public?: string;
-  /** Route name (scope === "route"). */
   label?: string;
+  url?: string;
   /** e.g. `next-server (pid 35374)` — best-effort. */
   process?: string;
 }
@@ -20,7 +17,6 @@ interface Row {
 /** Parse `ss -tlnp` output into port→"command (pid N)" map. Root-owned sockets yield no entry. */
 function parseListenerProcesses(ssOut: string): Map<number, string> {
   const out = new Map<number, string>();
-  // Format: "LISTEN 0 511 *:8080 *:* users:(("next-server",pid=35374,fd=16))"
   const lineRe = /LISTEN[^\n]*:(\d+)\s+[^\n]*?users:\(\("([^"]+)",pid=(\d+)/g;
   for (const m of ssOut.matchAll(lineRe)) {
     const port = Number(m[1]);
@@ -34,9 +30,8 @@ function parseListenerProcesses(ssOut: string): Map<number, string> {
 export const portsTool: ToolDefinition = {
   name: "sandbox_ports",
   label: "Inspect Ports",
-  description:
-    "Show port exposures and routes — container listeners (+ processes), host-port mappings, Caddy routes, Cloudflare tunnels.",
-  promptSnippet: "sandbox_ports — inspect exposures, routes, and listeners",
+  description: "Show container listeners (+ processes) and Caddy routes for a sandbox.",
+  promptSnippet: "sandbox_ports — inspect listeners and routes",
   parameters: Type.Object({
     name: Type.Optional(Type.String({ description: "Sandbox name (auto-resolved if omitted)" })),
   }),
@@ -59,18 +54,8 @@ export const portsTool: ToolDefinition = {
 
     const rows = new Map<number, Row>();
 
-    // Source 1: host port mappings from `docker port <name>`.
-    const hostRe = /(\d+)\/tcp -> [\d.]+:(\d+)/g;
-    for (const m of portOut.matchAll(hostRe)) {
-      const container = Number(m[1]);
-      const host = Number(m[2]);
-      const r: Row = rows.get(container) ?? { port: container, listening: false };
-      r.local = `http://localhost:${host}`;
-      rows.set(container, r);
-    }
-
-    // Source 2: container-internal listeners from `ss -tlnp` (captures PID+command).
-    // Falls back to `ss -tln` on older images without iproute2-enough support.
+    // Source 1: container-internal listeners from `ss -tlnp` (captures PID+command).
+    // Falls back to `ss -tln` on older images.
     const ssOut =
       captureSafe(execCmd(config.name, ["ss", "-tlnp"], { user: "sandbox" })) ??
       captureSafe(execCmd(config.name, ["ss", "-tln"], { user: "sandbox" })) ??
@@ -86,23 +71,16 @@ export const portsTool: ToolDefinition = {
       rows.set(port, r);
     }
 
-    // Source 3: recorded exposures (expose tool).
+    // Source 2: recorded routes (exposures registry).
     for (const e of readExposures().exposures) {
       const r: Row = rows.get(e.port) ?? { port: e.port, listening: false };
-      if (e.scope === "public") {
-        const alive = isQuickTunnelAlive(config.name, e.port);
-        r.public = alive ? (e.url ?? "—") : "(stale)";
-      } else if (e.scope === "route") {
-        r.label = e.routeName;
-        if (e.url && !r.public) r.public = e.url;
-      } else if (!r.local) {
-        r.local = `http://localhost:${e.hostPort ?? e.port}`;
-      }
+      r.label = e.routeName;
+      r.url = e.url;
       rows.set(e.port, r);
     }
 
     if (rows.size === 0) {
-      lines.push(`  (no exposures)`);
+      lines.push(`  (no listeners or routes)`);
       return {
         content: [{ type: "text" as const, text: lines.join("\n") }],
         details: undefined,
@@ -116,20 +94,19 @@ export const portsTool: ToolDefinition = {
     };
 
     lines.push(
-      `  PORT   LISTENING  LABEL        LOCAL                    PUBLIC                         PROCESS`,
+      `  PORT   LISTENING  LABEL        URL                                       PROCESS`,
     );
     lines.push(
-      `  ────   ─────────  ───────────  ──────────────────────   ─────────────────────────────  ────────────────────────`,
+      `  ────   ─────────  ───────────  ────────────────────────────────────────  ────────────────────────`,
     );
     const sorted = [...rows.values()].sort((a, b) => a.port - b.port);
     for (const r of sorted) {
       const port = String(r.port).padEnd(5);
       const listening = (r.listening ? "yes" : "no").padStart(6).padEnd(9);
       const label = trunc(r.label, 11).padEnd(11);
-      const local = trunc(r.local, 22).padEnd(22);
-      const pub = trunc(r.public, 29).padEnd(29);
+      const url = trunc(r.url, 40).padEnd(40);
       const proc = trunc(r.process, 24);
-      lines.push(`  ${port}  ${listening}  ${label}  ${local}   ${pub}  ${proc}`);
+      lines.push(`  ${port}  ${listening}  ${label}  ${url}  ${proc}`);
     }
 
     return {

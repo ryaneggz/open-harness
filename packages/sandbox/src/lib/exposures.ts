@@ -3,16 +3,16 @@ import { dirname, resolve } from "node:path";
 
 const EXPOSURES_PATH = ".openharness/exposures.json";
 
-export type Scope = "local" | "public" | "route";
-
+/**
+ * A single named Caddy route from the gateway to a sandbox port.
+ * This is the only exposure shape — legacy `--local` host-port publishes and
+ * `--public` quick-tunnels were removed in favour of the gateway.
+ */
 export interface Exposure {
+  routeName: string;
   port: number;
-  scope: Scope;
-  hostPort?: number;
-  url?: string;
-  session?: string;
-  /** Route name — only set when scope === "route". */
-  routeName?: string;
+  sandbox: string;
+  url: string;
   createdAt: string;
 }
 
@@ -22,6 +22,22 @@ export interface ExposuresFile {
 }
 
 const EMPTY: ExposuresFile = { version: 1, exposures: [] };
+
+/**
+ * Type guard that also filters out any pre-gateway entries left from the
+ * deprecated scope-union era. Safe to apply to raw parsed JSON.
+ */
+function isExposure(x: unknown): x is Exposure {
+  if (!x || typeof x !== "object") return false;
+  const e = x as Record<string, unknown>;
+  return (
+    typeof e.routeName === "string" &&
+    typeof e.port === "number" &&
+    typeof e.sandbox === "string" &&
+    typeof e.url === "string" &&
+    typeof e.createdAt === "string"
+  );
+}
 
 export function readExposures(): ExposuresFile {
   const path = resolve(EXPOSURES_PATH);
@@ -33,7 +49,8 @@ export function readExposures(): ExposuresFile {
       console.warn(`[exposures] unknown version ${parsed.version} — treating as empty`);
       return { ...EMPTY, exposures: [] };
     }
-    return { version: 1, exposures: parsed.exposures ?? [] };
+    const exposures = (parsed.exposures ?? []).filter(isExposure);
+    return { version: 1, exposures };
   } catch (err) {
     console.warn(`[exposures] failed to parse ${EXPOSURES_PATH}: ${(err as Error).message}`);
     return { ...EMPTY, exposures: [] };
@@ -48,44 +65,30 @@ export function writeExposures(file: ExposuresFile): void {
   renameSync(tmp, path);
 }
 
+/** Upsert by routeName — one route per name. */
 export function upsertExposure(e: Exposure): void {
   const file = readExposures();
-  // Route scope dedupes by routeName; local/public dedupe by (port, scope).
-  const others = file.exposures.filter((x) => {
-    if (e.scope === "route" && x.scope === "route") {
-      return x.routeName !== e.routeName;
-    }
-    return !(x.port === e.port && x.scope === e.scope);
-  });
+  const others = file.exposures.filter((x) => x.routeName !== e.routeName);
   writeExposures({ version: 1, exposures: [...others, e] });
 }
 
-export function removeExposure(port: number, scope: Scope): void {
-  const file = readExposures();
-  const next = file.exposures.filter((x) => !(x.port === port && x.scope === scope));
-  if (next.length !== file.exposures.length) {
-    writeExposures({ version: 1, exposures: next });
-  }
-}
-
+/** Remove a route by name. Returns true if something was removed. */
 export function removeRoute(routeName: string): boolean {
   const file = readExposures();
-  const next = file.exposures.filter((x) => !(x.scope === "route" && x.routeName === routeName));
+  const next = file.exposures.filter((x) => x.routeName !== routeName);
   if (next.length === file.exposures.length) return false;
   writeExposures({ version: 1, exposures: next });
   return true;
 }
 
-export function findExposure(port: number, scope?: Scope): Exposure | undefined {
-  const file = readExposures();
-  if (scope) return file.exposures.find((x) => x.port === port && x.scope === scope);
-  return (
-    file.exposures.find((x) => x.port === port && x.scope === "public") ??
-    file.exposures.find((x) => x.port === port && x.scope === "route") ??
-    file.exposures.find((x) => x.port === port && x.scope === "local")
-  );
+export function findRouteByName(routeName: string): Exposure | undefined {
+  return readExposures().exposures.find((x) => x.routeName === routeName);
+}
+
+export function findRouteByPort(port: number): Exposure | undefined {
+  return readExposures().exposures.find((x) => x.port === port);
 }
 
 export function listRoutes(): Exposure[] {
-  return readExposures().exposures.filter((x) => x.scope === "route");
+  return readExposures().exposures;
 }

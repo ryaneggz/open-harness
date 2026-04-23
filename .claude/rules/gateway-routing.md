@@ -18,12 +18,6 @@ function of host mode, not a CLI flag:
   `https://<name>.<sandbox>.<PUBLIC_DOMAIN>` with ACME or a Cloudflare named
   tunnel.
 
-## Legacy Flags
-
-`--local` (host-port publish) and `--public` (Cloudflare quick tunnel) still
-work but emit a deprecation warning. Do not add features to either path. One-
-release removal window.
-
 ## Invariants
 
 1. Caddy admin API is bound to `127.0.0.1:2019` only. Never publish to `0.0.0.0`.
@@ -35,8 +29,8 @@ release removal window.
    from `lib/caddy.ts` — `isQuickTunnelAlive` alone is insufficient.
 5. The gateway overlay is opt-in via `SandboxConfig.addOverride(...)` — same
    pattern as every other overlay. Never force-enable.
-6. `oh expose <name> <port>` never calls `docker compose up --force-recreate`.
-   That path is reserved for the legacy `--local` flag and kills running
+6. `oh expose` never calls `docker compose up --force-recreate`. The
+   gateway reloads in-process; recreating the sandbox would kill running
    dev servers.
 7. Cross-sandbox route collisions (two sandboxes exposing `docs`) are
    resolved by including the sandbox name in the hostname — always. Do not

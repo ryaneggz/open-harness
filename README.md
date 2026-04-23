@@ -446,9 +446,6 @@ Apps inside the sandbox should be launched in named `tmux` sessions (one
 session per app, related apps as stacked panes) — see
 [`.claude/rules/sandbox-processes.md`](.claude/rules/sandbox-processes.md).
 
-Legacy `--local` (host-port publish) and `--public` (Cloudflare quick
-tunnel) still work and will be removed after one release.
-
 ### Install the CLI (optional)
 
 The CLI requires Node.js on the host. It's optional — all core operations can be done with `docker compose` and `docker exec` directly.
