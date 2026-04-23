@@ -22,7 +22,7 @@ Provision a new agent sandbox. The sandbox uses `.devcontainer/` as the base env
 
    **Option A — Terminal:**
    ```bash
-   docker exec -it -u sandbox openharness bash
+   docker exec -it -u sandbox openharness zsh     # default; bash also available
    ```
 
    **Option B — VS Code Attach to Container (local):**

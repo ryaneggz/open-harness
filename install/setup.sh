@@ -96,13 +96,14 @@ apt-get install -y --no-install-recommends \
   openssh-client \
   ripgrep \
   tmux \
-  unzip
+  unzip \
+  zsh
 ok "Base packages installed"
 
 # ─── 2. Create sandbox user ─────────────────────────────────────────
 if ! id "$SANDBOX_USER" &>/dev/null; then
   banner "Creating user $SANDBOX_USER"
-  useradd -m -s /bin/bash "$SANDBOX_USER"
+  useradd -m -s /bin/zsh "$SANDBOX_USER"
   echo "$SANDBOX_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/"$SANDBOX_USER"
   ok "User $SANDBOX_USER created"
 else
@@ -238,14 +239,18 @@ fi
 if [[ "$INSTALL_AGENTMAIL" == true ]]; then
   banner "Installing AgentMail CLI"
   pnpm add -g agentmail-cli
-  # Store API key in sandbox user's .bashrc if provided (not in shell history)
+  # Store API key in sandbox user's shell rc files if provided (not in shell history).
+  # Write to both .bashrc and .zshrc so whichever shell the user lands in sees it.
   if [[ -n "$AGENTMAIL_KEY" ]]; then
     su - "$SANDBOX_USER" -c "
-      grep -q 'AGENTMAIL_API_KEY' \$HOME/.bashrc 2>/dev/null \
-        && sed -i 's|^export AGENTMAIL_API_KEY=.*|export AGENTMAIL_API_KEY=${AGENTMAIL_KEY}|' \$HOME/.bashrc \
-        || echo 'export AGENTMAIL_API_KEY=${AGENTMAIL_KEY}' >> \$HOME/.bashrc
+      for RC in \$HOME/.bashrc \$HOME/.zshrc; do
+        [ -f \"\$RC\" ] || continue
+        grep -q 'AGENTMAIL_API_KEY' \"\$RC\" \
+          && sed -i 's|^export AGENTMAIL_API_KEY=.*|export AGENTMAIL_API_KEY=${AGENTMAIL_KEY}|' \"\$RC\" \
+          || echo 'export AGENTMAIL_API_KEY=${AGENTMAIL_KEY}' >> \"\$RC\"
+      done
     "
-    ok "AgentMail CLI installed + API key configured in .bashrc"
+    ok "AgentMail CLI installed + API key configured in .bashrc / .zshrc"
   else
     ok "AgentMail CLI installed (set AGENTMAIL_API_KEY later)"
   fi
