@@ -34,6 +34,10 @@ function makeMockSandbox(): SandboxModule {
     heartbeatTool: makeMockTool("sandbox_heartbeat"),
     worktreeTool: makeMockTool("sandbox_worktree"),
     onboardTool: makeMockTool("sandbox_onboard"),
+    portsTool: makeMockTool("sandbox_ports"),
+    exposeTool: makeMockTool("sandbox_expose"),
+    unexposeTool: makeMockTool("sandbox_unexpose"),
+    openTool: makeMockTool("sandbox_open"),
   };
 }
 
@@ -50,6 +54,10 @@ describe("SUBCOMMANDS", () => {
     "heartbeat",
     "worktree",
     "onboard",
+    "ports",
+    "expose",
+    "unexpose",
+    "open",
   ];
 
   it("contains all expected subcommands", () => {
@@ -356,6 +364,89 @@ describe("resolveSubcommand", () => {
     it("maps onboard to onboardTool", () => {
       const result = resolveSubcommand("onboard", ["x"], sandbox);
       expect("tool" in result && result.tool).toBe(sandbox.onboardTool);
+    });
+  });
+
+  describe("ports command", () => {
+    it("resolves with no args", () => {
+      const result = resolveSubcommand("ports", [], sandbox);
+      expect(result).toEqual({ tool: sandbox.portsTool, params: { name: undefined } });
+    });
+
+    it("resolves with name", () => {
+      const result = resolveSubcommand("ports", ["my-agent"], sandbox);
+      expect(result).toEqual({ tool: sandbox.portsTool, params: { name: "my-agent" } });
+    });
+  });
+
+  describe("expose command", () => {
+    it("resolves <name> <port> → routeName + port", () => {
+      const result = resolveSubcommand("expose", ["docs", "8080"], sandbox);
+      if ("tool" in result) {
+        expect(result.tool).toBe(sandbox.exposeTool);
+        expect(result.params).toEqual({ routeName: "docs", port: 8080 });
+      } else expect.fail("expected success");
+    });
+
+    it("accepts kebab-case route names", () => {
+      const result = resolveSubcommand("expose", ["my-app", "3000"], sandbox);
+      if ("tool" in result) {
+        expect(result.params).toEqual({ routeName: "my-app", port: 3000 });
+      } else expect.fail("expected success");
+    });
+
+    it("errors with no arguments", () => {
+      const result = resolveSubcommand("expose", [], sandbox);
+      expect("error" in result).toBe(true);
+    });
+
+    it("errors with only a name (missing port)", () => {
+      const result = resolveSubcommand("expose", ["docs"], sandbox);
+      expect("error" in result).toBe(true);
+    });
+
+    it("errors with a non-numeric port", () => {
+      const result = resolveSubcommand("expose", ["docs", "abc"], sandbox);
+      expect("error" in result).toBe(true);
+      if ("error" in result) expect(result.error.toLowerCase()).toContain("number");
+    });
+
+    it("errors when first positional is numeric (common mistake)", () => {
+      const result = resolveSubcommand("expose", ["3000", "8080"], sandbox);
+      expect("error" in result).toBe(true);
+      if ("error" in result) {
+        expect(result.error).toContain("route name");
+      }
+    });
+  });
+
+  describe("unexpose command", () => {
+    it("resolves <name> → routeName", () => {
+      const result = resolveSubcommand("unexpose", ["docs"], sandbox);
+      if ("tool" in result) {
+        expect(result.tool).toBe(sandbox.unexposeTool);
+        expect(result.params).toEqual({ routeName: "docs" });
+      } else expect.fail("expected success");
+    });
+
+    it("errors with no arguments", () => {
+      const result = resolveSubcommand("unexpose", [], sandbox);
+      expect("error" in result).toBe(true);
+    });
+  });
+
+  describe("open command", () => {
+    it("resolves with a port", () => {
+      const result = resolveSubcommand("open", ["3000"], sandbox);
+      if ("tool" in result) {
+        expect(result.tool).toBe(sandbox.openTool);
+        expect(result.params).toEqual({ port: 3000 });
+      } else expect.fail("expected success");
+    });
+
+    it("errors without a port", () => {
+      const result = resolveSubcommand("open", [], sandbox);
+      expect("error" in result).toBe(true);
     });
   });
 });

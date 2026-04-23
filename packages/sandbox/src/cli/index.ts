@@ -229,6 +229,29 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
       break;
     }
 
+    case "ports":
+    case "expose":
+    case "unexpose":
+    case "open": {
+      const tools = await import("../tools/index.js");
+      const resolved = resolveSubcommand(command, cmdArgs, tools);
+      if ("error" in resolved) {
+        console.error(resolved.error);
+        process.exit(1);
+      }
+      const result = await resolved.tool.execute(
+        "cli",
+        resolved.params,
+        undefined,
+        undefined,
+        undefined as never,
+      );
+      for (const item of result.content) {
+        if (item.type === "text" && "text" in item) console.log(item.text);
+      }
+      break;
+    }
+
     default:
       console.error(`Unknown command: ${command}`);
       process.exit(1);

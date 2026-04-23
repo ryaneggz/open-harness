@@ -13,7 +13,8 @@
     "format": "pnpm -r run format",
     "dev": "pnpm --filter @openharness/docs dev & cd workspace/projects/next-app && pnpm dev",
     "docs:dev": "pnpm --filter @openharness/docs dev",
-    "docs:build": "pnpm --filter @openharness/docs build"
+    "docs:build": "pnpm --filter @openharness/docs build",
+    "docs:preview": "pnpm docs:build && ln -sfn . docs/out/open-harness && cd docs/out && python3 -m http.server ${DOCS_PREVIEW_PORT:-4000}"
   },
   "devDependencies": {
     "vitest": "^3.0.0"

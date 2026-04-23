@@ -15,10 +15,10 @@ set -euo pipefail
 #   Multi-ingress:
 #     cloudflared-tunnel.sh <tunnel-name> <hostname:port> [<hostname:port> ...] [--run]
 #
-# Examples:
-#   cloudflared-tunnel.sh orchestrator oh.ruska.dev 3000
-#   cloudflared-tunnel.sh orchestrator oh.ruska.dev:3000 oh-docs.ruska.dev:3001
-#   cloudflared-tunnel.sh orchestrator oh.ruska.dev:3000 oh-docs.ruska.dev:3001 --run
+# Examples (replace <your-domain> with your own Cloudflare-managed domain):
+#   cloudflared-tunnel.sh myproject app.<your-domain> 3000
+#   cloudflared-tunnel.sh myproject app.<your-domain>:3000 api.<your-domain>:3001
+#   cloudflared-tunnel.sh myproject app.<your-domain>:3000 api.<your-domain>:3001 --run
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; NC='\033[0m'
 banner() { printf "\n${CYAN}==> %s${NC}\n" "$*"; }

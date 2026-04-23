@@ -30,6 +30,17 @@ title: "CLI Commands"
 |---------|-------------|
 | `openharness worktree <name> [--base-branch]` | Create git worktree for branch isolation |
 
+## Exposure commands
+
+Route sandbox apps through a Caddy reverse proxy. See [Exposing apps](/open-harness/guide/exposure) for the full walkthrough.
+
+| Command | Description |
+|---------|-------------|
+| `openharness expose <name> <port>` | Route a sandbox app: laptop → `https://<name>.<sandbox>.localhost:8443`; remote → `https://<name>.<sandbox>.<PUBLIC_DOMAIN>` |
+| `openharness unexpose <name>` | Remove a Caddy route |
+| `openharness ports [name]` | List container listeners (+ processes) and active routes |
+| `openharness open <name\|port>` | Open a route's URL in the default browser |
+
 ## Agent mode
 
 Run `openharness` with no arguments to launch the interactive AI agent mode. The agent can orchestrate sandbox workflows conversationally and has access to all sandbox tools.

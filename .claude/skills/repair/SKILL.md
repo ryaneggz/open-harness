@@ -199,10 +199,10 @@ done < /tmp/tunnel-targets.tsv
 Append a front-to-back table to the Step 5 summary — one row per hostname:
 
 ```
-| Hostname            | Browser | Public | Local | Verdict        |
-|---------------------|---------|--------|-------|----------------|
-| oh.ruska.dev        | OK      | —      | —     | OK             |
-| oh-docs.ruska.dev   | FAIL    | 502    | 307   | Tunnel problem |
+| Hostname                   | Browser | Public | Local | Verdict        |
+|----------------------------|---------|--------|-------|----------------|
+| app.\<your-domain\>        | OK      | —      | —     | OK             |
+| docs.\<your-domain\>       | FAIL    | 502    | 307   | Tunnel problem |
 ```
 
 `Browser` comes from 6b, `Public`/`Local` only filled in when 6b failed and 6c ran. If any row is not **OK**, apply the matching remediation from the Step 2c/3h tables and re-run 6b once. If it still fails, stop and report — do not loop.
