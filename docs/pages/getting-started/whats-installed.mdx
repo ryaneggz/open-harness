@@ -65,6 +65,6 @@ mom     → mom --sandbox=host ~/harness/workspace/.slack
 
 Auth credentials survive container rebuilds via named Docker volumes:
 
-- `claude-auth` → `~/.claude` (Claude Code OAuth)
+- `claude-auth` → `~/.claude` (Claude Code OAuth) — or, with the [`claude-host` overlay](/guide/overlays#sharing-host-claude-state-claude-host), a RW bind-mount of your host `~/.claude`.
 - `cloudflared-auth` → `~/.cloudflared` (Cloudflare credentials)
 - `gh-config` → `~/.config/gh` (GitHub CLI tokens)

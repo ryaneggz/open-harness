@@ -63,10 +63,30 @@ Available compose overlays:
   [ ] docker-compose.git.yml           — Git worktree mount (ONLY valid in worktrees)
   [x] docker-compose.slack.yml          — Slack bot env vars
   [ ] docker-compose.sshd.yml           — SSH server daemon (opt-in, port 2222)
+  [ ] docker-compose.claude-host.yml    — Bind-mount host ~/.claude (opt-in, trust tradeoff)
   [ ] (any new overlays found)
 
 Enable/disable any overlays?
 ```
+
+**Claude host overlay** (opt-in — off by default):
+
+The `claude-host` overlay replaces the `claude-auth` named volume with a
+RW bind-mount of the host's `~/.claude` directory. Trades isolation for
+convenience — the sandbox inherits host OAuth tokens, memory, MCP config,
+and project history; sandbox writes appear live on the host.
+
+Tradeoffs — only enable for trusted workflows:
+
+| Concern | Detail |
+|---------|--------|
+| Credential blast radius | OAuth tokens in `.credentials.json` are readable by any code running in the sandbox. Do not enable when running untrusted agent code. |
+| `projects/` bleed-through | Sessions from other host work (non-harness Claude Code invocations) are visible inside the sandbox. |
+| UID≠1000 | `entrypoint.sh` sets `CLAUDE_HOST_BIND_MOUNT=1` via the overlay and skips `chown` on `.claude` so host file ownership is preserved. The existing HOST_UID reconciliation (entrypoint.sh:23-43) handles group-access when UIDs differ. |
+
+Mutually exclusive with the default `claude-auth` named volume at the
+same target path (Docker Compose merges by target). When the overlay is
+disabled, sandbox `.claude` reverts to the named volume.
 
 **SSH server access** (opt-in — not enabled by default):
 

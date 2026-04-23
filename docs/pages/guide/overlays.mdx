@@ -18,6 +18,7 @@ Compose overlays in `.devcontainer/` add optional services. Enable them in `.ope
 | `docker-compose.ssh-generate.yml` | Generate keypair in persistent volume |
 | `docker-compose.sshd.yml` | SSH server daemon (port 2222, password auth) |
 | `docker-compose.slack.yml` | [Slack bot tokens + LLM provider config](/slack/setup) |
+| `docker-compose.claude-host.yml` | Bind-mount host `~/.claude` (auth, memory, projects) — opt-in |
 | `docker-compose.gateway.yml` | [Caddy reverse-proxy sidecar](/guide/exposure) (auto-activated by first `openharness expose`) |
 
 ## Configuration
@@ -71,3 +72,37 @@ To add PostgreSQL to your sandbox:
 1. Add `".devcontainer/docker-compose.postgres.yml"` to `composeOverrides` in `.openharness/config.json`
 2. Run `openharness sandbox` or `/provision`
 3. The database is available at `postgresql://sandbox:sandbox@postgres:5432/sandbox`
+
+## Sharing host Claude state (`claude-host`)
+
+By default, each sandbox stores Claude CLI auth, memory, and project state
+in the `claude-auth` named Docker volume — scoped to that sandbox only.
+The `claude-host` overlay replaces that volume with a **read-write
+bind-mount** of the host's `~/.claude` directory, so the sandboxed `claude`
+CLI inherits your host OAuth tokens, memory, MCP config, and project
+history — no re-onboarding per sandbox.
+
+Enable it:
+
+```json
+{
+  "composeOverrides": [
+    ".devcontainer/docker-compose.claude-host.yml"
+  ]
+}
+```
+
+Set `HOST_CLAUDE_DIR` in `.devcontainer/.env` if your host Claude state
+lives somewhere other than `~/.claude`.
+
+**Tradeoffs — only enable for trusted workflows:**
+
+- **Credential blast radius** — OAuth tokens are readable by any code running in the sandbox. Do not enable when running untrusted agent code.
+- **`projects/` bleed-through** — Claude Code sessions from non-harness host work are visible inside the sandbox.
+- **Host writes** — the sandbox writes new memory, projects, and marker files directly to your host `~/.claude/`. Sandbox-side cleanup propagates.
+
+**UID handling:** the overlay sets `CLAUDE_HOST_BIND_MOUNT=1`, and
+`entrypoint.sh` skips its recursive `chown` on `/home/sandbox/.claude` so
+host file ownership is preserved when your host UID is not 1000. The
+existing `HOST_UID` reconciliation logic in the entrypoint handles group
+access when UIDs differ.

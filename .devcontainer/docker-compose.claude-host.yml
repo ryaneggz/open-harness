@@ -1,0 +1,36 @@
+# Claude Host Auth Mount Overlay
+# ================================
+# Purpose: Bind-mount the host's ~/.claude directory into the sandbox, so the
+# sandboxed claude CLI inherits host auth tokens, memory, MCP config, and
+# project state. Developers running multiple sandboxes no longer re-onboard.
+#
+# Requirements: HOST_CLAUDE_DIR env var (defaults to ~/.claude). Host UID/GID
+# reconciliation is handled by entrypoint.sh — sandbox user is added to the
+# host owning group when UIDs differ. No UID=1000 requirement.
+#
+# Security tradeoff: this mounts OAuth credentials and memory into a
+# container that may execute untrusted agent code. Enable only for trusted
+# workflows. The overlay is opt-in (not default).
+#
+# Bleed-through: ~/.claude/projects/ sessions from other host work will be
+# visible inside the sandbox. Acknowledged cost of full-mount convenience.
+#
+# Permissions: Read-write (sandbox writes host memory/projects live).
+# Replaces: claude-auth named volume from base docker-compose.yml at the
+# /home/sandbox/.claude target path. The named volume declaration stays in
+# the base compose — it becomes orphaned (unmounted) while this overlay is
+# active and is reinstated when the overlay is removed.
+#
+# Entrypoint coordination: sets CLAUDE_HOST_BIND_MOUNT=1 so entrypoint.sh
+# skips its recursive chown on /home/sandbox/.claude (which would otherwise
+# rewrite host file ownership).
+#
+# Usage: enable via .openharness/config.json composeOverrides[]:
+#   ".devcontainer/docker-compose.claude-host.yml"
+
+services:
+  sandbox:
+    volumes:
+      - ${HOST_CLAUDE_DIR:-~/.claude}:/home/sandbox/.claude
+    environment:
+      - CLAUDE_HOST_BIND_MOUNT=1
