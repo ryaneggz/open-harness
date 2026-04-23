@@ -29,11 +29,11 @@ Ownership splits cleanly:
 - **Orchestrator** (session at the project root): owns harness source, git operations, GitHub issues/PRs/releases, and the one-time scaffold of each new agent's workspace.
 - **Worktree agent** (session inside `.worktrees/<prefix>/<slug>/workspace/`): owns its workspace subtree and its branch history.
 
-See [Orchestrator + Worktrees](/open-harness/architecture/orchestrator-worktrees) for the full topology, lifecycle, and isolation properties.
+See [Orchestrator + Worktrees](/architecture/orchestrator-worktrees) for the full topology, lifecycle, and isolation properties.
 
 ## 4. Heartbeat Daemon
 
-A single Node process inside the sandbox watches every worktree's `workspace/heartbeats/` directory at once. It discovers roots from `git worktree list --porcelain` (the authoritative registry), spawns each heartbeat with `cwd` inside the correct worktree, and writes per-root logs. A global semaphore (`HEARTBEAT_MAX_CONCURRENT`, default 2) prevents aligned schedules from saturating shared API quotas. See the [Heartbeats guide](/open-harness/guide/heartbeats) for configuration detail.
+A single Node process inside the sandbox watches every worktree's `workspace/heartbeats/` directory at once. It discovers roots from `git worktree list --porcelain` (the authoritative registry), spawns each heartbeat with `cwd` inside the correct worktree, and writes per-root logs. A global semaphore (`HEARTBEAT_MAX_CONCURRENT`, default 2) prevents aligned schedules from saturating shared API quotas. See the [Heartbeats guide](/guide/heartbeats) for configuration detail.
 
 ## Workspace Template (`workspace/`)
 
