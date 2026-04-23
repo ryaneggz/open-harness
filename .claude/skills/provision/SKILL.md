@@ -71,10 +71,12 @@ Enable/disable any overlays?
 
 **Claude host overlay** (opt-in — off by default):
 
-The `claude-host` overlay replaces the `claude-auth` named volume with a
-RW bind-mount of the host's `~/.claude` directory. Trades isolation for
-convenience — the sandbox inherits host OAuth tokens, memory, MCP config,
-and project history; sandbox writes appear live on the host.
+The `claude-host` overlay replaces the `claude-auth` named volume with
+RW bind-mounts of the host's `~/.claude` directory AND `~/.claude.json`
+file. Trades isolation for convenience — the sandbox inherits host
+OAuth tokens, memory, MCP config, project history, theme, and
+onboarding state (no text-style reselection); sandbox writes appear
+live on the host.
 
 Tradeoffs — only enable for trusted workflows:
 
@@ -82,7 +84,9 @@ Tradeoffs — only enable for trusted workflows:
 |---------|--------|
 | Credential blast radius | OAuth tokens in `.credentials.json` are readable by any code running in the sandbox. Do not enable when running untrusted agent code. |
 | `projects/` bleed-through | Sessions from other host work (non-harness Claude Code invocations) are visible inside the sandbox. |
-| UID≠1000 | `entrypoint.sh` sets `CLAUDE_HOST_BIND_MOUNT=1` via the overlay and skips `chown` on `.claude` so host file ownership is preserved. The existing HOST_UID reconciliation (entrypoint.sh:23-43) handles group-access when UIDs differ. |
+| `.claude.json` bleed-through | Per-project `hasTrustDialogAccepted`, full MCP server list, and tip counters from non-harness host work are visible inside the sandbox. |
+| Host UID must be 1000 | `.credentials.json` is mode 0600 (owner-only). The entrypoint skips `chown` on `.claude` to preserve host ownership, but if host UID ≠ sandbox UID (1000), the sandbox user cannot read credentials and `claude` will prompt for auth. Check with `id -u` before enabling. |
+| Host paths must pre-exist | If `$HOST_CLAUDE_DIR` or `$HOST_CLAUDE_JSON` does not exist on the host, Docker auto-creates it as a **directory** owned by root — `claude` will then fail to parse the JSON or read credentials. Verify with `test -d ~/.claude && test -f ~/.claude.json` before first boot. |
 
 Mutually exclusive with the default `claude-auth` named volume at the
 same target path (Docker Compose merges by target). When the overlay is
