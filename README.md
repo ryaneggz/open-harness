@@ -418,8 +418,36 @@ The `openharness` CLI runs on the host (outside the container).
 | `openharness list` | List running sandboxes |
 | `openharness heartbeat <action> <name>` | Manage heartbeats (`sync`, `stop`, `status`) |
 | `openharness worktree <name>` | Create a git worktree for parallel branches |
+| `openharness expose <name> <port>` | Expose a sandbox app via a Caddy route (laptop: `<name>.<sandbox>.localhost:8443`, remote: `<name>.<sandbox>.<PUBLIC_DOMAIN>`) |
+| `openharness unexpose <name>` | Remove a Caddy route |
+| `openharness ports [name]` | Inspect exposures, routes, and listeners |
+| `openharness open <port>` | Open an exposed app's URL |
 
 Run `openharness` with no arguments for interactive AI agent mode.
+
+### Exposing apps
+
+`openharness expose <name> <port>` is the primary way to reach a sandbox
+app from a browser. It's mode-aware:
+
+- **Laptop** (default): `https://<name>.<sandbox>.localhost:8443` — a Caddy
+  sidecar serves with `tls internal`; works offline. Trust the cert once
+  per host: `docker exec -u root <sandbox>-gateway caddy trust`.
+- **Remote** (set `PUBLIC_DOMAIN` in `.devcontainer/.env`):
+  `https://<name>.<sandbox>.<PUBLIC_DOMAIN>` — real cert via ACME or a
+  Cloudflare named tunnel.
+
+The gateway is an opt-in overlay (`docker-compose.gateway.yml`),
+activated on your first `expose` call. See
+[`.claude/rules/gateway-routing.md`](.claude/rules/gateway-routing.md) for
+invariants.
+
+Apps inside the sandbox should be launched in named `tmux` sessions (one
+session per app, related apps as stacked panes) — see
+[`.claude/rules/sandbox-processes.md`](.claude/rules/sandbox-processes.md).
+
+Legacy `--local` (host-port publish) and `--public` (Cloudflare quick
+tunnel) still work and will be removed after one release.
 
 ### Install the CLI (optional)
 
