@@ -9,6 +9,9 @@ on:
       - "docs/**"
       - "workspace/wiki/**"
       - ".github/workflows/docs.yml"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
 
 permissions:
   contents: read
@@ -39,9 +42,6 @@ jobs:
 
       - name: Build docs
         run: pnpm docs:build
-        env:
-          STATIC_EXPORT: "true"
-          DOCS_BASE_PATH: /open-harness
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

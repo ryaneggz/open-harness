@@ -32,7 +32,7 @@ export function Navbar() {
             <span className="hidden sm:inline">GitHub</span>
           </Link>
           <Link
-            href="https://oh-docs.ruska.dev"
+            href="https://ryaneggz.github.io/open-harness/"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Docs"

@@ -32,13 +32,13 @@ Arguments received: `$ARGUMENTS`
 
 Supports two formats:
 - **Multi-ingress**: `<tunnel-name> <hostname:port> [<hostname:port> ...] [--run]`
-  - Example: `openharness oh.ruska.dev:3000 oh-docs.ruska.dev:3001`
+  - Example: `myproject app.<your-domain>:3000 api.<your-domain>:3001`
 - **Legacy single-ingress**: `<tunnel-name> <hostname> <port> [--run]`
-  - Example: `openharness oh.ruska.dev 3000`
+  - Example: `myproject app.<your-domain> 3000`
 
 If no ingress pairs provided, suggest defaults:
 - Tunnel name: derived from the project or sandbox name
-- Hostname: `<tunnel-name>.ruska.dev:3000`
+- Hostname: `<tunnel-name>.<your-domain>:3000` (operator supplies domain)
 
 ### Step 2 — Check prerequisites
 
