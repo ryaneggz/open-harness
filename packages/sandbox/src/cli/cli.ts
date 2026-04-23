@@ -30,6 +30,10 @@ export const SUBCOMMANDS = new Set([
   "heartbeat",
   "worktree",
   "onboard",
+  "ports",
+  "expose",
+  "unexpose",
+  "open",
 ]);
 
 export const HEARTBEAT_ACTIONS = ["sync", "stop", "status", "migrate"] as const;
@@ -53,6 +57,10 @@ export interface SandboxModule {
   heartbeatTool: ToolDefinition;
   worktreeTool: ToolDefinition;
   onboardTool: ToolDefinition;
+  portsTool: ToolDefinition;
+  exposeTool: ToolDefinition;
+  unexposeTool: ToolDefinition;
+  openTool: ToolDefinition;
 }
 
 // ─── Argument parsing ──────────────────────────────────────────────
@@ -123,6 +131,65 @@ export function resolveSubcommand(
       return { error: "Usage: openharness heartbeat <sync|stop|status|migrate> <name>" };
     }
     return { tool: sandbox.heartbeatTool, params: { name, action } };
+  }
+
+  // ports: name optional, extra args ignored
+  if (command === "ports") {
+    const params = parseToolArgs(args);
+    return { tool: sandbox.portsTool, params: { name: params.name } };
+  }
+
+  // expose: `openharness expose <name> <port>` → Caddy route.
+  if (command === "expose") {
+    const params = parseToolArgs(args);
+    const first = params.name as string | undefined;
+    const second = params.action as string | undefined;
+
+    if (!first || !second) {
+      return { error: "Usage: openharness expose <name> <port>" };
+    }
+    const port = Number(second);
+    if (!Number.isFinite(port)) {
+      return { error: `Port must be a number, got '${second}'.` };
+    }
+    if (!Number.isNaN(Number(first))) {
+      return {
+        error:
+          `Usage: openharness expose <name> <port>\n` +
+          `(The first positional is the route name, not a port. Example: openharness expose docs 8080)`,
+      };
+    }
+    return {
+      tool: sandbox.exposeTool,
+      params: { routeName: first, port },
+    };
+  }
+
+  // unexpose: `openharness unexpose <name>` → remove Caddy route.
+  if (command === "unexpose") {
+    const params = parseToolArgs(args);
+    const first = params.name as string | undefined;
+    if (!first) {
+      return { error: "Usage: openharness unexpose <name>" };
+    }
+    return {
+      tool: sandbox.unexposeTool,
+      params: { routeName: first },
+    };
+  }
+
+  // open: `openharness open <name>` or `openharness open <port>`
+  if (command === "open") {
+    const params = parseToolArgs(args);
+    const first = params.name as string | undefined;
+    if (!first) {
+      return { error: "Usage: openharness open <name|port>" };
+    }
+    const maybePort = Number(first);
+    return {
+      tool: sandbox.openTool,
+      params: Number.isFinite(maybePort) ? { port: maybePort } : { routeName: first },
+    };
   }
 
   // list: no name required
@@ -209,6 +276,12 @@ ${h(pad("list"), "List running sandboxes")}
 
 ${b}Advanced:${r}
   ${b}${pad("worktree <name> [--base-branch]")}${r}Create git worktree for branch isolation
+
+${b}Exposure:${r}
+  ${b}${pad("ports [name]")}${r}Inspect listeners and routes
+  ${b}${pad("expose <name> <port>")}${r}Expose an app via Caddy route
+  ${b}${pad("unexpose <name>")}${r}Remove a Caddy route
+  ${b}${pad("open <name|port>")}${r}Open a route's URL
 `;
 
   if (inside) {

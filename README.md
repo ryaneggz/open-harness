@@ -1,4 +1,4 @@
-# Open Harness
+# 🏗️ Open Harness
 
 Isolated, pre-configured sandbox containers for AI coding agents — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenAI Codex](https://github.com/openai/codex), [Pi Agent](https://shittycodingagent.ai), and more.
 
@@ -8,7 +8,7 @@ Isolated, pre-configured sandbox containers for AI coding agents — [Claude Cod
 
 ---
 
-## Quickstart
+## 🚀 Quickstart
 
 ### 1. Clone and configure
 
@@ -74,7 +74,7 @@ docker compose -f .devcontainer/docker-compose.yml down -v
 
 ---
 
-## Architecture
+## 🏛️ Architecture
 
 Open Harness runs **one sandbox container, N git worktrees, one heartbeat daemon**. The container is the shared runtime (toolchain, credentials, processes). Each agent lives on its own branch under `.worktrees/`, shipping its own `workspace/` (SOUL.md, skills, heartbeats, memory, projects). A single Node daemon inside the sandbox watches every worktree's `heartbeats/` directory and spawns scheduled agent runs with the correct `cwd`, so each agent's skills and relative paths resolve to its own subtree. This gives every agent a stable identity and independent schedule without duplicating containers, credentials, or toolchains.
 
@@ -117,7 +117,7 @@ For the deep reference, see [`.claude/specs/orchestrator-worktree-architecture.m
 
 ---
 
-## What's in the box
+## 📦 What's in the box
 
 The sandbox image (Debian bookworm-slim) comes pre-installed with:
 
@@ -133,7 +133,7 @@ The sandbox user has passwordless `sudo` and full Docker socket access (with the
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
 Copy the example env file and edit to taste:
 
@@ -179,7 +179,7 @@ The Slack bot (Mom) connects to a workspace via Socket Mode and delegates messag
 
 ---
 
-## Compose overlays
+## 🧩 Compose overlays
 
 The base `docker-compose.yml` provides the sandbox container with bind-mounted workspace and persistent auth volumes. Overlays add optional services and capabilities.
 
@@ -207,7 +207,7 @@ Multiple overlays can be combined. Order doesn't matter.
 
 ---
 
-## Multi-sandbox SSH
+## 🔐 Multi-sandbox SSH
 
 Run multiple sandboxes on a single host, each reachable via SSH on a unique port. This enables:
 
@@ -275,7 +275,7 @@ This is useful for orchestration patterns where one agent delegates work to othe
 
 ---
 
-## Volumes and persistence
+## 💾 Volumes and persistence
 
 The base compose file creates three named Docker volumes that persist across container rebuilds:
 
@@ -299,7 +299,7 @@ Overlays may add additional volumes:
 
 ---
 
-## Workspace structure
+## 📁 Workspace structure
 
 The `workspace/` directory is the agent's home. It's bind-mounted into the container at `/home/sandbox/harness/workspace/`.
 
@@ -342,7 +342,7 @@ The orchestrator scaffolds these files during provisioning. Once the agent is ru
 
 ---
 
-## Heartbeats
+## ❤️ Heartbeats
 
 Heartbeats are cron-scheduled autonomous tasks. A TypeScript daemon watches `workspace/heartbeats/` and runs each heartbeat's prompt via an AI agent CLI on its configured schedule.
 
@@ -403,7 +403,7 @@ Logs are written to `workspace/heartbeats/heartbeat.log`.
 
 ---
 
-## CLI commands
+## 🛠️ CLI commands
 
 The `openharness` CLI runs on the host (outside the container).
 
@@ -418,8 +418,33 @@ The `openharness` CLI runs on the host (outside the container).
 | `openharness list` | List running sandboxes |
 | `openharness heartbeat <action> <name>` | Manage heartbeats (`sync`, `stop`, `status`) |
 | `openharness worktree <name>` | Create a git worktree for parallel branches |
+| `openharness expose <name> <port>` | Expose a sandbox app via a Caddy route (laptop: `<name>.<sandbox>.localhost:8443`, remote: `<name>.<sandbox>.<PUBLIC_DOMAIN>`) |
+| `openharness unexpose <name>` | Remove a Caddy route |
+| `openharness ports [name]` | Inspect exposures, routes, and listeners |
+| `openharness open <port>` | Open an exposed app's URL |
 
 Run `openharness` with no arguments for interactive AI agent mode.
+
+### Exposing apps
+
+`openharness expose <name> <port>` is the primary way to reach a sandbox
+app from a browser. It's mode-aware:
+
+- **Laptop** (default): `https://<name>.<sandbox>.localhost:8443` — a Caddy
+  sidecar serves with `tls internal`; works offline. Trust the cert once
+  per host: `docker exec -u root <sandbox>-gateway caddy trust`.
+- **Remote** (set `PUBLIC_DOMAIN` in `.devcontainer/.env`):
+  `https://<name>.<sandbox>.<PUBLIC_DOMAIN>` — real cert via ACME or a
+  Cloudflare named tunnel.
+
+The gateway is an opt-in overlay (`docker-compose.gateway.yml`),
+activated on your first `expose` call. See
+[`.claude/rules/gateway-routing.md`](.claude/rules/gateway-routing.md) for
+invariants.
+
+Apps inside the sandbox should be launched in named `tmux` sessions (one
+session per app, related apps as stacked panes) — see
+[`.claude/rules/sandbox-processes.md`](.claude/rules/sandbox-processes.md).
 
 ### Install the CLI (optional)
 
@@ -431,7 +456,7 @@ curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/ma
 
 ---
 
-## Project structure
+## 🗂️ Project structure
 
 ```
 .devcontainer/                # Sandbox environment
@@ -463,7 +488,7 @@ docs/                         # Documentation site (Nextra)
 
 ---
 
-## Releases
+## 🚢 Releases
 
 CalVer: `YYYY.M.D` (e.g., `2026.4.4`). Push a tag to build and publish to `ghcr.io/ryaneggz/open-harness`.
 

@@ -73,6 +73,50 @@ Cleanup: `git worktree remove .worktrees/<branch>`.
 
 `.worktrees/` gitignored (see `.gitignore`); only `.worktrees/.gitkeep` tracked.
 
+### Isolating in-flight work
+
+When the main checkout has unstaged changes you shouldn't commit in
+the current PR, do **not** stash-and-switch-branches (risk of losing
+context). Instead:
+
+1. Cut a worktree off the target base: `git worktree add -b <new> .worktrees/<new> $BASE`.
+2. Copy the in-flight files into the worktree: plain `cp` preserves the
+   main checkout's working tree untouched.
+3. Commit in the worktree. Main checkout stays exactly as-is.
+
+Before discarding the duplicated state from the main checkout, verify
+byte-equivalence with the committed branch:
+
+```bash
+for f in <changed-files>; do
+  a=$(md5sum "$f" | awk '{print $1}')
+  b=$(git show <branch>:"$f" | md5sum | awk '{print $1}')
+  [ "$a" = "$b" ] && echo "same:  $f" || echo "DRIFT: $f"
+done
+```
+
+Only after all files show `same:` run `git restore` / `rm -f` to clean
+the main checkout.
+
+## Stacked PRs
+
+When a PR needs work from another open PR (e.g. a feature that depends
+on in-flight docs or infra changes), stack instead of waiting:
+
+1. `git fetch origin <parent-branch>`
+2. In the worktree: `git rebase origin/<parent-branch>`. Resolve any
+   conflicts; tests may need re-running.
+3. `git push --force-with-lease`
+4. `gh pr edit <pr#> --base <parent-branch>`
+5. `gh pr edit <pr#> --title "FROM <branch> TO <parent-branch>"`
+
+When the parent PR merges, GitHub auto-rebases the stacked PR's base
+to the parent's target (typically `development`). Do **not** force-push
+again after the parent merges — let GitHub handle the retarget.
+
+Keep stacks shallow: one level is routine, two levels is rare, three
+levels means something is wrong with the sequencing.
+
 ## Releases
 
 Versioning: **CalVer** `YYYY.M.D` for first release of day, then `YYYY.M.D-N` (N starts at 2) for subsequent releases.

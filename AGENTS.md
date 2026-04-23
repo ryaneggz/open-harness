@@ -91,6 +91,16 @@ Remove an agent sandbox.
 | `/heartbeat` | Create a new heartbeat and sync daemon — immediately live |
 | `/strategic-proposal` | 5 experts + AI council → roadmap |
 
+## Exposing apps
+
+`oh expose <name> <port>` routes a sandbox app through a Caddy gateway.
+Laptop mode → `https://<name>.<sandbox>.localhost:8443`; remote mode
+(when `PUBLIC_DOMAIN` is set) → `https://<name>.<sandbox>.<PUBLIC_DOMAIN>`.
+See `.claude/rules/gateway-routing.md` for invariants.
+
+Long-running apps inside the sandbox go in named tmux sessions, related
+apps as stacked panes — see `.claude/rules/sandbox-processes.md`.
+
 ## What You Do
 
 - Commit and push changes to the harness itself (.devcontainer/, install/, workspace/ templates)

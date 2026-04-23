@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { sandboxTools } from "../tools/index.js";
 
 describe("sandboxTools", () => {
-  it("exports all 9 tools", () => {
-    expect(sandboxTools).toHaveLength(9);
+  it("exports all 13 tools", () => {
+    expect(sandboxTools).toHaveLength(13);
   });
 
   it("each tool has required fields", () => {
@@ -37,6 +37,10 @@ describe("sandboxTools", () => {
     "sandbox_heartbeat",
     "sandbox_worktree",
     "sandbox_onboard",
+    "sandbox_ports",
+    "sandbox_expose",
+    "sandbox_unexpose",
+    "sandbox_open",
   ];
 
   for (const name of expectedTools) {

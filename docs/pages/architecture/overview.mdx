@@ -1,0 +1,40 @@
+---
+title: "Architecture Overview"
+---
+
+
+Open Harness is a monorepo that provides isolated Docker sandboxes for AI coding agents, with a shared runtime pattern that lets multiple agents co-exist in one container. The system has four layers:
+
+## 1. CLI & Sandbox Package (`packages/sandbox/`)
+
+`@openharness/sandbox` is the core of the system. The `openharness` binary lives in `src/cli/` and handles all user-facing commands: starting, stopping, entering, and cleaning up sandboxes. Container lifecycle operations — Docker Compose command builders and tool definitions — live in `src/tools/` and `src/lib/`. Each tool (sandbox, run, stop, clean, shell, etc.) constructs and executes Docker commands against the `.devcontainer/` configuration.
+
+The package also serves as a Pi Agent extension, registering all tools as both LLM-callable functions and slash commands.
+
+## 2. Container Infrastructure (`.devcontainer/`)
+
+The Dockerfile and Compose files define the sandbox environment:
+
+- **Dockerfile**: Debian Bookworm with Node.js 22, pnpm, agent CLIs, Docker CLI, GitHub CLI, and dev tools
+- **docker-compose.yml**: Base service with SSH, workspace mount, named volumes for auth persistence
+- **Compose overlays**: Optional services (PostgreSQL, Cloudflare, Docker-in-Docker, SSH) toggled via `.openharness/config.json`
+- **entrypoint.sh**: Container startup logic (Docker GID matching, cron, heartbeat daemon, onboarding)
+
+## 3. Orchestrator + Worktree Topology
+
+The running configuration is not "one sandbox per agent" — it's **one parent sandbox, N git worktrees, one heartbeat daemon**. Every agent is a git branch checked out as a worktree under `.worktrees/`, each shipping its own `workspace/` (SOUL.md, skills, heartbeats, memory, CRM, wiki). The container bind-mounts the entire repo, so all worktrees are visible to one shared toolchain and one shared credential set.
+
+Ownership splits cleanly:
+
+- **Orchestrator** (session at the project root): owns harness source, git operations, GitHub issues/PRs/releases, and the one-time scaffold of each new agent's workspace.
+- **Worktree agent** (session inside `.worktrees/<prefix>/<slug>/workspace/`): owns its workspace subtree and its branch history.
+
+See [Orchestrator + Worktrees](/open-harness/architecture/orchestrator-worktrees) for the full topology, lifecycle, and isolation properties.
+
+## 4. Heartbeat Daemon
+
+A single Node process inside the sandbox watches every worktree's `workspace/heartbeats/` directory at once. It discovers roots from `git worktree list --porcelain` (the authoritative registry), spawns each heartbeat with `cwd` inside the correct worktree, and writes per-root logs. A global semaphore (`HEARTBEAT_MAX_CONCURRENT`, default 2) prevents aligned schedules from saturating shared API quotas. See the [Heartbeats guide](/open-harness/guide/heartbeats) for configuration detail.
+
+## Workspace Template (`workspace/`)
+
+The workspace template provides agent identity (SOUL.md, MEMORY.md), operating procedures (AGENTS.md), coding standards (`.claude/rules/`), skills (`.claude/skills/`), and heartbeat schedules. Bind-mounted into the container; each worktree carries its own copy, evolved independently on its branch.
