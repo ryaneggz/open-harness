@@ -1,4 +1,4 @@
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
 import { SandboxConfig } from "../lib/config.js";
 import { listRoutes, removeRoute, type Exposure } from "../lib/exposures.js";

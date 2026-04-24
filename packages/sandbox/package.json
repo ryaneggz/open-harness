@@ -1,7 +1,7 @@
 {
   "name": "@openharness/sandbox",
   "version": "0.1.0",
-  "description": "Open Harness CLI and sandbox tools — Docker containers, git worktrees, heartbeats",
+  "description": "Open Harness CLI and sandbox tools \u2014 Docker containers, git worktrees, heartbeats",
   "type": "module",
   "bin": {
     "openharness": "./dist/src/cli/index.js",
@@ -33,9 +33,9 @@
     "ci": "eslint src/ extensions/ && prettier --check 'src/**/*.ts' 'extensions/**/*.ts' && vitest run"
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "0.66.1",
-    "@sinclair/typebox": "^0.34.0",
-    "croner": "^9.1.0"
+    "@mariozechner/pi-coding-agent": "0.70.0",
+    "croner": "^9.1.0",
+    "typebox": "^1.0.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.0.0",

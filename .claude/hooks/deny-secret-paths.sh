@@ -22,7 +22,6 @@ DENY_PATH+='|\.cert$'                           # **/*.cert
 DENY_PATH+='|\.p12$'                            # **/*.p12
 DENY_PATH+='|[^/]*id_rsa[^/]*$'                 # **/*id_rsa*
 DENY_PATH+='|[^/]*id_ed25519[^/]*$'             # **/*id_ed25519*
-DENY_PATH+='|/docker-compose[^/]*\.yml$'        # **/docker-compose*.yml
 DENY_PATH+='|/\.aws/credentials$'               # **/.aws/credentials
 DENY_PATH+='|/\.aws/config$'                    # **/.aws/config
 DENY_PATH+='|/\.gcp/'                           # **/.gcp/**

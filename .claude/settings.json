@@ -8,7 +8,6 @@
       "Read(file_path=**/*.p12)",
       "Read(file_path=**/*id_rsa*)",
       "Read(file_path=**/*id_ed25519*)",
-      "Read(file_path=**/docker-compose*.yml)",
       "Read(file_path=**/.aws/credentials)",
       "Read(file_path=**/.aws/config)",
       "Read(file_path=**/.gcp/**)",
