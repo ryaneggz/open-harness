@@ -56,6 +56,23 @@ Example: `FROM feat/42-slack-thread-replies TO development`
 
 Format: `<type>: <description>` where `<type>` ∈ `feat` · `fix` · `task` · `audit` · `skill`
 
+## Changelog
+
+Root `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com) with CalVer tags.
+
+Every PR with user-visible impact MUST add an entry under the `## [Unreleased]` heading, in the same commit as the change. Categories: `### Added` · `### Changed` · `### Fixed` · `### Removed` · `### Deprecated` · `### Security`.
+
+Skip entries only for pure chores with no runtime or workflow effect (internal refactors, test-only changes, typo fixes). When in doubt, add the entry.
+
+Entry format: one line, imperative mood, link the PR or issue.
+
+```markdown
+### Added
+- Slack thread replies in multi-channel mode ([#42](https://github.com/ryaneggz/openharness/pull/42)).
+```
+
+At release time, `/release` promotes `[Unreleased]` to a new `## [<VERSION>] - YYYY-MM-DD` section and re-seeds an empty `[Unreleased]` block. Do **not** hand-edit versioned sections after a tag ships.
+
 ## Worktrees
 
 Default path: `.worktrees/<branch>` at project root. Create `.worktrees/` if missing.
@@ -150,6 +167,7 @@ Let `$BASE` = default target branch (detected per rule above).
 
 1. Create GitHub issue → record `<issue#>`
 2. `git checkout -b <prefix>/<issue#>-<short-desc> $BASE`
-3. Commit with `<type>: <description>`
-4. `git push -u origin <branch>` → then `/ci-status` (if skill exists)
-5. `gh pr create --base $BASE --title "FROM <branch> TO $BASE" --body "Closes #<issue#>"`
+3. Add a `CHANGELOG.md` entry under `## [Unreleased]` (see § Changelog) — unless the change is a pure chore
+4. Commit with `<type>: <description>`
+5. `git push -u origin <branch>` → then `/ci-status` (if skill exists)
+6. `gh pr create --base $BASE --title "FROM <branch> TO $BASE" --body "Closes #<issue#>"`

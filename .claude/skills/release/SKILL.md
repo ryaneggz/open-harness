@@ -37,7 +37,26 @@ Follow the pre-flight checklist in `.claude/rules/git.md` § Releases (clean tre
 
 If `--dry-run`, report version + pre-flight results and **stop here**.
 
-### Step 3 — Push release branch + tag
+### Step 3 — Promote CHANGELOG `[Unreleased]`
+
+Rewrite `CHANGELOG.md` so the `## [Unreleased]` section becomes `## [$VERSION] - $(date '+%Y-%m-%d')` and a fresh empty `[Unreleased]` block is re-seeded above it. If `[Unreleased]` is empty, abort — no user-visible changes means nothing to release (ask the user to confirm before continuing).
+
+Template for the re-seeded block:
+
+```markdown
+## [Unreleased]
+
+### Added
+### Changed
+### Fixed
+### Removed
+### Deprecated
+### Security
+```
+
+Commit the change on the current branch with `task: promote CHANGELOG for $VERSION` before cutting the release branch.
+
+### Step 4 — Push release branch + tag
 
 ```bash
 PREV_BRANCH=$(git branch --show-current)
@@ -46,7 +65,7 @@ git push origin "release/$VERSION"
 git tag "$VERSION" && git push origin "$VERSION"    # triggers release.yml
 ```
 
-### Step 4 — Poll CI (up to 10 min)
+### Step 5 — Poll CI (up to 10 min)
 
 ```bash
 sleep 10
@@ -65,7 +84,7 @@ for i in $(seq 1 40); do
 done
 ```
 
-### Step 5 — Verify artifacts
+### Step 6 — Verify artifacts
 
 ```bash
 gh release view "$VERSION" --repo "$REPO"
@@ -73,7 +92,7 @@ gh api "users/${REPO%%/*}/packages/container/${REPO##*/}/versions" \
   --jq '.[0] | {tags: .metadata.container.tags, created: .created_at}'
 ```
 
-### Step 6 — Return to previous branch + report
+### Step 7 — Return to previous branch + report
 
 ```bash
 git checkout "$PREV_BRANCH"
