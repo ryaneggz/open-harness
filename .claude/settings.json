@@ -79,6 +79,15 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-env-dump.sh"
           }
         ]
+      },
+      {
+        "matcher": "Read|Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-secret-paths.sh"
+          }
+        ]
       }
     ],
     "Stop": [

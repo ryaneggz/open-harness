@@ -13,6 +13,12 @@ set -euo pipefail
 input=$(cat)
 cmd=$(jq -r '.tool_input.command // ""' <<<"$input")
 
+# Collapse newlines to spaces so character classes don't need to care about
+# them (and so grep's line-oriented regex doesn't split the pattern string
+# either). The literal \n written inside [^#\n] would mean "not \ or n",
+# which wrongly excludes the letter n from any text between cmd and target.
+cmd=${cmd//$'\n'/ }
+
 # Secret-ish variable-name fragments. Matched case-insensitively inside ${VAR}
 # or $VAR dereferences in echo / printf / curl / etc.
 SECRET_NAME='(TOKEN|SECRET|PASSWORD|PASSWD|APIKEY|API_KEY|ACCESS_KEY|PRIVATE_KEY|CREDENTIAL|AUTH|BEARER|SESSION|COOKIE|SLACK_[A-Z_]*|OPENAI_[A-Z_]*|ANTHROPIC_[A-Z_]*|GITHUB_TOKEN|GH_TOKEN|AWS_SECRET|AWS_SESSION|GCP_[A-Z_]*|DATABASE_URL|DB_PASSWORD)'
@@ -28,7 +34,7 @@ DENY+='|/proc/[^/[:space:]]+/environ'                # /proc/<pid|self>/environ
 DENY+='|\bprintenv[[:space:]]*([|;>&]|$)'            # printenv with no args
 DENY+='|\bhistory\b'                                 # shell history dump
 DENY+='|\bfc[[:space:]]+-l'                          # fc -l (also lists history)
-DENY+="|\\b(echo|printf)\\b[^#\\n]*\\\$\\{?[A-Z0-9_]*${SECRET_NAME}[A-Z0-9_]*\\}?"
+DENY+="|\\b(echo|printf)\\b[^#]*\\\$\\{?[A-Z0-9_]*${SECRET_NAME}[A-Z0-9_]*\\}?"
 DENY+="|Authorization:[[:space:]]*['\"]?(Bearer|Basic|Token)[[:space:]]+\\\$"  # auth header with var interpolation
 DENY+='|\baws[[:space:]]+configure[[:space:]]+get\b'
 DENY+='|\bgh[[:space:]]+auth[[:space:]]+token\b'
@@ -36,9 +42,45 @@ DENY+='|\bgcloud[[:space:]]+auth[[:space:]]+print-(access|identity)-token\b'
 DENY+='|\bkubectl[[:space:]]+get[[:space:]]+secret[^|]*-o[[:space:]]*(yaml|json)'
 DENY+='|\bdocker[[:space:]]+(secret|config)[[:space:]]+inspect\b'
 
+# Tier 1 (cont.) — reading secret-laden files via shell tools. Mirrors the
+# Read(**/.env*) family of deny rules so bypassPermissions can't slip past.
+SECRET_PATH="(\\.env[^[:space:]/\"']*"
+SECRET_PATH+='|[^[:space:]]*\.pem\b'
+SECRET_PATH+='|[^[:space:]]*\.p12\b'
+SECRET_PATH+='|[^[:space:]]*\.cert\b'
+SECRET_PATH+='|[^[:space:]/]*id_rsa[^[:space:]]*'
+SECRET_PATH+='|[^[:space:]/]*id_ed25519[^[:space:]]*'
+SECRET_PATH+='|\.aws/credentials\b'
+SECRET_PATH+='|\.aws/config\b'
+SECRET_PATH+='|\.gcp/'
+SECRET_PATH+='|\.config/gcloud/'
+SECRET_PATH+='|\.azure/'
+SECRET_PATH+='|\.kube/config\b'
+SECRET_PATH+='|\.docker/config\.json\b'
+SECRET_PATH+='|\.npmrc\b'
+SECRET_PATH+='|\.pypirc\b'
+SECRET_PATH+='|\.cargo/credentials'
+SECRET_PATH+='|\.git-credentials\b'
+SECRET_PATH+='|\.netrc\b'
+SECRET_PATH+='|\.config/gh/hosts\.yml\b'
+SECRET_PATH+='|\.config/gh/config\.yml\b'
+SECRET_PATH+='|\.claude/\.credentials\.json\b'
+SECRET_PATH+='|\.anthropic/'
+SECRET_PATH+='|\.pi/[^[:space:]]*auth\.json\b'
+SECRET_PATH+='|\.gnupg/'
+SECRET_PATH+='|\.bash_history\b'
+SECRET_PATH+='|\.zsh_history\b'
+SECRET_PATH+='|\.psql_history\b'
+SECRET_PATH+='|\.python_history\b'
+SECRET_PATH+='|\.node_repl_history\b'
+SECRET_PATH+='|\.wget-hsts\b'
+SECRET_PATH+="|docker-compose[^[:space:]]*\\.yml\\b)"
+READ_CMD='(cat|tac|less|more|bat|head|tail|xxd|od|strings|hexdump|base64|nano|vim|vi|emacs|view|sed|awk|grep|rg|ripgrep|jq|yq|tee|cp|mv|scp|rsync|install|source|\.)'
+DENY+="|\\b${READ_CMD}\\b[^#|]*${SECRET_PATH}"
+
 # Tier 2 — ask (narrow / possibly legitimate).
 ASK='\bprintenv[[:space:]]+[A-Za-z_]'                # printenv VAR [VAR ...]
-ASK+="|\\b(echo|printf)\\b[^#\\n]*\\\$\\{?[A-Z][A-Z0-9_]*\\}?"  # echo of any $VAR (catch-all below deny tier)
+ASK+="|\\b(echo|printf)\\b[^#]*\\\$\\{?[A-Z][A-Z0-9_]*\\}?"  # echo of any $VAR (catch-all below deny tier)
 
 emit() {
   jq -n --arg d "$1" --arg r "$2" '{
