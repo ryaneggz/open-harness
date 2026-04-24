@@ -1,0 +1,117 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(file_path=**/.env*)",
+      "Read(file_path=**/*.pem)",
+      "Read(file_path=**/*.key)",
+      "Read(file_path=**/*.cert)",
+      "Read(file_path=**/*.p12)",
+      "Read(file_path=**/*id_rsa*)",
+      "Read(file_path=**/*id_ed25519*)",
+      "Read(file_path=**/docker-compose*.yml)",
+      "Read(file_path=**/.aws/credentials)",
+      "Read(file_path=**/.aws/config)",
+      "Read(file_path=**/.gcp/**)",
+      "Read(file_path=**/.config/gcloud/**)",
+      "Read(file_path=**/.azure/**)",
+      "Read(file_path=**/.kube/config)",
+      "Read(file_path=**/.docker/config.json)",
+      "Read(file_path=**/.npmrc)",
+      "Read(file_path=**/.pypirc)",
+      "Read(file_path=**/.cargo/credentials*)",
+      "Read(file_path=**/.git-credentials)",
+      "Read(file_path=**/.netrc)",
+      "Read(file_path=**/.config/gh/hosts.yml)",
+      "Read(file_path=**/.config/gh/config.yml)",
+      "Read(file_path=**/.claude/.credentials.json)",
+      "Read(file_path=**/.anthropic/**)",
+      "Read(file_path=**/.pi/**/auth.json)",
+      "Read(file_path=**/.gnupg/**)",
+      "Read(file_path=**/.bash_history)",
+      "Read(file_path=**/.zsh_history)",
+      "Read(file_path=**/.psql_history)",
+      "Read(file_path=**/.python_history)",
+      "Read(file_path=**/.node_repl_history)",
+      "Read(file_path=**/.wget-hsts)",
+      "Bash(command=*cat*.env*)",
+      "Bash(command=*printenv*)",
+      "Bash(command=*docker inspect*)",
+      "Bash(cat **/.env*)",
+      "Bash(command=*env | grep*)",
+      "Bash(command=*env|grep*)",
+      "Bash(command=*env | *)",
+      "Bash(command=*env >*)",
+      "Bash(command=*set | grep*)",
+      "Bash(command=*gh auth token*)",
+      "Bash(command=*gcloud auth print-access-token*)",
+      "Bash(command=*gcloud auth print-identity-token*)",
+      "Bash(command=*aws ecr get-login-password*)",
+      "Bash(command=*aws sts get-session-token*)",
+      "Bash(command=*aws configure get*)",
+      "Bash(command=*kubectl get secret*-o yaml*)",
+      "Bash(command=*kubectl get secret*-o json*)",
+      "Bash(command=*kubectl get secret*--output*)",
+      "Bash(command=*docker secret inspect*)",
+      "Bash(command=*docker config inspect*)",
+      "Bash(command=*history*)",
+      "Bash(command=*cat*.bash_history*)",
+      "Bash(command=*cat*.zsh_history*)",
+      "Bash(command=*cat*.git-credentials*)",
+      "Bash(command=*cat*.netrc*)",
+      "Bash(command=*cat*.npmrc*)",
+      "Bash(command=*cat*.docker/config*)",
+      "Bash(command=*cat*.kube/config*)",
+      "Bash(command=*cat*.aws/credentials*)",
+      "Bash(command=*cat*auth.json*)",
+      "Bash(command=*.credentials.json*)",
+      "Bash(command=*curl*-H*Authorization*)",
+      "Bash(command=*curl*--header*Authorization*)"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-env-dump.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify_slack.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify_slack.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify_slack.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "effortLevel": "high",
+  "model": "claude-opus-4-7[1m]"
+}

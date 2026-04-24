@@ -81,10 +81,22 @@ elif [ -d "$HARNESS/.git" ]; then
 fi
 
 # ─── GitHub CLI auth via PAT (optional) ─────────────────────────────
-if [ -n "${GH_TOKEN:-}" ] && ! gosu sandbox gh auth status &>/dev/null; then
-  echo "$GH_TOKEN" | gosu sandbox gh auth login --with-token 2>/dev/null \
-    && echo "[entrypoint] GitHub CLI authenticated via GH_TOKEN" \
-    || echo "[entrypoint] GH_TOKEN provided but gh auth login failed"
+# When GH_TOKEN is provided, persist it into ~/.config/gh/hosts.yml on
+# disk (via the gh-config volume) so auth survives env changes and
+# `gh auth setup-git` has proper host config to reference. gh refuses
+# `--with-token` while GH_TOKEN is in env, so unset it in the subprocess.
+# Disk-auth check uses `env -u GH_TOKEN` so we don't mistake the env var
+# for a persisted login.
+if [ -n "${GH_TOKEN:-}" ]; then
+  if ! gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth status &>/dev/null; then
+    if echo "$GH_TOKEN" | gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth login --with-token 2>/dev/null; then
+      echo "[entrypoint] GitHub CLI authenticated via GH_TOKEN (persisted to ~/.config/gh)"
+    else
+      echo "[entrypoint] GH_TOKEN provided but gh auth login failed"
+    fi
+  else
+    echo "[entrypoint] GitHub CLI already authenticated on disk — skipping gh auth login"
+  fi
 fi
 
 # ─── Git identity + credential helper ───────────────────────────────
@@ -106,9 +118,14 @@ elif gosu sandbox gh auth status &>/dev/null; then
   fi
   [ -n "$GH_EMAIL" ] && gosu sandbox git config --global user.email "$GH_EMAIL"
 fi
-# Register gh as git credential helper (persisted gh-config volume)
-if gosu sandbox gh auth status &>/dev/null; then
-  gosu sandbox gh auth setup-git 2>/dev/null || true
+# Register gh as git credential helper so `git push`/`git fetch` just work
+# over HTTPS on first attach — no SSH key setup required.
+# Must run with GH_TOKEN unset: gh refuses setup-git when env-var auth
+# would shadow the stored host config it's trying to wire up.
+if gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth status &>/dev/null; then
+  if gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth setup-git 2>/dev/null; then
+    echo "[entrypoint] git credential helper configured via gh auth setup-git"
+  fi
 fi
 
 # ─── SSH server setup (only when sshd overlay is active) ──────────
