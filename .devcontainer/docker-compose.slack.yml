@@ -4,7 +4,9 @@
 # Requirements: SLACK_APP_TOKEN and SLACK_BOT_TOKEN env vars must be set before use
 # Optional: OPENAI_API_KEY for OpenAI-based integrations
 # Usage: docker compose -f docker-compose.yml -f docker-compose.slack.yml up
-# Provides: Sandbox can run pi (Slack automation agent) with persistent auth in .pi volume
+# Provides: Slack env vars only. Pi auth persistence lives in the base
+# compose (pi-auth named volume → /home/sandbox/.pi) or in the
+# docker-compose.pi-host.yml overlay (host bind-mount).
 
 services:
   sandbox:
@@ -12,8 +14,3 @@ services:
       - SLACK_APP_TOKEN=${SLACK_APP_TOKEN:-}
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-    volumes:
-      - agent-auth:/home/sandbox/.pi
-
-volumes:
-  agent-auth:

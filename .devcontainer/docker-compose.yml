@@ -8,6 +8,8 @@
 #   - ../.openharness:/home/sandbox/.openharness — Config overlay
 #   - /var/run/docker.sock:/var/run/docker.sock — Docker daemon access (nested docker)
 #   - claude-auth:/home/sandbox/.claude — Persistent Claude CLI auth
+#   - codex-auth:/home/sandbox/.codex — Persistent Codex CLI auth
+#   - pi-auth:/home/sandbox/.pi — Persistent Pi Agent (oh/pi CLI) auth
 #   - cloudflared-auth:/home/sandbox/.cloudflared — Cloudflare credentials
 #   - gh-config:/home/sandbox/.config/gh — GitHub CLI config
 #
@@ -42,6 +44,8 @@ services:
       - ../.openharness:/home/sandbox/.openharness
       - /var/run/docker.sock:/var/run/docker.sock
       - claude-auth:/home/sandbox/.claude
+      - codex-auth:/home/sandbox/.codex
+      - pi-auth:/home/sandbox/.pi
       - cloudflared-auth:/home/sandbox/.cloudflared
       - gh-config:/home/sandbox/.config/gh
     extra_hosts:
@@ -67,5 +71,7 @@ services:
 
 volumes:
   claude-auth:
+  codex-auth:
+  pi-auth:
   cloudflared-auth:
   gh-config:

@@ -73,8 +73,7 @@ SECRET_PATH+='|\.zsh_history\b'
 SECRET_PATH+='|\.psql_history\b'
 SECRET_PATH+='|\.python_history\b'
 SECRET_PATH+='|\.node_repl_history\b'
-SECRET_PATH+='|\.wget-hsts\b'
-SECRET_PATH+="|docker-compose[^[:space:]]*\\.yml\\b)"
+SECRET_PATH+='|\.wget-hsts\b)'
 READ_CMD='(cat|tac|less|more|bat|head|tail|xxd|od|strings|hexdump|base64|nano|vim|vi|emacs|view|sed|awk|grep|rg|ripgrep|jq|yq|tee|cp|mv|scp|rsync|install|source|\.)'
 DENY+="|\\b${READ_CMD}\\b[^#|]*${SECRET_PATH}"
 

@@ -49,7 +49,7 @@ List all available overlay files (everything matching `.devcontainer/docker-comp
 and show which are currently enabled in `.openharness/config.json`.
 
 **Default overlays** (postgres is opt-in, not included by default):
-- cloudflared, docker, slack
+- cloudflared, docker, slack, claude-host, codex-host, pi-host
 
 **Guard**: `docker-compose.git.yml` requires `GIT_COMMON_DIR` (only valid in worktrees).
 If not in a worktree, do NOT include `git.yml` — it will produce invalid mount path `:`.
@@ -63,7 +63,9 @@ Available compose overlays:
   [ ] docker-compose.git.yml           — Git worktree mount (ONLY valid in worktrees)
   [x] docker-compose.slack.yml          — Slack bot env vars
   [ ] docker-compose.sshd.yml           — SSH server daemon (opt-in, port 2222)
-  [ ] docker-compose.claude-host.yml    — Bind-mount host ~/.claude (opt-in, trust tradeoff)
+  [x] docker-compose.claude-host.yml    — Bind-mount host ~/.claude (default, trust tradeoff)
+  [x] docker-compose.codex-host.yml     — Bind-mount host ~/.codex (default, OAuth-first, trust tradeoff)
+  [x] docker-compose.pi-host.yml        — Bind-mount host ~/.pi (default, OAuth-first, trust tradeoff)
   [ ] (any new overlays found)
 
 Enable/disable any overlays?
