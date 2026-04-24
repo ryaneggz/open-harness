@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse file-path guard: blocks Read/Write/Edit/NotebookEdit against
 # known secret/credential paths. Mirrors the Read(...) deny list in
-# .claude/settings.local.json — present as a hook because `bypassPermissions`
+# .claude/settings.json — present as a hook because `bypassPermissions`
 # defaultMode skips the permission engine entirely, so deny rules alone
 # don't fire.
 #
@@ -14,7 +14,7 @@ path=$(jq -r '.tool_input.file_path // .tool_input.notebook_path // ""' <<<"$inp
 
 [ -z "$path" ] && exit 0
 
-# Mirrors settings.local.json permissions.deny Read(...) globs.
+# Mirrors .claude/settings.json permissions.deny Read(...) globs.
 DENY_PATH='(^|/)\.env([^/]*)?$'                 # **/.env*
 DENY_PATH+='|\.pem$'                            # **/*.pem
 DENY_PATH+='|\.key$'                            # **/*.key
@@ -59,5 +59,5 @@ emit() {
 }
 
 if grep -qEi -- "$DENY_PATH" <<<"$path"; then
-  emit deny "Secret-exposure guard (deny): refusing to access $path — matches a credential / secret file pattern (env file, private key, cert, cloud credentials, shell history, or similar). This mirrors the permissions.deny list in .claude/settings.local.json; it's enforced as a hook so it still blocks under bypassPermissions mode. If you genuinely need a specific non-secret value from this file, ask the user to paste only that value into the chat."
+  emit deny "Secret-exposure guard (deny): refusing to access $path — matches a credential / secret file pattern (env file, private key, cert, cloud credentials, shell history, or similar). This mirrors the permissions.deny list in .claude/settings.json; it's enforced as a hook so it still blocks under bypassPermissions mode. If you genuinely need a specific non-secret value from this file, ask the user to paste only that value into the chat."
 fi
