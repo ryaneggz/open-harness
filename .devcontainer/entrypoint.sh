@@ -128,6 +128,42 @@ if gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth status &>/dev/null; then
   fi
 fi
 
+# ─── SSH key generation + GitHub upload ─────────────────────────────
+# Mirrors what the interactive `gh auth login` flow does when you pick
+# SSH as the git protocol: generate an ed25519 keypair and register the
+# public key with GitHub. `gh auth login --with-token` has no SSH path,
+# so we do it ourselves. Requires the PAT to carry `admin:public_key`
+# scope; without it the generation still runs but the upload is skipped
+# (HTTPS + credential helper continues to work).
+if [ -n "${GH_TOKEN:-}" ] && gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth status &>/dev/null; then
+  SSH_DIR="/home/sandbox/.ssh"
+  SSH_KEY="$SSH_DIR/id_ed25519"
+  if [ ! -f "$SSH_KEY" ]; then
+    mkdir -p "$SSH_DIR"
+    chown sandbox:sandbox "$SSH_DIR"
+    chmod 700 "$SSH_DIR"
+    if gosu sandbox ssh-keygen -t ed25519 -f "$SSH_KEY" -N "" \
+         -C "openharness-${SANDBOX_NAME:-$(hostname)}" &>/dev/null; then
+      echo "[entrypoint] Generated SSH key at $SSH_KEY"
+    fi
+  fi
+  if [ -f "$SSH_KEY.pub" ]; then
+    KEY_TITLE="openharness-${SANDBOX_NAME:-$(hostname)}"
+    PUB_MATERIAL=$(awk '{print $2}' "$SSH_KEY.pub")
+    if gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh ssh-key list 2>/dev/null \
+         | grep -Fq "$PUB_MATERIAL"; then
+      echo "[entrypoint] SSH public key already registered on GitHub"
+    else
+      if gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN \
+           gh ssh-key add "$SSH_KEY.pub" --title "$KEY_TITLE" 2>/dev/null; then
+        echo "[entrypoint] SSH public key uploaded to GitHub as '$KEY_TITLE'"
+      else
+        echo "[entrypoint] Could not upload SSH key (PAT likely missing 'admin:public_key' scope)"
+      fi
+    fi
+  fi
+fi
+
 # ─── SSH server setup (only when sshd overlay is active) ──────────
 if echo "$@" | grep -q sshd; then
   # Set password for SSH login from env var
