@@ -24,13 +24,12 @@
 
 ### Optional Agents
 
-| Agent | Command | Notes |
-|-------|---------|-------|
-| Claude Code | `claude` | Installed by default |
-| OpenAI Codex | `codex` | Installed by default |
-| Pi Agent | `pi` | Installed by default |
-| Deep Agents | `deepagents` | Opt-in via `INSTALL_DEEPAGENTS_CLI=true` |
-| AgentMail | `agentmail` | Opt-in via setup.sh |
+| Agent | Command |
+|-------|---------|
+| Claude Code | `claude` |
+| OpenAI Codex | `codex` |
+| Pi Agent | `pi` |
+| AgentMail | `agentmail` |
 
 ## Principles
 
