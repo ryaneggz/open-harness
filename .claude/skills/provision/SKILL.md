@@ -63,10 +63,34 @@ Available compose overlays:
   [ ] docker-compose.git.yml           — Git worktree mount (ONLY valid in worktrees)
   [x] docker-compose.slack.yml          — Slack bot env vars
   [ ] docker-compose.sshd.yml           — SSH server daemon (opt-in, port 2222)
+  [ ] docker-compose.claude-host.yml    — Bind-mount host ~/.claude (opt-in, trust tradeoff)
   [ ] (any new overlays found)
 
 Enable/disable any overlays?
 ```
+
+**Claude host overlay** (opt-in — off by default):
+
+The `claude-host` overlay replaces the `claude-auth` named volume with
+RW bind-mounts of the host's `~/.claude` directory AND `~/.claude.json`
+file. Trades isolation for convenience — the sandbox inherits host
+OAuth tokens, memory, MCP config, project history, theme, and
+onboarding state (no text-style reselection); sandbox writes appear
+live on the host.
+
+Tradeoffs — only enable for trusted workflows:
+
+| Concern | Detail |
+|---------|--------|
+| Credential blast radius | OAuth tokens in `.credentials.json` are readable by any code running in the sandbox. Do not enable when running untrusted agent code. |
+| `projects/` bleed-through | Sessions from other host work (non-harness Claude Code invocations) are visible inside the sandbox. |
+| `.claude.json` bleed-through | Per-project `hasTrustDialogAccepted`, full MCP server list, and tip counters from non-harness host work are visible inside the sandbox. |
+| Host UID must be 1000 | `.credentials.json` is mode 0600 (owner-only). The entrypoint skips `chown` on `.claude` to preserve host ownership, but if host UID ≠ sandbox UID (1000), the sandbox user cannot read credentials and `claude` will prompt for auth. Check with `id -u` before enabling. |
+| Host paths must pre-exist | If `$HOST_CLAUDE_DIR` or `$HOST_CLAUDE_JSON` does not exist on the host, Docker auto-creates it as a **directory** owned by root — `claude` will then fail to parse the JSON or read credentials. Verify with `test -d ~/.claude && test -f ~/.claude.json` before first boot. |
+
+Mutually exclusive with the default `claude-auth` named volume at the
+same target path (Docker Compose merges by target). When the overlay is
+disabled, sandbox `.claude` reverts to the named volume.
 
 **SSH server access** (opt-in — not enabled by default):
 

@@ -12,9 +12,14 @@ if [ -S "$SOCK" ]; then
   fi
 fi
 
-# Fix ownership of mounted volumes (created as root by Docker)
+# Fix ownership of mounted volumes (created as root by Docker).
+# Skip .claude when the claude-host overlay is active — it's a host bind-mount
+# and chown would rewrite host file ownership (see docker-compose.claude-host.yml).
 for dir in .claude .cloudflared .config/gh .ssh .pi .openharness; do
   if [ -d "/home/sandbox/$dir" ]; then
+    if [ "$dir" = ".claude" ] && [ "${CLAUDE_HOST_BIND_MOUNT:-0}" = "1" ]; then
+      continue
+    fi
     chown -R sandbox:sandbox "/home/sandbox/$dir" 2>/dev/null || true
     [ "$dir" = ".ssh" ] && chmod 700 "/home/sandbox/$dir" 2>/dev/null || true
   fi
@@ -76,10 +81,22 @@ elif [ -d "$HARNESS/.git" ]; then
 fi
 
 # ─── GitHub CLI auth via PAT (optional) ─────────────────────────────
-if [ -n "${GH_TOKEN:-}" ] && ! gosu sandbox gh auth status &>/dev/null; then
-  echo "$GH_TOKEN" | gosu sandbox gh auth login --with-token 2>/dev/null \
-    && echo "[entrypoint] GitHub CLI authenticated via GH_TOKEN" \
-    || echo "[entrypoint] GH_TOKEN provided but gh auth login failed"
+# When GH_TOKEN is provided, persist it into ~/.config/gh/hosts.yml on
+# disk (via the gh-config volume) so auth survives env changes and
+# `gh auth setup-git` has proper host config to reference. gh refuses
+# `--with-token` while GH_TOKEN is in env, so unset it in the subprocess.
+# Disk-auth check uses `env -u GH_TOKEN` so we don't mistake the env var
+# for a persisted login.
+if [ -n "${GH_TOKEN:-}" ]; then
+  if ! gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth status &>/dev/null; then
+    if echo "$GH_TOKEN" | gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth login --with-token 2>/dev/null; then
+      echo "[entrypoint] GitHub CLI authenticated via GH_TOKEN (persisted to ~/.config/gh)"
+    else
+      echo "[entrypoint] GH_TOKEN provided but gh auth login failed"
+    fi
+  else
+    echo "[entrypoint] GitHub CLI already authenticated on disk — skipping gh auth login"
+  fi
 fi
 
 # ─── Git identity + credential helper ───────────────────────────────
@@ -101,9 +118,50 @@ elif gosu sandbox gh auth status &>/dev/null; then
   fi
   [ -n "$GH_EMAIL" ] && gosu sandbox git config --global user.email "$GH_EMAIL"
 fi
-# Register gh as git credential helper (persisted gh-config volume)
-if gosu sandbox gh auth status &>/dev/null; then
-  gosu sandbox gh auth setup-git 2>/dev/null || true
+# Register gh as git credential helper so `git push`/`git fetch` just work
+# over HTTPS on first attach — no SSH key setup required.
+# Must run with GH_TOKEN unset: gh refuses setup-git when env-var auth
+# would shadow the stored host config it's trying to wire up.
+if gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth status &>/dev/null; then
+  if gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth setup-git 2>/dev/null; then
+    echo "[entrypoint] git credential helper configured via gh auth setup-git"
+  fi
+fi
+
+# ─── SSH key generation + GitHub upload ─────────────────────────────
+# Mirrors what the interactive `gh auth login` flow does when you pick
+# SSH as the git protocol: generate an ed25519 keypair and register the
+# public key with GitHub. `gh auth login --with-token` has no SSH path,
+# so we do it ourselves. Requires the PAT to carry `admin:public_key`
+# scope; without it the generation still runs but the upload is skipped
+# (HTTPS + credential helper continues to work).
+if [ -n "${GH_TOKEN:-}" ] && gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth status &>/dev/null; then
+  SSH_DIR="/home/sandbox/.ssh"
+  SSH_KEY="$SSH_DIR/id_ed25519"
+  if [ ! -f "$SSH_KEY" ]; then
+    mkdir -p "$SSH_DIR"
+    chown sandbox:sandbox "$SSH_DIR"
+    chmod 700 "$SSH_DIR"
+    if gosu sandbox ssh-keygen -t ed25519 -f "$SSH_KEY" -N "" \
+         -C "openharness-${SANDBOX_NAME:-$(hostname)}" &>/dev/null; then
+      echo "[entrypoint] Generated SSH key at $SSH_KEY"
+    fi
+  fi
+  if [ -f "$SSH_KEY.pub" ]; then
+    KEY_TITLE="openharness-${SANDBOX_NAME:-$(hostname)}"
+    PUB_MATERIAL=$(awk '{print $2}' "$SSH_KEY.pub")
+    if gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh ssh-key list 2>/dev/null \
+         | grep -Fq "$PUB_MATERIAL"; then
+      echo "[entrypoint] SSH public key already registered on GitHub"
+    else
+      if gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN \
+           gh ssh-key add "$SSH_KEY.pub" --title "$KEY_TITLE" 2>/dev/null; then
+        echo "[entrypoint] SSH public key uploaded to GitHub as '$KEY_TITLE'"
+      else
+        echo "[entrypoint] Could not upload SSH key (PAT likely missing 'admin:public_key' scope)"
+      fi
+    fi
+  fi
 fi
 
 # ─── SSH server setup (only when sshd overlay is active) ──────────
