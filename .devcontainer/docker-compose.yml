@@ -18,6 +18,10 @@
 #   - GIT_USER_NAME, GIT_USER_EMAIL: Git commit author
 #   - GH_TOKEN: GitHub token for `gh auth` automation
 #   - INSTALL_AGENT_BROWSER: Set to "true" to install Chromium (opt-in)
+#   - INSTALL_DEEPAGENTS_CLI: Set to "true" to install deepagents-cli (opt-in)
+#   - ANTHROPIC_API_KEY / OPENAI_API_KEY / GOOGLE_API_KEY / GROQ_API_KEY:
+#     Provider API keys — used by deepagents-cli and any direct-SDK scripts.
+#     claude / codex / pi use OAuth subscriptions and do NOT need these.
 #   - SANDBOX_PASSWORD: SSH password if using docker-compose.sshd.yml
 #
 # Entrypoint: /usr/local/bin/entrypoint.sh — Initializes git config, installs tools, runs onboarding
@@ -62,6 +66,11 @@ services:
       - GIT_USER_EMAIL=${GIT_USER_EMAIL:-}
       - GH_TOKEN=${GH_TOKEN:-}
       - INSTALL_AGENT_BROWSER=${INSTALL_AGENT_BROWSER:-false}
+      - INSTALL_DEEPAGENTS_CLI=${INSTALL_DEEPAGENTS_CLI:-false}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
     stdin_open: true
     tty: true
     init: true

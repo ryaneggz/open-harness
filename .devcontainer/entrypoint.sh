@@ -261,6 +261,19 @@ if [ "${INSTALL_AGENT_BROWSER:-false}" = "true" ] && ! command -v agent-browser 
     || echo "[entrypoint] agent-browser install failed — skipping"
 fi
 
+# ─── Optional: deepagents-cli (opt-in via INSTALL_DEEPAGENTS_CLI=true) ──
+# LangChain's deepagents-cli (PyPI: deepagents-cli, binary: deepagents).
+# Installed via `uv tool install`; UV_TOOL_BIN_DIR=/usr/local/bin puts the
+# launcher on PATH for the sandbox user without further plumbing. uv
+# fetches Python 3.13 on demand. Idempotent via the command -v guard.
+if [ "${INSTALL_DEEPAGENTS_CLI:-false}" = "true" ] && ! command -v deepagents &>/dev/null; then
+  echo "[entrypoint] Installing deepagents-cli (INSTALL_DEEPAGENTS_CLI=true)..."
+  UV_TOOL_BIN_DIR=/usr/local/bin UV_TOOL_DIR=/usr/local/share/uv-tools \
+    uv tool install --python 3.13 deepagents-cli 2>&1 | tail -5 \
+    && echo "[entrypoint] deepagents-cli installed" \
+    || echo "[entrypoint] deepagents-cli install failed — skipping"
+fi
+
 # Run workspace startup (dev server + tunnel) as sandbox user
 STARTUP="/home/sandbox/harness/workspace/startup.sh"
 if [ -f "$STARTUP" ]; then
