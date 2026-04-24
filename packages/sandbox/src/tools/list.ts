@@ -1,4 +1,4 @@
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import { execSync } from "node:child_process";
 import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
 
