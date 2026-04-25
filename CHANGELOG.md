@@ -9,6 +9,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 ## [Unreleased]
 
 ### Added
+- Blog post draft: Worktree-per-agent — stages for Wed publish ([#145](https://github.com/ryaneggz/openharness/pull/145)).
 - Blog section at /blog and About page nav entry (#143).
 - Root `CHANGELOG.md` and Keep-a-Changelog workflow documented in `.claude/rules/git.md`; `/release` now promotes `[Unreleased]` to the new version section at tag time.
 
