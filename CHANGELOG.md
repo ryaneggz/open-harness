@@ -10,6 +10,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 
 ### Added
 - Root `CHANGELOG.md` and Keep-a-Changelog workflow documented in `.claude/rules/git.md`; `/release` now promotes `[Unreleased]` to the new version section at tag time.
+- Generate `sitemap.xml` and `robots.txt` during docs build via `next-sitemap` ([#141](https://github.com/ryaneggz/openharness/issues/141)).
 
 ### Changed
 ### Fixed
