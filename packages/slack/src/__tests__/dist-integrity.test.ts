@@ -9,6 +9,7 @@ const REQUIRED_DIST_FILES = [
 	"agent.js",
 	"events.js",
 	"slack.js",
+	"slack-context.js",
 	"log.js",
 	"context.js",
 	"sandbox.js",
@@ -114,28 +115,32 @@ describe("dist integrity", () => {
 		});
 	});
 
-	describe("thread parent routing (main.js)", () => {
-		const mainPath = join(distDir, "main.js");
+	describe("thread parent routing (slack-context.js)", () => {
+		const ctxPath = join(distDir, "slack-context.js");
 
 		it("contains threadParent variable", () => {
-			const content = readFileSync(mainPath, "utf-8");
+			const content = readFileSync(ctxPath, "utf-8");
 			expect(content).toContain("threadParent");
 		});
 
-		it("contains postInThread calls using threadParent", () => {
-			const content = readFileSync(mainPath, "utf-8");
-			// Verify at least one postInThread call passes threadParent
-			const hasPostInThreadWithParent =
-				content.includes("postInThread(event.channel, threadParent") ||
-				content.includes("postInThread(event.channel,threadParent");
-			expect(hasPostInThreadWithParent).toBe(true);
+		it("safePost is invoked with threadParent for thread routing", () => {
+			const content = readFileSync(ctxPath, "utf-8");
+			// After issue #135, all main posting flows through safePost.
+			// Verify safePost is referenced and threadParent is forwarded.
+			expect(content).toContain("safePost");
+			// At least one safePost call should reference threadParent in its options.
+			const hasThreadParentForwarded =
+				content.includes("threadTs: threadParent") ||
+				content.includes("threadTs:threadParent");
+			expect(hasThreadParentForwarded).toBe(true);
 		});
 
-		it("has multiple postInThread calls that route via threadParent", () => {
-			const content = readFileSync(mainPath, "utf-8");
-			// Count occurrences — there should be more than one (respond, replaceMessage, setTyping)
-			const occurrences = (content.match(/postInThread/g) ?? []).length;
-			expect(occurrences).toBeGreaterThanOrEqual(2);
+		it("has multiple safePost call sites covering main + overflow + thread paths", () => {
+			const content = readFileSync(ctxPath, "utf-8");
+			// safePost is now the single posting primitive; we expect ≥4 call sites
+			// (postMain, flushOverflow, respondInThread, setTyping at minimum).
+			const occurrences = (content.match(/safePost/g) ?? []).length;
+			expect(occurrences).toBeGreaterThanOrEqual(4);
 		});
 	});
 
