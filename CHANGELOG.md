@@ -10,6 +10,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 
 ### Added
 - Root `CHANGELOG.md` and Keep-a-Changelog workflow documented in `.claude/rules/git.md`; `/release` now promotes `[Unreleased]` to the new version section at tag time.
+- Launch runbook consolidating manual cutover steps (DNS, GH settings, OG validation, GSC, promotion).
 
 ### Changed
 ### Fixed

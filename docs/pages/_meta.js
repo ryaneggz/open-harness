@@ -6,4 +6,7 @@ export default {
   cli: "CLI Reference",
   architecture: "Architecture",
   wiki: "Wiki",
+  about: "About",
+  blog: "Blog",
+  "launch-runbook": "Launch Runbook",
 };
