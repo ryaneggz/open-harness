@@ -10,6 +10,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 
 ### Added
 - Blog section at /blog and About page nav entry (#143).
+- Blog post: BYOH — stop installing agent CLIs on your laptop (#144).
 - Root `CHANGELOG.md` and Keep-a-Changelog workflow documented in `.claude/rules/git.md`; `/release` now promotes `[Unreleased]` to the new version section at tag time.
 
 ### Changed
