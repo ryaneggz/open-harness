@@ -1,10 +1,12 @@
-# 🏗️ Open Harness
+# Mifune Open Harness
 
-Isolated, pre-configured sandbox containers for AI coding agents — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenAI Codex](https://github.com/openai/codex), [Pi Agent](https://shittycodingagent.ai), and more.
+**Mifune Open Harness** — run Claude, Codex, Gemini, and Pi side-by-side from one `docker compose up`. Each agent gets its own branch, its own SOUL, its own schedule.
 
-> Spin up a fully-provisioned container where AI coding agents can operate with full permissions, persistent memory, and autonomous background tasks — without touching your host system.
-
-**Only host dependency:** [Docker](https://docs.docker.com/get-docker/).
+- **Worktree-per-agent.** Each agent gets its own branch, its own SOUL, its own schedule.
+- **Agents that work while you sleep.** Cron-driven heartbeats wake them to do real work, autonomously.
+- **One container, every agent.** Claude Code, Codex, Pi, Gemini CLI — same sandbox, same toolchain.
+- **Only host dependency: Docker.** No Node, no Python, no toolchain rot on your laptop.
+- **Composable infra.** Cherry-pick Postgres, Cloudflare tunnels, SSH, Slack, Caddy gateway.
 
 ---
 
