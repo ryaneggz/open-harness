@@ -55,8 +55,8 @@ export const cloudflareStep: Step = {
 
     const tunnelName = (await io.ask("Tunnel name (default: open-harness):")) || "open-harness";
     const tunnelHost =
-      (await io.ask(`Public hostname (default: ${tunnelName}.ruska.dev):`)) ||
-      `${tunnelName}.ruska.dev`;
+      (await io.ask(`Public hostname (default: ${tunnelName}.mifune.dev):`)) ||
+      `${tunnelName}.mifune.dev`;
     const tunnelPort = (await io.ask("Local port (default: 3000):")) || DEFAULT_PORT;
 
     io.raw("\n");

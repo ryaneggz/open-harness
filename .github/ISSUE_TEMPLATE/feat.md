@@ -40,6 +40,6 @@ assignees: ""
 - [ ] Vitest tests added for new logic
 - [ ] Playwright E2E test covers the happy path
 - [ ] Lint + format + type-check pass (`pnpm run lint && pnpm run format:check && pnpm run type-check`)
-- [ ] Verified via agent-browser at the deployed URL (docs default: `https://ryaneggz.github.io/open-harness/`)
+- [ ] Verified via agent-browser at the deployed URL (docs default: `https://oh.mifune.dev/`)
 - [ ] Prisma migration included if schema changed
 - [ ] PR targets the default target branch (see `.claude/rules/git.md`)

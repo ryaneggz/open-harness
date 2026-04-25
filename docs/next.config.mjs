@@ -10,7 +10,7 @@ const withNextra = nextra({
 export default withNextra({
   output: "export",
   images: { unoptimized: true },
-  basePath: "/open-harness",
+  basePath: "",
   trailingSlash: true,
   experimental: { externalDir: true },
   transpilePackages: [
