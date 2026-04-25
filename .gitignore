@@ -40,6 +40,7 @@ workspace/.pi/
 workspace/startup.sh
 **/.pnpm-store
 **/.claude/plans
+**/.claude/specs
 **/auth.json
 **/.credentials.json
 **/scheduled_tasks.lock
