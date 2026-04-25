@@ -13,6 +13,8 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 
 ### Changed
 ### Fixed
+- Slack bot no longer drops oversized agent replies with cascading `msg_too_long` errors. Main message is capped at 2,900 chars with a `_message truncated — full response in thread_` footer; full content spills to thread replies; `setWorking(false)` always clears the working indicator. ([#135](https://github.com/ryaneggz/openharness/issues/135))
+
 ### Removed
 ### Deprecated
 ### Security

@@ -1,133 +1,92 @@
 import { describe, expect, it } from "vitest";
 
 /**
- * Tests that createSlackContext uses threadParent (event.threadTs ?? event.ts)
- * for all postInThread calls, validating the thread response support.
+ * Tests that createSlackContext routes to thread vs. channel correctly.
+ *
+ * Since issue #135, all main-message posting goes through `slack.safePost`,
+ * which forwards `threadParent` as the `threadTs` field when no messageTs
+ * exists yet. respondInThread still pins to the bot's own messageTs.
  */
+
+async function readMainSource(): Promise<string> {
+	const fs = await import("fs");
+	const path = await import("path");
+	return fs.readFileSync(path.join(import.meta.dirname, "..", "slack-context.ts"), "utf-8");
+}
+
+function block(source: string, startMarker: string, endMarker: string): string {
+	const start = source.indexOf(startMarker);
+	const end = source.indexOf(endMarker, start);
+	return source.substring(start, end);
+}
 
 describe("createSlackContext threadParent routing", () => {
 	it("computes threadParent = event.threadTs ?? event.ts", async () => {
-		const fs = await import("fs");
-		const path = await import("path");
-		const mainSource = fs.readFileSync(
-			path.join(import.meta.dirname, "..", "main.ts"),
-			"utf-8",
+		const source = await readMainSource();
+		expect(source).toContain(
+			"const threadParent = event.threadTs ?? (isEvent ? undefined : event.ts)",
 		);
-
-		// The threadParent computation must exist
-		expect(mainSource).toContain("const threadParent = event.threadTs ?? (isEvent ? undefined : event.ts)");
 	});
 
-	it("uses threadParent in respond postInThread call", async () => {
-		const fs = await import("fs");
-		const path = await import("path");
-		const mainSource = fs.readFileSync(
-			path.join(import.meta.dirname, "..", "main.ts"),
-			"utf-8",
-		);
-
-		// Find the respond handler
-		const respondIdx = mainSource.indexOf("respond: async (text: string");
-		const replaceIdx = mainSource.indexOf("replaceMessage: async");
-		const respondBlock = mainSource.substring(respondIdx, replaceIdx);
-
-		// Must use threadParent, not event.ts
-		expect(respondBlock).toContain("slack.postInThread(event.channel, threadParent,");
-		expect(respondBlock).not.toContain("slack.postInThread(event.channel, event.ts,");
+	it("postMain forwards threadParent as threadTs when messageTs is absent", async () => {
+		const source = await readMainSource();
+		const postMainBlock = block(source, "const postMain = async", "// Flush new overflow");
+		// The post-path branch must hand threadParent to safePost as threadTs.
+		expect(postMainBlock).toContain("threadTs: messageTs ? undefined : threadParent");
+		// And it must use safePost — never a direct postInThread or postMessage.
+		expect(postMainBlock).not.toContain("slack.postInThread(");
+		expect(postMainBlock).not.toContain("slack.postMessage(");
 	});
 
-	it("uses threadParent in replaceMessage postInThread call", async () => {
-		const fs = await import("fs");
-		const path = await import("path");
-		const mainSource = fs.readFileSync(
-			path.join(import.meta.dirname, "..", "main.ts"),
-			"utf-8",
-		);
-
-		// Find the replaceMessage handler
-		const replaceIdx = mainSource.indexOf("replaceMessage: async");
-		const respondInThreadIdx = mainSource.indexOf("respondInThread: async");
-		const replaceBlock = mainSource.substring(replaceIdx, respondInThreadIdx);
-
-		expect(replaceBlock).toContain("slack.postInThread(event.channel, threadParent,");
-		expect(replaceBlock).not.toContain("slack.postInThread(event.channel, event.ts,");
+	it("setTyping forwards threadParent as threadTs", async () => {
+		const source = await readMainSource();
+		const typingBlock = block(source, "setTyping: async", "uploadFile: async");
+		expect(typingBlock).toContain("threadTs: threadParent");
+		expect(typingBlock).toContain("slack.safePost(");
+		expect(typingBlock).not.toContain("slack.postInThread(");
+		expect(typingBlock).not.toContain("slack.postMessage(");
 	});
 
-	it("uses threadParent in setTyping postInThread call", async () => {
-		const fs = await import("fs");
-		const path = await import("path");
-		const mainSource = fs.readFileSync(
-			path.join(import.meta.dirname, "..", "main.ts"),
-			"utf-8",
-		);
-
-		// Find the setTyping handler
-		const typingIdx = mainSource.indexOf("setTyping: async");
-		const uploadIdx = mainSource.indexOf("uploadFile: async");
-		const typingBlock = mainSource.substring(typingIdx, uploadIdx);
-
-		expect(typingBlock).toContain("slack.postInThread(event.channel, threadParent,");
-		expect(typingBlock).not.toContain("slack.postInThread(event.channel, event.ts,");
+	it("respondInThread pins to messageTs (bot reply), not threadParent", async () => {
+		const source = await readMainSource();
+		const inThreadBlock = block(source, "respondInThread: async", "setTyping: async");
+		// New: routes via safePost with threadTs = messageTs.
+		expect(inThreadBlock).toContain("threadTs: messageTs");
+		expect(inThreadBlock).not.toContain("threadParent");
 	});
 
-	it("respondInThread still uses messageTs (bot reply), not threadParent", async () => {
-		const fs = await import("fs");
-		const path = await import("path");
-		const mainSource = fs.readFileSync(
-			path.join(import.meta.dirname, "..", "main.ts"),
-			"utf-8",
-		);
-
-		// Find the respondInThread handler
-		const respondInThreadIdx = mainSource.indexOf("respondInThread: async");
-		const setTypingIdx = mainSource.indexOf("setTyping: async");
-		const respondInThreadBlock = mainSource.substring(respondInThreadIdx, setTypingIdx);
-
-		// respondInThread posts UNDER the bot's own message, not under the thread parent
-		expect(respondInThreadBlock).toContain("slack.postInThread(event.channel, messageTs,");
-		expect(respondInThreadBlock).not.toContain("slack.postInThread(event.channel, threadParent,");
+	it("flushOverflow targets the bot's own messageTs as the thread parent", async () => {
+		const source = await readMainSource();
+		const flushBlock = block(source, "const flushOverflow = async", "return {");
+		expect(flushBlock).toContain("threadTs: messageTs");
 	});
 
-	it("respond/replaceMessage/setTyping fall back to postMessage when threadParent is undefined", async () => {
-		const fs = await import("fs");
-		const path = await import("path");
-		const mainSource = fs.readFileSync(
-			path.join(import.meta.dirname, "..", "main.ts"),
-			"utf-8",
-		);
+	it("respond delegates to postMain + flushOverflow (no direct slack.postMessage / postInThread)", async () => {
+		const source = await readMainSource();
+		const respondBlock = block(source, "respond: async (text: string", "replaceMessage: async");
+		expect(respondBlock).toContain("await postMain()");
+		expect(respondBlock).toContain("await flushOverflow(false)");
+		expect(respondBlock).not.toContain("slack.postMessage(");
+		expect(respondBlock).not.toContain("slack.postInThread(");
+		expect(respondBlock).not.toContain("slack.updateMessage(");
+	});
 
-		// All three functions should have the postMessage fallback for channel-level events
-		const respondIdx = mainSource.indexOf("respond: async (text: string");
-		const replaceIdx = mainSource.indexOf("replaceMessage: async");
-		const respondInThreadIdx = mainSource.indexOf("respondInThread: async");
-		const setTypingIdx = mainSource.indexOf("setTyping: async");
-		const uploadIdx = mainSource.indexOf("uploadFile: async");
-
-		const respondBlock = mainSource.substring(respondIdx, replaceIdx);
-		const replaceBlock = mainSource.substring(replaceIdx, respondInThreadIdx);
-		const typingBlock = mainSource.substring(setTypingIdx, uploadIdx);
-
-		// Each block should contain the postMessage fallback
-		expect(respondBlock).toContain("slack.postMessage(event.channel,");
-		expect(replaceBlock).toContain("slack.postMessage(event.channel,");
-		expect(typingBlock).toContain("slack.postMessage(event.channel,");
+	it("replaceMessage delegates to postMain + flushOverflow(true)", async () => {
+		const source = await readMainSource();
+		const replaceBlock = block(source, "replaceMessage: async", "respondInThread: async");
+		expect(replaceBlock).toContain("await postMain()");
+		expect(replaceBlock).toContain("await flushOverflow(true)");
+		expect(replaceBlock).not.toContain("slack.postMessage(");
+		expect(replaceBlock).not.toContain("slack.postInThread(");
+		expect(replaceBlock).not.toContain("slack.updateMessage(");
 	});
 
 	it("replaceMessage logs final consolidated response via logBotResponse", async () => {
-		const fs = await import("fs");
-		const path = await import("path");
-		const mainSource = fs.readFileSync(
-			path.join(import.meta.dirname, "..", "main.ts"),
-			"utf-8",
+		const source = await readMainSource();
+		const replaceBlock = block(source, "replaceMessage: async", "respondInThread: async");
+		expect(replaceBlock).toContain(
+			"slack.logBotResponse(event.channel, accumulatedText, messageTs)",
 		);
-
-		// Find the replaceMessage handler
-		const replaceIdx = mainSource.indexOf("replaceMessage: async");
-		const respondInThreadIdx = mainSource.indexOf("respondInThread: async");
-		const replaceBlock = mainSource.substring(replaceIdx, respondInThreadIdx);
-
-		// Must call logBotResponse with accumulatedText (not raw input text)
-		expect(replaceBlock).toContain("slack.logBotResponse(event.channel, accumulatedText, messageTs)");
 	});
 
 	it("SlackEvent interface includes threadTs field", async () => {
@@ -137,12 +96,9 @@ describe("createSlackContext threadParent routing", () => {
 			path.join(import.meta.dirname, "..", "slack.ts"),
 			"utf-8",
 		);
-
-		// Find the SlackEvent interface
 		const interfaceStart = slackSource.indexOf("export interface SlackEvent");
 		const interfaceEnd = slackSource.indexOf("}", interfaceStart);
 		const interfaceBlock = slackSource.substring(interfaceStart, interfaceEnd);
-
 		expect(interfaceBlock).toContain("threadTs?: string");
 	});
 });
