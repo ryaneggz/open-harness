@@ -19,6 +19,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 - Launch runbook consolidating manual cutover steps (DNS, GH settings, OG validation, GSC, promotion).
 
 ### Changed
+- `/release` now executes the `[Unreleased]` → `[$VERSION]` promotion (was prose-only) and `release.yml` sources the GitHub Release body from the promoted CHANGELOG section via `body_path` instead of `generate_release_notes`, so the GitHub Release notes match the changelog byte-for-byte.
 - Revert prior secondary product name; "Open Harness" is the sole brand across README, docs, and onboarding ([#157](https://github.com/ryaneggz/open-harness/issues/157)).
 - Cloudflare onboarding step now requires an explicit public hostname (no default domain) ([#157](https://github.com/ryaneggz/open-harness/issues/157)).
 - Slim README to ~110 lines, lead with oh CLI flow (#139).

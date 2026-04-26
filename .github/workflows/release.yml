@@ -24,6 +24,22 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        run: |
+          VERSION="${{ steps.parse.outputs.version }}"
+          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
+          awk -v ver="$VERSION" '
+            $0 ~ ("^## \\[" ver "\\] - ") { in_block=1; next }
+            in_block && /^## \[/ { exit }
+            in_block && /^---[[:space:]]*$/ { exit }
+            in_block { print }
+          ' CHANGELOG.md > "$NOTES_FILE"
+          if [ ! -s "$NOTES_FILE" ] || ! grep -q '[^[:space:]]' "$NOTES_FILE"; then
+            echo "Release $VERSION — see CHANGELOG.md and commit history." > "$NOTES_FILE"
+          fi
+          echo "notes_file=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+
       - name: Setup Node 22.x
         uses: actions/setup-node@v4
         with:
@@ -55,4 +71,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: v${{ steps.parse.outputs.version }}
-          generate_release_notes: true
+          body_path: ${{ steps.notes.outputs.notes_file }}

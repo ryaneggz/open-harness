@@ -39,22 +39,50 @@ If `--dry-run`, report version + pre-flight results and **stop here**.
 
 ### Step 3 — Promote CHANGELOG `[Unreleased]`
 
-Rewrite `CHANGELOG.md` so the `## [Unreleased]` section becomes `## [$VERSION] - $(date '+%Y-%m-%d')` and a fresh empty `[Unreleased]` block is re-seeded above it. If `[Unreleased]` is empty, abort — no user-visible changes means nothing to release (ask the user to confirm before continuing).
+Abort if `## [Unreleased]` has no real entries (only category headers / blank lines):
 
-Template for the re-seeded block:
+```bash
+UNRELEASED_BODY=$(awk '
+  /^## \[Unreleased\]/ { in_block=1; next }
+  in_block && (/^## \[/ || /^---$/) { exit }
+  in_block { print }
+' CHANGELOG.md | grep -vE '^(### |\s*$)')
 
-```markdown
-## [Unreleased]
-
-### Added
-### Changed
-### Fixed
-### Removed
-### Deprecated
-### Security
+if [ -z "$UNRELEASED_BODY" ]; then
+  echo "Aborting: [Unreleased] is empty — nothing user-visible to release." >&2
+  echo "Add changelog entries on this branch (or confirm with the user before continuing)." >&2
+  exit 1
+fi
 ```
 
-Commit the change on the current branch with `task: promote CHANGELOG for $VERSION` before cutting the release branch.
+Promote `[Unreleased]` to `[$VERSION]` and re-seed an empty block above it, then commit on the current branch before cutting the release branch:
+
+```bash
+RELEASE_DATE=$(date '+%Y-%m-%d')
+
+awk -v ver="$VERSION" -v rdate="$RELEASE_DATE" '
+  /^## \[Unreleased\]$/ && !done {
+    print "## [Unreleased]"
+    print ""
+    print "### Added"
+    print "### Changed"
+    print "### Fixed"
+    print "### Removed"
+    print "### Deprecated"
+    print "### Security"
+    print ""
+    print "## [" ver "] - " rdate
+    done=1
+    next
+  }
+  { print }
+' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
+
+git add CHANGELOG.md
+git commit -m "task: promote CHANGELOG for $VERSION"
+```
+
+The `[$VERSION]` section is the source of truth for the GitHub Release body — `release.yml` extracts it via `body_path` (no `generate_release_notes`).
 
 ### Step 4 — Push release branch + tag
 
