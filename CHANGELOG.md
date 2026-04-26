@@ -17,6 +17,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 ### Changed
 - Rebrand docs domain from `https://ryaneggz.github.io/open-harness/` to `https://oh.mifune.dev/`; default cloudflared tunnel hostname updated from `*.ruska.dev` to `*.mifune.dev`. ([#137](https://github.com/ryaneggz/openharness/issues/137))
 - Adopt Mifune positioning copy across README, docs landing, and About page (#138).
+- Slim README to ~110 lines, lead with oh CLI flow (#139).
 
 ### Fixed
 - Slack bot no longer drops oversized agent replies with cascading `msg_too_long` errors. Main message is capped at 2,900 chars with a `_message truncated — full response in thread_` footer; full content spills to thread replies; `setWorking(false)` always clears the working indicator. ([#135](https://github.com/ryaneggz/openharness/issues/135))
