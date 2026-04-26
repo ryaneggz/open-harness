@@ -7,17 +7,19 @@ Pages are MDX under `docs/pages/**` (Nextra 3.3 Pages Router). Builds
 produce a static export at `docs/out/`, deployed to GitHub Pages by
 `.github/workflows/docs.yml` on pushes to `main`.
 
-## basePath — the thing that breaks local preview
+## basePath
 
-`docs/next.config.mjs` sets `basePath: "/open-harness"` for the GitHub
-Pages URL shape (`https://ryaneggz.github.io/open-harness/...`). Every
-HTML page emitted to `docs/out/` contains absolute asset URLs starting
-with `/open-harness/`.
+`docs/next.config.mjs` sets `basePath: ""` because the docs site is
+served at the apex of a custom domain (`https://oh.mifune.dev/...`)
+via the GitHub Pages `CNAME` file at `docs/public/CNAME`. Every HTML
+page emitted to `docs/out/` references assets at the root
+(`/_next/static/...`), which is what both the deployed apex and a
+local static server expect.
 
-Serving `docs/out/` at the root of a static server produces unstyled
-HTML — CSS and JS 404 because the browser requests
-`/open-harness/_next/static/...` and the server has those files at
-`/_next/static/...`.
+If basePath is ever re-introduced (e.g. `"/open-harness"`), assets
+will 404 in production because the apex `oh.mifune.dev/<path>` will
+not be prefixed. Keep it empty unless the deploy target moves back
+to a subpath URL.
 
 ## Local Preview
 
@@ -31,18 +33,12 @@ Equivalent manually:
 
 ```bash
 pnpm docs:build                            # produces docs/out/
-ln -sfn . docs/out/open-harness            # serves docs/out under the basePath
 cd docs/out && python3 -m http.server 4000
 ```
 
-Then visit `http://localhost:4000/open-harness/` (not `/`).
+Then visit `http://localhost:4000/`.
 
-The symlink is a self-reference (`open-harness → .`). Python's
-`http.server` resolves `/open-harness/<path>` → `docs/out/<path>` in a
-single hop — no infinite loop.
-
-`docs/out/` is gitignored (`docs/.gitignore`), so the symlink never
-enters git history.
+`docs/out/` is gitignored (`docs/.gitignore`).
 
 ## Dev mode (`pnpm docs:dev`) — currently broken
 
@@ -72,6 +68,8 @@ sidebar in the intended position.
 ## Don'ts
 
 - Don't commit `docs/out/` or `docs/.next/` — both gitignored; CI rebuilds.
-- Don't remove `basePath` to make local preview easier — the GitHub
-  Pages deploy depends on it.
+- Don't add a non-empty `basePath` back — the deploy is at the apex
+  `oh.mifune.dev`, so any prefix breaks every asset URL in production.
+- Don't delete `docs/public/CNAME` — GitHub Pages reads it on every
+  build to keep the custom domain bound.
 - Don't publish docs via CI-on-PR — deploy only fires on `main` pushes.

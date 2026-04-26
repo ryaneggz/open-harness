@@ -233,7 +233,7 @@ If no keypair exists, skip this step — git auth via `gh auth setup-git` is the
 Sandbox 'orchestrator' is ready!
 
   Branch:  agent/orchestrator
-  Docs:    https://ryaneggz.github.io/open-harness/
+  Docs:    https://oh.mifune.dev/
   Tests:   8/8 passed
 
   Finish setup (one-time, inside the sandbox):
