@@ -54,9 +54,11 @@ export const cloudflareStep: Step = {
     io.ok("Cloudflare authenticated");
 
     const tunnelName = (await io.ask("Tunnel name (default: open-harness):")) || "open-harness";
-    const tunnelHost =
-      (await io.ask(`Public hostname (default: ${tunnelName}.mifune.dev):`)) ||
-      `${tunnelName}.mifune.dev`;
+    const tunnelHost = (await io.ask("Public hostname (e.g., my-tunnel.example.com):")).trim();
+    if (!tunnelHost) {
+      io.fail("Public hostname is required");
+      return { id: "cloudflare", status: "failed" };
+    }
     const tunnelPort = (await io.ask("Local port (default: 3000):")) || DEFAULT_PORT;
 
     io.raw("\n");
