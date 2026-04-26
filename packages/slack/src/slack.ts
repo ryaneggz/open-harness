@@ -1,5 +1,5 @@
 import { SocketModeClient } from "@slack/socket-mode";
-import { WebClient } from "@slack/web-api";
+import { ErrorCode, WebClient, type WebAPIPlatformError } from "@slack/web-api";
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import { basename, join } from "path";
 import * as log from "./log.js";
@@ -124,6 +124,14 @@ class ChannelQueue {
 // SlackBot
 // ============================================================================
 
+function isTooLong(err: unknown): err is WebAPIPlatformError {
+	return (
+		err instanceof Error &&
+		(err as WebAPIPlatformError).code === ErrorCode.PlatformError &&
+		(err as WebAPIPlatformError).data?.error === "msg_too_long"
+	);
+}
+
 export class SlackBot {
 	private socketClient: SocketModeClient;
 	private webClient: WebClient;
@@ -202,6 +210,63 @@ export class SlackBot {
 	async postInThread(channel: string, threadTs: string, text: string): Promise<string> {
 		const result = await this.webClient.chat.postMessage({ channel, thread_ts: threadTs, text });
 		return result.ts as string;
+	}
+
+	/**
+	 * Length-safe wrapper around chat.postMessage / chat.update.
+	 *
+	 * Sizing is the caller's job — this layer only handles workspace surprises
+	 * where Slack's effective text limit is below the documented 40K. On
+	 * `msg_too_long`, we halve the text (floor) and retry on the SAME path
+	 * (update stays on update; never falls through to postMessage, which
+	 * would orphan the caller's messageTs). A second `msg_too_long` retries
+	 * once more at exactly RETRY_FALLBACK_LENGTH chars.
+	 *
+	 * Other Slack errors (`ratelimited`, etc.) pass through unchanged.
+	 *
+	 * Returns the `ts` and the actual posted text so the caller can sync
+	 * its own state (e.g. `accumulatedText = result.postedText`) and break
+	 * the cascading-failure pattern where every subsequent post re-uses a
+	 * known-bad string.
+	 */
+	async safePost(opts: {
+		channel: string;
+		ts?: string;
+		threadTs?: string;
+		text: string;
+	}): Promise<{ ts: string; postedText: string }> {
+		const RETRY_FALLBACK_LENGTH = 900;
+		const ELLIPSIS = "…";
+
+		const attempt = async (text: string): Promise<{ ts: string; postedText: string }> => {
+			if (opts.ts) {
+				await this.webClient.chat.update({ channel: opts.channel, ts: opts.ts, text });
+				return { ts: opts.ts, postedText: text };
+			}
+			const result = await this.webClient.chat.postMessage({
+				channel: opts.channel,
+				thread_ts: opts.threadTs,
+				text,
+			});
+			return { ts: result.ts as string, postedText: text };
+		};
+
+		try {
+			return await attempt(opts.text);
+		} catch (err) {
+			if (!isTooLong(err)) throw err;
+
+			const halfLen = Math.max(RETRY_FALLBACK_LENGTH, Math.floor(opts.text.length / 2));
+			const halved = opts.text.slice(0, Math.max(0, halfLen - ELLIPSIS.length)) + ELLIPSIS;
+			try {
+				return await attempt(halved);
+			} catch (err2) {
+				if (!isTooLong(err2)) throw err2;
+
+				const fallback = opts.text.slice(0, Math.max(0, RETRY_FALLBACK_LENGTH - ELLIPSIS.length)) + ELLIPSIS;
+				return await attempt(fallback);
+			}
+		}
 	}
 
 	async uploadFile(channel: string, filePath: string, title?: string): Promise<void> {

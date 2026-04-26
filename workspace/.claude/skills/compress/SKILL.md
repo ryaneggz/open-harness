@@ -61,7 +61,7 @@ c. Apply compression rules:
 **Compress**:
 - Multi-sentence explanations → single-line directive
 - "You should work within the workspace/ directory" → "Work within workspace/"
-- "The Next.js project lives in projects/next-app/" → "Next.js project: projects/next-app/"
+- "The application source code lives in src/" → "Application source: src/"
 - "Do not modify ~/install/ — those are provisioning scripts" → "Don't modify ~/install/ (provisioning scripts)"
 
 d. Write compressed version back to the same file.

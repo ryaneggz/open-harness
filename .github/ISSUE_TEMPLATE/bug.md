@@ -42,6 +42,6 @@ assignees: ""
 - [ ] Bug is fixed and no longer reproducible
 - [ ] Regression test added (Vitest or Playwright)
 - [ ] Lint + format + type-check pass
-- [ ] Verified via agent-browser at the deployed URL (docs default: `https://ryaneggz.github.io/open-harness/`)
+- [ ] Verified via agent-browser when there is a deployed URL to check
 - [ ] No regressions introduced
 - [ ] PR targets the default target branch (see `.claude/rules/git.md`)

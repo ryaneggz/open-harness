@@ -3,7 +3,7 @@ name: content-gate
 description: |
   Validate content quality before publishing. Checks frontmatter, conciseness,
   structure, links, code blocks, length, and visual rendering via agent-browser.
-  TRIGGER when: before committing docs/content/** or workspace/wiki/pages/**,
+  TRIGGER when: before committing docs/content/** or docs/wiki/pages/**,
   after /wiki-ingest, "check content quality", "content gate".
 argument-hint: "<file-path> or 'all' for all content files"
 ---
@@ -20,7 +20,7 @@ Arguments: `$ARGUMENTS`
 
 | Argument | Files |
 |----------|-------|
-| `all` | `docs/content/docs/**/*.mdx` + `workspace/wiki/pages/**/*.md` |
+| `all` | `docs/content/docs/**/*.mdx` + `docs/wiki/pages/**/*.md` |
 | `<file-path>` | Specific file |
 
 If no argument, default to `all`.
@@ -90,7 +90,7 @@ Gate: `PASS` if word count > 50. `FAIL` if <= 50.
 
 Determine the route for the file:
 - Files in `docs/content/docs/` -> `/docs/<slug>` (strip extension, map path)
-- Files in `wiki/pages/` -> `/wiki/<slug>` (strip extension, map path)
+- Files in `docs/wiki/pages/` -> `/wiki/<slug>` (strip extension, map path)
 
 Run:
 1. `agent-browser open "http://localhost:3001/<route>"`

@@ -123,6 +123,7 @@ apps as stacked panes — see `.claude/rules/sandbox-processes.md`.
 
 ```
 .devcontainer/        # Sandbox environment (Dockerfile, compose, overlays, entrypoint)
+docs/                 # Plain markdown documentation (GitHub-rendered, no build step)
 install/              # Provisioning scripts (entrypoint.sh, cloudflared-tunnel.sh, setup.sh, tmux-agent.sh)
 workspace/            # Template for all agent workspaces
   AGENTS.md           # In-sandbox agent instructions (separate from this file)

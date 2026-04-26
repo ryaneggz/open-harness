@@ -19,9 +19,9 @@ Runs incrementally — only checks files changed since last lint when possible.
 
 ```mermaid
 flowchart TD
-    A["Parse argument: audit or fix"] --> B[Read wiki/index.md]
-    B --> C["List wiki/pages/*.md"]
-    C --> D["List wiki/sources/*"]
+    A["Parse argument: audit or fix"] --> B[Read docs/wiki/index.md]
+    B --> C["List docs/wiki/pages/*.md"]
+    C --> D["List docs/wiki/sources/*"]
     D --> E{Incremental or full?<br>Check log.md for last lint}
 
     E -->|"Has prior lint"| F["git diff --name-only since last lint"]
@@ -66,29 +66,29 @@ If no argument, default to `audit`.
 
 ```bash
 # Index
-cat wiki/index.md
+cat docs/wiki/index.md
 
 # Pages on disk
-ls wiki/pages/*.md 2>/dev/null
+ls docs/wiki/pages/*.md 2>/dev/null
 
 # Sources on disk
-ls wiki/sources/* 2>/dev/null
+ls docs/wiki/sources/* 2>/dev/null
 ```
 
 Parse each page's YAML frontmatter for `title`, `type`, `tags`, `sources`, `updated`, `related`.
 
 ### 3. Determine scope (incremental vs full)
 
-Search `wiki/log.md` for the most recent `[LINT]` entry:
+Search `docs/wiki/log.md` for the most recent `[LINT]` entry:
 
 ```bash
-grep "^\## \[LINT\]" wiki/log.md | tail -1
+grep "^\## \[LINT\]" docs/wiki/log.md | tail -1
 ```
 
 If found, extract the timestamp and run incremental lint:
 
 ```bash
-git diff --name-only --since="<timestamp>" -- wiki/
+git diff --name-only --since="<timestamp>" -- docs/wiki/
 ```
 
 Only lint changed files + their related pages. If no prior lint found, run a full scan of all pages.
@@ -97,19 +97,19 @@ Only lint changed files + their related pages. If no prior lint found, run a ful
 
 #### Check 0: Index integrity
 
-Verify `wiki/index.md` exists and contains a valid markdown table with the expected columns (File, Title, Type, Tags, Sources, Updated).
+Verify `docs/wiki/index.md` exists and contains a valid markdown table with the expected columns (File, Title, Type, Tags, Sources, Updated).
 
-- **Missing or malformed**: Severity **error**. Auto-fixable: **yes** — rebuild the entire index from `wiki/pages/` filesystem by reading each page's frontmatter.
+- **Missing or malformed**: Severity **error**. Auto-fixable: **yes** — rebuild the entire index from `docs/wiki/pages/` filesystem by reading each page's frontmatter.
 
 #### Check 1: Orphan pages
 
-Files in `wiki/pages/` not listed in `wiki/index.md` Pages table.
+Files in `docs/wiki/pages/` not listed in `docs/wiki/index.md` Pages table.
 
 - Severity: **warn**. Auto-fixable: **yes** — add missing rows to the index by reading the orphan page's frontmatter.
 
 #### Check 2: Phantom entries
 
-Rows in `wiki/index.md` with no matching file in `wiki/pages/`.
+Rows in `docs/wiki/index.md` with no matching file in `docs/wiki/pages/`.
 
 - Severity: **error**. Auto-fixable: **yes** — remove phantom rows from the index.
 
@@ -118,7 +118,7 @@ Rows in `wiki/index.md` with no matching file in `wiki/pages/`.
 Compare each page's `updated` frontmatter date against its cited sources. For each source in the page's `sources:` array:
 
 ```bash
-git log -1 --format='%ci' -- "wiki/sources/<source-filename>"
+git log -1 --format='%ci' -- "docs/wiki/sources/<source-filename>"
 ```
 
 If any source was modified after the page's `updated` date, the page is stale.
@@ -127,13 +127,13 @@ If any source was modified after the page's `updated` date, the page is stale.
 
 #### Check 4: Broken cross-references
 
-Check each page's `related:` frontmatter array. If a listed filename doesn't exist in `wiki/pages/`, it's broken.
+Check each page's `related:` frontmatter array. If a listed filename doesn't exist in `docs/wiki/pages/`, it's broken.
 
 - Severity: **error**. Auto-fixable: **yes** — remove broken entries from `related:` arrays.
 
 #### Check 5: Missing sources
 
-Check each page's `sources:` frontmatter array. If a listed filename doesn't exist in `wiki/sources/`, it's missing.
+Check each page's `sources:` frontmatter array. If a listed filename doesn't exist in `docs/wiki/sources/`, it's missing.
 
 - Severity: **error**. Auto-fixable: **no** — warn only (source may have been intentionally removed or renamed).
 
@@ -182,7 +182,7 @@ For each fixable issue (checks 0, 1, 2, 4, 6):
 Commit:
 
 ```bash
-git add wiki/
+git add docs/wiki/
 git commit -m "wiki: lint auto-fix — N issues resolved"
 ```
 
@@ -190,10 +190,10 @@ Report what was fixed and what still needs manual attention (checks 3, 5, 7).
 
 ### 7. Rotate log
 
-Check `wiki/log.md` entry count:
+Check `docs/wiki/log.md` entry count:
 
 ```bash
-grep -c "^## \[" wiki/log.md
+grep -c "^## \[" docs/wiki/log.md
 ```
 
 If > 200, trim to last 200 entries (keep the file header + last 200 `##` blocks).
@@ -237,10 +237,10 @@ If > 200, trim to last 200 entries (keep the file header + last 200 `##` blocks)
 
 ## Scaling Notes
 
-When the wiki exceeds ~50 pages, consider splitting `wiki/index.md` into per-type shards:
-- `wiki/index-entities.md`
-- `wiki/index-concepts.md`
-- `wiki/index-synthesis.md`
+When the wiki exceeds ~50 pages, consider splitting `docs/wiki/index.md` into per-type shards:
+- `docs/wiki/index-entities.md`
+- `docs/wiki/index-concepts.md`
+- `docs/wiki/index-synthesis.md`
 
 This reduces context consumption during `/wiki-query`. The lint skill would validate all shards; the ingest skill would update the correct shard based on page type.
 
@@ -248,10 +248,10 @@ This reduces context consumption during `/wiki-query`. The lint skill would vali
 
 | Resource | Path |
 |----------|------|
-| Wiki index | `wiki/index.md` |
-| Wiki log | `wiki/log.md` |
-| Source documents | `wiki/sources/` |
-| Wiki pages | `wiki/pages/` |
+| Wiki index | `docs/wiki/index.md` |
+| Wiki log | `docs/wiki/log.md` |
+| Source documents | `docs/wiki/sources/` |
+| Wiki pages | `docs/wiki/pages/` |
 | Wiki-lint heartbeat | `heartbeats/wiki-lint.md` |
 | Identity | `IDENTITY.md` |
 | Memory | `MEMORY.md` |

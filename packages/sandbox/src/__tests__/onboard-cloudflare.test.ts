@@ -84,7 +84,7 @@ describe("cloudflare step", () => {
           cmd[0] === "bash" &&
           cmd[1].endsWith("/install/cloudflared-tunnel.sh") &&
           cmd[2] === "my-tun" &&
-          cmd[3] === "my-tun.ruska.dev" &&
+          cmd[3] === "my-tun.mifune.dev" &&
           cmd[4] === "3000",
       ),
     ).toBe(true);

@@ -133,18 +133,18 @@ export const ralphTool: ToolDefinition = {
         }
 
         case "cleanup": {
-          steps.push("Running cleanup: lint, format, type-check, test...");
+          steps.push("Running cleanup: stage and commit any pending changes...");
           const cmd = execCmd(
             name,
             [
               "bash",
               "-c",
-              `cd ~/harness/workspace/projects/next-app && pnpm run lint:fix 2>&1; pnpm run format 2>&1; pnpm run type-check 2>&1; pnpm test 2>&1; cd ~/harness/workspace && git add -A && git diff --cached --quiet || git commit -m "task: cleanup before PR submission"`,
+              `cd ~/harness/workspace && git add -A && git diff --cached --quiet || git commit -m "task: cleanup before PR submission"`,
             ],
             { user: "sandbox", workdir: "/home/sandbox/harness/workspace" },
           );
           run(cmd);
-          steps.push("Cleanup complete.");
+          steps.push("Cleanup complete. (Project-specific lint/test should be added per PRD.)");
           break;
         }
 

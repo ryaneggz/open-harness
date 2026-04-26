@@ -1,0 +1,133 @@
+---
+title: "Wiki"
+---
+
+
+The wiki is a persistent, LLM-maintained knowledge base that lives in `docs/wiki/`. Unlike the [memory system](./identity.md), which tracks operational decisions and lessons learned from doing work, the wiki stores **structured domain knowledge** extracted from external source documents — articles, papers, transcripts, notes.
+
+The agent incrementally builds and maintains the wiki. You curate sources and ask questions; the agent does the summarizing, cross-referencing, and bookkeeping.
+
+## Directory structure
+
+```
+docs/wiki/
+  index.md          # Master catalog of all wiki pages
+  log.md            # Chronological operations log (append-only)
+  sources/          # Raw input documents (immutable after ingest)
+  pages/            # LLM-generated wiki pages
+```
+
+## Page types
+
+| Type | Sources | Description |
+|------|---------|-------------|
+| `entity` | Raw sources | Person, organization, project, tool, product |
+| `concept` | Raw sources | Idea, framework, methodology, pattern |
+| `synthesis` | Other wiki pages | Cross-cutting theme connecting multiple pages |
+
+## Page format
+
+Each wiki page is a markdown file with YAML frontmatter:
+
+```markdown
+---
+title: "Transformer Architecture"
+description: "Core architecture behind modern LLMs"
+type: concept
+tags: [ml, architecture, attention]
+sources: [attention-paper.md]
+created: 2026-04-17
+updated: 2026-04-17
+related: [self-attention.md, llm-training.md]
+---
+
+# Transformer Architecture
+
+Summary of the concept...
+
+## Key Points
+
+- Multi-head attention enables parallel processing [Source: attention-paper.md]
+
+## See Also
+
+- [Self-Attention](self-attention.md)
+```
+
+## Operations
+
+### Ingest
+
+Add a source document to `wiki/sources/`, then run:
+
+```
+/wiki-ingest my-article.md
+```
+
+The agent reads the source, extracts entities and concepts, creates or updates wiki pages, and updates the index. To process all unprocessed sources at once:
+
+```
+/wiki-ingest all
+```
+
+Sources are immutable after ingest — the agent reads but never modifies them. Re-ingesting a source that's already been processed is skipped unless you explicitly pass the filename.
+
+### Query
+
+Search the wiki and get a synthesized answer:
+
+```
+/wiki-query how does attention work in transformers
+```
+
+The agent reads the index to find relevant pages, reads those pages, and produces a cited answer. If the answer synthesizes information from 3+ pages and produces a novel insight, the agent files it back as a new **synthesis** page automatically.
+
+### Lint
+
+Health-check the wiki for structural issues:
+
+```
+/wiki-lint           # audit mode (report only)
+/wiki-lint fix       # auto-fix where safe
+```
+
+The lint checks for:
+
+| Check | What it detects |
+|-------|----------------|
+| Index integrity | Malformed or missing index.md |
+| Orphan pages | Pages on disk but not in the index |
+| Phantom entries | Index rows pointing to missing files |
+| Stale pages | Pages older than their cited sources |
+| Broken cross-refs | Related links pointing to nonexistent pages |
+| Missing sources | Pages citing source files that don't exist |
+| Tag inconsistency | Near-duplicate tags (case, plural, hyphen) |
+| Unsourced pages | Non-synthesis pages with no source citations |
+
+## Automated maintenance
+
+The `heartbeats/wiki-lint.md` heartbeat runs `/wiki-lint audit` daily. It ships with the schedule commented out — uncomment it when you have wiki content to maintain:
+
+```yaml
+---
+schedule: "0 6 * * *"
+agent: claude
+---
+```
+
+## Memory vs Wiki
+
+These are complementary systems with different purposes:
+
+| Signal | Destination |
+|--------|-------------|
+| Learned from doing work | `MEMORY.md` |
+| Extracted from external document | `wiki/pages/` |
+| Operational decision or preference | `MEMORY.md` |
+| Domain fact or entity information | `wiki/pages/` |
+| Recurring pattern in agent behavior | `MEMORY.md` |
+| Relationship between external concepts | `wiki/pages/` (synthesis) |
+
+## Scaling
+
+The wiki uses `index.md` as a flat catalog that the agent reads on every query. This works well up to ~50 pages. Beyond that, the index can be split into per-type shards (`index-entities.md`, `index-concepts.md`, `index-synthesis.md`) to reduce context usage. The `/wiki-lint` skill documents this strategy.

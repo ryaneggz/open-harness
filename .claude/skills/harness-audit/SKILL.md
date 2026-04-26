@@ -52,7 +52,7 @@ ls /home/sandbox/harness/.claude/skills/
 ls /home/sandbox/harness/.claude/agents/ 2>/dev/null || echo "no agents dir"
 ls /home/sandbox/harness/workspace/heartbeats/ 2>/dev/null || echo "no heartbeats"
 ls /home/sandbox/harness/workspace/memory/ 2>/dev/null | tail -10
-ls /home/sandbox/harness/workspace/wiki/ 2>/dev/null | head -20
+ls /home/sandbox/harness/docs/wiki/ 2>/dev/null | head -20
 
 # Package health
 cat /home/sandbox/harness/packages/slack/package.json 2>/dev/null | head -30
@@ -120,7 +120,7 @@ Launch 4 Agent tool calls **in a single message**. Each receives the Context Sna
 >
 > 3. **Issue template completeness** — List `.github/ISSUE_TEMPLATE/` files. For each template, check: does it have required fields, clear labels, and assignment guidance?
 >
-> 4. **Wiki/memory utilization** — Count wiki pages under `workspace/wiki/`. Count daily memory logs under `workspace/memory/`. Are logs recent (within 7 days)? Are wiki pages populated or placeholder-empty?
+> 4. **Wiki/memory utilization** — Count wiki pages under `docs/wiki/`. Count daily memory logs under `workspace/memory/`. Are logs recent (within 7 days)? Are wiki pages populated or placeholder-empty?
 >
 > **Return format (Ultra compression):**
 > ```
@@ -198,7 +198,7 @@ Launch 4 Agent tool calls **in a single message**. Each receives the Context Sna
 >
 > 1. **Memory system quality** — Read the 5 most recent daily logs in `workspace/memory/`. Are entries following the Memory Improvement Protocol (Result/Action/Observation/Duration)? Is quality declining over time (shorter entries, missing fields)? Are entries actually present?
 >
-> 2. **Wiki utilization** — List all files under `workspace/wiki/`. For each, check if it has substantive content (>10 lines) or is a placeholder stub. What percentage is populated?
+> 2. **Wiki utilization** — List all files under `docs/wiki/`. For each, check if it has substantive content (>10 lines) or is a placeholder stub. What percentage is populated?
 >
 > 3. **Heartbeat health** — For each heartbeat file in `workspace/heartbeats/`, classify: ACTIVE (recently logged evidence), STALE (defined but no recent log evidence), MISCONFIGURED (broken frontmatter or missing schedule). Check memory logs for heartbeat execution traces.
 >
@@ -302,7 +302,7 @@ If actionable patterns emerge (recurring finding type, systemic gap), append to 
 | Heartbeats | `workspace/heartbeats/` |
 | Memory logs | `workspace/memory/YYYY-MM-DD.md` |
 | Long-term memory | `workspace/MEMORY.md` |
-| Wiki | `workspace/wiki/` |
+| Wiki | `docs/wiki/` |
 | Compose | `.devcontainer/docker-compose.yml` |
 | Entrypoint | `install/entrypoint.sh` |
 | CI workflows | `.github/workflows/` |

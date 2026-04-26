@@ -5,7 +5,6 @@
  * wizard executes inside the named container.
  */
 
-import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { execCmd } from "../lib/docker.js";
 import { makeRealDeps } from "../onboard/deps.js";
@@ -80,35 +79,5 @@ async function runInContainerMode(opts: OnboardInvocationOptions): Promise<numbe
 
   const deps = makeRealDeps();
   const { exitCode } = await runOnboarding(ALL_STEPS, deps, parsed);
-
-  // Only run the dev-server startup if we completed the full wizard (no
-  // --only), mirroring the bash script's flow.
-  if (!parsed.only && exitCode === 0) {
-    startApplication(deps.home);
-  }
   return exitCode;
-}
-
-/**
- * Post-wizard: install deps and launch the Next.js dev server.
- * Mirrors `install/onboard.sh:454-481`. Best-effort; swallows failures so a
- * partial dev-server start doesn't mask a successful onboarding.
- */
-function startApplication(home: string): void {
-  const appDir = `${home}/harness/workspace/projects/next-app`;
-  if (!existsSync(appDir)) return;
-  console.log("\n\x1b[0;36m==> Starting Application\x1b[0m");
-  console.log("  Installing dependencies and starting dev server...\n");
-  spawnSync("pnpm", ["install"], { cwd: appDir, stdio: "inherit" });
-  const dev = spawnSync(
-    "sh",
-    ["-c", "nohup pnpm dev > /tmp/next-dev.log 2>&1 & echo $! > /tmp/next-dev.pid"],
-    {
-      cwd: appDir,
-      stdio: "inherit",
-    },
-  );
-  if (dev.status !== 0) {
-    console.warn("  (dev server start failed — see /tmp/next-dev.log)");
-  }
 }

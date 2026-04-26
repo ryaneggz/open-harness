@@ -33,7 +33,7 @@ echo "Repo: $REPO · Version: $VERSION"
 
 ### Step 2 — Pre-flight
 
-Follow the pre-flight checklist in `.claude/rules/git.md` § Releases (clean tree; lint + format:check + type-check + test pass in `workspace/projects/next-app`).
+Follow the pre-flight checklist in `.claude/rules/git.md` § Releases (clean tree on the intended source branch).
 
 If `--dry-run`, report version + pre-flight results and **stop here**.
 
