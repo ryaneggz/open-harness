@@ -22,13 +22,13 @@ Example: `feat/42-slack-thread-replies`
 
 ## Default Target Branch
 
-Use first of these existing in repo:
+Use first existing in repo:
 
 1. `development` (preferred)
 2. `main` (fallback)
 3. `master` (fallback)
 
-Detect via `git show-ref --verify --quiet refs/heads/<name>` (or remote `refs/remotes/origin/<name>`). All PRs target this branch; all new branches cut from it.
+Detect via `git show-ref --verify --quiet refs/heads/<name>` (or remote `refs/remotes/origin/<name>`). PRs target this branch; new branches cut from it.
 
 ## Git Authentication
 
@@ -60,18 +60,18 @@ Format: `<type>: <description>` where `<type>` ∈ `feat` · `fix` · `task` · 
 
 Root `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com) with CalVer tags.
 
-Every PR with user-visible impact MUST add an entry under the `## [Unreleased]` heading, in the same commit as the change. Categories: `### Added` · `### Changed` · `### Fixed` · `### Removed` · `### Deprecated` · `### Security`.
+Every PR with user-visible impact MUST add entry under `## [Unreleased]` heading, in same commit as change. Categories: `### Added` · `### Changed` · `### Fixed` · `### Removed` · `### Deprecated` · `### Security`.
 
-Skip entries only for pure chores with no runtime or workflow effect (internal refactors, test-only changes, typo fixes). When in doubt, add the entry.
+Skip entries only for pure chores with no runtime or workflow effect (internal refactors, test-only changes, typo fixes). When in doubt, add entry.
 
-Entry format: one line, imperative mood, link the PR or issue.
+Entry format: one line, imperative mood, link PR or issue.
 
 ```markdown
 ### Added
 - Slack thread replies in multi-channel mode ([#42](https://github.com/ryaneggz/open-harness/pull/42)).
 ```
 
-At release time, `/release` promotes `[Unreleased]` to a new `## [<VERSION>] - YYYY-MM-DD` section and re-seeds an empty `[Unreleased]` block. Do **not** hand-edit versioned sections after a tag ships.
+At release time, `/release` promotes `[Unreleased]` to new `## [<VERSION>] - YYYY-MM-DD` section and re-seeds empty `[Unreleased]` block. Do **not** hand-edit versioned sections after tag ships.
 
 ## Worktrees
 
@@ -92,17 +92,13 @@ Cleanup: `git worktree remove .worktrees/<branch>`.
 
 ### Isolating in-flight work
 
-When the main checkout has unstaged changes you shouldn't commit in
-the current PR, do **not** stash-and-switch-branches (risk of losing
-context). Instead:
+When main checkout has unstaged changes you shouldn't commit in current PR, do **not** stash-and-switch-branches (risk of losing context). Instead:
 
-1. Cut a worktree off the target base: `git worktree add -b <new> .worktrees/<new> $BASE`.
-2. Copy the in-flight files into the worktree: plain `cp` preserves the
-   main checkout's working tree untouched.
-3. Commit in the worktree. Main checkout stays exactly as-is.
+1. Cut worktree off target base: `git worktree add -b <new> .worktrees/<new> $BASE`.
+2. Copy in-flight files into worktree: plain `cp` preserves main checkout's working tree untouched.
+3. Commit in worktree. Main checkout stays exactly as-is.
 
-Before discarding the duplicated state from the main checkout, verify
-byte-equivalence with the committed branch:
+Before discarding duplicated state from main checkout, verify byte-equivalence with committed branch:
 
 ```bash
 for f in <changed-files>; do
@@ -112,27 +108,21 @@ for f in <changed-files>; do
 done
 ```
 
-Only after all files show `same:` run `git restore` / `rm -f` to clean
-the main checkout.
+Only after all files show `same:` run `git restore` / `rm -f` to clean main checkout.
 
 ## Stacked PRs
 
-When a PR needs work from another open PR (e.g. a feature that depends
-on in-flight docs or infra changes), stack instead of waiting:
+When PR needs work from another open PR (e.g. feature depending on in-flight docs or infra changes), stack instead of waiting:
 
 1. `git fetch origin <parent-branch>`
-2. In the worktree: `git rebase origin/<parent-branch>`. Resolve any
-   conflicts; tests may need re-running.
+2. In worktree: `git rebase origin/<parent-branch>`. Resolve conflicts; tests may need re-running.
 3. `git push --force-with-lease`
 4. `gh pr edit <pr#> --base <parent-branch>`
 5. `gh pr edit <pr#> --title "FROM <branch> TO <parent-branch>"`
 
-When the parent PR merges, GitHub auto-rebases the stacked PR's base
-to the parent's target (typically `development`). Do **not** force-push
-again after the parent merges — let GitHub handle the retarget.
+When parent PR merges, GitHub auto-rebases stacked PR's base to parent's target (`development`). Do **not** force-push again after parent merges — let GitHub handle retarget.
 
-Keep stacks shallow: one level is routine, two levels is rare, three
-levels means something is wrong with the sequencing.
+Keep stacks shallow: one level routine, two levels rare, three levels means something wrong with sequencing.
 
 ## Releases
 
@@ -166,7 +156,7 @@ Let `$BASE` = default target branch (detected per rule above).
 
 1. Create GitHub issue → record `<issue#>`
 2. `git checkout -b <prefix>/<issue#>-<short-desc> $BASE`
-3. Add a `CHANGELOG.md` entry under `## [Unreleased]` (see § Changelog) — unless the change is a pure chore
+3. Add `CHANGELOG.md` entry under `## [Unreleased]` (see § Changelog) — unless change is pure chore
 4. Commit with `<type>: <description>`
 5. `git push -u origin <branch>` → then `/ci-status` (if skill exists)
 6. `gh pr create --base $BASE --title "FROM <branch> TO $BASE" --body "Closes #<issue#>"`
