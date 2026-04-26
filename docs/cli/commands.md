@@ -1,0 +1,67 @@
+---
+title: "CLI Commands"
+---
+
+
+## Core commands
+
+| Command | Description |
+|---------|-------------|
+| `openharness sandbox [name]` | Build and start sandbox (.devcontainer) |
+| `openharness run [name]` | Start the container |
+| `openharness shell <name>` | Open a bash shell as `sandbox` user |
+| `openharness stop [name]` | Stop the container |
+| `openharness clean [name]` | Full cleanup (containers + volumes) |
+| `openharness onboard [name] [--force]` | Interactive first-time setup wizard |
+| `openharness list` | List all running sandboxes |
+
+## Heartbeat commands
+
+| Command | Description |
+|---------|-------------|
+| `openharness heartbeat sync <name>` | Force re-read of heartbeat `.md` files |
+| `openharness heartbeat stop <name>` | Remove all heartbeat schedules |
+| `openharness heartbeat status <name>` | Show running schedules and recent logs |
+| `openharness heartbeat migrate <name>` | Convert legacy `HEARTBEAT.md` to frontmatter format |
+
+## Advanced commands
+
+| Command | Description |
+|---------|-------------|
+| `openharness worktree <name> [--base-branch]` | Create git worktree for branch isolation |
+
+## Exposure commands
+
+Route sandbox apps through a Caddy reverse proxy. See [Exposing apps](../guide/exposure.md) for the full walkthrough.
+
+| Command | Description |
+|---------|-------------|
+| `openharness expose <name> <port>` | Route a sandbox app: laptop → `https://<name>.<sandbox>.localhost:8443`; remote → `https://<name>.<sandbox>.<PUBLIC_DOMAIN>` |
+| `openharness unexpose <name>` | Remove a Caddy route |
+| `openharness ports [name]` | List container listeners (+ processes) and active routes |
+| `openharness open <name\|port>` | Open a route's URL in the default browser |
+
+## Agent mode
+
+Run `openharness` with no arguments to launch the interactive AI agent mode. The agent can orchestrate sandbox workflows conversationally and has access to all sandbox tools.
+
+```bash
+openharness                              # interactive mode
+openharness -p "check sandbox status"    # non-interactive: process prompt and exit
+openharness -c                           # continue previous session
+```
+
+### Agent options
+
+| Option | Description |
+|--------|-------------|
+| `--provider <name>` | LLM provider (default: google) |
+| `--model <pattern>` | Model pattern or ID |
+| `--api-key <key>` | API key (defaults to env vars) |
+| `--thinking <level>` | Thinking: off, minimal, low, medium, high, xhigh |
+| `--print, -p` | Non-interactive: process prompt and exit |
+| `--continue, -c` | Continue previous session |
+
+## Name resolution
+
+Most commands accept an optional `[name]` parameter. If omitted, the sandbox name is read from `.devcontainer/.env` (seeded by `.devcontainer/init-env.sh` from the git remote URL on first provision), falling back to `sandbox`.

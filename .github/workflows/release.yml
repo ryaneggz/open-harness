@@ -32,30 +32,6 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
-      - name: Install dependencies
-        working-directory: workspace/projects/next-app
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        working-directory: workspace/projects/next-app
-        run: pnpm run lint
-
-      - name: Format check
-        working-directory: workspace/projects/next-app
-        run: pnpm run format:check
-
-      - name: Type check
-        working-directory: workspace/projects/next-app
-        run: pnpm run type-check
-
-      - name: Build
-        working-directory: workspace/projects/next-app
-        run: pnpm run build
-
-      - name: Test
-        working-directory: workspace/projects/next-app
-        run: pnpm test
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 

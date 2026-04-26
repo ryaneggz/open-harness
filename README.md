@@ -29,7 +29,7 @@ oh shell my-agent     # connect (interactive shell)
 oh clean my-agent     # tear down
 ```
 
-Prefer VS Code or remote SSH? See [Connecting to a sandbox](https://oh.mifune.dev/getting-started/quickstart).
+Prefer VS Code or remote SSH? See [Connecting to a sandbox](https://github.com/ryaneggz/open-harness/blob/main/docs/getting-started/quickstart.md).
 
 Inside the shell, start working:
 
@@ -51,13 +51,13 @@ pi                    # automations — Slack, heartbeats, extensions
 
 ## Where to go next
 
-- [Quickstart](https://oh.mifune.dev/getting-started/quickstart) — full step-by-step
-- [Onboarding](https://oh.mifune.dev/getting-started/onboarding) — auth wizard walkthrough
-- [Compose overlays](https://oh.mifune.dev/guide/overlays) — Postgres, Slack, SSH, gateway, Cloudflare
-- [Slack bot](https://oh.mifune.dev/slack/overview) — Mom + Pi via Socket Mode
-- [CLI reference](https://oh.mifune.dev/cli/commands) — every `oh` command
-- [Heartbeats](https://oh.mifune.dev/guide/heartbeats) — cron-scheduled autonomous tasks
-- [Architecture](https://oh.mifune.dev/architecture/orchestrator-worktrees) — one container, N worktrees, one daemon
+- [Quickstart](https://github.com/ryaneggz/open-harness/blob/main/docs/getting-started/quickstart.md) — full step-by-step
+- [Onboarding](https://github.com/ryaneggz/open-harness/blob/main/docs/getting-started/onboarding.md) — auth wizard walkthrough
+- [Compose overlays](https://github.com/ryaneggz/open-harness/blob/main/docs/guide/overlays.md) — Postgres, Slack, SSH, gateway, Cloudflare
+- [Slack bot](https://github.com/ryaneggz/open-harness/blob/main/docs/slack/overview.md) — Mom + Pi via Socket Mode
+- [CLI reference](https://github.com/ryaneggz/open-harness/blob/main/docs/cli/commands.md) — every `oh` command
+- [Heartbeats](https://github.com/ryaneggz/open-harness/blob/main/docs/guide/heartbeats.md) — cron-scheduled autonomous tasks
+- [Architecture](https://github.com/ryaneggz/open-harness/blob/main/docs/architecture/orchestrator-worktrees.md) — one container, N worktrees, one daemon
 
 ## Project layout
 
@@ -87,4 +87,4 @@ MIT.
 
 ---
 
-[Full documentation](https://oh.mifune.dev/)
+[Full documentation](https://github.com/ryaneggz/open-harness/tree/main/docs)

@@ -86,6 +86,5 @@ This project's CI (`CI: openharness`) runs these steps in order:
 Before pushing, you can run the same checks locally to catch issues early:
 
 ```bash
-cd workspace/projects/next-app
-pnpm run lint && pnpm run format:check && pnpm run type-check && pnpm exec prisma generate && pnpm run build && pnpm test
+pnpm -r run lint && pnpm -r run format:check && pnpm -r run build && pnpm -r run test
 ```

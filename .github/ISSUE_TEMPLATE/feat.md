@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Propose a new feature for the Next.js application
+about: Propose a new feature for the harness
 title: "[FEAT] "
 labels: enhancement
 assignees: ""
@@ -17,15 +17,15 @@ assignees: ""
 ## Proposed Implementation
 
 <!-- Describe the approach. Consider:
-  - Which Next.js routes/pages are affected? (src/app/)
-  - New shadcn/ui components needed? (npx shadcn@latest add ...)
-  - Database changes? (Prisma migration needed?)
-  - API routes? (src/app/api/)
+  - Which area of the harness does this affect? (packages/sandbox, packages/slack, .devcontainer, install/, docs/, workspace/ template)
+  - New skill, rule, or heartbeat needed?
+  - Compose overlay change? Dockerfile change?
+  - Any new commands or CLI surface?
 -->
 
 ## Design
 
-<!-- Optional: mockups, wireframes, or ASCII sketches of the UI -->
+<!-- Optional: mockups, wireframes, or ASCII sketches -->
 
 ---
 
@@ -36,10 +36,8 @@ assignees: ""
 ## Acceptance Criteria
 
 - [ ] Feature works as described
-- [ ] TypeScript strict — no `any` types
-- [ ] Vitest tests added for new logic
-- [ ] Playwright E2E test covers the happy path
-- [ ] Lint + format + type-check pass (`pnpm run lint && pnpm run format:check && pnpm run type-check`)
-- [ ] Verified via agent-browser at the deployed URL (docs default: `https://oh.mifune.dev/`)
-- [ ] Prisma migration included if schema changed
+- [ ] TypeScript strict — no `any` types (where TS applies)
+- [ ] Tests added for new logic where applicable
+- [ ] Lint + format + type-check pass (`pnpm run lint && pnpm run format:check && pnpm -r run type-check`)
+- [ ] Documentation updated under `docs/` if user-visible
 - [ ] PR targets the default target branch (see `.claude/rules/git.md`)

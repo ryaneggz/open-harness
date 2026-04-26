@@ -68,7 +68,7 @@ Entry format: one line, imperative mood, link the PR or issue.
 
 ```markdown
 ### Added
-- Slack thread replies in multi-channel mode ([#42](https://github.com/ryaneggz/openharness/pull/42)).
+- Slack thread replies in multi-channel mode ([#42](https://github.com/ryaneggz/open-harness/pull/42)).
 ```
 
 At release time, `/release` promotes `[Unreleased]` to a new `## [<VERSION>] - YYYY-MM-DD` section and re-seeds an empty `[Unreleased]` block. Do **not** hand-edit versioned sections after a tag ships.
@@ -144,7 +144,6 @@ Pushing tag triggers `.github/workflows/release.yml` — runs lint + type-check 
 
 Pre-flight before tagging:
 - On intended source branch, no uncommitted changes
-- `pnpm run lint && pnpm run format:check && pnpm run type-check && pnpm test` pass in `workspace/projects/next-app`
 
 Procedure:
 

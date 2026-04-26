@@ -123,7 +123,7 @@ agent-browser close
 
 ### Step 2d — DNS resolution check (tunnel hostnames)
 
-If the URL contains a hostname that routes through a cloudflared tunnel (any `<name>.<your-domain>` served via cloudflared — not the default `oh.mifune.dev` docs URL, which resolves normally), the container's DNS may not resolve it. Check and fix:
+If the URL contains a hostname that routes through a cloudflared tunnel (any `<name>.<your-domain>` served via cloudflared), the container's DNS may not resolve it. Check and fix:
 
 ```bash
 HOSTNAME=$(echo "$URL" | sed 's|https\?://||; s|/.*||; s|:.*||')
@@ -177,7 +177,7 @@ FILENAME=$(echo "$URL" | sed 's|https\?://||; s|/|--|g; s|--$||; s|[^a-zA-Z0-9._
 agent-browser screenshot ".claude/screenshots/${FILENAME}.png"
 ```
 
-Example: `https://oh.mifune.dev/guide/exposure/` → `.claude/screenshots/oh.mifune.dev--guide--exposure.png`
+Example: `https://my-app.oh-local.localhost:8443/guide/exposure/` → `.claude/screenshots/my-app.oh-local.localhost-8443--guide--exposure.png`
 
 ### Step 5 — Report
 
