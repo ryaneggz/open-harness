@@ -10,6 +10,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 
 ### Added
 - Per-page OpenGraph + canonical link tags via theme.config.tsx head function ([#140](https://github.com/ryaneggz/open-harness/issues/140)).
+- Blog post draft: Worktree-per-agent — stages for Wed publish ([#145](https://github.com/ryaneggz/openharness/pull/145)).
 - Blog section at /blog and About page nav entry (#143).
 - Blog post: BYOH — stop installing agent CLIs on your laptop (#144).
 - Root `CHANGELOG.md` and Keep-a-Changelog workflow documented in `.claude/rules/git.md`; `/release` now promotes `[Unreleased]` to the new version section at tag time.
