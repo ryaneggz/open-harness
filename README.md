@@ -20,7 +20,7 @@ Only host dependency: [Docker](https://docs.docker.com/get-docker/). Add `-s -- 
 
 ## 🚀 Quickstart
 
-The full sandbox lifecycle is three commands:
+Requires the `oh` CLI on your host — install with `-s -- --with-cli` above (Node 20+). The full sandbox lifecycle is three commands:
 
 ```bash
 oh onboard            # one-time: GitHub, LLM, Slack, Claude auth wizard
@@ -37,6 +37,30 @@ Inside the shell, start working:
 claude                # terminal coding agent
 pi                    # automations — Slack, heartbeats, extensions
 ```
+
+## 🐳 Docker only (no installer)
+
+Alternative path for hosts with only Docker + git — no `bash` piping, no Node, no `oh` CLI:
+
+```bash
+git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
+cp .devcontainer/.example.env .devcontainer/.env
+# edit .devcontainer/.env: set GH_TOKEN, optionally rename SANDBOX_NAME,
+# and set INSTALL_AGENT_BROWSER=false unless you need headless Chromium
+docker compose -f .devcontainer/docker-compose.yml up -d --build  # ~10 min on cold cache
+docker compose -f .devcontainer/docker-compose.yml exec -u sandbox sandbox zsh
+```
+
+Inside the sandbox, finish auth and start an agent:
+
+```bash
+gh auth login && gh auth setup-git    # one-time, if GH_TOKEN wasn't set in .env
+claude                                # or: pi, codex, gemini
+```
+
+Cleanup: `docker compose -f .devcontainer/docker-compose.yml down -v`.
+
+For Postgres, Slack, SSH, or the Caddy gateway, chain overlay files with extra `-f` flags — see [Compose overlays](https://github.com/ryaneggz/open-harness/blob/main/docs/guide/overlays.md).
 
 ## ✨ What you get
 
