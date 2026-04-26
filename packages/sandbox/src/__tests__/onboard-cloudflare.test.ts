@@ -66,7 +66,7 @@ describe("cloudflare step", () => {
     const deps = makeFakeDeps({
       which: { cloudflared: "/usr/bin/cloudflared" },
       files: { "/home/sandbox/.cloudflared/cert.pem": "pem" },
-      askAnswers: ["my-tun", "", ""],
+      askAnswers: ["my-tun", "my-tun.example.com", ""],
       execStubs: [
         {
           match: (cmd) => cmd[0] === "sh" && cmd[2].includes("config-*.yml"),
@@ -84,9 +84,26 @@ describe("cloudflare step", () => {
           cmd[0] === "bash" &&
           cmd[1].endsWith("/install/cloudflared-tunnel.sh") &&
           cmd[2] === "my-tun" &&
-          cmd[3] === "my-tun.mifune.dev" &&
+          cmd[3] === "my-tun.example.com" &&
           cmd[4] === "3000",
       ),
     ).toBe(true);
+  });
+
+  it("empty hostname → failed", async () => {
+    const deps = makeFakeDeps({
+      which: { cloudflared: "/usr/bin/cloudflared" },
+      files: { "/home/sandbox/.cloudflared/cert.pem": "pem" },
+      askAnswers: ["my-tun", ""],
+      execStubs: [
+        {
+          match: (cmd) => cmd[0] === "sh" && cmd[2].includes("config-*.yml"),
+          result: { status: 1, stdout: "", stderr: "" },
+        },
+      ],
+    });
+    const result = await cloudflareStep.run(deps, { force: false });
+    expect(result.status).toBe("failed");
+    expect(ioMessages(deps, "fail").some((m) => m.includes("hostname"))).toBe(true);
   });
 });

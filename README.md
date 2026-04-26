@@ -1,6 +1,6 @@
-# Mifune Open Harness
+# Open Harness
 
-**Mifune Open Harness** — run Claude, Codex, Gemini, and Pi side-by-side from one `docker compose up`. Each agent gets its own branch, its own SOUL, its own schedule.
+**Open Harness** — run Claude, Codex, Gemini, and Pi side-by-side from one `docker compose up`. Each agent gets its own branch, its own SOUL, its own schedule.
 
 - **Worktree-per-agent.** Each agent gets its own branch, its own SOUL, its own schedule.
 - **Agents that work while you sleep.** Cron-driven heartbeats wake them to do real work, autonomously.
@@ -79,7 +79,7 @@ oh clean my-agent
 
 ## 🤝 Contributing & community
 
-Issues and PRs welcome at [github.com/ryaneggz/open-harness](https://github.com/ryaneggz/open-harness). If Mifune Open Harness is useful to you, please [give us a star](https://github.com/ryaneggz/open-harness/stargazers).
+Issues and PRs welcome at [github.com/ryaneggz/open-harness](https://github.com/ryaneggz/open-harness). If Open Harness is useful to you, please [give us a star](https://github.com/ryaneggz/open-harness/stargazers).
 
 ## 📄 License
 

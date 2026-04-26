@@ -1,10 +1,10 @@
 ---
-title: "Mifune Open Harness"
+title: "Open Harness"
 ---
 
-# Mifune Open Harness
+# Open Harness
 
-**Mifune Open Harness** — run Claude, Codex, Gemini, and Pi side-by-side from one `docker compose up`. Each agent gets its own branch, its own SOUL, its own schedule.
+**Open Harness** — run Claude, Codex, Gemini, and Pi side-by-side from one `docker compose up`. Each agent gets its own branch, its own SOUL, its own schedule.
 
 - **Worktree-per-agent.** Each agent gets its own branch, its own SOUL, its own schedule.
 - **Agents that work while you sleep.** Cron-driven heartbeats wake them to do real work, autonomously.
@@ -36,7 +36,7 @@ AI coding agents are powerful — but they run with broad system permissions, ex
 - [CLI Reference](./cli/commands.md) — Full command reference
 - [Blog](./blog/README.md) — Engineering notes and deep-dives
 - [Wiki](./wiki/index.md) — Long-form notes and synthesis pages
-- [About](./about.md) — What Open Harness is and where the name comes from
+- [About](./about.md) — What Open Harness is
 - [Launch Runbook](./launch-runbook.md) — Maintainer-only cutover checklist
 
 ## Quick Links
@@ -45,7 +45,3 @@ AI coding agents are powerful — but they run with broad system permissions, ex
 - [Quickstart](./getting-started/quickstart.md) — Start a sandbox in 3 steps
 - [CLI Commands](./cli/commands.md) — Full command reference
 - [Slack Bot](./slack/overview.md) — Connect agents to Slack
-
----
-
-*Named for Captain Mifune — the one who held the gate open.*
