@@ -1,4 +1,4 @@
-# Open Harness
+# 🏗️ Open Harness
 
 **Open Harness** — run Claude, Codex, Gemini, and Pi side-by-side from one `docker compose up`. Each agent gets its own branch, its own SOUL, its own schedule.
 
