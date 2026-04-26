@@ -10,7 +10,7 @@
 
 ---
 
-## Install
+## 📦 Install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/install.sh | bash
@@ -18,7 +18,7 @@ curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/ma
 
 Only host dependency: [Docker](https://docs.docker.com/get-docker/). Add `-s -- --with-cli` to also install the `oh` CLI on the host (requires Node 20+).
 
-## Quickstart
+## 🚀 Quickstart
 
 The full sandbox lifecycle is three commands:
 
@@ -38,7 +38,7 @@ claude                # terminal coding agent
 pi                    # automations — Slack, heartbeats, extensions
 ```
 
-## What you get
+## ✨ What you get
 
 | | |
 |---|---|
@@ -49,7 +49,7 @@ pi                    # automations — Slack, heartbeats, extensions
 | **Worktree-per-agent** | One branch per agent, one container, shared toolchain |
 | **Heartbeats** | Cron-scheduled autonomous runs (`workspace/heartbeats/*.md`) |
 
-## Where to go next
+## 📚 Where to go next
 
 - [Quickstart](https://github.com/ryaneggz/open-harness/blob/main/docs/getting-started/quickstart.md) — full step-by-step
 - [Onboarding](https://github.com/ryaneggz/open-harness/blob/main/docs/getting-started/onboarding.md) — auth wizard walkthrough
@@ -59,29 +59,29 @@ pi                    # automations — Slack, heartbeats, extensions
 - [Heartbeats](https://github.com/ryaneggz/open-harness/blob/main/docs/guide/heartbeats.md) — cron-scheduled autonomous tasks
 - [Architecture](https://github.com/ryaneggz/open-harness/blob/main/docs/architecture/orchestrator-worktrees.md) — one container, N worktrees, one daemon
 
-## Project layout
+## 🗂️ Project layout
 
 ```
 .devcontainer/    # Sandbox environment (Dockerfile, compose, overlays)
+docs/             # Plain-markdown documentation (GitHub-rendered)
 install/          # Provisioning scripts
 workspace/        # Agent workspace template (bind-mounted)
 packages/
   sandbox/        # @openharness/sandbox — CLI + container lifecycle
   slack/          # Vendored fork of pi-mom — Slack bot
-docs/             # Documentation site (Nextra)
 ```
 
-## Cleanup
+## 🧹 Cleanup
 
 ```bash
 oh clean my-agent
 ```
 
-## Contributing & community
+## 🤝 Contributing & community
 
 Issues and PRs welcome at [github.com/ryaneggz/open-harness](https://github.com/ryaneggz/open-harness). If Mifune Open Harness is useful to you, please [give us a star](https://github.com/ryaneggz/open-harness/stargazers).
 
-## License
+## 📄 License
 
 MIT.
 
