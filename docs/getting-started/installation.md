@@ -8,7 +8,7 @@ title: "Installation"
 ## One-line install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/install.sh | bash
+curl -fsSL https://oh.mifune.dev/install.sh | bash
 ```
 
 The installer checks for Docker and git, prompts for a container name and password, clones the repo, and starts the sandbox. No Node.js required.
@@ -18,7 +18,7 @@ The installer checks for Docker and git, prompts for a container name and passwo
 If you want the `openharness` CLI available on your host machine (not just inside the container), pass `--with-cli`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/install.sh | bash -s -- --with-cli
+curl -fsSL https://oh.mifune.dev/install.sh | bash -s -- --with-cli
 ```
 
 This additionally requires [Node.js 20+](https://nodejs.org/) and builds/links the CLI via pnpm.
