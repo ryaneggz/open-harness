@@ -10,6 +10,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 
 ### Added
 - Per-page OpenGraph + canonical link tags via theme.config.tsx head function ([#140](https://github.com/ryaneggz/open-harness/issues/140)).
+- Blog section at /blog and About page nav entry (#143).
 - Root `CHANGELOG.md` and Keep-a-Changelog workflow documented in `.claude/rules/git.md`; `/release` now promotes `[Unreleased]` to the new version section at tag time.
 - Generate `sitemap.xml` and `robots.txt` during docs build via `next-sitemap` ([#141](https://github.com/ryaneggz/openharness/issues/141)).
 - Launch runbook consolidating manual cutover steps (DNS, GH settings, OG validation, GSC, promotion).
