@@ -11,6 +11,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 ### Added
 - Per-page OpenGraph + canonical link tags via theme.config.tsx head function ([#140](https://github.com/ryaneggz/open-harness/issues/140)).
 - Root `CHANGELOG.md` and Keep-a-Changelog workflow documented in `.claude/rules/git.md`; `/release` now promotes `[Unreleased]` to the new version section at tag time.
+- Generate `sitemap.xml` and `robots.txt` during docs build via `next-sitemap` ([#141](https://github.com/ryaneggz/openharness/issues/141)).
 
 ### Changed
 - Rebrand docs domain from `https://ryaneggz.github.io/open-harness/` to `https://oh.mifune.dev/`; default cloudflared tunnel hostname updated from `*.ruska.dev` to `*.mifune.dev`. ([#137](https://github.com/ryaneggz/openharness/issues/137))
