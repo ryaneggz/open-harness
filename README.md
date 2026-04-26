@@ -13,7 +13,7 @@
 ## 📦 Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ryaneggz/open-harness/refs/heads/main/install.sh | bash
+curl -fsSL https://oh.mifune.dev/install.sh | bash
 ```
 
 Only host dependency: [Docker](https://docs.docker.com/get-docker/). Add `-s -- --with-cli` to also install the `oh` CLI on the host (requires Node 20+).
