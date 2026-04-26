@@ -1,0 +1,27 @@
+/**
+ * Custom CSS for Mifune Open Harness docs site.
+ * Dark-mode-friendly accent palette.
+ */
+
+:root {
+  --ifm-color-primary: #4e9af1;
+  --ifm-color-primary-dark: #2d86ef;
+  --ifm-color-primary-darker: #1d7dee;
+  --ifm-color-primary-darkest: #0d65c8;
+  --ifm-color-primary-light: #6faef3;
+  --ifm-color-primary-lighter: #80b8f5;
+  --ifm-color-primary-lightest: #b2d5f9;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] {
+  --ifm-color-primary: #4e9af1;
+  --ifm-color-primary-dark: #2d86ef;
+  --ifm-color-primary-darker: #1d7dee;
+  --ifm-color-primary-darkest: #0d65c8;
+  --ifm-color-primary-light: #6faef3;
+  --ifm-color-primary-lighter: #80b8f5;
+  --ifm-color-primary-lightest: #b2d5f9;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
