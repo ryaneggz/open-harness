@@ -2,7 +2,7 @@
 name: wiki-query
 description: |
   Search the wiki and synthesize answers from existing pages. Reads
-  wiki/index.md to find relevant pages, reads matching pages, produces
+  docs/wiki/index.md to find relevant pages, reads matching pages, produces
   a cited answer. Optionally files the answer back as a new synthesis page.
   TRIGGER when: asked to search the wiki, "wiki query", "wiki search",
   "what does the wiki say about", or "find in wiki".
@@ -19,7 +19,7 @@ synthesis page so the knowledge compounds.
 
 ```mermaid
 flowchart TD
-    A[Parse query from arguments] --> B[Read wiki/index.md]
+    A[Parse query from arguments] --> B[Read docs/wiki/index.md]
     B --> C{Wiki has pages?}
 
     C -->|No| EMPTY["Report: wiki empty — ingest sources first"]
@@ -38,12 +38,12 @@ flowchart TD
     G --> H{File-back criteria met?<br>3+ pages AND novel AND durable}
 
     H -->|Yes| I[Create synthesis page]
-    I --> J[Update wiki/index.md + wiki/log.md]
+    I --> J[Update docs/wiki/index.md + docs/wiki/log.md]
     J --> K["Commit: wiki: synthesis page-name"]
     K --> MEM_OP[Memory Protocol]
     MEM_OP --> Z_OP["Report: answer + new synthesis page"]
 
-    H -->|No| L[Append to wiki/log.md]
+    H -->|No| L[Append to docs/wiki/log.md]
     L --> MEM_NOFILE[Memory Protocol]
     MEM_NOFILE --> Z_NOFILE["Report: answer only"]
 ```
@@ -56,10 +56,10 @@ flowchart TD
 
 ### 2. Read the index
 
-Read `wiki/index.md`. If the Pages table is empty:
+Read `docs/wiki/index.md`. If the Pages table is empty:
 
 ```
-Wiki is empty. Add source documents to wiki/sources/ and run /wiki-ingest.
+Wiki is empty. Add source documents to docs/wiki/sources/ and run /wiki-ingest.
 ```
 
 Then Memory Protocol, done.
@@ -75,7 +75,7 @@ Rank by relevance. Select top 10 matches. If fewer than 3 matches, also check pa
 
 ### 4. Read matched pages
 
-Read each matched page from `wiki/pages/`. Extract:
+Read each matched page from `docs/wiki/pages/`. Extract:
 - Key points and their source citations
 - Context sections (relationships to other pages)
 - The `related:` frontmatter for additional leads
@@ -102,7 +102,7 @@ All three must be **yes** to file back. If any is no, skip to step 8.
 
 ### 7. Create synthesis page
 
-Write `wiki/pages/<kebab-case-title>.md`:
+Write `docs/wiki/pages/<kebab-case-title>.md`:
 
 ```markdown
 ---
@@ -139,13 +139,13 @@ Rules:
 - `type: synthesis` — distinguishes from entity/concept pages
 - `sources: []` — synthesis pages cite other wiki pages, not raw sources
 - `related:` lists all pages that contributed to the synthesis
-- Update `wiki/index.md` — add new row, update Statistics
-- Append to `wiki/log.md`
-- Commit: `git add wiki/ && git commit -m "wiki: synthesis <page-name>"`
+- Update `docs/wiki/index.md` — add new row, update Statistics
+- Append to `docs/wiki/log.md`
+- Commit: `git add docs/wiki/ && git commit -m "wiki: synthesis <page-name>"`
 
 ### 8. Log query (no file-back)
 
-Append to `wiki/log.md`:
+Append to `docs/wiki/log.md`:
 
 ```markdown
 ## [QUERY] — YYYY-MM-DD HH:MM UTC
@@ -179,17 +179,17 @@ Append to `wiki/log.md`:
 
 **d) Report** — end with:
 - Answer text (always)
-- If filed back: "Filed as synthesis page: wiki/pages/<name>.md"
+- If filed back: "Filed as synthesis page: docs/wiki/pages/<name>.md"
 - `HEARTBEAT_OK` (if run from heartbeat context)
 
 ## Reference
 
 | Resource | Path |
 |----------|------|
-| Wiki index | `wiki/index.md` |
-| Wiki log | `wiki/log.md` |
-| Source documents | `wiki/sources/` |
-| Wiki pages | `wiki/pages/` |
+| Wiki index | `docs/wiki/index.md` |
+| Wiki log | `docs/wiki/log.md` |
+| Source documents | `docs/wiki/sources/` |
+| Wiki pages | `docs/wiki/pages/` |
 | Identity | `IDENTITY.md` |
 | Memory | `MEMORY.md` |
 | Daily Logs | `memory/YYYY-MM-DD.md` |

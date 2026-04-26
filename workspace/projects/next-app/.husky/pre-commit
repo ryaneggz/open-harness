@@ -1,4 +1,0 @@
-pnpm exec lint-staged
-pnpm exec tsc --noEmit
-pnpm test
-pnpm run test:setup

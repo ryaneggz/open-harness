@@ -58,8 +58,8 @@ If this fails, log `[strategic-proposal] SKIP: gh CLI not authenticated` → Mem
 Read the following to build the briefing:
 - `IDENTITY.md` — stack, mission, URLs
 - `MEMORY.md` — past decisions, lessons learned
-- `next-app/prisma/schema.prisma` — current data models
-- `next-app/src/app/` — list current routes
+- `packages/sandbox/src/` — sandbox CLI surface and tools
+- `packages/slack/src/` — Slack bot capabilities
 - Open issues: `gh api "repos/ryaneggz/open-harness/issues?state=open&per_page=50"`
 - Repo stats: `gh api repos/ryaneggz/open-harness --jq '{stars: .stargazers_count, forks: .forks_count}'`
 
@@ -181,9 +181,9 @@ If it already exists, update:
 gh issue edit <NUMBER> --repo ryaneggz/open-harness --body "<council output>"
 ```
 
-### 9. Write roadmap data to src/data/roadmap.ts
+### 9. Write roadmap data to docs/roadmap.md
 
-Parse the council's FINAL roadmap table and update `next-app/src/data/roadmap.ts` with the typed data array. Each row becomes a `RoadmapItem` object. Preserve the type definitions at the top of the file.
+Parse the council's FINAL roadmap table and write it to `docs/roadmap.md` as a single markdown table (one row per roadmap item). If the file does not exist yet, create it with a brief intro section followed by the table.
 
 ### 10. Memory Improvement Protocol
 
@@ -223,7 +223,7 @@ Parse the council's FINAL roadmap table and update `next-app/src/data/roadmap.ts
 | Expert: Agent Systems | `.claude/agents/expert-agent-systems.md` |
 | Strategic Council | `.claude/agents/strategic-council.md` |
 | Strategic Critic | `.claude/agents/strategic-critic.md` |
-| Roadmap data | `next-app/src/data/roadmap.ts` |
+| Roadmap data | `docs/roadmap.md` |
 | Identity | `IDENTITY.md` |
 | Memory | `MEMORY.md` |
 | Daily Logs | `memory/YYYY-MM-DD.md` |

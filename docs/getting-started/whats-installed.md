@@ -1,0 +1,70 @@
+---
+title: "What's Installed"
+---
+
+
+The sandbox image ships a complete development environment. The only host dependency is Docker.
+
+## Base image
+
+Debian Bookworm (slim). The `sandbox` user has passwordless sudo.
+
+## AI agent CLIs
+
+| Tool | Command | Description |
+|------|---------|-------------|
+| Claude Code | `claude` | Anthropic's coding agent (aliased to `claude --dangerously-skip-permissions`) |
+| OpenAI Codex | `codex` | OpenAI's coding agent (aliased to `codex --full-auto`) |
+| Pi Agent | `pi` | Pi coding agent — powers Slack bot, heartbeats, and extensions |
+| Mom (Slack bot) | `mom` | Slack bot that delegates messages to Pi agent |
+| agent-browser | `agent-browser` | Headless Chromium for web-capable agents |
+
+## Runtimes & package managers
+
+| Tool | Version |
+|------|---------|
+| Node.js | 22.x |
+| pnpm | latest (via corepack) |
+| Bun | latest |
+| uv | latest (Python package manager) |
+
+## DevOps & infrastructure
+
+| Tool | Purpose |
+|------|---------|
+| Docker CLI + Compose | Container management from inside the sandbox (with docker overlay) |
+| GitHub CLI (`gh`) | PRs, issues, releases from the terminal |
+| cloudflared | Cloudflare Tunnel for public URLs to dev servers |
+| tmux | Detachable terminal sessions for long-running agents |
+| cron | Heartbeat scheduling for autonomous agent tasks |
+
+## Utilities
+
+| Tool | Purpose |
+|------|---------|
+| git | Version control |
+| jq | JSON processing |
+| ripgrep (`rg`) | Fast code search |
+| curl, wget | HTTP clients |
+| nano | Text editor |
+| openssh-server | SSH server (enabled via sshd overlay) |
+| bash-completion | Tab completion |
+
+## Shell aliases
+
+The sandbox user's `.bashrc` includes convenience aliases:
+
+```
+claude  → claude --dangerously-skip-permissions
+codex   → codex --full-auto
+pi      → pi
+mom     → mom --sandbox=host ~/harness/workspace/.slack
+```
+
+## Persistent volumes
+
+Auth credentials survive container rebuilds via named Docker volumes:
+
+- `claude-auth` → `~/.claude` (Claude Code OAuth) — or, with the [`claude-host` overlay](../guide/overlays.md#sharing-host-claude-state-claude-host), a RW bind-mount of your host `~/.claude`.
+- `cloudflared-auth` → `~/.cloudflared` (Cloudflare credentials)
+- `gh-config` → `~/.config/gh` (GitHub CLI tokens)

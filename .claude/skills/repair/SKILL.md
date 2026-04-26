@@ -2,7 +2,7 @@
 name: repair
 description: |
   Repair the sandbox stack: detect environment (container vs host),
-  run test:setup, auto-remediate failures, and re-verify.
+  run a sandbox-level health check, auto-remediate failures, and re-verify.
   Works both inside the container (direct) and from the host (via docker exec).
   TRIGGER when: after container restart, after rebuild, when something seems
   broken, when asked to check setup, repair, diagnose issues, or verify the stack.
@@ -10,8 +10,8 @@ description: |
 
 # Repair
 
-Validate and fix the full harness stack. Detects whether running inside the container
-or on the host and uses the appropriate execution path.
+Validate and fix the harness sandbox stack. Detects whether running inside the
+container or on the host and uses the appropriate execution path.
 
 ## Instructions
 
@@ -32,35 +32,33 @@ If `ENVIRONMENT=host`, follow the **Host Path** (Steps 1h–4h).
 
 ## Container Path (inside the sandbox)
 
-### Step 1c — Run test:setup directly
+### Step 1c — Run sandbox health check
 
 ```bash
-cd ~/harness/workspace/projects/next-app && pnpm run test:setup
+node --version
+command -v claude && claude --version 2>/dev/null || echo 'CLAUDE_MISSING'
+command -v codex && codex --version 2>/dev/null || echo 'CODEX_MISSING'
+command -v pi && pi --version 2>/dev/null || echo 'PI_MISSING'
+docker ps >/dev/null 2>&1 && echo 'DOCKER_OK' || echo 'DOCKER_UNAVAILABLE'
 ```
 
-Capture the output. If all 5 tests pass, skip to **Step 5**.
+If all checks pass (Node ≥ 22, agent CLIs reachable, docker socket
+accessible when expected), skip to **Step 5**.
 
 ### Step 2c — Remediate failures
 
-For each failing test, apply the matching fix **in this order** (order matters — dependencies first):
-
-| Failing test | Fix |
+| Failing check | Fix |
 |---|---|
-| `has Node.js >= 22` | Wrong runtime. Cannot auto-fix — report to user. |
-| `has node_modules installed` or `pnpm-lock.yaml in sync` | `cd ~/harness/workspace/projects/next-app && pnpm install` |
-| `responds on port 3000` (Next.js) | Check log: `tail -20 /tmp/next-dev.log`. Then restart: `cd ~/harness/workspace/projects/next-app && nohup pnpm run dev > /tmp/next-dev.log 2>&1 &`. Wait 15s. |
-| `public URL responds` (Cloudflare) | Check log: `tail -20 /tmp/cloudflared.log`. Then restart tunnel from config. Wait 5s. |
+| `Node.js >= 22` | Wrong runtime. Cannot auto-fix — report to user (rebuild image). |
+| `claude --version` fails | `sudo npm install -g @anthropic-ai/claude-code` (pin matches Dockerfile) |
+| `codex --version` fails | `sudo npm install -g @openai/codex` |
+| `pi --version` fails | `sudo npm install -g pi-agent-extension` (or check Dockerfile pin) |
+| `docker ps` fails | Docker socket not mounted — verify compose overlay `docker-compose.docker.yml` is enabled in `.openharness/config.json` |
 
-### Step 3c — Re-run tests
+### Step 3c — Re-run health check
 
-```bash
-cd ~/harness/workspace/projects/next-app && pnpm run test:setup
-```
-
-### Step 4c — If still failing
-
-If the same test fails twice after remediation, **stop and report** — do not loop.
-Include the relevant log output in your report.
+Repeat Step 1c. If the same check fails twice after remediation, **stop and
+report** — do not loop. Include relevant log output.
 
 ---
 
@@ -95,32 +93,31 @@ docker compose --env-file .devcontainer/.env $COMPOSE_FILES up -d
 
 Wait for startup (poll for "Startup complete" in logs, up to 3 minutes).
 
-### Step 2h — Run test:setup via docker exec
+### Step 2h — Run sandbox health check via docker exec
 
 ```bash
-docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && pnpm run test:setup'
+docker exec -u sandbox $SANDBOX_NAME bash -c '
+  node --version &&
+  (claude --version 2>/dev/null || echo CLAUDE_MISSING) &&
+  (docker ps >/dev/null 2>&1 && echo DOCKER_OK || echo DOCKER_UNAVAILABLE)
+'
 ```
 
-Capture the output. If all 5 tests pass, skip to **Step 5**.
+If all checks pass, skip to **Step 5**.
 
 ### Step 3h — Remediate failures
 
-For each failing test, apply the matching fix **in this order**:
-
-| Failing test | Fix |
+| Failing check | Fix |
 |---|---|
-| `has Node.js >= 22` | Wrong container image. Cannot auto-fix — report to user. |
-| `has node_modules installed` or `pnpm-lock.yaml in sync` | `docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && pnpm install'` |
-| `responds on port 3000` (Next.js) | Check log: `docker exec $SANDBOX_NAME bash -c 'tail -20 /tmp/next-dev.log'`. Then restart: `docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && nohup pnpm run dev > /tmp/next-dev.log 2>&1 &'`. Wait 15s. |
-| `public URL responds` (Cloudflare) | Check log: `docker exec $SANDBOX_NAME bash -c 'tail -20 /tmp/cloudflared.log'`. Then restart tunnel from config. Wait 5s. |
+| Container not running | `docker compose ... up -d` (Step 1h above) |
+| `Node.js >= 22` | Wrong image. Rebuild via `/provision --rebuild`. |
+| Agent CLI missing | `docker exec -u sandbox $SANDBOX_NAME sudo npm install -g <pkg>` (see container-path table) |
+| Docker socket fails | Verify `docker-compose.docker.yml` is in `.openharness/config.json`; rebuild |
 
-### Step 4h — Re-run tests and handle persistent failures
+### Step 4h — Re-run health check and handle persistent failures
 
-```bash
-docker exec -u sandbox $SANDBOX_NAME bash -c 'cd ~/harness/workspace/projects/next-app && pnpm run test:setup'
-```
-
-If the same test fails twice after remediation, **stop and report** — do not loop.
+Repeat Step 2h. If the same check fails twice after remediation, **stop and
+report** — do not loop.
 
 ---
 
@@ -132,16 +129,16 @@ Output a summary table:
 | Check              | Status | Action              |
 |--------------------|--------|---------------------|
 | Node.js >= 22      | OK     | —                   |
-| node_modules       | FIXED  | Ran pnpm install     |
-| Next.js dev server | OK     | —                   |
-| Public URL         | OK     | —                   |
+| Claude CLI         | FIXED  | Reinstalled         |
+| Docker socket      | OK     | —                   |
 ```
 
 Status values: **OK** (passed first run), **FIXED** (failed then remediated), **FAIL** (could not fix).
 
-## Step 6 — Front-to-back URL check (every run)
+## Step 6 — Front-to-back URL check (only when tunnels are configured)
 
-Verify every tunnel-exposed hostname end-to-end — public URL first, local origin second — so failures are attributed to the right layer.
+If the sandbox exposes any tunneled hostnames (cloudflared or Caddy gateway),
+verify them end-to-end so failures are attributed to the right layer.
 
 ### 6a — Enumerate targets from cloudflared config
 
@@ -165,6 +162,8 @@ with open("/tmp/tunnel-targets.tsv", "w") as f:
 PY
 ```
 
+If `/tmp/tunnel-targets.tsv` is empty, **skip the rest of Step 6** and go to the final report.
+
 ### 6b — Front check with `/agent-browser` (primary)
 
 For every hostname in `/tmp/tunnel-targets.tsv`, invoke the **`/agent-browser`** skill on the public URL — this exercises the real user path (DNS → Cloudflare edge → tunnel → origin → render) and saves a screenshot per host:
@@ -173,7 +172,7 @@ For every hostname in `/tmp/tunnel-targets.tsv`, invoke the **`/agent-browser`**
 /agent-browser https://<hostname>/
 ```
 
-Record pass/fail per hostname based on whether the skill reports a healthy page load (non-empty snapshot, HTTP-equivalent success). The skill itself handles DNS, health-check, and screenshot — do not reimplement.
+Record pass/fail per hostname based on whether the skill reports a healthy page load.
 
 ### 6c — Back check with curl (only when browser check fails)
 
@@ -183,7 +182,7 @@ For any hostname that failed in 6b, run a curl pair to localize the fault:
 |---|---|---|
 | 2xx/3xx | 2xx/3xx | **Browser-only issue** (DNS/cert/JS) — inspect `/agent-browser` trace |
 | 5xx/000 | 2xx/3xx | **Tunnel problem** — restart cloudflared |
-| any     | 5xx/000 | **Origin problem** — check dev-server log, restart service |
+| any     | 5xx/000 | **Origin problem** — check the app's tmux session log, restart service |
 
 ```bash
 # container: run directly.  host: wrap with docker exec -u sandbox $SANDBOX_NAME bash -c '...'
@@ -205,6 +204,6 @@ Append a front-to-back table to the Step 5 summary — one row per hostname:
 | docs.\<your-domain\>       | FAIL    | 502    | 307   | Tunnel problem |
 ```
 
-`Browser` comes from 6b, `Public`/`Local` only filled in when 6b failed and 6c ran. If any row is not **OK**, apply the matching remediation from the Step 2c/3h tables and re-run 6b once. If it still fails, stop and report — do not loop.
+If any row is not **OK**, apply the matching remediation and re-run 6b once. If it still fails, stop and report — do not loop.
 
 Screenshots from `/agent-browser` land in `.claude/screenshots/<hostname>*.png` for visual confirmation.

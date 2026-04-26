@@ -9,16 +9,32 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 ## [Unreleased]
 
 ### Added
+- Per-page OpenGraph + canonical link tags via theme.config.tsx head function ([#140](https://github.com/ryaneggz/open-harness/issues/140)).
+- Blog post draft: Worktree-per-agent — stages for Wed publish ([#145](https://github.com/ryaneggz/open-harness/pull/145)).
+- Blog section at /blog and About page nav entry (#143).
+- Blog post: BYOH — stop installing agent CLIs on your laptop (#144).
 - Root `CHANGELOG.md` and Keep-a-Changelog workflow documented in `.claude/rules/git.md`; `/release` now promotes `[Unreleased]` to the new version section at tag time.
+- Generate `sitemap.xml` and `robots.txt` during docs build via `next-sitemap` ([#141](https://github.com/ryaneggz/open-harness/issues/141)).
+- Launch runbook consolidating manual cutover steps (DNS, GH settings, OG validation, GSC, promotion).
 
 ### Changed
+- Rebrand docs domain from `https://ryaneggz.github.io/open-harness/` to `https://oh.mifune.dev/`; default cloudflared tunnel hostname updated from `*.ruska.dev` to `*.mifune.dev`. ([#137](https://github.com/ryaneggz/open-harness/issues/137))
+- Adopt Mifune positioning copy across README, docs landing, and About page (#138).
+- Slim README to ~110 lines, lead with oh CLI flow (#139).
+- Wiki promoted from `workspace/wiki/` to `docs/wiki/` — same structure (`pages/`, `sources/`, `index.md`, `log.md`), now top-level alongside human-curated docs.
+- 26 docs pages converted from Nextra MDX to plain markdown rendered by GitHub.
+
 ### Fixed
-- Slack bot no longer drops oversized agent replies with cascading `msg_too_long` errors. Main message is capped at 2,900 chars with a `_message truncated — full response in thread_` footer; full content spills to thread replies; `setWorking(false)` always clears the working indicator. ([#135](https://github.com/ryaneggz/openharness/issues/135))
+- Slack bot no longer drops oversized agent replies with cascading `msg_too_long` errors. Main message is capped at 2,900 chars with a `_message truncated — full response in thread_` footer; full content spills to thread replies; `setWorking(false)` always clears the working indicator. ([#135](https://github.com/ryaneggz/open-harness/issues/135))
 
 ### Removed
+- Nextra docs site (`oh.mifune.dev`) and the `.github/workflows/docs.yml` deployment — documentation is now plain markdown in `docs/`, read in the GitHub UI.
+- Reference Next.js application at `workspace/projects/next-app/`, along with its CI jobs (`workspace/projects/next-app` paths in `ci.yml` / `release.yml`) and the release pre-flight gate referencing it.
+- Root `package.json` scripts: `dev`, `docs:dev`, `docs:build`, `docs:preview`.
+
 ### Deprecated
 ### Security
 
 ---
 
-Release history prior to this file: see [git tags](https://github.com/ryaneggz/openharness/tags) and [GitHub Releases](https://github.com/ryaneggz/openharness/releases). Most recent pre-changelog tag: `2026.4.22`.
+Release history prior to this file: see [git tags](https://github.com/ryaneggz/open-harness/tags) and [GitHub Releases](https://github.com/ryaneggz/open-harness/releases). Most recent pre-changelog tag: `2026.4.22`.

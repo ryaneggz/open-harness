@@ -2,11 +2,11 @@
 name: wiki-ingest
 description: |
   Process source documents into structured wiki pages. Reads raw files from
-  wiki/sources/, extracts entities and concepts, creates or updates wiki pages
-  in wiki/pages/, updates wiki/index.md, and appends to wiki/log.md.
-  TRIGGER when: new files added to wiki/sources/, asked to ingest/process
+  docs/wiki/sources/, extracts entities and concepts, creates or updates wiki pages
+  in docs/wiki/pages/, updates docs/wiki/index.md, and appends to docs/wiki/log.md.
+  TRIGGER when: new files added to docs/wiki/sources/, asked to ingest/process
   a document, "wiki ingest", or "add to wiki".
-argument-hint: "<filename in wiki/sources/> or 'all' for unprocessed sources"
+argument-hint: "<filename in docs/wiki/sources/> or 'all' for unprocessed sources"
 ---
 
 # Wiki Ingest
@@ -31,16 +31,16 @@ flowchart TD
 
     C -->|No| D[Read source document]
     D --> E[Identify entities, concepts, themes]
-    E --> F[Read wiki/index.md]
+    E --> F[Read docs/wiki/index.md]
     F --> G{Pages exist for topics?}
 
     G -->|Some exist| H[Read existing pages, merge new info]
     G -->|None exist| I[Create new pages from scratch]
-    H --> J[Write updated pages to wiki/pages/]
+    H --> J[Write updated pages to docs/wiki/pages/]
     I --> J
 
-    J --> K[Update wiki/index.md — add/update rows]
-    K --> L[Append to wiki/log.md]
+    J --> K[Update docs/wiki/index.md — add/update rows]
+    K --> L[Append to docs/wiki/log.md]
     L --> M["Commit: wiki: ingest source-name"]
     M --> MEM_OP[Memory Protocol]
     MEM_OP --> Z_OP["Report: pages created/updated"]
@@ -54,14 +54,14 @@ Arguments: `$ARGUMENTS`
 
 | Argument | Behavior |
 |----------|----------|
-| `<filename>` | Ingest specific file from `wiki/sources/` |
+| `<filename>` | Ingest specific file from `docs/wiki/sources/` |
 | `all` | Find all unprocessed sources (not yet cited in any page's frontmatter) |
 | *(none)* | Default to `all` |
 
 ### 2. Guard: source exists
 
 ```bash
-ls wiki/sources/<filename>
+ls docs/wiki/sources/<filename>
 ```
 
 If not found, log `[wiki-ingest] SKIP: source not found — <filename>`, then Memory Protocol, `HEARTBEAT_OK`.
@@ -71,7 +71,7 @@ If not found, log `[wiki-ingest] SKIP: source not found — <filename>`, then Me
 For each target source, scan existing wiki pages for citations:
 
 ```bash
-grep -rl "<filename>" wiki/pages/ 2>/dev/null
+grep -rl "<filename>" docs/wiki/pages/ 2>/dev/null
 ```
 
 If the source is already cited in the `sources:` frontmatter of existing pages, log `[wiki-ingest] SKIP: <filename> already ingested`, then Memory Protocol, `HEARTBEAT_OK`.
@@ -94,17 +94,17 @@ Identify from the source:
 - **Concepts**: ideas, frameworks, methodologies, patterns, techniques
 - **Themes**: cross-cutting connections to existing wiki content
 
-Each topic becomes a candidate page. Reuse existing tags from `wiki/index.md` when possible to avoid tag proliferation.
+Each topic becomes a candidate page. Reuse existing tags from `docs/wiki/index.md` when possible to avoid tag proliferation.
 
 ### 6. Check existing pages
 
-Read `wiki/index.md`. For each candidate topic, check if a page already exists (match by title, case-insensitive). Classify each as:
+Read `docs/wiki/index.md`. For each candidate topic, check if a page already exists (match by title, case-insensitive). Classify each as:
 - **CREATE** — new page needed
 - **UPDATE** — existing page needs new info from this source
 
 ### 7. Create new pages
 
-For each CREATE candidate, write `wiki/pages/<kebab-case-title>.md`:
+For each CREATE candidate, write `docs/wiki/pages/<kebab-case-title>.md`:
 
 ```markdown
 ---
@@ -148,7 +148,7 @@ Rules:
 ### 8. Update existing pages
 
 For each UPDATE candidate:
-1. Read the existing page from `wiki/pages/`
+1. Read the existing page from `docs/wiki/pages/`
 2. Add new key points with source citations
 3. Add the new source to the `sources:` frontmatter array
 4. Update the `updated:` date
@@ -157,7 +157,7 @@ For each UPDATE candidate:
 
 ### 9. Update index
 
-Read `wiki/index.md`. For each page created or updated:
+Read `docs/wiki/index.md`. For each page created or updated:
 - **Created**: add a new row to the Pages table
 - **Updated**: update the `Sources` count and `Updated` column
 
@@ -165,7 +165,7 @@ Recalculate the Statistics section. Update the "Last updated" and "Last ingest" 
 
 ### 10. Append to log
 
-Append to `wiki/log.md`:
+Append to `docs/wiki/log.md`:
 
 ```markdown
 ## [INGEST] — YYYY-MM-DD HH:MM UTC
@@ -177,7 +177,7 @@ Append to `wiki/log.md`:
 ### 11. Commit
 
 ```bash
-git add wiki/
+git add docs/wiki/
 git commit -m "wiki: ingest <source-filename>"
 ```
 
@@ -213,10 +213,10 @@ git commit -m "wiki: ingest <source-filename>"
 
 | Resource | Path |
 |----------|------|
-| Wiki index | `wiki/index.md` |
-| Wiki log | `wiki/log.md` |
-| Source documents | `wiki/sources/` |
-| Wiki pages | `wiki/pages/` |
+| Wiki index | `docs/wiki/index.md` |
+| Wiki log | `docs/wiki/log.md` |
+| Source documents | `docs/wiki/sources/` |
+| Wiki pages | `docs/wiki/pages/` |
 | Identity | `IDENTITY.md` |
 | Memory | `MEMORY.md` |
 | Daily Logs | `memory/YYYY-MM-DD.md` |

@@ -141,25 +141,6 @@ This will:
 - `entrypoint.sh` runs as root: starts cron, syncs heartbeats
 - `startup.sh` runs as sandbox: pnpm install, starts Next.js dev server + cloudflared tunnel, health-checks port 3000
 
-## 4b. Create startup.sh (if missing)
-
-`workspace/startup.sh` is gitignored (runtime config). If it doesn't exist, create it:
-
-```bash
-if [ ! -f workspace/startup.sh ]; then
-  # Create startup.sh that:
-  # 1. cd to workspace/projects/next-app
-  # 2. pnpm install (no --frozen-lockfile on first boot)
-  # 3. Start Next.js dev server in background
-  # 4. Start cloudflared tunnel (if configured)
-  # 5. Wait for port 3000
-  # 6. Print "Startup complete"
-fi
-```
-
-**Important**: `workspace/projects/next-app/pnpm-workspace.yaml` (with `packages: []`) must exist
-to prevent pnpm from walking up to the monorepo root. This file IS tracked in git.
-
 ## 5. Wait for Startup
 
 Poll logs until `startup.sh` reports completion (up to 3 minutes):
@@ -188,32 +169,21 @@ docker ps --filter "name=$SANDBOX_NAME" --format "table {{.Names}}\t{{.Status}}\
 
 The `$SANDBOX_NAME` container should be running. If postgres overlay is enabled, `$SANDBOX_NAME-postgres` should also be running.
 
-### 6b. Run test:setup
+### 6b. Sanity check
 
-This runs 5 TypeScript tests (vitest) that validate the stack:
+Confirm the sandbox container is up and the agent CLIs are reachable:
 
 ```bash
-docker exec -u sandbox "$SANDBOX_NAME" bash -c 'cd ~/harness/workspace/projects/next-app && pnpm run test:setup'
+docker exec -u sandbox "$SANDBOX_NAME" bash -c 'node --version && claude --version 2>/dev/null || true'
 ```
 
-**All 5 tests must pass:**
+### 6c. If something is wrong
 
-| Test | What it checks |
-|------|----------------|
-| Node.js >= 22 | Correct runtime |
-| node_modules installed | pnpm install ran |
-| pnpm-lock.yaml in sync | Dependencies consistent |
-| Next.js port 3000 | Dev server responding |
-| Public URL responds | Cloudflare tunnel + site live |
-
-### 6c. If tests fail
-
-Check logs and remediate:
-- `/tmp/next-dev.log` — Next.js dev server
-- `/tmp/cloudflared.log` — Cloudflare tunnel
+Check logs:
 - `docker logs $SANDBOX_NAME` — entrypoint + startup
+- `/tmp/cloudflared.log` — Cloudflare tunnel (if enabled)
 
-Re-run `pnpm run test:setup` after fixing. Do not loop more than once.
+Use `/repair` to diagnose and remediate from inside the container.
 
 ## 7. Retrieve SSH public key (advanced — only if `ssh-generate` is enabled)
 
@@ -233,7 +203,7 @@ If no keypair exists, skip this step — git auth via `gh auth setup-git` is the
 Sandbox 'orchestrator' is ready!
 
   Branch:  agent/orchestrator
-  Docs:    https://ryaneggz.github.io/open-harness/
+  Docs:    docs/README.md
   Tests:   8/8 passed
 
   Finish setup (one-time, inside the sandbox):
