@@ -20,6 +20,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 - Docusaurus v3 docs site at `apps/docs` deployed to oh.mifune.dev ([#164](https://github.com/ryaneggz/open-harness/issues/164)).
 
 ### Changed
+- Realigned sandbox/harness/agent vocabulary across docs to clarify that one sandbox hosts many harnesses and the orchestrator is the root harness role, not a separate primitive ([#170](https://github.com/ryaneggz/open-harness/issues/170)).
 - README and installation docs now use the short `https://oh.mifune.dev/install.sh` URL (302 redirect to the raw GitHub install script on `main`) instead of the long `raw.githubusercontent.com` URL.
 - `/release` now executes the `[Unreleased]` → `[$VERSION]` promotion (was prose-only) and `release.yml` sources the GitHub Release body from the promoted CHANGELOG section via `body_path` instead of `generate_release_notes`, so the GitHub Release notes match the changelog byte-for-byte.
 - Revert prior secondary product name; "Open Harness" is the sole brand across README, docs, and onboarding ([#157](https://github.com/ryaneggz/open-harness/issues/157)).

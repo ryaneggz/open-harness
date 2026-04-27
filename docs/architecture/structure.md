@@ -30,7 +30,7 @@ open-harness/
 │   ├── tmux-agent.sh           # tmux session management for agents
 │   ├── cloudflared-tunnel.sh   # cloudflare tunnel configuration
 │   └── slack-manifest.json     # Slack app manifest for Socket Mode
-├── workspace/                  # template workspace for all agent sandboxes
+├── workspace/                  # template workspace copied into each harness's worktree
 │   ├── AGENTS.md               # operating procedures — decision rules, skills, sub-agents
 │   ├── CLAUDE.md               # symlink → AGENTS.md (Claude Code reads this automatically)
 │   ├── SOUL.md                 # agent personality, tone, values, guardrails
