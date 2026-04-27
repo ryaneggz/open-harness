@@ -1,12 +1,13 @@
 import type { Config } from "@docusaurus/types";
 import type * as Preset from "@docusaurus/preset-classic";
+import { terminalDark, terminalLight } from "./src/theme/prism-terminal";
 
 // To deploy via GitHub Pages without custom domain, swap to:
 // url: "https://ryaneggz.github.io"
 // baseUrl: "/open-harness/"
 
 const config: Config = {
-  title: "Mifune Open Harness",
+  title: "Open Harness",
   tagline:
     "Run Claude, Codex, Gemini, and Pi side-by-side from one Docker-powered agent harness.",
   favicon: "img/favicon.svg",
@@ -27,6 +28,50 @@ const config: Config = {
     locales: ["en"],
   },
 
+  markdown: {
+    mermaid: true,
+  },
+
+  headTags: [
+    {
+      tagName: "link",
+      attributes: { rel: "preconnect", href: "https://fonts.googleapis.com" },
+    },
+    {
+      tagName: "link",
+      attributes: {
+        rel: "preconnect",
+        href: "https://fonts.gstatic.com",
+        crossorigin: "anonymous",
+      },
+    },
+    {
+      tagName: "link",
+      attributes: {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap",
+      },
+    },
+  ],
+
+  themes: [
+    "@docusaurus/theme-mermaid",
+    [
+      "@easyops-cn/docusaurus-search-local",
+      {
+        hashed: true,
+        indexDocs: true,
+        indexBlog: false,
+        indexPages: true,
+        docsRouteBasePath: "/docs",
+        highlightSearchTermsOnTargetPage: true,
+        searchBarShortcut: true,
+        searchBarShortcutHint: true,
+        searchResultLimits: 8,
+      },
+    ],
+  ],
+
   presets: [
     [
       "classic",
@@ -36,6 +81,7 @@ const config: Config = {
           editUrl:
             "https://github.com/ryaneggz/open-harness/edit/main/apps/docs/",
           routeBasePath: "docs",
+          showLastUpdateTime: true,
         },
         blog: false,
         theme: {
@@ -48,13 +94,41 @@ const config: Config = {
   themeConfig: {
     colorMode: {
       defaultMode: "dark",
-      respectPrefersColorScheme: false,
+      disableSwitch: false,
+      respectPrefersColorScheme: true,
+    },
+    image: "img/social-card.png",
+    metadata: [
+      { name: "theme-color", content: "#0b1220" },
+      { property: "og:type", content: "website" },
+    ],
+    mermaid: {
+      theme: { light: "neutral", dark: "dark" },
+    },
+    prism: {
+      theme: terminalLight,
+      darkTheme: terminalDark,
+      additionalLanguages: [
+        "bash",
+        "json",
+        "yaml",
+        "docker",
+        "diff",
+        "tsx",
+        "toml",
+      ],
+    },
+    tableOfContents: {
+      minHeadingLevel: 2,
+      maxHeadingLevel: 4,
     },
     navbar: {
-      title: "Mifune Open Harness",
+      title: "Open Harness",
+      hideOnScroll: true,
       logo: {
-        alt: "Mifune Open Harness Logo",
+        alt: "Open Harness Logo",
         src: "img/logo.svg",
+        srcDark: "img/logo-dark.svg",
       },
       items: [
         {
@@ -71,7 +145,7 @@ const config: Config = {
       ],
     },
     footer: {
-      style: "dark",
+      style: "light",
       links: [
         {
           title: "Docs",

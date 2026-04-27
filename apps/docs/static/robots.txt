@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://oh.mifune.dev/sitemap.xml

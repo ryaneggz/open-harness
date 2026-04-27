@@ -7,7 +7,7 @@
 
 Scaffold a production-ready Docusaurus v3 TypeScript documentation site for Open Harness at `apps/docs/`. The site is the primary landing page at `oh.mifune.dev` and replaces ad-hoc Markdown rendering on GitHub. It is deployed to GitHub Pages from `main` via GitHub Actions.
 
-Brand: **Mifune Open Harness**. Tagline: _Run Claude, Codex, Gemini, and Pi side-by-side from one Docker-powered agent harness._
+Brand: **Open Harness** (per #157, the product is "Open Harness" — no secondary product name). Tagline: _Run Claude, Codex, Gemini, and Pi side-by-side from one Docker-powered agent harness._
 
 ## 2. Goals
 
@@ -55,7 +55,7 @@ Brand: **Mifune Open Harness**. Tagline: _Run Claude, Codex, Gemini, and Pi side
 **Description:** Configure the site with branding, repo links, custom domain, and dark mode.
 
 **Acceptance:**
-- [ ] `title: "Mifune Open Harness"`, `tagline` set per spec
+- [ ] `title: "Open Harness"`, `tagline` set per spec
 - [ ] `url: "https://oh.mifune.dev"`, `baseUrl: "/"`
 - [ ] `organizationName: "ryaneggz"`, `projectName: "open-harness"`
 - [ ] `trailingSlash: false`
@@ -193,7 +193,7 @@ Brand: **Mifune Open Harness**. Tagline: _Run Claude, Codex, Gemini, and Pi side
 
 ## 6. Design Considerations
 
-- Brand name: **Mifune Open Harness** (header / titles); product short name: **Open Harness**
+- Brand name: **Open Harness** (header / titles and short name; per #157 there is no secondary product name)
 - Theme: dark default, accent color set via CSS custom properties in `src/css/custom.css`
 - Hero copy: spec's core message verbatim
 - Logo: simple SVG placeholder OK (a follow-up PR can replace it)

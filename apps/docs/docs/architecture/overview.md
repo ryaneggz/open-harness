@@ -33,9 +33,7 @@ graph TD
   Caddy -->|"reverse proxy"| Agent1
 ```
 
-If Mermaid diagrams are not rendering, enable the `@docusaurus/theme-mermaid` plugin in `apps/docs/docusaurus.config.ts` (see the Docusaurus v3 docs for `themeConfig.mermaid`). Until then, the ASCII equivalent below conveys the same shape.
-
-**ASCII fallback:**
+**ASCII version** (for terminal-friendly viewing):
 
 ```text
 ┌─────────────────────────────────────────────────────────┐

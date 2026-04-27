@@ -44,3 +44,7 @@ workspace/startup.sh
 **/auth.json
 **/.credentials.json
 **/scheduled_tasks.lock
+# Workspace app build artifacts (Docusaurus + future apps/*)
+apps/*/build/
+apps/*/.docusaurus/
+apps/*/node_modules/
