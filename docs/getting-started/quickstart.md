@@ -27,7 +27,7 @@ Pick whichever method fits your setup:
 ### Option A — Terminal (works everywhere)
 
 ```bash
-docker exec -it -u sandbox openharness bash   # use your SANDBOX_NAME
+docker exec -it -u orchestrator openharness bash   # use your SANDBOX_NAME
 ```
 
 ### Option B — VS Code Attach to Container (local)

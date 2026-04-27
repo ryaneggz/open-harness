@@ -11,16 +11,16 @@ Open Harness uses `git worktree` to give each in-flight branch its own working t
 
 A git worktree is a second (or third, or fourth) checkout of the same repository on a different branch. All worktrees share the same `.git` directory and object store. Creating a worktree does not clone anything — it is a lightweight operation that creates a new directory linked to the repo.
 
-Inside the container, the primary checkout lives at `/home/sandbox/harness`. Worktrees live under `/home/sandbox/harness/.worktrees/`, which maps back to `.worktrees/` in the project root on the host.
+Inside the container, the primary checkout lives at `/home/orchestrator/harness`. Worktrees live under `/home/orchestrator/harness/.worktrees/`, which maps back to `.worktrees/` in the project root on the host.
 
 ## Directory Layout
 
 ```
-/home/sandbox/harness/                       ← primary checkout (development branch)
-/home/sandbox/harness/.worktrees/            ← worktree root (gitignored)
-/home/sandbox/harness/.worktrees/.gitkeep    ← tracked so the directory exists in git
-/home/sandbox/harness/.worktrees/task/164-docusaurus-docs-site/   ← worktree for task branch
-/home/sandbox/harness/.worktrees/feat/42-slack-thread-replies/    ← worktree for feature branch
+/home/orchestrator/harness/                       ← primary checkout (development branch)
+/home/orchestrator/harness/.worktrees/            ← worktree root (gitignored)
+/home/orchestrator/harness/.worktrees/.gitkeep    ← tracked so the directory exists in git
+/home/orchestrator/harness/.worktrees/task/164-docusaurus-docs-site/   ← worktree for task branch
+/home/orchestrator/harness/.worktrees/feat/42-slack-thread-replies/    ← worktree for feature branch
 ```
 
 The `.worktrees/` directory is gitignored via `.gitignore`. Only `.worktrees/.gitkeep` is committed, ensuring the directory exists after a fresh clone without committing any worktree content.
@@ -88,4 +88,4 @@ git worktree add -b task/164-docusaurus-docs-site \
   .worktrees/task/164-docusaurus-docs-site development
 ```
 
-Work happens in `/home/sandbox/harness/.worktrees/task/164-docusaurus-docs-site/`. A PR is opened targeting `development`. When the PR merges, the worktree is removed with `git worktree remove .worktrees/task/164-docusaurus-docs-site`.
+Work happens in `/home/orchestrator/harness/.worktrees/task/164-docusaurus-docs-site/`. A PR is opened targeting `development`. When the PR merges, the worktree is removed with `git worktree remove .worktrees/task/164-docusaurus-docs-site`.

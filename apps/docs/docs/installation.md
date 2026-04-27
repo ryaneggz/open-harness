@@ -98,7 +98,7 @@ git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
 cp .devcontainer/.example.env .devcontainer/.env
 # Edit .devcontainer/.env: set GH_TOKEN and optionally SANDBOX_NAME
 docker compose -f .devcontainer/docker-compose.yml up -d --build
-docker compose -f .devcontainer/docker-compose.yml exec -u sandbox sandbox zsh
+docker compose -f .devcontainer/docker-compose.yml exec -u orchestrator sandbox zsh
 ```
 
 In this mode you manage the sandbox lifecycle with `docker compose` commands directly rather than the `oh` CLI.

@@ -28,15 +28,15 @@ This is the fastest option and works on any machine with the `oh` CLI and Docker
 If you do not have the `oh` CLI, use `docker exec` directly:
 
 ```bash
-docker exec -it -u sandbox my-agent bash --login
+docker exec -it -u orchestrator my-agent bash --login
 ```
 
-Replace `my-agent` with your `SANDBOX_NAME`. You land in `/home/sandbox/harness` as the `sandbox` user.
+Replace `my-agent` with your `SANDBOX_NAME`. You land in `/home/orchestrator/harness` as the `orchestrator` user.
 
 To use zsh instead of bash:
 
 ```bash
-docker exec -it -u sandbox my-agent zsh
+docker exec -it -u orchestrator my-agent zsh
 ```
 
 ## Option B — VS Code Attach to Container (local)
@@ -48,7 +48,7 @@ Use this option when Docker is running on the same machine as VS Code.
 3. Run **"Dev Containers: Attach to Running Container"**.
 4. Select your sandbox from the list (it appears as the container name, e.g. `my-agent`).
 
-VS Code opens a new window attached to the sandbox. You can use the integrated terminal, install extensions, and edit files as if you were working locally. The workspace folder inside the container is `/home/sandbox/harness`.
+VS Code opens a new window attached to the sandbox. You can use the integrated terminal, install extensions, and edit files as if you were working locally. The workspace folder inside the container is `/home/orchestrator/harness`.
 
 ## Option C — VS Code Remote SSH + Attach (remote server)
 

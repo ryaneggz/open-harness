@@ -59,7 +59,7 @@ oh ports my-agent
 
 ### `oh shell <name>`
 
-Open an interactive bash login shell inside the named sandbox as the `sandbox` user. The working directory is `/home/sandbox/harness`.
+Open an interactive bash login shell inside the named sandbox as the `orchestrator` user. The working directory is `/home/orchestrator/harness`.
 
 ```bash
 oh shell my-agent

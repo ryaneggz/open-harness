@@ -133,7 +133,7 @@ printf "  ${CYAN}Enter the sandbox:${NC}\n"
 if [ "$WITH_CLI" = true ]; then
   printf "    openharness shell %s\n" "$SANDBOX_NAME"
 else
-  printf "    docker exec -it -u sandbox %s bash\n" "$SANDBOX_NAME"
+  printf "    docker exec -it -u orchestrator %s bash\n" "$SANDBOX_NAME"
 fi
 printf "\n"
 printf "  ${CYAN}One-time setup (inside the sandbox):${NC}\n"

@@ -105,9 +105,9 @@ describe("docker command builders", () => {
     });
 
     it("adds --user flag", () => {
-      const cmd = execCmd("my-sandbox", ["bash"], { user: "sandbox" });
+      const cmd = execCmd("my-sandbox", ["bash"], { user: "orchestrator" });
       expect(cmd).toContain("--user");
-      expect(cmd).toContain("sandbox");
+      expect(cmd).toContain("orchestrator");
     });
 
     it("adds -it flags for interactive", () => {
@@ -116,15 +116,15 @@ describe("docker command builders", () => {
     });
 
     it("adds -w workdir flag", () => {
-      const cmd = execCmd("my-sandbox", ["ls"], { workdir: "/home/sandbox/workspace" });
+      const cmd = execCmd("my-sandbox", ["ls"], { workdir: "/home/orchestrator/workspace" });
       expect(cmd).toContain("-w");
-      expect(cmd).toContain("/home/sandbox/workspace");
+      expect(cmd).toContain("/home/orchestrator/workspace");
     });
 
     it("adds -e env flags", () => {
-      const cmd = execCmd("my-sandbox", ["bash"], { env: { HOME: "/home/sandbox" } });
+      const cmd = execCmd("my-sandbox", ["bash"], { env: { HOME: "/home/orchestrator" } });
       expect(cmd).toContain("-e");
-      expect(cmd).toContain("HOME=/home/sandbox");
+      expect(cmd).toContain("HOME=/home/orchestrator");
     });
   });
 

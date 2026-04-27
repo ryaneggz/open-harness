@@ -3,8 +3,9 @@
 import { HeartbeatDaemon } from "../lib/heartbeat/index.js";
 import { discoverWorkspaceRoots } from "../lib/heartbeat/discovery.js";
 import { join } from "node:path";
+import { ORCHESTRATOR_HOME } from "../lib/config.js";
 
-const HOME = process.env.HOME ?? "/home/sandbox";
+const HOME = process.env.HOME ?? ORCHESTRATOR_HOME;
 const WORKSPACE = join(HOME, "harness/workspace");
 
 // Multi-root discovery: find every git worktree under `$HOME/harness` that

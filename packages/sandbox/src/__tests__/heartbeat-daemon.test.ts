@@ -481,13 +481,14 @@ describe("HeartbeatDaemon", () => {
       const daemon = new HeartbeatDaemon({
         workspaceRoots: [
           {
-            workspacePath: "/home/sandbox/harness/workspace",
-            heartbeatDir: "/home/sandbox/harness/workspace/heartbeats",
+            workspacePath: "/home/orchestrator/harness/workspace",
+            heartbeatDir: "/home/orchestrator/harness/workspace/heartbeats",
             label: "parent",
           },
           {
-            workspacePath: "/home/sandbox/harness/.worktrees/agent/sdr-pallet/workspace",
-            heartbeatDir: "/home/sandbox/harness/.worktrees/agent/sdr-pallet/workspace/heartbeats",
+            workspacePath: "/home/orchestrator/harness/.worktrees/agent/sdr-pallet/workspace",
+            heartbeatDir:
+              "/home/orchestrator/harness/.worktrees/agent/sdr-pallet/workspace/heartbeats",
             label: "sdr-pallet",
           },
         ],
@@ -500,7 +501,7 @@ describe("HeartbeatDaemon", () => {
       expect(out).toContain("Heartbeat daemon: running (pid");
       expect(out).toContain("Roots:");
       // Each root is announced with its workspace path and schedule count.
-      expect(out).toMatch(/parent\s+→\s+\/home\/sandbox\/harness\/workspace \(1 schedule\)/);
+      expect(out).toMatch(/parent\s+→\s+\/home\/orchestrator\/harness\/workspace \(1 schedule\)/);
       expect(out).toMatch(/sdr-pallet\s+→\s+.*sdr-pallet\/workspace \(2 schedules\)/);
       // Composite names preserved in the Schedules: section.
       expect(out).toContain("parent::nightly-release");

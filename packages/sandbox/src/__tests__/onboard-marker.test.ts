@@ -4,7 +4,7 @@ import { makeFakeDeps } from "../onboard/testing/fake-deps.js";
 
 describe("onboard marker", () => {
   it("markerPath is ~/.claude/.onboarded", () => {
-    expect(marker.markerPath("/home/sandbox")).toBe("/home/sandbox/.claude/.onboarded");
+    expect(marker.markerPath("/home/orchestrator")).toBe("/home/orchestrator/.claude/.onboarded");
   });
 
   it("exists returns false when file is absent", () => {
@@ -13,7 +13,7 @@ describe("onboard marker", () => {
   });
 
   it("read returns parsed marker when file exists", () => {
-    const path = "/home/sandbox/.claude/.onboarded";
+    const path = "/home/orchestrator/.claude/.onboarded";
     const deps = makeFakeDeps({
       files: {
         [path]: JSON.stringify({
@@ -30,7 +30,7 @@ describe("onboard marker", () => {
   });
 
   it("read returns null on invalid JSON", () => {
-    const path = "/home/sandbox/.claude/.onboarded";
+    const path = "/home/orchestrator/.claude/.onboarded";
     const deps = makeFakeDeps({ files: { [path]: "not json" } });
     expect(marker.read(deps.fs, deps.home)).toBeNull();
   });
@@ -46,7 +46,7 @@ describe("onboard marker", () => {
       claude: "done",
     });
 
-    const path = "/home/sandbox/.claude/.onboarded";
+    const path = "/home/orchestrator/.claude/.onboarded";
     expect(deps.files.has(path)).toBe(true);
     const parsed = JSON.parse(deps.files.get(path)!);
     expect(parsed.version).toBe(1);

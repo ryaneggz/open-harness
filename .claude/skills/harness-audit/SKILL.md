@@ -48,24 +48,24 @@ Read the following before spawning agents. Pass the assembled snapshot to every 
 
 ```bash
 # Harness structure
-ls /home/sandbox/harness/.claude/skills/
-ls /home/sandbox/harness/.claude/agents/ 2>/dev/null || echo "no agents dir"
-ls /home/sandbox/harness/workspace/heartbeats/ 2>/dev/null || echo "no heartbeats"
-ls /home/sandbox/harness/workspace/memory/ 2>/dev/null | tail -10
-ls /home/sandbox/harness/docs/wiki/ 2>/dev/null | head -20
+ls /home/orchestrator/harness/.claude/skills/
+ls /home/orchestrator/harness/.claude/agents/ 2>/dev/null || echo "no agents dir"
+ls /home/orchestrator/harness/workspace/heartbeats/ 2>/dev/null || echo "no heartbeats"
+ls /home/orchestrator/harness/workspace/memory/ 2>/dev/null | tail -10
+ls /home/orchestrator/harness/docs/wiki/ 2>/dev/null | head -20
 
 # Package health
-cat /home/sandbox/harness/packages/slack/package.json 2>/dev/null | head -30
-cat /home/sandbox/harness/packages/sandbox/package.json 2>/dev/null | head -30
+cat /home/orchestrator/harness/packages/slack/package.json 2>/dev/null | head -30
+cat /home/orchestrator/harness/packages/sandbox/package.json 2>/dev/null | head -30
 
 # CI definition
-ls /home/sandbox/harness/.github/workflows/ 2>/dev/null
+ls /home/orchestrator/harness/.github/workflows/ 2>/dev/null
 
 # Worktrees
-git -C /home/sandbox/harness worktree list 2>/dev/null
+git -C /home/orchestrator/harness worktree list 2>/dev/null
 
 # Recent memory
-tail -40 /home/sandbox/harness/workspace/MEMORY.md 2>/dev/null
+tail -40 /home/orchestrator/harness/workspace/MEMORY.md 2>/dev/null
 ```
 
 Assemble a **Context Snapshot** (compact markdown, ~300 words):
@@ -110,7 +110,7 @@ Launch 4 Agent tool calls **in a single message**. Each receives the Context Sna
 
 #### PM Auditor
 
-> You are a Product Manager auditing the Open Harness project. Read the Context Snapshot provided. Then inspect the repo at `/home/sandbox/harness` for evidence supporting or refuting each check below. Use Read, Glob, and Grep tools freely. Return findings in the Ultra-compressed format defined at the end.
+> You are a Product Manager auditing the Open Harness project. Read the Context Snapshot provided. Then inspect the repo at `/home/orchestrator/harness` for evidence supporting or refuting each check below. Use Read, Glob, and Grep tools freely. Return findings in the Ultra-compressed format defined at the end.
 >
 > **Audit areas:**
 >
@@ -136,7 +136,7 @@ Launch 4 Agent tool calls **in a single message**. Each receives the Context Sna
 
 #### Implementer Auditor
 
-> You are a senior engineer auditing the Open Harness project. Read the Context Snapshot provided. Then inspect the repo at `/home/sandbox/harness`. Use Read, Glob, Grep, and Bash tools freely. Return findings in the Ultra-compressed format defined at the end.
+> You are a senior engineer auditing the Open Harness project. Read the Context Snapshot provided. Then inspect the repo at `/home/orchestrator/harness`. Use Read, Glob, Grep, and Bash tools freely. Return findings in the Ultra-compressed format defined at the end.
 >
 > **Audit areas:**
 >
@@ -164,7 +164,7 @@ Launch 4 Agent tool calls **in a single message**. Each receives the Context Sna
 
 #### Critic Auditor
 
-> You are an adversarial security and reliability critic auditing the Open Harness project. Assume everything is broken until proven otherwise. Read the Context Snapshot. Inspect `/home/sandbox/harness`. Use Read, Glob, Grep, and Bash tools. Return findings in the Ultra-compressed format defined at the end.
+> You are an adversarial security and reliability critic auditing the Open Harness project. Assume everything is broken until proven otherwise. Read the Context Snapshot. Inspect `/home/orchestrator/harness`. Use Read, Glob, Grep, and Bash tools. Return findings in the Ultra-compressed format defined at the end.
 >
 > **Audit areas:**
 >
@@ -172,7 +172,7 @@ Launch 4 Agent tool calls **in a single message**. Each receives the Context Sna
 >
 > 2. **Heartbeat reliability** — Read all files in `workspace/heartbeats/`. For each: is there a watchdog/restart mechanism? What happens if the heartbeat process crashes — does it auto-recover? Is the cron/daemon config present and valid?
 >
-> 3. **Worktree cleanup** — Run `git -C /home/sandbox/harness worktree list`. Identify orphaned agent branches (`agent/*`) with no recent commits (check `git log --since="7 days ago"`). Is there any automated cleanup?
+> 3. **Worktree cleanup** — Run `git -C /home/orchestrator/harness worktree list`. Identify orphaned agent branches (`agent/*`) with no recent commits (check `git log --since="7 days ago"`). Is there any automated cleanup?
 >
 > 4. **State corruption risks** — Look for: shared files written by multiple agents concurrently (e.g., `MEMORY.md`), no file locking on append operations, mid-commit crash scenarios (partial writes to critical files), compose volumes that could diverge.
 >
@@ -192,7 +192,7 @@ Launch 4 Agent tool calls **in a single message**. Each receives the Context Sna
 
 #### Explorer Auditor
 
-> You are a system archaeologist auditing the Open Harness project. Your job is to discover what is actually happening vs. what the documentation claims. Read the Context Snapshot. Inspect `/home/sandbox/harness` and `/home/sandbox/harness/workspace`. Use Read, Glob, Grep, and Bash tools. Return findings in the Ultra-compressed format defined at the end.
+> You are a system archaeologist auditing the Open Harness project. Your job is to discover what is actually happening vs. what the documentation claims. Read the Context Snapshot. Inspect `/home/orchestrator/harness` and `/home/orchestrator/harness/workspace`. Use Read, Glob, Grep, and Bash tools. Return findings in the Ultra-compressed format defined at the end.
 >
 > **Audit areas:**
 >
@@ -202,7 +202,7 @@ Launch 4 Agent tool calls **in a single message**. Each receives the Context Sna
 >
 > 3. **Heartbeat health** — For each heartbeat file in `workspace/heartbeats/`, classify: ACTIVE (recently logged evidence), STALE (defined but no recent log evidence), MISCONFIGURED (broken frontmatter or missing schedule). Check memory logs for heartbeat execution traces.
 >
-> 4. **Agent worktree status** — Run `git -C /home/sandbox/harness worktree list` and `git -C /home/sandbox/harness branch -a | grep agent/`. Classify each: ACTIVE (commits in last 7 days), IDLE (commits 7-30 days ago), ORPHANED (no commits in 30+ days or branch deleted).
+> 4. **Agent worktree status** — Run `git -C /home/orchestrator/harness worktree list` and `git -C /home/orchestrator/harness branch -a | grep agent/`. Classify each: ACTIVE (commits in last 7 days), IDLE (commits 7-30 days ago), ORPHANED (no commits in 30+ days or branch deleted).
 >
 > 5. **Skill usage patterns** — Read `workspace/MEMORY.md` and recent daily logs. Which skills appear in memory entries (evidence of use)? Which skills exist in `.claude/skills/` but never appear in logs (potentially stale or unknown)?
 >
