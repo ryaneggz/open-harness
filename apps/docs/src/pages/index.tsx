@@ -23,19 +23,19 @@ const AGENTS: Array<{
     name: "Claude Code",
     description: "Anthropic's terminal coding agent.",
     href: "/docs/agents/claude-code",
-    icon: <ClaudeIcon />,
+    icon: <img src="/img/agents/claude-code.png" alt="" width={28} height={28} />,
   },
   {
     name: "Codex",
     description: "OpenAI's CLI coding agent.",
     href: "/docs/agents/codex",
-    icon: <CodexIcon />,
+    icon: <img src="/img/agents/codex.png" alt="" width={28} height={28} />,
   },
   {
     name: "Gemini",
     description: "Google's command-line agent.",
     href: "/docs/agents/gemini",
-    icon: <GeminiIcon />,
+    icon: <img src="/img/agents/gemini.png" alt="" width={28} height={28} />,
   },
   {
     name: "Pi",
@@ -214,54 +214,19 @@ export default function Home(): React.ReactElement {
   );
 }
 
-/* ---------- Agent icons ----------
- * All icons are monochrome line glyphs that inherit `currentColor`,
- * so they pick up the foreground from .agentIcon / .agentCard styles. */
-
-function ClaudeIcon(): React.ReactElement {
-  return (
-    <svg viewBox="0 0 32 32" width="22" height="22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M11 7 6 25" />
-        <path d="M11 7l5 11" />
-        <path d="M21 7l5 18" />
-        <path d="M21 7l-3 11" />
-      </g>
-    </svg>
-  );
-}
-
-function CodexIcon(): React.ReactElement {
-  return (
-    <svg viewBox="0 0 32 32" width="22" height="22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 8 6 16l6 8" />
-        <path d="M20 8l6 8-6 8" />
-        <path d="M19 8l-6 16" />
-      </g>
-    </svg>
-  );
-}
-
-function GeminiIcon(): React.ReactElement {
-  return (
-    <svg viewBox="0 0 32 32" width="22" height="22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M16 4c.3 5.5 3 8 9 8.5-6 .5-8.7 3-9 8.5-.3-5.5-3-8-9-8.5 6-.5 8.7-3 9-8.5Z" />
-        <path d="M24.5 24l1.5 4 1.5-4 .5-1.5L25.5 22Z" fill="currentColor" />
-      </g>
-    </svg>
-  );
-}
+/* ---------- Pi icon ----------
+ * Inlined so `currentColor` adapts to light/dark theme. The other three
+ * agents have official PNG/SVG marks with their own colors (see /img/agents/). */
 
 function PiIcon(): React.ReactElement {
   return (
-    <svg viewBox="0 0 32 32" width="22" height="22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 10h21" />
-        <path d="M11 10v15" />
-        <path d="M21 10v13c0 1.5 1 2.5 2.5 2.5" />
-      </g>
+    <svg viewBox="0 0 800 800" width="28" height="28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M165.29 165.29 H517.36 V400 H400 V517.36 H282.65 V634.72 H165.29 Z M282.65 282.65 V400 H400 V282.65 Z"
+      />
+      <path fill="currentColor" d="M517.36 400 H634.72 V634.72 H517.36 Z" />
     </svg>
   );
 }
