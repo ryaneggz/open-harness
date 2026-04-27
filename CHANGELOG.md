@@ -17,6 +17,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 - Root `CHANGELOG.md` and Keep-a-Changelog workflow documented in `.claude/rules/git.md`; `/release` now promotes `[Unreleased]` to the new version section at tag time.
 - Generate `sitemap.xml` and `robots.txt` during docs build via `next-sitemap` ([#141](https://github.com/ryaneggz/open-harness/issues/141)).
 - Launch runbook consolidating manual cutover steps (DNS, GH settings, OG validation, GSC, promotion).
+- Docusaurus v3 docs site at `apps/docs` deployed to oh.mifune.dev ([#164](https://github.com/ryaneggz/open-harness/issues/164)).
 
 ### Changed
 - README and installation docs now use the short `https://oh.mifune.dev/install.sh` URL (302 redirect to the raw GitHub install script on `main`) instead of the long `raw.githubusercontent.com` URL.
