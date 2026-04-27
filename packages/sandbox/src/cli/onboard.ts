@@ -7,6 +7,7 @@
 
 import { spawnSync } from "node:child_process";
 import { execCmd } from "../lib/docker.js";
+import { ORCHESTRATOR_USER, ORCHESTRATOR_HOME } from "../lib/config.js";
 import { makeRealDeps } from "../onboard/deps.js";
 import { runOnboarding } from "../onboard/orchestrator.js";
 import { parseArgs } from "../onboard/args.js";
@@ -47,9 +48,9 @@ function runHostMode(opts: OnboardInvocationOptions): number {
   if (opts.only) args.push("--only", opts.only);
 
   const cmd = execCmd(opts.name!, args, {
-    user: "sandbox",
+    user: ORCHESTRATOR_USER,
     interactive: true,
-    env: { HOME: "/home/sandbox" },
+    env: { HOME: ORCHESTRATOR_HOME },
   });
   const result = spawnSync(cmd[0], cmd.slice(1), { stdio: "inherit" });
   if (result.status !== 0) {

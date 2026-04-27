@@ -58,7 +58,7 @@ gemini
 gemini -p "Summarize the architecture in docs/architecture/"
 
 # Point at a specific directory
-gemini --cwd /home/sandbox/harness/workspace
+gemini --cwd /home/orchestrator/harness/workspace
 ```
 
 Run inside a dedicated tmux session:

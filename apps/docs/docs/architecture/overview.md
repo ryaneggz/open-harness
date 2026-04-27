@@ -55,9 +55,9 @@ graph TD
 │              │                                           │
 │  ┌───────────▼──────────────────────────────────────┐   │
 │  │  Worktrees (bind-mounted from host)               │   │
-│  │  /home/sandbox/harness/                (main)     │   │
-│  │  /home/sandbox/harness/.worktrees/task/164  (PR)  │   │
-│  │  /home/sandbox/harness/.worktrees/feat/42   (PR)  │   │
+│  │  /home/orchestrator/harness/                (main)     │   │
+│  │  /home/orchestrator/harness/.worktrees/task/164  (PR)  │   │
+│  │  /home/orchestrator/harness/.worktrees/feat/42   (PR)  │   │
 │  └───────────┬──────────────────────────────────────┘   │
 │              │                                           │
 │  ┌───────────▼──────────────────────────────────────┐   │
@@ -82,7 +82,7 @@ graph TD
 
 **One container, many agents.** All AI agent CLIs — Claude Code, Pi, Codex — share the same sandbox image built from `.devcontainer/Dockerfile`. There is no separate image per agent. Isolation is achieved through git worktrees and tmux sessions, not separate containers.
 
-**Host stays thin.** The host only runs Docker and the `oh` CLI. No Node runtime, no Python, and no agent toolchain is required on the developer's machine. The project root is bind-mounted into the container at `/home/sandbox/harness`, so files written inside the container are immediately visible on the host and in git.
+**Host stays thin.** The host only runs Docker and the `oh` CLI. No Node runtime, no Python, and no agent toolchain is required on the developer's machine. The project root is bind-mounted into the container at `/home/orchestrator/harness`, so files written inside the container are immediately visible on the host and in git.
 
 **Worktrees are the unit of isolation.** Each in-flight branch maps to a worktree under `.worktrees/`. The heartbeat daemon discovers all active worktrees and manages schedules independently per worktree. Agents work in their own branch without touching each other's working tree.
 

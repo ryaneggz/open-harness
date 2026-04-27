@@ -16,6 +16,7 @@ import {
   resolveSubcommand,
   helpText,
 } from "./cli.js";
+import { ORCHESTRATOR_USER, ORCHESTRATOR_HOME } from "../lib/config.js";
 
 const args = process.argv.slice(2);
 const firstArg = args[0];
@@ -108,7 +109,7 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
       console.log(`\n  Sandbox '${config.name}' is running!\n`);
       console.log("  Connect:");
       if (sshPort) {
-        console.log(`    SSH:    ssh sandbox@localhost -p ${sshPort}`);
+        console.log(`    SSH:    ssh ${ORCHESTRATOR_USER}@localhost -p ${sshPort}`);
       }
       console.log(`    Shell:  openharness shell ${config.name}`);
       if (appPort) {
@@ -156,9 +157,9 @@ async function runSubcommand(command: string, cmdArgs: string[]) {
         process.exit(1);
       }
       const cmd = execCmd(params.name as string, ["bash", "--login"], {
-        user: "sandbox",
+        user: ORCHESTRATOR_USER,
         interactive: true,
-        workdir: "/home/sandbox/harness",
+        workdir: `${ORCHESTRATOR_HOME}/harness`,
       });
       const { spawnSync } = await import("node:child_process");
       spawnSync(cmd[0], cmd.slice(1), { stdio: "inherit" });

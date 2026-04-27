@@ -74,7 +74,7 @@ See [Onboarding](./onboarding) for the full step-by-step breakdown.
 oh shell my-agent
 ```
 
-You are now inside the sandbox as the `sandbox` user. The working directory is `/home/sandbox/harness`.
+You are now inside the sandbox as the `orchestrator` user. The working directory is `/home/orchestrator/harness`.
 
 ### Step 5: Start an agent
 

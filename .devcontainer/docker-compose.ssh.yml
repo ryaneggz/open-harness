@@ -9,4 +9,4 @@
 services:
   sandbox:
     volumes:
-      - ${HOST_SSH_DIR:-~/.ssh}:/home/sandbox/.ssh:ro
+      - ${HOST_SSH_DIR:-~/.ssh}:/home/orchestrator/.ssh:ro

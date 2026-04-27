@@ -18,6 +18,7 @@
  */
 
 import { loadEnvInto, upsertEnvFile } from "../env.js";
+import { ORCHESTRATOR_HOME } from "../../lib/config.js";
 import type { Deps, Step, StepResult, StepStatus } from "../types.js";
 
 const MAX_POLLS = 15;
@@ -101,7 +102,7 @@ interface ResolvedMom {
 
 function resolveMomCmd(deps: Deps): ResolvedMom {
   const { fs, exec, io } = deps;
-  const slackPkg = "/home/sandbox/harness/packages/slack";
+  const slackPkg = `${ORCHESTRATOR_HOME}/harness/packages/slack`;
 
   if (exec.which("mom")) {
     return { cmd: ["mom"] };

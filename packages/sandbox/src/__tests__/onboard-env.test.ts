@@ -27,10 +27,10 @@ describe("parseEnvFile", () => {
 describe("loadEnvInto", () => {
   it("adds missing keys, preserves existing keys", () => {
     const deps = makeFakeDeps({
-      files: { "/home/sandbox/harness/.devcontainer/.env": "FOO=a\nBAR=b\n" },
+      files: { "/home/orchestrator/harness/.devcontainer/.env": "FOO=a\nBAR=b\n" },
     });
     const target: Record<string, string | undefined> = { FOO: "preexisting" };
-    loadEnvInto(deps.fs, "/home/sandbox/harness/.devcontainer/.env", target);
+    loadEnvInto(deps.fs, "/home/orchestrator/harness/.devcontainer/.env", target);
     expect(target.FOO).toBe("preexisting");
     expect(target.BAR).toBe("b");
   });

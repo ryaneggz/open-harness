@@ -96,7 +96,7 @@ Wait for startup (poll for "Startup complete" in logs, up to 3 minutes).
 ### Step 2h — Run sandbox health check via docker exec
 
 ```bash
-docker exec -u sandbox $SANDBOX_NAME bash -c '
+docker exec -u orchestrator $SANDBOX_NAME bash -c '
   node --version &&
   (claude --version 2>/dev/null || echo CLAUDE_MISSING) &&
   (docker ps >/dev/null 2>&1 && echo DOCKER_OK || echo DOCKER_UNAVAILABLE)
@@ -111,7 +111,7 @@ If all checks pass, skip to **Step 5**.
 |---|---|
 | Container not running | `docker compose ... up -d` (Step 1h above) |
 | `Node.js >= 22` | Wrong image. Rebuild via `/provision --rebuild`. |
-| Agent CLI missing | `docker exec -u sandbox $SANDBOX_NAME sudo npm install -g <pkg>` (see container-path table) |
+| Agent CLI missing | `docker exec -u orchestrator $SANDBOX_NAME sudo npm install -g <pkg>` (see container-path table) |
 | Docker socket fails | Verify `docker-compose.docker.yml` is in `.openharness/config.json`; rebuild |
 
 ### Step 4h — Re-run health check and handle persistent failures
@@ -142,7 +142,7 @@ verify them end-to-end so failures are attributed to the right layer.
 
 ### 6a — Enumerate targets from cloudflared config
 
-Parse each `~/.cloudflared/config-*.yml` to discover `hostname → service` pairs. On the host, prefix with `docker exec -u sandbox $SANDBOX_NAME`.
+Parse each `~/.cloudflared/config-*.yml` to discover `hostname → service` pairs. On the host, prefix with `docker exec -u orchestrator $SANDBOX_NAME`.
 
 ```bash
 python3 - <<'PY'
@@ -185,7 +185,7 @@ For any hostname that failed in 6b, run a curl pair to localize the fault:
 | any     | 5xx/000 | **Origin problem** — check the app's tmux session log, restart service |
 
 ```bash
-# container: run directly.  host: wrap with docker exec -u sandbox $SANDBOX_NAME bash -c '...'
+# container: run directly.  host: wrap with docker exec -u orchestrator $SANDBOX_NAME bash -c '...'
 while IFS=$'\t' read -r host service; do
   pub=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "https://${host}/")
   loc=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5  "${service/0.0.0.0/127.0.0.1}/")

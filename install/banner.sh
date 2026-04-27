@@ -89,3 +89,26 @@ printf '\n'
 printf '  Shortcuts: claude · pi · heartbeat-daemon status\n'
 printf '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
 printf '\n'
+
+# ---------------------------------------------------------------------------
+# Migration guard — sandbox→orchestrator user rename
+# Fires only when the old /home/sandbox directory still exists and the current
+# user is already orchestrator (upgraded container, no volume reset).
+# Must not error or produce output in the normal (non-migration) case.
+# ---------------------------------------------------------------------------
+
+if [ -d "/home/sandbox" ] && [ "$(whoami)" = "orchestrator" ]; then
+  printf '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
+  printf '\n'
+  printf '  [!] Migration required: container was upgraded from sandbox→orchestrator user.\n'
+  printf '      The old /home/sandbox directory still exists.\n'
+  printf '\n'
+  printf '      Option 1 — preserve auth credentials (recommended):\n'
+  printf '        sudo chown -R 1000:1000 /home/orchestrator\n'
+  printf '\n'
+  printf '      Option 2 — clean reset (destroys claude/codex/pi/gh auth):\n'
+  printf '        docker compose down -v && docker compose up --build\n'
+  printf '\n'
+  printf '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
+  printf '\n'
+fi

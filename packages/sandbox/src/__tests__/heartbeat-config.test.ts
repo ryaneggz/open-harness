@@ -128,7 +128,7 @@ active: 9-21
 });
 
 describe("parseHeartbeatConfig", () => {
-  const workspacePath = "/home/sandbox/workspace";
+  const workspacePath = "/home/orchestrator/workspace";
   const heartbeatsDir = `${workspacePath}/heartbeats`;
   const legacyPath = `${workspacePath}/HEARTBEAT.md`;
 
@@ -264,7 +264,7 @@ describe("parseHeartbeatConfig", () => {
 });
 
 describe("parseHeartbeatConfigAsync", () => {
-  const workspacePath = "/home/sandbox/workspace";
+  const workspacePath = "/home/orchestrator/workspace";
   const heartbeatsDir = `${workspacePath}/heartbeats`;
   const legacyPath = `${workspacePath}/HEARTBEAT.md`;
 

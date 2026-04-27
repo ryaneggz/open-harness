@@ -62,7 +62,7 @@ You can't do this when each CLI demands a different Node version on the host. Yo
 git clone https://github.com/ryaneggz/open-harness.git
 cd open-harness
 docker compose -f .devcontainer/docker-compose.yml up -d --build
-docker exec -it -u sandbox openharness zsh
+docker exec -it -u orchestrator openharness zsh
 ```
 
 Or, after the first sandbox: `oh sandbox <name>` from anywhere.

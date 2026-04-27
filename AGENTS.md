@@ -22,7 +22,7 @@ Provision a new harness. The sandbox uses `.devcontainer/` as the base environme
 
    **Option A — Terminal:**
    ```bash
-   docker exec -it -u sandbox openharness zsh     # default; bash also available
+   docker exec -it -u orchestrator openharness zsh     # default; bash also available
    ```
 
    **Option B — VS Code Attach to Container (local):**
