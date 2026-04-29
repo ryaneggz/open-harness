@@ -24,6 +24,11 @@ Pass flags to force a specific install path:
 | `--install-node` | Force nvm + Node 22 install, then CLI. |
 | `--yes` | Accept defaults at all prompts. |
 | `--yes --docker-only` | Non-interactive Docker-only install. |
+| `OH_INSTALL_REF=<git-ref>` | Pin the cloned repo to a specific tag or SHA instead of `main`. |
+| `SANDBOX_NAME=<name>` | Skip the "Container name" prompt. |
+| `SANDBOX_PASSWORD=<value>` | Skip the credential prompt (used by the optional sshd overlay). |
+
+The two `SANDBOX_*` env vars resolve **independently** — set one without the other and the missing prompt still fires (or defaults under no TTY).
 
 `--with-cli` is a deprecated alias for `--cli` and still works with a warning.
 

@@ -50,8 +50,10 @@ Pass flags to skip the prompt and force a specific path:
 | `--yes --docker-only` | Non-interactive Docker-only install. |
 | `OH_INSTALL_REF=<git-ref>` | Pin the cloned repo to a specific tag or SHA instead of `main`. |
 | `OH_ASSUME_YES=1` | Same as `--yes`. |
+| `SANDBOX_NAME=<name>` | Skip the "Container name" prompt. |
+| `SANDBOX_PASSWORD=<value>` | Skip the credential prompt (used by the optional sshd overlay). |
 
-If `SANDBOX_NAME` is set in the environment, the installer skips that prompt. The sandbox passphrase prompt resolves independently.
+The two `SANDBOX_*` env vars resolve **independently** — set only `SANDBOX_NAME` and the passphrase prompt still fires, and vice versa. Both fall back to defaults (`openharness` and `changeme`) when no TTY is available.
 
 ### Deprecated flag
 
