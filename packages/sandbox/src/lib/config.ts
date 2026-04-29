@@ -7,6 +7,14 @@ const CONFIG_PATH = ".openharness/config.json";
 const ENV_FILE = ".devcontainer/.env";
 const INIT_ENV = ".devcontainer/init-env.sh";
 
+/**
+ * Linux user account inside the sandbox container.
+ * Single source of truth — every `docker exec`, gosu, su, and HOME path
+ * reference should derive from these constants.
+ */
+export const ORCHESTRATOR_USER = "orchestrator";
+export const ORCHESTRATOR_HOME = `/home/${ORCHESTRATOR_USER}`;
+
 export interface SandboxOptions {
   name?: string;
 }

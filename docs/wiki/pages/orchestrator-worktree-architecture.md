@@ -28,7 +28,7 @@ hatch, not the default.
   Owns its workspace subtree (SOUL.md, skills, heartbeats, memory, CRM,
   wiki, projects) and its branch history.
 - **Sandbox container** — default name `oh-remote`. Bind-mounts
-  `/home/sandbox/harness`, hosts the shared toolchain and credentials.
+  `/home/orchestrator/harness`, hosts the shared toolchain and credentials.
 - **Heartbeat daemon** — one Node process per sandbox. Discovers roots
   from `git worktree list --porcelain`; one `fs.watch` per root; each
   spawn uses `cwd = <worktree>/workspace`.

@@ -9,7 +9,7 @@ The canonical binary is `openharness`; `oh` is the alias used in all examples be
 
 ## Purpose
 
-`oh shell` opens an interactive login shell inside a running sandbox container. It runs as the `sandbox` user, starts in `/home/sandbox/workspace`, and uses the shell configured in the container's `$SHELL` environment variable (zsh by default, falling back to bash). The session is equivalent to attaching directly with `docker exec -it -u sandbox <container> zsh -l`.
+`oh shell` opens an interactive login shell inside a running sandbox container. It runs as the `orchestrator` user, starts in `/home/orchestrator/workspace`, and uses the shell configured in the container's `$SHELL` environment variable (zsh by default, falling back to bash). The session is equivalent to attaching directly with `docker exec -it -u orchestrator <container> zsh -l`.
 
 Use this command whenever you need to inspect, debug, or work inside the sandbox from the host terminal.
 
@@ -27,7 +27,7 @@ oh shell <name>
 # Open a shell in the sandbox named "my-agent"
 oh shell my-agent
 
-# The shell starts in /home/sandbox/workspace
+# The shell starts in /home/orchestrator/workspace
 # Exit with Ctrl+D or the "exit" command
 exit
 ```

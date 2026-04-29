@@ -91,8 +91,8 @@ Output is grouped by root:
 Heartbeat daemon: running (pid 12345)
 
 Roots:
-  parent       → /home/sandbox/harness/workspace (3 schedules)
-  sdr-pallet   → /home/sandbox/harness/.worktrees/agent/sdr-pallet/workspace (5 schedules)
+  parent       → /home/orchestrator/harness/workspace (3 schedules)
+  sdr-pallet   → /home/orchestrator/harness/.worktrees/agent/sdr-pallet/workspace (5 schedules)
 
 Schedules:
   parent::nightly-release         50 23 * * *     next: 2026-04-19 23:50 UTC
@@ -122,8 +122,8 @@ Scripts that grep the legacy `cronExpr → filePath` format still match — the 
 Each root writes its own log:
 
 ```bash
-tail -f /home/sandbox/harness/workspace/heartbeats/heartbeat.log
-tail -f /home/sandbox/harness/.worktrees/agent/<name>/workspace/heartbeats/heartbeat.log
+tail -f /home/orchestrator/harness/workspace/heartbeats/heartbeat.log
+tail -f /home/orchestrator/harness/.worktrees/agent/<name>/workspace/heartbeats/heartbeat.log
 ```
 
 Each per-root logger rotates independently when it exceeds 1000 lines (keeps the last 500). Daemon-level messages (startup, discovery errors) go to the parent root's log.

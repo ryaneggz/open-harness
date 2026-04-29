@@ -5,7 +5,7 @@ import { execWasCalled, ioMessages, makeFakeDeps } from "../onboard/testing/fake
 describe("claude step", () => {
   it("returns done when ~/.claude/.credentials.json exists", async () => {
     const deps = makeFakeDeps({
-      files: { "/home/sandbox/.claude/.credentials.json": "{}" },
+      files: { "/home/orchestrator/.claude/.credentials.json": "{}" },
     });
     const result = await claudeStep.run(deps, { force: false });
     expect(result).toEqual({ id: "claude", status: "done" });
@@ -15,7 +15,7 @@ describe("claude step", () => {
 
   it("accepts the alternate credentials.json path", async () => {
     const deps = makeFakeDeps({
-      files: { "/home/sandbox/.claude/credentials.json": "{}" },
+      files: { "/home/orchestrator/.claude/credentials.json": "{}" },
     });
     const result = await claudeStep.run(deps, { force: false });
     expect(result.status).toBe("done");

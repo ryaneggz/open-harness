@@ -3,7 +3,7 @@ title: "Workspace Structure"
 ---
 
 
-The `workspace/` directory is bind-mounted into every sandbox at container startup. It contains the agent's identity, operating procedures, memory, scheduled tasks, and application code. Changes made on the host are visible inside the container immediately, and vice versa.
+The `workspace/` directory is the identity layer for each harness — bind-mounted into the sandbox at container startup. It contains the harness's identity files, operating procedures, memory, scheduled tasks, and application code. Changes made on the host are visible inside the container immediately, and vice versa.
 
 ## Directory tree
 

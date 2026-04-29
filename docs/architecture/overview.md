@@ -3,7 +3,7 @@ title: "Architecture Overview"
 ---
 
 
-Open Harness is a monorepo that provides isolated Docker sandboxes for AI coding agents, with a shared runtime pattern that lets multiple agents co-exist in one container. The system has four layers:
+Open Harness is a monorepo that gives you a single Docker **sandbox** (container) where you run as many **harnesses** as you like — each a git worktree with its own branch, identity, and schedule. The root harness is the **orchestrator**: it provisions and manages the rest. The system has four layers:
 
 ## 1. CLI & Sandbox Package (`packages/sandbox/`)
 
@@ -22,12 +22,12 @@ The Dockerfile and Compose files define the sandbox environment:
 
 ## 3. Orchestrator + Worktree Topology
 
-The running configuration is not "one sandbox per agent" — it's **one parent sandbox, N git worktrees, one heartbeat daemon**. Every agent is a git branch checked out as a worktree under `.worktrees/`, each shipping its own `workspace/` (SOUL.md, skills, heartbeats, memory, CRM, wiki). The container bind-mounts the entire repo, so all worktrees are visible to one shared toolchain and one shared credential set.
+The running configuration is not "one sandbox per agent" — it's **one parent sandbox, N git worktrees, one heartbeat daemon**. Every harness is a git branch checked out as a worktree under `.worktrees/`, each shipping its own `workspace/` (SOUL.md, skills, heartbeats, memory, CRM, wiki). The container bind-mounts the entire repo, so all worktrees are visible to one shared toolchain and one shared credential set.
 
 Ownership splits cleanly:
 
-- **Orchestrator** (session at the project root): owns harness source, git operations, GitHub issues/PRs/releases, and the one-time scaffold of each new agent's workspace.
-- **Worktree agent** (session inside `.worktrees/<prefix>/<slug>/workspace/`): owns its workspace subtree and its branch history.
+- **Orchestrator** (session at the project root): owns harness source, git operations, GitHub issues/PRs/releases, and the one-time scaffold of each new harness's workspace.
+- **Worktree harness** (session inside `.worktrees/<prefix>/<slug>/workspace/`): owns its workspace subtree and its branch history.
 
 See [Orchestrator + Worktrees](./orchestrator-worktrees.md) for the full topology, lifecycle, and isolation properties.
 
@@ -37,4 +37,4 @@ A single Node process inside the sandbox watches every worktree's `workspace/hea
 
 ## Workspace Template (`workspace/`)
 
-The workspace template provides agent identity (SOUL.md, MEMORY.md), operating procedures (AGENTS.md), coding standards (`.claude/rules/`), skills (`.claude/skills/`), and heartbeat schedules. Bind-mounted into the container; each worktree carries its own copy, evolved independently on its branch.
+The workspace template provides harness identity (SOUL.md, MEMORY.md), operating procedures (AGENTS.md), coding standards (`.claude/rules/`), skills (`.claude/skills/`), and heartbeat schedules. Bind-mounted into the container; each worktree carries its own copy, evolved independently on its branch.

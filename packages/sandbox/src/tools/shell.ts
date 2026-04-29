@@ -1,6 +1,7 @@
 import { Type } from "typebox";
 import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
 import { execCmd } from "../lib/docker.js";
+import { ORCHESTRATOR_USER, ORCHESTRATOR_HOME } from "../lib/config.js";
 import { run } from "../lib/exec.js";
 
 export const shellTool: ToolDefinition = {
@@ -16,10 +17,10 @@ export const shellTool: ToolDefinition = {
   async execute(_toolCallId, params: Record<string, unknown>) {
     const name = params.name as string;
     const cmd = execCmd(name, ["/bin/sh", "-lc", 'exec "${SHELL:-/bin/zsh}" -l'], {
-      user: "sandbox",
+      user: ORCHESTRATOR_USER,
       interactive: true,
-      workdir: "/home/sandbox/workspace",
-      env: { HOME: "/home/sandbox" },
+      workdir: `${ORCHESTRATOR_HOME}/workspace`,
+      env: { HOME: ORCHESTRATOR_HOME },
     });
 
     try {

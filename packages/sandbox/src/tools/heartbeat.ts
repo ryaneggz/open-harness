@@ -1,6 +1,7 @@
 import { Type } from "typebox";
 import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
 import { execCmd } from "../lib/docker.js";
+import { ORCHESTRATOR_USER } from "../lib/config.js";
 import { run } from "../lib/exec.js";
 
 export const heartbeatTool: ToolDefinition = {
@@ -22,7 +23,7 @@ export const heartbeatTool: ToolDefinition = {
     const action = params.action as string;
 
     const cmd = execCmd(name, ["heartbeat-daemon", action], {
-      user: "sandbox",
+      user: ORCHESTRATOR_USER,
     });
 
     try {

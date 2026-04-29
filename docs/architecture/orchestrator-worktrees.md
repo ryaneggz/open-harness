@@ -4,15 +4,15 @@ description: "One sandbox, N git worktrees, one heartbeat daemon — the canonic
 ---
 
 
-Open Harness runs on a single pattern: **one parent sandbox, N git worktrees, one heartbeat daemon**. Every agent is a git branch checked out as a worktree under `.worktrees/`. The sandbox container bind-mounts the entire repo, so all worktrees are visible to one shared toolchain and one shared credential set. A single heartbeat daemon inside the sandbox watches all of them at once.
+Open Harness runs on a single pattern: **one parent sandbox, N git worktrees, one heartbeat daemon**. Every harness is a git branch checked out as a worktree under `.worktrees/`. The sandbox container bind-mounts the entire repo, so all worktrees are visible to one shared toolchain and one shared credential set. A single heartbeat daemon inside the sandbox watches all of them at once.
 
-This page explains the topology, who owns what, and how a new agent comes online. For implementation detail (file paths, scheduler keys, change targets), see the [canonical spec](https://github.com/ryaneggz/open-harness/blob/development/.claude/specs/orchestrator-worktree-architecture.md).
+This page explains the topology, who owns what, and how a new harness comes online. For implementation detail (file paths, scheduler keys, change targets), see the [canonical spec](https://github.com/ryaneggz/open-harness/blob/development/.claude/specs/orchestrator-worktree-architecture.md).
 
 ## At a glance
 
 ```mermaid
 flowchart TB
-  subgraph host["Host — /home/sandbox/harness"]
+  subgraph host["Host — /home/orchestrator/harness"]
     direction TB
     gitreg[".git/worktrees/<br/>(git's worktree registry)"]
     parent["workspace/<br/>(parent-branch workspace)"]
@@ -48,11 +48,11 @@ One container. N git worktrees. One daemon watching every worktree's `heartbeats
 
 ### Orchestrator
 
-- **Runs at:** the project root (`/home/sandbox/harness`) — usually a Claude Code session attached to the sandbox.
-- **Owns:** harness source (`packages/sandbox/`, `.devcontainer/`, `install/`), git operations, GitHub issues/PRs/releases, sandbox lifecycle skills (`/provision`, `/destroy`, `/repair`), and the one-time scaffold of each new agent's `workspace/`.
+- **Runs at:** the project root (`/home/orchestrator/harness`) — usually a Claude Code session attached to the sandbox.
+- **Owns:** harness source (`packages/sandbox/`, `.devcontainer/`, `install/`), git operations, GitHub issues/PRs/releases, sandbox lifecycle skills (`/provision`, `/destroy`, `/repair`), and the one-time scaffold of each new harness's `workspace/`.
 - **Does not write application code.** Agents do that inside their workspaces.
 
-### Worktree agent
+### Worktree harness
 
 - **Runs at:** `.worktrees/<prefix>/<slug>/workspace/` — either as an interactive `claude` session or as a short-lived heartbeat spawn.
 - **Owns:** its `workspace/` subtree (SOUL.md, MEMORY.md, skills, heartbeats, memory, crm, wiki, projects) and its branch history.
@@ -60,13 +60,13 @@ One container. N git worktrees. One daemon watching every worktree's `heartbeats
 
 ### Sandbox container
 
-Default name `oh-remote`. Bind-mounts `/home/sandbox/harness` into the container so all worktrees are visible automatically. Hosts the shared toolchain (`claude`, `codex`, `pi`, `pnpm`, `git`, `gh`, Docker socket) and shared credentials (`~/.claude`, `~/.pi`, `~/.config/gh`). Boots via `install/entrypoint.sh`, which starts the heartbeat daemon under a watchdog.
+Default name `oh-remote`. Bind-mounts `/home/orchestrator/harness` into the container so all worktrees are visible automatically. Hosts the shared toolchain (`claude`, `codex`, `pi`, `pnpm`, `git`, `gh`, Docker socket) and shared credentials (`~/.claude`, `~/.pi`, `~/.config/gh`). Boots via `install/entrypoint.sh`, which starts the heartbeat daemon under a watchdog.
 
 ### Heartbeat daemon
 
 One Node process per sandbox. On startup (and whenever `.git/worktrees/` changes), it runs `git worktree list --porcelain` and includes every worktree whose `workspace/heartbeats/` exists. Each worktree gets its own `fs.watch`, its own log file, and namespaced scheduler keys (`${label}::${slug}`) so two worktrees can ship identically-named heartbeats without collision. Each heartbeat spawn sets `cwd = <worktree>/workspace`, so the agent CLI resolves skills, settings, and relative paths against the correct worktree. See the [heartbeats guide](../guide/heartbeats.md) for env vars and log layout.
 
-## Lifecycle of a new agent
+## Lifecycle of a new harness
 
 ```mermaid
 sequenceDiagram
@@ -148,21 +148,21 @@ This is **thin isolation** — enough to keep agent artifacts clean and independ
 
 ## Worktree vs new sandbox
 
-**Add a new worktree agent when:**
+**Add a new worktree harness when:**
 
 - The work lives on a branch you'd eventually merge back.
-- The agent shares the same stack, credentials, and trust level.
+- The harness shares the same stack, credentials, and trust level.
 - You want shared tooling and independent identity.
 - The daemon should schedule it alongside other agents.
 
 **Add a new sandbox when:**
 
 - You need kernel-level isolation (untrusted code, tenant separation).
-- The agent needs a different OS, different base image, or conflicting global tooling.
+- The harness needs a different OS, different base image, or conflicting global tooling.
 - You need isolated rate limits (separate Anthropic account, separate API quota).
 - You're reproducing a customer environment for debugging.
 
-Most "I want to add an agent" cases are the first bucket. New sandboxes are rare.
+Most "I want to add a harness" cases are the first bucket. New sandboxes are rare.
 
 ## Heartbeat firing flow
 
@@ -219,13 +219,13 @@ All worktrees discovered from the main checkout's `.git/worktrees/` are treated 
 
 ## Operational snippets
 
-Add an agent:
+Add a harness:
 
 ```bash
 # From the orchestrator session (project root)
 gh issue create --label agent --title "agent(#N): <name> — <role>"
 git worktree add -b agent/<name> .worktrees/agent/<name> development
-# Scaffold workspace/ for the agent's role
+# Scaffold workspace/ for the harness's role
 git commit -m "agent(#N): scaffold <name>"
 git push -u origin agent/<name>
 # Daemon auto-discovers within ~500 ms
@@ -236,17 +236,17 @@ Verify it's live:
 ```bash
 # Inside the sandbox
 heartbeat-daemon status
-# Look for: "Roots:" section includes the agent, per-root schedules listed
+# Look for: "Roots:" section includes the harness, per-root schedules listed
 ```
 
 Read per-root logs:
 
 ```bash
-tail -f /home/sandbox/harness/workspace/heartbeats/heartbeat.log
-tail -f /home/sandbox/harness/.worktrees/agent/<name>/workspace/heartbeats/heartbeat.log
+tail -f /home/orchestrator/harness/workspace/heartbeats/heartbeat.log
+tail -f /home/orchestrator/harness/.worktrees/agent/<name>/workspace/heartbeats/heartbeat.log
 ```
 
-Retire an agent:
+Retire a harness:
 
 ```bash
 git worktree remove .worktrees/agent/<name>

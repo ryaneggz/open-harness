@@ -3,7 +3,7 @@ title: "Identity & Memory"
 ---
 
 
-Workspace files give agents persistent identity and durable memory across sessions.
+Workspace files give each harness persistent identity and durable memory across sessions.
 
 ## Files
 

@@ -69,4 +69,4 @@ The container may belong to a different compose project or was started outside o
 Volumes owned by root require elevated permissions to remove. Run `sudo docker volume rm <volume>` or add your user to the `docker` group and retry.
 
 **Need to preserve data before cleaning**
-Copy workspace data out of the container first: `docker cp <name>:/home/sandbox/workspace ./backup`. Then run `oh clean`.
+Copy workspace data out of the container first: `docker cp <name>:/home/orchestrator/workspace ./backup`. Then run `oh clean`.

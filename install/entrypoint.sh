@@ -2,7 +2,7 @@
 set -e
 
 # Match the container's docker group GID to the host socket's GID
-# so the sandbox user can use Docker without sudo.
+# so the orchestrator user can use Docker without sudo.
 SOCK=/var/run/docker.sock
 if [ -S "$SOCK" ]; then
   HOST_GID=$(stat -c '%g' "$SOCK")
@@ -13,30 +13,30 @@ if [ -S "$SOCK" ]; then
 fi
 
 # Fix ownership of mounted .claude auth directory
-if [ -d /home/sandbox/.claude ]; then
-  chown -R sandbox:sandbox /home/sandbox/.claude 2>/dev/null || true
+if [ -d /home/orchestrator/.claude ]; then
+  chown -R orchestrator:orchestrator /home/orchestrator/.claude 2>/dev/null || true
 fi
 
 # Initialize gh CLI auth from GH_TOKEN if provided
 if [ -n "${GH_TOKEN:-}" ]; then
   echo "[entrypoint] Setting up gh CLI auth from GH_TOKEN..."
-  gosu sandbox gh auth login --with-token <<< "$GH_TOKEN" 2>/dev/null && \
-  gosu sandbox gh auth setup-git 2>/dev/null && \
+  gosu orchestrator gh auth login --with-token <<< "$GH_TOKEN" 2>/dev/null && \
+  gosu orchestrator gh auth setup-git 2>/dev/null && \
   echo "[entrypoint] gh CLI auth initialized" || \
   echo "[entrypoint] WARNING: gh auth setup failed"
 fi
 
 # Start heartbeat daemon (replaces cron-based scheduling)
-DAEMON_SCRIPT="/home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
+DAEMON_SCRIPT="/home/orchestrator/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
 if command -v heartbeat-daemon &>/dev/null; then
-  mkdir -p /home/sandbox/harness/workspace/heartbeats
-  chown sandbox:sandbox /home/sandbox/harness/workspace/heartbeats
-  gosu sandbox heartbeat-daemon start >> /home/sandbox/harness/workspace/heartbeats/heartbeat.log 2>&1 &
+  mkdir -p /home/orchestrator/harness/workspace/heartbeats
+  chown orchestrator:orchestrator /home/orchestrator/harness/workspace/heartbeats
+  gosu orchestrator heartbeat-daemon start >> /home/orchestrator/harness/workspace/heartbeats/heartbeat.log 2>&1 &
   echo "[entrypoint] heartbeat daemon started (pid $!)"
 elif [ -f "$DAEMON_SCRIPT" ]; then
-  mkdir -p /home/sandbox/harness/workspace/heartbeats
-  chown sandbox:sandbox /home/sandbox/harness/workspace/heartbeats
-  gosu sandbox node "$DAEMON_SCRIPT" start >> /home/sandbox/harness/workspace/heartbeats/heartbeat.log 2>&1 &
+  mkdir -p /home/orchestrator/harness/workspace/heartbeats
+  chown orchestrator:orchestrator /home/orchestrator/harness/workspace/heartbeats
+  gosu orchestrator node "$DAEMON_SCRIPT" start >> /home/orchestrator/harness/workspace/heartbeats/heartbeat.log 2>&1 &
   echo "[entrypoint] heartbeat daemon started via fallback (pid $!)"
 fi
 
@@ -67,28 +67,28 @@ if [ "${INSTALL_BROWSER:-false}" = "true" ] && ! command -v agent-browser &>/dev
   echo "[entrypoint] WARNING: agent-browser install failed"
 fi
 
-# Run workspace startup (dev server + tunnel) as sandbox user
-STARTUP="/home/sandbox/harness/workspace/startup.sh"
+# Run workspace startup (dev server + tunnel) as orchestrator user
+STARTUP="/home/orchestrator/harness/workspace/startup.sh"
 if [ -f "$STARTUP" ]; then
-  gosu sandbox bash "$STARTUP" 2>&1 | sed 's/^/  /' || true
+  gosu orchestrator bash "$STARTUP" 2>&1 | sed 's/^/  /' || true
 fi
 
 # Build and link Slack bot from bind-mount (replaces /opt/slack image copy).
-# Entrypoint runs as root, so $HOME is /root — use the sandbox user's absolute
+# Entrypoint runs as root, so $HOME is /root — use the orchestrator user's absolute
 # path and run pnpm as that user so the global link lands on their PATH.
-SLACK_PKG="/home/sandbox/harness/packages/slack"
+SLACK_PKG="/home/orchestrator/harness/packages/slack"
 if [ -f "$SLACK_PKG/package.json" ]; then
   echo "[entrypoint] Building and linking Slack bot package..."
   # PNPM_HOME defaults to /usr/local/share/pnpm (root-owned). pnpm link --global
-  # writes there, so ensure the sandbox user can. Create + chown before gosu.
+  # writes there, so ensure the orchestrator user can. Create + chown before gosu.
   PNPM_HOME_DIR="${PNPM_HOME:-/usr/local/share/pnpm}"
   mkdir -p "$PNPM_HOME_DIR"
-  chown -R sandbox:sandbox "$PNPM_HOME_DIR"
-  if gosu sandbox bash -c "cd '$SLACK_PKG' && pnpm install && pnpm run build && pnpm link --global"; then
-    echo "[entrypoint] Slack bot linked ($(gosu sandbox bash -lc 'command -v mom || echo missing'))"
+  chown -R orchestrator:orchestrator "$PNPM_HOME_DIR"
+  if gosu orchestrator bash -c "cd '$SLACK_PKG' && pnpm install && pnpm run build && pnpm link --global"; then
+    echo "[entrypoint] Slack bot linked ($(gosu orchestrator bash -lc 'command -v mom || echo missing'))"
   else
     echo "[entrypoint] WARNING: Slack bot build/link failed — mom CLI will be unavailable"
   fi
 fi
 
-exec gosu sandbox "$@"
+exec gosu orchestrator "$@"

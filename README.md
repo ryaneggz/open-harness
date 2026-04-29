@@ -1,10 +1,10 @@
 # 🏗️ Open Harness
 
-**Open Harness** — run Claude, Codex, Gemini, and Pi side-by-side from one `docker compose up`. Each agent gets its own branch, its own SOUL, its own schedule.
+**Open Harness** — one `docker compose up` gives you a sandbox (a Docker container) with everything AI coding agents need. Inside, you run as many **harnesses** as you like — each a git worktree with its own branch, identity (SOUL), and cron schedule. The root harness is the **orchestrator**: it provisions and manages the rest.
 
-- **Worktree-per-agent.** Each agent gets its own branch, its own SOUL, its own schedule.
-- **Agents that work while you sleep.** Cron-driven heartbeats wake them to do real work, autonomously.
-- **One container, every agent.** Claude Code, Codex, Pi, Gemini CLI — same sandbox, same toolchain.
+- **One sandbox, every agent.** Claude Code, Codex, Pi, and Gemini CLI share the same container image and toolchain — pick which agent powers each harness.
+- **Worktree-per-agent.** Each harness gets its own git branch, its own SOUL, and its own schedule, isolated under `.worktrees/`.
+- **Harnesses that work while you sleep.** Cron-driven heartbeats wake them to do real work, autonomously.
 - **Only host dependency: Docker.** No Node, no Python, no toolchain rot on your laptop.
 - **Composable infra.** Cherry-pick Postgres, Cloudflare tunnels, SSH, Slack, Caddy gateway.
 
@@ -16,17 +16,17 @@
 curl -fsSL https://oh.mifune.dev/install.sh | bash
 ```
 
-Only host dependency: [Docker](https://docs.docker.com/get-docker/). Add `-s -- --with-cli` to also install the `oh` CLI on the host (requires Node 20+).
+Only host dependency: [Docker](https://docs.docker.com/get-docker/). The installer auto-detects Node.js 20+: if found, it builds and links the `oh` CLI on the host; if not, it offers a 3-way prompt (install Node via nvm, Docker-only sandbox, or abort). Pass `--cli`, `--docker-only`, or `--install-node` to skip the prompt.
 
 ## 🚀 Quickstart
 
-Requires the `oh` CLI on your host — install with `-s -- --with-cli` above (Node 20+). The full sandbox lifecycle is three commands:
+Requires the `oh` CLI on your host — installed automatically when Node 20+ is detected (see Install above). The full sandbox lifecycle is three commands:
 
 ```bash
 oh onboard            # one-time: GitHub, LLM, Slack, Claude auth wizard
-oh sandbox my-agent   # provision and start
-oh shell my-agent     # connect (interactive shell)
-oh clean my-agent     # tear down
+oh sandbox my-project   # provision and start
+oh shell my-project     # connect (interactive shell)
+oh clean my-project     # tear down
 ```
 
 Prefer VS Code or remote SSH? See [Connecting to a sandbox](https://github.com/ryaneggz/open-harness/blob/main/docs/getting-started/quickstart.md).
@@ -48,7 +48,7 @@ cp .devcontainer/.example.env .devcontainer/.env
 # edit .devcontainer/.env: set GH_TOKEN, optionally rename SANDBOX_NAME,
 # and set INSTALL_AGENT_BROWSER=false unless you need headless Chromium
 docker compose -f .devcontainer/docker-compose.yml up -d --build  # ~10 min on cold cache
-docker compose -f .devcontainer/docker-compose.yml exec -u sandbox sandbox zsh
+docker compose -f .devcontainer/docker-compose.yml exec -u orchestrator sandbox zsh
 ```
 
 Inside the sandbox, finish auth and start an agent:
@@ -70,7 +70,7 @@ For Postgres, Slack, SSH, or the Caddy gateway, chain overlay files with extra `
 | **Runtimes** | Node 22, pnpm, Bun, uv (Python) |
 | **DevOps** | Docker CLI + Compose, GitHub CLI, cloudflared, tmux, cron |
 | **Browser** | agent-browser + Chromium (headless) |
-| **Worktree-per-agent** | One branch per agent, one container, shared toolchain |
+| **Worktree-per-agent** | Each harness gets its own branch, SOUL, and schedule, isolated under `.worktrees/` — all sharing one sandbox |
 | **Heartbeats** | Cron-scheduled autonomous runs (`workspace/heartbeats/*.md`) |
 
 ## 📚 Where to go next
@@ -98,7 +98,7 @@ packages/
 ## 🧹 Cleanup
 
 ```bash
-oh clean my-agent
+oh clean my-project
 ```
 
 ## 🤝 Contributing & community

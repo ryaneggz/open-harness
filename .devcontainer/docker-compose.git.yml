@@ -8,4 +8,4 @@
 services:
   sandbox:
     volumes:
-      - ${GIT_COMMON_DIR:?Set GIT_COMMON_DIR to the main repo .git/ path}:/home/sandbox/.git-main
+      - ${GIT_COMMON_DIR:?Set GIT_COMMON_DIR to the main repo .git/ path}:/home/orchestrator/.git-main

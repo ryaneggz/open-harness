@@ -5,7 +5,7 @@
 # Optional: OPENAI_API_KEY for OpenAI-based integrations
 # Usage: docker compose -f docker-compose.yml -f docker-compose.slack.yml up
 # Provides: Slack env vars only. Pi auth persistence lives in the base
-# compose (pi-auth named volume → /home/sandbox/.pi) or in the
+# compose (pi-auth named volume → /home/orchestrator/.pi) or in the
 # docker-compose.pi-host.yml overlay (host bind-mount).
 
 services:

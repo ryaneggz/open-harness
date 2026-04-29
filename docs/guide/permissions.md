@@ -5,17 +5,17 @@ title: "Permissions & Security"
 
 Sandboxes are designed as trusted, isolated environments where AI agents operate with full permissions. Docker provides the isolation boundary — everything inside the container is disposable and self-contained.
 
-## The sandbox user
+## The orchestrator user
 
-The container runs as a non-root user named `sandbox` with:
+The container runs as a non-root user named `orchestrator` with:
 - **Passwordless sudo** — the agent can install packages, modify system config, etc.
 - **Docker group membership** — access to the Docker socket when the `docker` overlay is enabled
-- **Home directory** at `/home/sandbox/`
+- **Home directory** at `/home/orchestrator/`
 
 The user is created by the Dockerfile:
 ```
-useradd -m -s /bin/bash sandbox
-echo "sandbox ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/sandbox
+useradd -u 1000 -m -s /bin/bash orchestrator
+echo "orchestrator ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/orchestrator
 ```
 
 ## Agent permission modes

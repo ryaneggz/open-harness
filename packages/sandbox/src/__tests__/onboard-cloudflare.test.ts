@@ -13,13 +13,13 @@ describe("cloudflare step", () => {
   it("existing tunnel config + !force → done, no prompts", async () => {
     const deps = makeFakeDeps({
       which: { cloudflared: "/usr/bin/cloudflared" },
-      files: { "/home/sandbox/.cloudflared": "dir" },
+      files: { "/home/orchestrator/.cloudflared": "dir" },
       execStubs: [
         {
           match: (cmd) => cmd[0] === "sh" && cmd[2].includes("config-*.yml"),
           result: {
             status: 0,
-            stdout: "/home/sandbox/.cloudflared/config-open-harness.yml\n",
+            stdout: "/home/orchestrator/.cloudflared/config-open-harness.yml\n",
             stderr: "",
           },
         },
@@ -65,7 +65,7 @@ describe("cloudflare step", () => {
   it("existing cert.pem + prompts → delegates to cloudflared-tunnel.sh", async () => {
     const deps = makeFakeDeps({
       which: { cloudflared: "/usr/bin/cloudflared" },
-      files: { "/home/sandbox/.cloudflared/cert.pem": "pem" },
+      files: { "/home/orchestrator/.cloudflared/cert.pem": "pem" },
       askAnswers: ["my-tun", "my-tun.example.com", ""],
       execStubs: [
         {
@@ -93,7 +93,7 @@ describe("cloudflare step", () => {
   it("empty hostname → failed", async () => {
     const deps = makeFakeDeps({
       which: { cloudflared: "/usr/bin/cloudflared" },
-      files: { "/home/sandbox/.cloudflared/cert.pem": "pem" },
+      files: { "/home/orchestrator/.cloudflared/cert.pem": "pem" },
       askAnswers: ["my-tun", ""],
       execStubs: [
         {
