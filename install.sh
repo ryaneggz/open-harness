@@ -65,6 +65,162 @@ prompt_input() {
   fi
 }
 
+# ─── NVM install constants ───────────────────────────────────────────
+# Bump procedure: pick a new tag from https://github.com/nvm-sh/nvm/releases,
+# then run `curl -fsSL "https://raw.githubusercontent.com/nvm-sh/nvm/<tag>/install.sh" | sha256sum`
+# and update both lines together. NEVER bump one without the other — the URL is
+# mutable (GitHub serves whatever the tag currently points at), so the SHA-256
+# pin is what makes this safe.
+NVM_VERSION="v0.40.4"
+NVM_SHA256="4b7412c49960c7d31e8df72da90c1fb5b8cccb419ac99537b737028d497aba4f"
+NODE_LTS_MAJOR="22"
+
+# ─── install_nvm: SHA-256-pinned nvm install + Node 22 + corepack ────
+# Order is LOAD-BEARING: source nvm → nvm install → corepack enable.
+# corepack runs in the nvm-managed Node context only (no sudo needed).
+install_nvm() {
+  banner "Installing Node $NODE_LTS_MAJOR via nvm"
+
+  export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+
+  # Functional already-installed check — file existence alone is insufficient
+  # (a corrupt or partial install passes [ -f nvm.sh ] but breaks `. nvm.sh`).
+  local nvm_works=false
+  if [ -d "$NVM_DIR" ] && (
+       # shellcheck disable=SC1090,SC1091
+       . "$NVM_DIR/nvm.sh" 2>/dev/null
+       command -v nvm >/dev/null 2>&1
+     ); then
+    nvm_works=true
+  fi
+
+  if [ "$nvm_works" = true ]; then
+    ok "nvm already installed at $NVM_DIR (skipping download)"
+  else
+    local tmp
+    tmp="$(mktemp)"
+    if ! curl -fsSL "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh" -o "$tmp"; then
+      rm -f "$tmp"
+      die "Failed to download nvm installer from raw.githubusercontent.com. Check your network and re-run."
+    fi
+    local actual
+    actual="$(sha256sum "$tmp" | awk '{print $1}')"
+    if [ "$actual" != "$NVM_SHA256" ]; then
+      rm -f "$tmp"
+      die "nvm installer SHA-256 mismatch (expected $NVM_SHA256, got $actual). Refusing to execute potentially-tampered script. If this is a deliberate nvm version bump, update NVM_VERSION and NVM_SHA256 together in install.sh."
+    fi
+    if ! bash "$tmp" >/dev/null 2>&1; then
+      rm -f "$tmp"
+      die "nvm installer exited non-zero. If ~/.bashrc is read-only or HOME is unwritable, fix that and re-run. Otherwise check the nvm installer output by running: bash -x <(curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh)"
+    fi
+    rm -f "$tmp"
+    ok "nvm $NVM_VERSION installed (SHA-256 verified)"
+  fi
+
+  # shellcheck disable=SC1090,SC1091
+  . "$NVM_DIR/nvm.sh"
+  if ! command -v nvm >/dev/null 2>&1; then
+    die "nvm sourced but 'nvm' is not on PATH. Aborting before nvm install. Try: 'source ~/.bashrc' and re-run."
+  fi
+
+  nvm install "$NODE_LTS_MAJOR" --lts
+  nvm alias default "$NODE_LTS_MAJOR"
+  ok "Node $(node --version) installed via nvm"
+
+  # Order matters: corepack runs in the nvm-managed Node context, never against
+  # system Node (which often needs sudo for global pnpm install).
+  corepack enable
+  corepack prepare pnpm@latest --activate
+  ok "pnpm $(pnpm --version) — enabled via corepack"
+
+  # Re-detect to verify the install actually produced a usable Node 20+.
+  if ! detect_node; then
+    die "nvm install completed but detect_node still fails ($DETECTED_NODE_REASON). Aborting before pnpm install."
+  fi
+
+  # Fish-aware reminder for the post-success message.
+  case "${SHELL:-}" in
+    */fish|*fish) OH_FISH_REMINDER=true ;;
+  esac
+}
+
+# ─── choose_path: 3-way interactive prompt when Node is missing ──────
+# Default option 1 (nvm + CLI) matches the user-stated direction.
+choose_path() {
+  printf "\n${YELLOW}Node.js 20+ not found${NC} (%s)\n\n" "$DETECTED_NODE_REASON"
+  printf "  How would you like to proceed?\n\n"
+  printf "    1) Install Node %s via nvm, then install the 'oh' CLI on the host  ${CYAN}[default]${NC}\n" "$NODE_LTS_MAJOR"
+  printf "       — Recommended. nvm is sandboxed to your user (no sudo).\n"
+  printf "    2) Skip the CLI; run a Docker-only sandbox now\n"
+  printf "       — You'll manage it with 'docker exec' and 'docker compose'.\n"
+  printf "    3) Abort — let me install Node myself and re-run\n\n"
+
+  if [ "$ASSUME_YES" = true ]; then
+    ok "Continuing with option 1 (nvm + CLI) — --yes / OH_ASSUME_YES set"
+    INSTALL_MODE=node-then-cli
+    return
+  fi
+  if [ "$ASSUME_NO" = true ]; then
+    die "Aborted (--no). Install Node 20+ from https://nodejs.org and re-run."
+  fi
+  if [ ! -r /dev/tty ]; then
+    die "Node 20+ not found and no TTY available for confirmation. Re-run with --yes (option 1), --docker-only (option 2), or install Node 20+ first. Tip: 'curl … | bash -s -- --yes'."
+  fi
+
+  printf "  Choice [1]: "
+  local reply
+  read -r reply </dev/tty || reply=""
+  case "${reply:-1}" in
+    1|"")
+      ok "Selected: install Node $NODE_LTS_MAJOR via nvm + CLI"
+      INSTALL_MODE=node-then-cli
+      ;;
+    2)
+      ok "Selected: Docker-only sandbox"
+      INSTALL_MODE=docker
+      ;;
+    3)
+      die "Aborted. Install Node 20+ from https://nodejs.org and re-run."
+      ;;
+    *)
+      die "Invalid choice '$reply'. Re-run and choose 1, 2, or 3."
+      ;;
+  esac
+}
+
+# ─── resolve_mode: forcing flag > env > auto-detect ──────────────────
+# Sets INSTALL_MODE = cli | docker | node-then-cli.
+resolve_mode() {
+  banner "Resolving install mode"
+
+  if [ "$FORCE_CLI" = true ]; then
+    if ! detect_node; then
+      die "--cli requires Node 20+ on PATH ($DETECTED_NODE_REASON). Install Node 20+ from https://nodejs.org or re-run with --install-node to have the installer set up Node 22 via nvm."
+    fi
+    ok "Node.js $DETECTED_NODE_VERSION detected — CLI-first install (--cli)"
+    INSTALL_MODE=cli
+    return
+  fi
+  if [ "$FORCE_DOCKER" = true ]; then
+    ok "Docker-only install (--docker-only)"
+    INSTALL_MODE=docker
+    return
+  fi
+  if [ "$FORCE_NTC" = true ]; then
+    ok "Node-then-CLI install (--install-node)"
+    INSTALL_MODE=node-then-cli
+    return
+  fi
+
+  # Auto-detect.
+  if detect_node; then
+    ok "Node.js $DETECTED_NODE_VERSION detected — using CLI-first install"
+    INSTALL_MODE=cli
+  else
+    choose_path
+  fi
+}
+
 # ─── Help ────────────────────────────────────────────────────────────
 print_help() {
   cat <<HELPEOF
@@ -167,10 +323,9 @@ esac
 [ "$FORCE_DOCKER" = true ] && [ "$FORCE_NTC"    = true ] && die "--docker-only and --install-node are mutually exclusive."
 [ "$ASSUME_YES"   = true ] && [ "$ASSUME_NO"    = true ] && die "--yes and --no are mutually exclusive."
 
-# Backwards-compat shim: legacy WITH_CLI gates the optional pnpm-build block
-# below. T3 (mode dispatch) will replace this with resolve_mode() and remove
-# the shim entirely.
-WITH_CLI="$FORCE_CLI"
+# INSTALL_MODE resolved later (after Docker/git checks) by resolve_mode().
+INSTALL_MODE=""
+OH_FISH_REMINDER=false
 
 # ─── Banner ──────────────────────────────────────────────────────────
 printf "\n${CYAN}╔══════════════════════════════════════╗${NC}\n"
@@ -194,6 +349,9 @@ if ! command -v git >/dev/null 2>&1; then
   die "git is not installed. Install git from: https://git-scm.com"
 fi
 ok "git $(git --version | awk '{print $3}') — OK"
+
+# ─── Resolve mode (sets INSTALL_MODE) ────────────────────────────────
+resolve_mode
 
 # ─── 3. Resolve repo directory ────────────────────────────────────────
 banner "Resolving repository"
@@ -250,23 +408,28 @@ ENVEOF
 unset __SN_ESC __SP_ESC
 ok "Wrote .devcontainer/.env"
 
-# ─── 5. Build and start sandbox ──────────────────────────────────────
-# Note: docker compose up still runs unconditionally — T3 (mode dispatch)
-# will gate this behind INSTALL_MODE=docker.
-banner "Building and starting sandbox"
-docker compose -f .devcontainer/docker-compose.yml up -d --build
-ok "Sandbox '$SANDBOX_NAME' started"
+# ─── 5/6. Execute the chosen mode ────────────────────────────────────
+# CLI-first paths do NOT auto-start a sandbox — the user runs `oh sandbox`
+# themselves so they learn the lifecycle. Docker-first runs compose up.
 
-# ─── 6. (Optional) Build and link host CLI ───────────────────────────
-if [ "$WITH_CLI" = true ]; then
-  banner "Building host CLI (--cli)"
+case "$INSTALL_MODE" in
+  node-then-cli)
+    install_nvm
+    ;;
+  cli|docker)
+    : # no nvm work needed
+    ;;
+  *)
+    die "Internal error: INSTALL_MODE='$INSTALL_MODE' is not one of cli|docker|node-then-cli."
+    ;;
+esac
 
-  if ! detect_node; then
-    die "Node.js 20+ required ($DETECTED_NODE_REASON). Install Node 20+ from https://nodejs.org or re-run with --install-node."
-  fi
-  ok "Node.js $DETECTED_NODE_VERSION — OK"
+if [ "$INSTALL_MODE" = "cli" ] || [ "$INSTALL_MODE" = "node-then-cli" ]; then
+  banner "Building and linking host CLI"
 
-  # Ensure pnpm
+  # Ensure pnpm — install_nvm() already activated it via corepack in the
+  # node-then-cli path, so this is a no-op there. The cli path with system
+  # Node may need this fallback chain.
   if command -v pnpm >/dev/null 2>&1; then
     ok "pnpm $(pnpm --version) — already installed"
   elif command -v corepack >/dev/null 2>&1; then
@@ -284,27 +447,64 @@ if [ "$WITH_CLI" = true ]; then
   ok "openharness CLI built and linked"
 
   if ! command -v openharness >/dev/null 2>&1; then
-    die "openharness command not found on PATH. Check that pnpm global bin is in your PATH."
+    die "openharness command not found on PATH. The pnpm global bin directory may not be on your PATH. Check 'pnpm config get global-bin-dir' and add it to PATH in your shell rc."
   fi
   ok "openharness available on PATH"
 fi
 
-# ─── Success ─────────────────────────────────────────────────────────
+if [ "$INSTALL_MODE" = "docker" ]; then
+  banner "Building and starting sandbox"
+  docker compose -f .devcontainer/docker-compose.yml up -d --build
+  ok "Sandbox '$SANDBOX_NAME' started"
+fi
+
+# ─── Mode-aware Next Steps ───────────────────────────────────────────
 printf "\n${GREEN}Installation complete!${NC}\n\n"
 printf "  ${CYAN}Next steps${NC}\n"
 printf "  ──────────────────────────────────────\n"
 printf "\n"
-printf "  ${CYAN}Enter the sandbox:${NC}\n"
-if [ "$WITH_CLI" = true ]; then
-  printf "    openharness shell %s\n" "$SANDBOX_NAME"
-else
-  printf "    docker exec -it -u orchestrator %s bash\n" "$SANDBOX_NAME"
+
+if [ "$INSTALL_MODE" = "cli" ] || [ "$INSTALL_MODE" = "node-then-cli" ]; then
+  # CLI-first: lead with cd \$REPO_DIR (oh sandbox resolves compose paths
+  # relative to CWD), then explicit oh sandbox / oh shell steps. gh auth
+  # runs INSIDE the shell — gh's credential helper writes into the sandbox
+  # home, not the host home.
+  printf "  ${CYAN}1. Move into the repo${NC} (oh sandbox resolves compose paths relative to CWD):\n"
+  printf "       cd %s\n\n" "$REPO_DIR"
+  printf "  ${CYAN}2. Provision your sandbox:${NC}\n"
+  printf "       oh sandbox %s\n\n" "$SANDBOX_NAME"
+  printf "  ${CYAN}3. Open a shell in the sandbox:${NC}\n"
+  printf "       oh shell %s\n\n" "$SANDBOX_NAME"
+  printf "  ${CYAN}4. Inside the sandbox, run the one-time auth wizard:${NC}\n"
+  printf "       gh auth login && gh auth setup-git\n"
+  printf "       pi                                  # Pi Agent OAuth (Slack / heartbeats)\n\n"
+  printf "  ${CYAN}Tear down later (from host):${NC}\n"
+  printf "       oh clean %s\n\n" "$SANDBOX_NAME"
+  printf "  ${CYAN}Note:${NC} 'oh sandbox' runs docker compose for you. The container is NOT\n"
+  printf "  running yet — that's intentional so you learn the CLI lifecycle.\n"
+
+  if [ "$INSTALL_MODE" = "node-then-cli" ]; then
+    printf "\n"
+    printf "  ${YELLOW}Reminder:${NC} nvm wrote to ~/.bashrc — open a new shell, or run\n"
+    printf "  'source ~/.bashrc', so 'node' / 'pnpm' / 'oh' stay on PATH later.\n"
+    if [ "${OH_FISH_REMINDER:-false}" = true ]; then
+      printf "  Fish users: install nvm.fish or fisher; nvm doesn't source into Fish.\n"
+    fi
+  fi
+elif [ "$INSTALL_MODE" = "docker" ]; then
+  printf "  ${CYAN}Enter the sandbox:${NC}\n"
+  printf "       docker exec -it -u orchestrator %s bash\n\n" "$SANDBOX_NAME"
+  printf "  ${CYAN}One-time setup (inside the sandbox):${NC}\n"
+  printf "       gh auth login\n"
+  printf "       gh auth setup-git\n\n"
+  printf "  ${CYAN}Stop / restart (from %s):${NC}\n" "$REPO_DIR"
+  printf "       cd %s\n" "$REPO_DIR"
+  printf "       docker compose -f .devcontainer/docker-compose.yml stop\n"
+  printf "       docker compose -f .devcontainer/docker-compose.yml up -d\n\n"
+  printf "  ${CYAN}Want the 'oh' CLI later? Re-run with --install-node:${NC}\n"
+  printf "       curl -fsSL https://oh.mifune.dev/install.sh | bash -s -- --install-node\n"
 fi
-printf "\n"
-printf "  ${CYAN}One-time setup (inside the sandbox):${NC}\n"
-printf "    gh auth login                         # authenticate GitHub CLI\n"
-printf "    gh auth setup-git                     # configure git auth\n"
-printf "\n"
-printf "  ${CYAN}VS Code (alternative):${NC}\n"
-printf "    Open the repo in VS Code → Cmd+Shift+P → \"Reopen in Container\"\n"
+
+printf "\n  ${CYAN}VS Code (alternative):${NC}\n"
+printf "       Open the repo in VS Code → Cmd+Shift+P → \"Reopen in Container\"\n"
 printf "\n"
