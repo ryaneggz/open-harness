@@ -1,5 +1,6 @@
 **/.env*
 .worktrees/*
+tasks/*
 !.worktrees/.gitkeep
 
 # Build artifacts
