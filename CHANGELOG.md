@@ -20,6 +20,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 - Docusaurus v3 docs site at `apps/docs` deployed to oh.mifune.dev ([#164](https://github.com/ryaneggz/open-harness/issues/164)).
 
 ### Changed
+- Installer auto-detects Node 20+; new `--cli` / `--docker-only` / `--install-node` flags; `--with-cli` deprecated. ([#176](https://github.com/ryaneggz/open-harness/pull/176)).
 - Realigned sandbox/harness/agent vocabulary across docs to clarify that one sandbox hosts many harnesses and the orchestrator is the root harness role, not a separate primitive ([#170](https://github.com/ryaneggz/open-harness/issues/170)).
 - **Breaking**: in-container Linux user renamed `sandbox` → `orchestrator` (UID/GID 1000 preserved so existing volumes remain readable). Requires fresh image pull AND full rebuild — `docker compose pull && docker compose up --build`. To preserve auth credentials after upgrade: `docker exec -u root <container> chown -R 1000:1000 /home/orchestrator`. To reset: `docker compose down -v && docker compose up --build` (destroys claude/codex/pi/cloudflared/gh auth). A migration banner in `install/banner.sh` warns when the old `/home/sandbox` directory is detected ([#172](https://github.com/ryaneggz/open-harness/issues/172)).
 - README and installation docs now use the short `https://oh.mifune.dev/install.sh` URL (302 redirect to the raw GitHub install script on `main`) instead of the long `raw.githubusercontent.com` URL.

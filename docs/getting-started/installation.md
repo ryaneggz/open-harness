@@ -3,7 +3,7 @@ title: "Installation"
 ---
 
 
-**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [git](https://git-scm.com/). That's all you need on your host.
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [git](https://git-scm.com/). Node.js 20+ is recommended but not required — the installer offers to install it via nvm if absent.
 
 ## One-line install
 
@@ -11,17 +11,21 @@ title: "Installation"
 curl -fsSL https://oh.mifune.dev/install.sh | bash
 ```
 
-The installer checks for Docker and git, prompts for a container name and password, clones the repo, and starts the sandbox. No Node.js required.
+The installer detects whether Node.js 20+ is present. If found, it builds and links the `oh` CLI on the host (CLI-first, no container started). If Node is missing or too old, it shows a 3-way prompt: install Node 22 via nvm and the CLI (default), continue Docker-only, or abort.
 
-## With host CLI (optional)
+## Override auto-detection
 
-If you want the `openharness` CLI available on your host machine (not just inside the container), pass `--with-cli`:
+Pass flags to force a specific install path:
 
-```bash
-curl -fsSL https://oh.mifune.dev/install.sh | bash -s -- --with-cli
-```
+| Flag / Variable | Effect |
+|---|---|
+| `--cli` | Force CLI-first (Node must be present). |
+| `--docker-only` | Force Docker-only, skip Node detection. |
+| `--install-node` | Force nvm + Node 22 install, then CLI. |
+| `--yes` | Accept defaults at all prompts. |
+| `--yes --docker-only` | Non-interactive Docker-only install. |
 
-This additionally requires [Node.js 20+](https://nodejs.org/) and builds/links the CLI via pnpm.
+`--with-cli` is a deprecated alias for `--cli` and still works with a warning.
 
 ## Manual install
 
@@ -41,7 +45,7 @@ Or [fork the repo](https://github.com/ryaneggz/open-harness/fork) first for your
 3. Clones the repo to `~/.openharness/` (or uses the local repo)
 4. Writes `.devcontainer/.env` with your configuration
 5. Runs `docker compose up -d --build`
-6. _(with `--with-cli`)_ Checks Node.js 20+, installs pnpm, builds and globally links the `openharness` CLI
+6. _(CLI-first paths)_ Checks Node.js 20+, installs pnpm, builds and globally links the `openharness` CLI
 
 ## Next step
 

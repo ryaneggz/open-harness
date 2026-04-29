@@ -16,11 +16,11 @@
 curl -fsSL https://oh.mifune.dev/install.sh | bash
 ```
 
-Only host dependency: [Docker](https://docs.docker.com/get-docker/). Add `-s -- --with-cli` to also install the `oh` CLI on the host (requires Node 20+).
+Only host dependency: [Docker](https://docs.docker.com/get-docker/). The installer auto-detects Node.js 20+: if found, it builds and links the `oh` CLI on the host; if not, it offers a 3-way prompt (install Node via nvm, Docker-only sandbox, or abort). Pass `--cli`, `--docker-only`, or `--install-node` to skip the prompt.
 
 ## 🚀 Quickstart
 
-Requires the `oh` CLI on your host — install with `-s -- --with-cli` above (Node 20+). The full sandbox lifecycle is three commands:
+Requires the `oh` CLI on your host — installed automatically when Node 20+ is detected (see Install above). The full sandbox lifecycle is three commands:
 
 ```bash
 oh onboard            # one-time: GitHub, LLM, Slack, Claude auth wizard
