@@ -4,8 +4,8 @@ import Link from "@docusaurus/Link";
 import CodeBlock from "@theme/CodeBlock";
 import styles from "./index.module.css";
 
-const QUICKSTART = `# install + link the oh CLI
-curl -fsSL https://oh.mifune.dev/install.sh | bash -s -- --with-cli
+const QUICKSTART = `# install — auto-detects Node 20+ and configures accordingly
+curl -fsSL https://oh.mifune.dev/install.sh | bash
 
 # authenticate Claude, Codex, Gemini, Slack
 oh onboard

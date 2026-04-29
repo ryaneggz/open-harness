@@ -13,10 +13,10 @@ Open Harness has two components: the sandbox image (Docker-only) and the optiona
 |---|---|---|
 | Docker (with Compose plugin) | Sandbox image | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
 | git | Cloning the repo | [git-scm.com](https://git-scm.com/) |
-| Node.js 20+ | `oh` host CLI only | [nodejs.org](https://nodejs.org/) |
+| Node.js 20+ | `oh` host CLI (recommended) | [nodejs.org](https://nodejs.org/) |
 | pnpm | Building the host CLI | `npm install -g pnpm` |
 
-Node.js and pnpm are only required if you want the `oh` CLI on your host machine. Everything else runs inside Docker.
+Node.js 20+ is **recommended but not required**. If it is absent, the installer offers to install Node 22 via nvm or to fall back to a Docker-only sandbox — you choose at the prompt.
 
 ## One-line installer (recommended)
 
@@ -26,13 +26,38 @@ curl -fsSL https://oh.mifune.dev/install.sh | bash
 
 This checks for Docker and git, prompts for a container name, clones the repo, and starts the sandbox. No Node.js required.
 
-To also install the `oh` CLI on the host:
+The installer detects whether Node.js 20+ is present and branches accordingly:
 
-```bash
-curl -fsSL https://oh.mifune.dev/install.sh | bash -s -- --with-cli
-```
+- **Node 20+ found** — CLI-first path. Builds and links the `oh` binary on the host.
+- **Node missing or too old** — Interactive 3-way prompt:
+  1. Install Node 22 via nvm, then the CLI (default).
+  2. Continue Docker-only.
+  3. Abort.
 
-The installer then checks for Node.js 20+ and pnpm, builds the `@openharness/sandbox` package, and links the `oh` binary globally.
+See the [install.sh spec](https://github.com/ryaneggz/open-harness/blob/main/.claude/specs/install-prereq-detection.md) for the full decision flow.
+
+### Override auto-detection
+
+Pass flags to skip the prompt and force a specific path:
+
+| Flag / Variable | Effect |
+|---|---|
+| `--cli` | Force CLI-first. Hard-fails if Node 20+ is absent (does not auto-install nvm). |
+| `--docker-only` (alias `--no-cli`) | Force Docker-only. Skips Node detection. |
+| `--install-node` | Force nvm + Node 22 install, then CLI. Skips detection. |
+| `-y` / `--yes` | Accept the default at every prompt (installs Node via nvm if absent). |
+| `-n` / `--no` | Abort at every prompt. |
+| `--yes --docker-only` | Non-interactive Docker-only install. |
+| `OH_INSTALL_REF=<git-ref>` | Pin the cloned repo to a specific tag or SHA instead of `main`. |
+| `OH_ASSUME_YES=1` | Same as `--yes`. |
+| `SANDBOX_NAME=<name>` | Skip the "Container name" prompt. |
+| `SANDBOX_PASSWORD=<value>` | Skip the credential prompt (used by the optional sshd overlay). |
+
+The two `SANDBOX_*` env vars resolve **independently** — set only `SANDBOX_NAME` and the passphrase prompt still fires, and vice versa. Both fall back to defaults (`openharness` and `changeme`) when no TTY is available.
+
+### Deprecated flag
+
+`--with-cli` is a deprecated alias for `--cli`. It still works and prints a deprecation warning directing you to use `--cli` instead.
 
 ## Manual installation
 
@@ -89,19 +114,19 @@ Expected output (version will vary):
 openharness 0.1.0 (pi x.y.z)
 ```
 
-## Docker-only path (no CLI)
+## Docker-only manual fallback
 
-If you only have Docker and git — no Node, no pnpm — you can still run Open Harness:
+If you only have Docker and git — no Node, no pnpm — and prefer not to use the installer, you can manage Open Harness directly with `docker compose`. This is the manual equivalent of the installer's `--docker-only` path:
 
 ```bash
 git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
 cp .devcontainer/.example.env .devcontainer/.env
-# Edit .devcontainer/.env: set GH_TOKEN and optionally SANDBOX_NAME
+# Edit .devcontainer/.env: set SANDBOX_NAME and any optional tokens
 docker compose -f .devcontainer/docker-compose.yml up -d --build
 docker compose -f .devcontainer/docker-compose.yml exec -u orchestrator sandbox zsh
 ```
 
-In this mode you manage the sandbox lifecycle with `docker compose` commands directly rather than the `oh` CLI.
+In this mode you manage the sandbox lifecycle with `docker compose` commands directly rather than the `oh` CLI. The one-line installer's `--docker-only` flag automates these same steps. The one-line installer's `--docker-only` flag automates these same steps.
 
 ## Next step
 

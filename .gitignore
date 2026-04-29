@@ -1,6 +1,6 @@
 **/.env*
 .worktrees/*
-tasks/*
+tasks/*/archive/
 !.worktrees/.gitkeep
 
 # Build artifacts
@@ -41,7 +41,8 @@ workspace/.pi/
 workspace/startup.sh
 **/.pnpm-store
 **/.claude/plans
-**/.claude/specs
+**/.claude/specs/*
+!**/.claude/specs/install-prereq-detection.md
 **/auth.json
 **/.credentials.json
 **/scheduled_tasks.lock

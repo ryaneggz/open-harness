@@ -16,10 +16,10 @@ If you also want the `oh` CLI on your host machine (recommended), see [Installat
 ## Option A — One-line install (recommended)
 
 ```bash
-curl -fsSL https://oh.mifune.dev/install.sh | bash -s -- --with-cli
+curl -fsSL https://oh.mifune.dev/install.sh | bash
 ```
 
-This installs Docker-only by default. Adding `--with-cli` also builds and links the `oh` binary on your host (requires Node 20+). After the installer finishes, skip to [Step 3](#step-3-onboard).
+The installer detects whether Node.js 20+ is present. If found, it builds and links the `oh` binary on the host (CLI-first). If Node is missing or too old, it shows a 3-way prompt: install Node 22 via nvm and then the CLI (default), continue Docker-only, or abort. After the installer finishes, skip to [Step 3](#step-3-provision-your-sandbox).
 
 ## Option B — Manual setup
 
@@ -52,21 +52,19 @@ If you do not have the `oh` CLI, use Docker Compose directly:
 docker compose -f .devcontainer/docker-compose.yml up -d --build
 ```
 
-### Step 3: Onboard
+### Step 3: Provision your sandbox
 
-Run the one-time authentication wizard from the host:
+From the directory where you cloned the repo (note: `oh sandbox` resolves
+compose paths relative to the current working directory):
 
 ```bash
-oh onboard
+cd ~/.openharness   # or wherever the installer cloned the repo
+oh sandbox my-agent
 ```
 
-`oh onboard` detects which services are already configured and skips completed steps. It walks you through:
-
-- GitHub CLI (`gh auth login`) so the agent can open PRs and issues.
-- LLM provider authentication for Claude Code or Pi.
-- Optional Slack tokens if you want the Mom bot.
-
-See [Onboarding](./onboarding) for the full step-by-step breakdown.
+`oh sandbox` runs `docker compose up -d --build` behind the scenes and waits
+until the container is healthy. On a cold Docker cache this takes around ten
+minutes; subsequent starts are a few seconds.
 
 ### Step 4: Open a shell
 
@@ -74,9 +72,21 @@ See [Onboarding](./onboarding) for the full step-by-step breakdown.
 oh shell my-agent
 ```
 
-You are now inside the sandbox as the `orchestrator` user. The working directory is `/home/orchestrator/harness`.
+You are now inside the sandbox as the `orchestrator` user.
 
-### Step 5: Start an agent
+### Step 5: One-time setup (inside the sandbox)
+
+Run these once, inside the shell you just opened:
+
+```bash
+gh auth login            # GitHub CLI — lets the agent open PRs and issues
+gh auth setup-git        # git credential helper (no SSH keys needed)
+pi                       # Pi Agent OAuth — powers Slack, heartbeats, extensions
+```
+
+These write credentials into the sandbox home directory, not your host home.
+
+### Step 6: Start an agent
 
 ```bash
 claude                   # Claude Code — terminal coding agent
