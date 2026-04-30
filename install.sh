@@ -470,6 +470,24 @@ if [ "$INSTALL_MODE" = "cli" ] || [ "$INSTALL_MODE" = "node-then-cli" ]; then
 
   pnpm install
   pnpm -r run build
+
+  # `pnpm link --global` writes a symlink into pnpm's global bin directory.
+  # Fresh nvm-installed Node has no PNPM_HOME, so the link step dies with
+  # ERR_PNPM_NO_GLOBAL_BIN_DIR. `pnpm setup` is the supported bootstrap:
+  # it creates $PNPM_HOME, configures global-bin-dir, and writes the
+  # PNPM_HOME export into ~/.bashrc (+ ~/.zshrc) for future shells. Modern
+  # pnpm runs it non-interactively. We also export PATH/PNPM_HOME inline
+  # so `pnpm link --global` works in *this* shell regardless of rc state.
+  export SHELL="${SHELL:-/bin/bash}"
+  pnpm setup >/dev/null 2>&1 || warn "pnpm setup returned non-zero — falling back to manual PNPM_HOME bootstrap."
+  export PNPM_HOME="${PNPM_HOME:-$HOME/.local/share/pnpm}"
+  mkdir -p "$PNPM_HOME"
+  case ":$PATH:" in
+    *":$PNPM_HOME:"*) ;;
+    *) export PATH="$PNPM_HOME:$PATH" ;;
+  esac
+  pnpm config set global-bin-dir "$PNPM_HOME" >/dev/null 2>&1 || true
+
   pnpm link --global ./packages/sandbox
   ok "openharness CLI built and linked"
 
