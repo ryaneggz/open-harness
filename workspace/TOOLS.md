@@ -3,8 +3,8 @@
 ## Environment
 
 - **OS**: Debian Bookworm (slim)
-- **User**: `orchestrator` (passwordless sudo)
-- **Workdir**: `/home/orchestrator/workspace` (bind mount, persists)
+- **User**: `sandbox` (passwordless sudo)
+- **Workdir**: `/home/sandbox/workspace` (bind mount, persists)
 - **Docker**: CLI + Compose, host socket mounted
 - **Perms**: `--dangerously-skip-permissions` default
 

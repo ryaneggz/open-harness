@@ -1,6 +1,6 @@
 import { Type } from "typebox";
 import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
-import { SandboxConfig, ORCHESTRATOR_USER } from "../lib/config.js";
+import { SandboxConfig } from "../lib/config.js";
 import { execCmd } from "../lib/docker.js";
 import { captureSafe } from "../lib/exec.js";
 import { readExposures } from "../lib/exposures.js";
@@ -57,8 +57,8 @@ export const portsTool: ToolDefinition = {
     // Source 1: container-internal listeners from `ss -tlnp` (captures PID+command).
     // Falls back to `ss -tln` on older images.
     const ssOut =
-      captureSafe(execCmd(config.name, ["ss", "-tlnp"], { user: ORCHESTRATOR_USER })) ??
-      captureSafe(execCmd(config.name, ["ss", "-tln"], { user: ORCHESTRATOR_USER })) ??
+      captureSafe(execCmd(config.name, ["ss", "-tlnp"], { user: "sandbox" })) ??
+      captureSafe(execCmd(config.name, ["ss", "-tln"], { user: "sandbox" })) ??
       "";
     const procs = parseListenerProcesses(ssOut);
     const listenRe = /LISTEN\s+\d+\s+\d+\s+[^\s]*?:(\d+)\b/g;

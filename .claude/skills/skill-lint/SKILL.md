@@ -22,18 +22,18 @@ Arguments received: `$ARGUMENTS`
 | Argument | Scope |
 |----------|-------|
 | `all` (default, or empty) | Root scope + workspace scope |
-| `root` | `/home/orchestrator/harness/.claude/skills/` only |
-| `workspace` | `/home/orchestrator/harness/workspace/.claude/skills/` only |
+| `root` | `/home/sandbox/harness/.claude/skills/` only |
+| `workspace` | `/home/sandbox/harness/workspace/.claude/skills/` only |
 | `<skill-name>` | Single skill, auto-detect scope |
 
 ### 2. Discover skills
 
 ```bash
 # Root scope
-ROOT_SKILLS=$(find /home/orchestrator/harness/.claude/skills -name "SKILL.md" -maxdepth 3 2>/dev/null)
+ROOT_SKILLS=$(find /home/sandbox/harness/.claude/skills -name "SKILL.md" -maxdepth 3 2>/dev/null)
 
 # Workspace scope
-WS_SKILLS=$(find /home/orchestrator/harness/workspace/.claude/skills -name "SKILL.md" -maxdepth 3 2>/dev/null)
+WS_SKILLS=$(find /home/sandbox/harness/workspace/.claude/skills -name "SKILL.md" -maxdepth 3 2>/dev/null)
 ```
 
 Build a list of `(skill-name, scope-label, skill-dir, skill-file)` tuples. Scope label is `root` or `ws`.
@@ -66,7 +66,7 @@ AGE_DAYS=$(( (NOW - MTIME) / 86400 ))
 ```bash
 # Count daily memory logs that mention this skill name (case-insensitive)
 SKILL_NAME="<skill-name>"
-MENTION_COUNT=$(grep -rli "$SKILL_NAME" /home/orchestrator/harness/workspace/memory/ 2>/dev/null | wc -l)
+MENTION_COUNT=$(grep -rli "$SKILL_NAME" /home/sandbox/harness/workspace/memory/ 2>/dev/null | wc -l)
 ```
 
 | Mentions | Score |
@@ -82,7 +82,7 @@ MENTION_COUNT=$(grep -rli "$SKILL_NAME" /home/orchestrator/harness/workspace/mem
 Scan the SKILL.md body for references to paths and skill invocations, then verify existence.
 
 ```bash
-# Extract all bare absolute paths (e.g. /home/orchestrator/harness/...)
+# Extract all bare absolute paths (e.g. /home/sandbox/harness/...)
 PATH_REFS=$(grep -oP '`[^`]*`|"[^"]*"' "<skill-file>" | grep -oP '/[a-zA-Z0-9_./-]+' | sort -u)
 
 # Extract skill invocations (e.g. /provision, /delegate, /wiki-ingest)
@@ -210,7 +210,7 @@ If the audit reveals a systemic pattern (e.g., multiple skills missing memory pr
 
 - Scoring is fully deterministic — run the same commands twice and get the same scores. Do not adjust scores based on content quality or subjective judgment.
 - Run Dimension E (Dependencies) last, after all other dimensions are scored, so referenced-skill scores are available without a second pass.
-- When checking integrity references, skip references to standard Unix paths (`/bin`, `/usr`, `/home/orchestrator/harness` itself as a directory) — only flag references to specific files or skills that do not exist.
+- When checking integrity references, skip references to standard Unix paths (`/bin`, `/usr`, `/home/sandbox/harness` itself as a directory) — only flag references to specific files or skills that do not exist.
 - A skill that is the target of `argument-hint: "all | root | workspace | <skill-name>"` style hints should not be penalized for referencing those placeholder tokens.
 - For the single-skill target mode (`$ARGUMENTS` = a skill name), run all 5 dimensions and emit the same table for just that skill, plus its recommendation.
 - Heartbeat coverage is a bonus signal, not a scored dimension — note it in the Recommendation line if a skill has 0 usage and no heartbeat reference in `workspace/heartbeats/`.
@@ -221,8 +221,8 @@ If the audit reveals a systemic pattern (e.g., multiple skills missing memory pr
 
 | Scope | Skills root |
 |-------|-------------|
-| root | `/home/orchestrator/harness/.claude/skills/` |
-| ws | `/home/orchestrator/harness/workspace/.claude/skills/` |
+| root | `/home/sandbox/harness/.claude/skills/` |
+| ws | `/home/sandbox/harness/workspace/.claude/skills/` |
 
 ### Score thresholds
 

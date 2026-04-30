@@ -64,19 +64,19 @@ Add entries to `~/.ssh/config` on your local machine (or any machine that needs 
 Host sandbox-alpha
   HostName your-server-ip    # or 127.0.0.1 for local Docker
   Port 2222
-  User orchestrator
+  User sandbox
   ForwardAgent yes
 
 Host sandbox-bravo
   HostName your-server-ip
   Port 2223
-  User orchestrator
+  User sandbox
   ForwardAgent yes
 
 Host sandbox-charlie
   HostName your-server-ip
   Port 2224
-  User orchestrator
+  User sandbox
   ForwardAgent yes
 ```
 
@@ -94,7 +94,7 @@ Sandboxes on the same Docker host can reach each other via `host.docker.internal
 
 ```bash
 # From inside sandbox-alpha, connect to sandbox-bravo:
-ssh -p 2223 orchestrator@host.docker.internal
+ssh -p 2223 sandbox@host.docker.internal
 ```
 
 This enables orchestration patterns where one agent delegates work to other agents running in separate sandboxes.

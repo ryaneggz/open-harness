@@ -17,7 +17,7 @@
 # If either target is missing, Docker auto-creates it as a directory
 # owned by root — `claude` then fails to parse JSON or read credentials.
 #
-# Requirements: Host UID MUST equal the orchestrator UID (1000). The
+# Requirements: Host UID MUST equal the sandbox UID (1000). The
 # ~/.claude/.credentials.json file is mode 0600 (owner-only), so the
 # group-membership trick used elsewhere in entrypoint.sh does NOT grant
 # access. If host UID ≠ 1000, `claude` will fail to read credentials
@@ -33,12 +33,12 @@
 #
 # Permissions: Read-write (sandbox writes host memory/projects/tip counters
 # live). Replaces: claude-auth named volume from base docker-compose.yml at
-# the /home/orchestrator/.claude target path. The named volume declaration stays
+# the /home/sandbox/.claude target path. The named volume declaration stays
 # in the base compose — it becomes orphaned (unmounted) while this overlay
 # is active and is reinstated when the overlay is removed.
 #
 # Entrypoint coordination: sets CLAUDE_HOST_BIND_MOUNT=1 so entrypoint.sh
-# skips its recursive chown on /home/orchestrator/.claude (which would otherwise
+# skips its recursive chown on /home/sandbox/.claude (which would otherwise
 # rewrite host file ownership). The chown loop only matches directories,
 # so ~/.claude.json (a file) is untouched regardless.
 #
@@ -48,7 +48,7 @@
 services:
   sandbox:
     volumes:
-      - ${HOST_CLAUDE_DIR:-~/.claude}:/home/orchestrator/.claude
-      - ${HOST_CLAUDE_JSON:-~/.claude.json}:/home/orchestrator/.claude.json
+      - ${HOST_CLAUDE_DIR:-~/.claude}:/home/sandbox/.claude
+      - ${HOST_CLAUDE_JSON:-~/.claude.json}:/home/sandbox/.claude.json
     environment:
       - CLAUDE_HOST_BIND_MOUNT=1

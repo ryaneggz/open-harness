@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { slackStep } from "../onboard/steps/slack.js";
 import { execWasCalled, ioMessages, makeFakeDeps } from "../onboard/testing/fake-deps.js";
 
-const SLACK_PKG = "/home/orchestrator/harness/packages/slack";
+const SLACK_PKG = "/home/sandbox/harness/packages/slack";
 
 describe("slack step", () => {
   it("tokens in env + mom on PATH + already connected → done", async () => {
@@ -60,21 +60,21 @@ describe("slack step", () => {
   it("tokens missing + user declines → skipped (bootstraps agent dir)", async () => {
     const deps = makeFakeDeps({
       askAnswers: ["n"],
-      files: { "/home/orchestrator/.pi/agent/settings.json": "{}" },
+      files: { "/home/sandbox/.pi/agent/settings.json": "{}" },
       which: { mom: "/usr/local/bin/mom" },
     });
     const result = await slackStep.run(deps, { force: false });
     expect(result.status).toBe("skipped");
     expect(deps.recorder.symlinks).toContainEqual({
-      target: "/home/orchestrator/.pi/agent/settings.json",
-      link: "/home/orchestrator/.openharness/agent/settings.json",
+      target: "/home/sandbox/.pi/agent/settings.json",
+      link: "/home/sandbox/.openharness/agent/settings.json",
     });
   });
 
   it("tokens missing + user accepts + provides tokens → persists to .devcontainer/.env and connects", async () => {
     const deps = makeFakeDeps({
-      home: "/home/orchestrator",
-      files: { "/home/orchestrator/harness/.devcontainer": "dir" },
+      home: "/home/sandbox",
+      files: { "/home/sandbox/harness/.devcontainer": "dir" },
       which: { mom: "/usr/local/bin/mom" },
       askAnswers: ["y", "xapp-new", "xoxb-new"],
       execStubs: [
@@ -89,17 +89,17 @@ describe("slack step", () => {
     });
     const result = await slackStep.run(deps, { force: false });
     expect(result.status).toBe("done");
-    const envContents = deps.files.get("/home/orchestrator/harness/.devcontainer/.env") ?? "";
+    const envContents = deps.files.get("/home/sandbox/harness/.devcontainer/.env") ?? "";
     expect(envContents).toContain("SLACK_APP_TOKEN=xapp-new");
     expect(envContents).toContain("SLACK_BOT_TOKEN=xoxb-new");
   });
 
   it("prompts + persists against .devcontainer/.env with preconfigured value: comments old line, inserts new after", async () => {
     const deps = makeFakeDeps({
-      home: "/home/orchestrator",
+      home: "/home/sandbox",
       files: {
-        "/home/orchestrator/harness/.devcontainer": "dir",
-        "/home/orchestrator/harness/.devcontainer/.env": "SLACK_APP_TOKEN=xapp-preconfigured\n",
+        "/home/sandbox/harness/.devcontainer": "dir",
+        "/home/sandbox/harness/.devcontainer/.env": "SLACK_APP_TOKEN=xapp-preconfigured\n",
       },
       which: { mom: "/usr/local/bin/mom" },
       askAnswers: ["y", "xapp-new", "xoxb-new"],
@@ -115,7 +115,7 @@ describe("slack step", () => {
     });
     const result = await slackStep.run(deps, { force: false });
     expect(result.status).toBe("done");
-    const envContents = deps.files.get("/home/orchestrator/harness/.devcontainer/.env") ?? "";
+    const envContents = deps.files.get("/home/sandbox/harness/.devcontainer/.env") ?? "";
     expect(envContents).toContain("# SLACK_APP_TOKEN=xapp-preconfigured");
     expect(envContents).toMatch(/# SLACK_APP_TOKEN=xapp-preconfigured\nSLACK_APP_TOKEN=xapp-new/);
     expect(envContents).toContain("SLACK_BOT_TOKEN=xoxb-new");

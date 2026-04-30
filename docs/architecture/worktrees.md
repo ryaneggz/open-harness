@@ -96,7 +96,7 @@ Open Harness runs on a single pattern: **one parent sandbox, N git worktrees, on
 
 ```mermaid
 flowchart TB
-  subgraph host["Host — /home/orchestrator/harness"]
+  subgraph host["Host — /home/sandbox/harness"]
     direction TB
     gitreg[".git/worktrees/<br/>(git's worktree registry)"]
     parent["workspace/<br/>(parent-branch workspace)"]
@@ -126,7 +126,7 @@ One container. N git worktrees. One daemon watching every worktree's `heartbeats
 
 ### Orchestrator
 
-- **Runs at:** the project root (`/home/orchestrator/harness`) — usually a Claude Code session attached to the sandbox.
+- **Runs at:** the project root (`/home/sandbox/harness`) — usually a Claude Code session attached to the sandbox.
 - **Owns:** harness source (`packages/sandbox/`, `.devcontainer/`, `install/`), git operations, GitHub issues/PRs/releases, sandbox lifecycle skills (`/provision`, `/destroy`, `/repair`), and the one-time scaffold of each new harness's `workspace/`.
 - **Does not write application code.** Agents do that inside their workspaces.
 
@@ -138,7 +138,7 @@ One container. N git worktrees. One daemon watching every worktree's `heartbeats
 
 ### Sandbox container
 
-Default name `oh-remote`. Bind-mounts `/home/orchestrator/harness` into the container so all worktrees are visible automatically. Hosts the shared toolchain (`claude`, `codex`, `pi`, `pnpm`, `git`, `gh`, Docker socket) and shared credentials (`~/.claude`, `~/.pi`, `~/.config/gh`). Boots via `install/entrypoint.sh`, which starts the heartbeat daemon under a watchdog.
+Default name `oh-remote`. Bind-mounts `/home/sandbox/harness` into the container so all worktrees are visible automatically. Hosts the shared toolchain (`claude`, `codex`, `pi`, `pnpm`, `git`, `gh`, Docker socket) and shared credentials (`~/.claude`, `~/.pi`, `~/.config/gh`). Boots via `install/entrypoint.sh`, which starts the heartbeat daemon under a watchdog.
 
 ### Heartbeat daemon
 
@@ -267,8 +267,8 @@ heartbeat-daemon status
 Read per-root logs:
 
 ```bash
-tail -f /home/orchestrator/harness/workspace/heartbeats/heartbeat.log
-tail -f /home/orchestrator/harness/.worktrees/agent/<name>/workspace/heartbeats/heartbeat.log
+tail -f /home/sandbox/harness/workspace/heartbeats/heartbeat.log
+tail -f /home/sandbox/harness/.worktrees/agent/<name>/workspace/heartbeats/heartbeat.log
 ```
 
 Retire a harness:

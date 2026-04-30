@@ -48,7 +48,7 @@ cp .devcontainer/.example.env .devcontainer/.env
 # edit .devcontainer/.env: set GH_TOKEN, optionally rename SANDBOX_NAME,
 # and set INSTALL_AGENT_BROWSER=false unless you need headless Chromium
 docker compose -f .devcontainer/docker-compose.yml up -d --build  # ~10 min on cold cache
-docker compose -f .devcontainer/docker-compose.yml exec -u orchestrator sandbox zsh
+docker compose -f .devcontainer/docker-compose.yml exec -u sandbox sandbox zsh
 ```
 
 Inside the sandbox, finish auth and start an agent:

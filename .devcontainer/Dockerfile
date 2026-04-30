@@ -61,63 +61,63 @@ RUN corepack enable && corepack prepare pnpm@latest --activate \
 RUN npm install -g @anthropic-ai/claude-code @openai/codex @mariozechner/pi-coding-agent \
  && claude --version && codex --version && pi --version
 
-# ─── Orchestrator user ────────────────────────────────────────────────
-RUN useradd -u 1000 -m -s /bin/zsh orchestrator \
- && echo "orchestrator ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/orchestrator \
- && chmod 0440 /etc/sudoers.d/orchestrator \
- && groupadd -f docker && usermod -aG docker orchestrator
+# ─── Sandbox user ──────────────────────────────────────────────────
+RUN useradd -m -s /bin/zsh sandbox \
+ && echo "sandbox ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/sandbox \
+ && chmod 0440 /etc/sudoers.d/sandbox \
+ && groupadd -f docker && usermod -aG docker sandbox
 
 # ─── oh-my-zsh + plugins ───────────────────────────────────────────
-# Install as orchestrator so $HOME resolves and files land with correct ownership.
+# Install as sandbox so $HOME resolves and files land with correct ownership.
 # RUNZSH/CHSH=no keeps the installer from trying to exec zsh or re-run chsh.
-RUN su - orchestrator -c "RUNZSH=no CHSH=no KEEP_ZSHRC=yes sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\" --unattended" \
- && su - orchestrator -c "git clone --depth 1 https://github.com/zsh-users/zsh-autosuggestions         /home/orchestrator/.oh-my-zsh/custom/plugins/zsh-autosuggestions" \
- && su - orchestrator -c "git clone --depth 1 https://github.com/zsh-users/zsh-syntax-highlighting     /home/orchestrator/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting" \
- && su - orchestrator -c "git clone --depth 1 https://github.com/zsh-users/zsh-history-substring-search /home/orchestrator/.oh-my-zsh/custom/plugins/zsh-history-substring-search"
+RUN su - sandbox -c "RUNZSH=no CHSH=no KEEP_ZSHRC=yes sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\" --unattended" \
+ && su - sandbox -c "git clone --depth 1 https://github.com/zsh-users/zsh-autosuggestions         /home/sandbox/.oh-my-zsh/custom/plugins/zsh-autosuggestions" \
+ && su - sandbox -c "git clone --depth 1 https://github.com/zsh-users/zsh-syntax-highlighting     /home/sandbox/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting" \
+ && su - sandbox -c "git clone --depth 1 https://github.com/zsh-users/zsh-history-substring-search /home/sandbox/.oh-my-zsh/custom/plugins/zsh-history-substring-search"
 
-# Default tmux config for orchestrator user
-COPY --chown=orchestrator:orchestrator install/.tmux.conf /home/orchestrator/.tmux.conf
+# Default tmux config for sandbox user
+COPY --chown=sandbox:sandbox install/.tmux.conf /home/sandbox/.tmux.conf
 
-# Default .zshrc for orchestrator user (overrides the oh-my-zsh template)
-COPY --chown=orchestrator:orchestrator install/.zshrc /home/orchestrator/.zshrc
+# Default .zshrc for sandbox user (overrides the oh-my-zsh template)
+COPY --chown=sandbox:sandbox install/.zshrc /home/sandbox/.zshrc
 
 # Ensure PNPM_HOME is on PATH for login shells (SSH, openharness shell).
 # bash reads .profile; zsh reads .zprofile — mirror the exports into both.
 RUN printf '%s\n' \
       'export PNPM_HOME="/usr/local/share/pnpm"' \
       'export PATH="$PNPM_HOME:$PATH"' \
-      | tee -a /home/orchestrator/.profile /home/orchestrator/.zprofile \
- && chown orchestrator:orchestrator /home/orchestrator/.profile /home/orchestrator/.zprofile
+      | tee -a /home/sandbox/.profile /home/sandbox/.zprofile \
+ && chown sandbox:sandbox /home/sandbox/.profile /home/sandbox/.zprofile
 
 # Shell aliases for agent CLIs (bash fallback — .zshrc ships with these baked in)
-RUN echo "alias claude='claude --dangerously-skip-permissions'" >> /home/orchestrator/.bashrc \
- && echo "alias codex='codex --full-auto'" >> /home/orchestrator/.bashrc \
- && echo "alias pi='pi'" >> /home/orchestrator/.bashrc \
- && echo "alias mom='mom --sandbox=host ~/harness/workspace/.slack'" >> /home/orchestrator/.bashrc
+RUN echo "alias claude='claude --dangerously-skip-permissions'" >> /home/sandbox/.bashrc \
+ && echo "alias codex='codex --full-auto'" >> /home/sandbox/.bashrc \
+ && echo "alias pi='pi'" >> /home/sandbox/.bashrc \
+ && echo "alias mom='mom --sandbox=host ~/harness/workspace/.slack'" >> /home/sandbox/.bashrc
 
 # Git safe.directory for bind-mounted project
-RUN su - orchestrator -c "git config --global --add safe.directory /home/orchestrator/harness"
+RUN su - sandbox -c "git config --global --add safe.directory /home/sandbox/harness"
 
 # Default working directory for interactive shells (SSH + terminal attach, bash fallback)
-RUN echo 'cd ~/harness 2>/dev/null' >> /home/orchestrator/.bashrc
+RUN echo 'cd ~/harness 2>/dev/null' >> /home/sandbox/.bashrc
 
 # Image-level devcontainer config — VS Code reads this on "Attach to Running Container"
-RUN mkdir -p /.devcontainer && echo '{"workspaceFolder":"/home/orchestrator/harness","remoteUser":"orchestrator"}' > /.devcontainer/devcontainer.json
+RUN mkdir -p /.devcontainer && echo '{"workspaceFolder":"/home/sandbox/harness","remoteUser":"sandbox"}' > /.devcontainer/devcontainer.json
 
 # Labels for VS Code "Attach to Running Container"
-LABEL devcontainer.metadata='[{"remoteUser":"orchestrator","workspaceFolder":"/home/orchestrator/harness"}]'
+LABEL devcontainer.metadata='[{"remoteUser":"sandbox","workspaceFolder":"/home/sandbox/harness"}]'
 
 # ─── Copy install scripts + workspace (for CI; bind mount overrides at runtime)
-COPY --chown=orchestrator:orchestrator install/ /home/orchestrator/install/
-RUN chmod +x /home/orchestrator/install/*.sh
-COPY --chown=orchestrator:orchestrator .openharness/ /home/orchestrator/.openharness/
-COPY --chown=orchestrator:orchestrator workspace/ /home/orchestrator/harness/workspace/
+COPY --chown=sandbox:sandbox install/ /home/sandbox/install/
+RUN chmod +x /home/sandbox/install/*.sh
+COPY --chown=sandbox:sandbox .openharness/ /home/sandbox/.openharness/
+COPY --chown=sandbox:sandbox workspace/ /home/sandbox/harness/workspace/
 
 # ─── Entrypoint ────────────────────────────────────────────────────
 COPY .devcontainer/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-WORKDIR /home/orchestrator/harness
+WORKDIR /home/sandbox/harness
 
 ENTRYPOINT ["entrypoint.sh"]
 CMD ["sleep", "infinity"]

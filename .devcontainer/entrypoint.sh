@@ -2,7 +2,7 @@
 set -e
 
 # Match the container's docker group GID to the host socket's GID
-# so the orchestrator user can use Docker without sudo.
+# so the sandbox user can use Docker without sudo.
 SOCK=/var/run/docker.sock
 if [ -S "$SOCK" ]; then
   HOST_GID=$(stat -c '%g' "$SOCK")
@@ -18,7 +18,7 @@ fi
 # (see docker-compose.claude-host.yml, docker-compose.codex-host.yml,
 # docker-compose.pi-host.yml).
 for dir in .claude .codex .pi .cloudflared .config/gh .ssh .openharness; do
-  if [ -d "/home/orchestrator/$dir" ]; then
+  if [ -d "/home/sandbox/$dir" ]; then
     if [ "$dir" = ".claude" ] && [ "${CLAUDE_HOST_BIND_MOUNT:-0}" = "1" ]; then
       continue
     fi
@@ -28,64 +28,64 @@ for dir in .claude .codex .pi .cloudflared .config/gh .ssh .openharness; do
     if [ "$dir" = ".pi" ] && [ "${PI_HOST_BIND_MOUNT:-0}" = "1" ]; then
       continue
     fi
-    chown -R orchestrator:orchestrator "/home/orchestrator/$dir" 2>/dev/null || true
-    [ "$dir" = ".ssh" ] && chmod 700 "/home/orchestrator/$dir" 2>/dev/null || true
+    chown -R sandbox:sandbox "/home/sandbox/$dir" 2>/dev/null || true
+    [ "$dir" = ".ssh" ] && chmod 700 "/home/sandbox/$dir" 2>/dev/null || true
   fi
 done
 
 # ─── Host UID reconciliation ────────────────────────────────────────
-# The repo is bind-mounted at /home/orchestrator/harness with its host UID/GID.
-# If the host user's UID differs from the container orchestrator user (1000),
-# pnpm / git operations would fail with EACCES. Add orchestrator to the host
+# The repo is bind-mounted at /home/sandbox/harness with its host UID/GID.
+# If the host user's UID differs from the container sandbox user (1000),
+# pnpm / git operations would fail with EACCES. Add sandbox to the host
 # owning group so it can write via group permissions (repo is mode 775).
-HARNESS_DIR="/home/orchestrator/harness"
+HARNESS_DIR="/home/sandbox/harness"
 if [ -d "$HARNESS_DIR" ]; then
   HOST_UID=$(stat -c '%u' "$HARNESS_DIR")
   HOST_GID=$(stat -c '%g' "$HARNESS_DIR")
-  ORCHESTRATOR_UID=$(id -u orchestrator)
-  if [ "$HOST_UID" != "$ORCHESTRATOR_UID" ]; then
+  SANDBOX_UID=$(id -u sandbox)
+  if [ "$HOST_UID" != "$SANDBOX_UID" ]; then
     if ! getent group "$HOST_GID" >/dev/null 2>&1; then
       groupadd -g "$HOST_GID" hostuser 2>/dev/null || true
     fi
     HOST_GROUP=$(getent group "$HOST_GID" | cut -d: -f1)
-    if [ -n "$HOST_GROUP" ] && ! id -nG orchestrator | tr ' ' '\n' | grep -qx "$HOST_GROUP"; then
-      usermod -aG "$HOST_GROUP" orchestrator
-      echo "[entrypoint] orchestrator added to host group $HOST_GROUP (gid=$HOST_GID) for bind-mount write access"
+    if [ -n "$HOST_GROUP" ] && ! id -nG sandbox | tr ' ' '\n' | grep -qx "$HOST_GROUP"; then
+      usermod -aG "$HOST_GROUP" sandbox
+      echo "[entrypoint] sandbox added to host group $HOST_GROUP (gid=$HOST_GID) for bind-mount write access"
     fi
   fi
 fi
 
 # ─── Attach banner wiring (idempotent) ──────────────────────────────
-# Source install/banner.sh from the orchestrator user's .bashrc so every
+# Source install/banner.sh from the sandbox user's .bashrc so every
 # interactive shell (docker exec, SSH via sshd overlay, VS Code) shows
-# orchestrator + onboarding status. Safe to run on every boot.
-BASHRC="/home/orchestrator/.bashrc"
+# sandbox + onboarding status. Safe to run on every boot.
+BASHRC="/home/sandbox/.bashrc"
 if [ -f "$BASHRC" ] && ! grep -q 'source.*install/banner.sh' "$BASHRC"; then
-  gosu orchestrator bash -c 'echo "source /home/orchestrator/harness/install/banner.sh 2>/dev/null" >> ~/.bashrc'
+  gosu sandbox bash -c 'echo "source /home/sandbox/harness/install/banner.sh 2>/dev/null" >> ~/.bashrc'
   echo "[entrypoint] attach banner wired into .bashrc"
 fi
 
 # ─── Git worktree resolution ────────────────────────────────────────
-# When the orchestrator runs from a git worktree, .git is a file (not a dir)
+# When the sandbox runs from a git worktree, .git is a file (not a dir)
 # pointing to the main repo's .git/worktrees/<name>. The main .git/ is
-# outside the bind mount, so we mount it separately at /home/orchestrator/.git-main
+# outside the bind mount, so we mount it separately at /home/sandbox/.git-main
 # (via docker-compose.git.yml) and rewrite the .git file to resolve inside
 # the container.
-HARNESS="/home/orchestrator/harness"
-GIT_MAIN="/home/orchestrator/.git-main"
+HARNESS="/home/sandbox/harness"
+GIT_MAIN="/home/sandbox/.git-main"
 
 if [ -f "$HARNESS/.git" ] && [ -d "$GIT_MAIN" ]; then
   WORKTREE_NAME=$(sed -n 's|.*worktrees/||p' "$HARNESS/.git")
   if [ -n "$WORKTREE_NAME" ] && [ -d "$GIT_MAIN/worktrees/$WORKTREE_NAME" ]; then
     echo "gitdir: $GIT_MAIN/worktrees/$WORKTREE_NAME" > "$HARNESS/.git"
-    chown orchestrator:orchestrator "$HARNESS/.git"
-    chown -R orchestrator:orchestrator "$GIT_MAIN" 2>/dev/null || true
-    gosu orchestrator git config --global --add safe.directory "$HARNESS"
+    chown sandbox:sandbox "$HARNESS/.git"
+    chown -R sandbox:sandbox "$GIT_MAIN" 2>/dev/null || true
+    gosu sandbox git config --global --add safe.directory "$HARNESS"
     echo "[entrypoint] git worktree resolved → $GIT_MAIN/worktrees/$WORKTREE_NAME"
   fi
 elif [ -d "$HARNESS/.git" ]; then
   # Regular repo (not a worktree) — just fix ownership
-  chown -R orchestrator:orchestrator "$HARNESS/.git" 2>/dev/null || true
+  chown -R sandbox:sandbox "$HARNESS/.git" 2>/dev/null || true
 fi
 
 # ─── GitHub CLI auth via PAT (optional) ─────────────────────────────
@@ -96,8 +96,8 @@ fi
 # Disk-auth check uses `env -u GH_TOKEN` so we don't mistake the env var
 # for a persisted login.
 if [ -n "${GH_TOKEN:-}" ]; then
-  if ! gosu orchestrator env -u GH_TOKEN -u GITHUB_TOKEN gh auth status &>/dev/null; then
-    if echo "$GH_TOKEN" | gosu orchestrator env -u GH_TOKEN -u GITHUB_TOKEN gh auth login --with-token 2>/dev/null; then
+  if ! gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth status &>/dev/null; then
+    if echo "$GH_TOKEN" | gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth login --with-token 2>/dev/null; then
       echo "[entrypoint] GitHub CLI authenticated via GH_TOKEN (persisted to ~/.config/gh)"
     else
       echo "[entrypoint] GH_TOKEN provided but gh auth login failed"
@@ -110,28 +110,28 @@ fi
 # ─── Git identity + credential helper ───────────────────────────────
 # Set git user from env vars (fallback to gh-authenticated user)
 if [ -n "${GIT_USER_NAME:-}" ]; then
-  gosu orchestrator git config --global user.name "$GIT_USER_NAME"
-elif gosu orchestrator gh auth status &>/dev/null; then
-  GH_USER=$(gosu orchestrator gh api user --jq .name 2>/dev/null || true)
-  [ -n "$GH_USER" ] && gosu orchestrator git config --global user.name "$GH_USER"
+  gosu sandbox git config --global user.name "$GIT_USER_NAME"
+elif gosu sandbox gh auth status &>/dev/null; then
+  GH_USER=$(gosu sandbox gh api user --jq .name 2>/dev/null || true)
+  [ -n "$GH_USER" ] && gosu sandbox git config --global user.name "$GH_USER"
 fi
 if [ -n "${GIT_USER_EMAIL:-}" ]; then
-  gosu orchestrator git config --global user.email "$GIT_USER_EMAIL"
-elif gosu orchestrator gh auth status &>/dev/null; then
-  GH_EMAIL=$(gosu orchestrator gh api user --jq .email 2>/dev/null || true)
+  gosu sandbox git config --global user.email "$GIT_USER_EMAIL"
+elif gosu sandbox gh auth status &>/dev/null; then
+  GH_EMAIL=$(gosu sandbox gh api user --jq .email 2>/dev/null || true)
   # GitHub may return null for private emails — use noreply fallback
   if [ -z "$GH_EMAIL" ] || [ "$GH_EMAIL" = "null" ]; then
-    GH_LOGIN=$(gosu orchestrator gh api user --jq .login 2>/dev/null || true)
+    GH_LOGIN=$(gosu sandbox gh api user --jq .login 2>/dev/null || true)
     [ -n "$GH_LOGIN" ] && GH_EMAIL="${GH_LOGIN}@users.noreply.github.com"
   fi
-  [ -n "$GH_EMAIL" ] && gosu orchestrator git config --global user.email "$GH_EMAIL"
+  [ -n "$GH_EMAIL" ] && gosu sandbox git config --global user.email "$GH_EMAIL"
 fi
 # Register gh as git credential helper so `git push`/`git fetch` just work
 # over HTTPS on first attach — no SSH key setup required.
 # Must run with GH_TOKEN unset: gh refuses setup-git when env-var auth
 # would shadow the stored host config it's trying to wire up.
-if gosu orchestrator env -u GH_TOKEN -u GITHUB_TOKEN gh auth status &>/dev/null; then
-  if gosu orchestrator env -u GH_TOKEN -u GITHUB_TOKEN gh auth setup-git 2>/dev/null; then
+if gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth status &>/dev/null; then
+  if gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth setup-git 2>/dev/null; then
     echo "[entrypoint] git credential helper configured via gh auth setup-git"
   fi
 fi
@@ -143,14 +143,14 @@ fi
 # so we do it ourselves. Requires the PAT to carry `admin:public_key`
 # scope; without it the generation still runs but the upload is skipped
 # (HTTPS + credential helper continues to work).
-if [ -n "${GH_TOKEN:-}" ] && gosu orchestrator env -u GH_TOKEN -u GITHUB_TOKEN gh auth status &>/dev/null; then
-  SSH_DIR="/home/orchestrator/.ssh"
+if [ -n "${GH_TOKEN:-}" ] && gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh auth status &>/dev/null; then
+  SSH_DIR="/home/sandbox/.ssh"
   SSH_KEY="$SSH_DIR/id_ed25519"
   if [ ! -f "$SSH_KEY" ]; then
     mkdir -p "$SSH_DIR"
-    chown orchestrator:orchestrator "$SSH_DIR"
+    chown sandbox:sandbox "$SSH_DIR"
     chmod 700 "$SSH_DIR"
-    if gosu orchestrator ssh-keygen -t ed25519 -f "$SSH_KEY" -N "" \
+    if gosu sandbox ssh-keygen -t ed25519 -f "$SSH_KEY" -N "" \
          -C "openharness-${SANDBOX_NAME:-$(hostname)}" &>/dev/null; then
       echo "[entrypoint] Generated SSH key at $SSH_KEY"
     fi
@@ -158,11 +158,11 @@ if [ -n "${GH_TOKEN:-}" ] && gosu orchestrator env -u GH_TOKEN -u GITHUB_TOKEN g
   if [ -f "$SSH_KEY.pub" ]; then
     KEY_TITLE="openharness-${SANDBOX_NAME:-$(hostname)}"
     PUB_MATERIAL=$(awk '{print $2}' "$SSH_KEY.pub")
-    if gosu orchestrator env -u GH_TOKEN -u GITHUB_TOKEN gh ssh-key list 2>/dev/null \
+    if gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN gh ssh-key list 2>/dev/null \
          | grep -Fq "$PUB_MATERIAL"; then
       echo "[entrypoint] SSH public key already registered on GitHub"
     else
-      if gosu orchestrator env -u GH_TOKEN -u GITHUB_TOKEN \
+      if gosu sandbox env -u GH_TOKEN -u GITHUB_TOKEN \
            gh ssh-key add "$SSH_KEY.pub" --title "$KEY_TITLE" 2>/dev/null; then
         echo "[entrypoint] SSH public key uploaded to GitHub as '$KEY_TITLE'"
       else
@@ -175,7 +175,7 @@ fi
 # ─── SSH server setup (only when sshd overlay is active) ──────────
 if echo "$@" | grep -q sshd; then
   # Set password for SSH login from env var
-  echo "orchestrator:${SANDBOX_PASSWORD:-changeme}" | chpasswd 2>/dev/null || true
+  echo "sandbox:${SANDBOX_PASSWORD:-changeme}" | chpasswd 2>/dev/null || true
   # Configure sshd for password + environment auth
   mkdir -p /run/sshd
   sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config 2>/dev/null || true
@@ -185,8 +185,8 @@ if echo "$@" | grep -q sshd; then
     ssh-keygen -A
   fi
   # Generate SSH keypair if none exists
-  if [ -d "/home/orchestrator/.ssh" ] && [ ! -f "/home/orchestrator/.ssh/id_ed25519" ]; then
-    gosu orchestrator ssh-keygen -t ed25519 -f /home/orchestrator/.ssh/id_ed25519 -N "" -C "orchestrator@$(hostname)" 2>/dev/null || true
+  if [ -d "/home/sandbox/.ssh" ] && [ ! -f "/home/sandbox/.ssh/id_ed25519" ]; then
+    gosu sandbox ssh-keygen -t ed25519 -f /home/sandbox/.ssh/id_ed25519 -N "" -C "sandbox@$(hostname)" 2>/dev/null || true
   fi
 fi
 
@@ -201,10 +201,10 @@ if [ -f "$HARNESS/packages/sandbox/package.json" ]; then
     echo "[entrypoint] building openharness CLI..."
     (
       cd "$HARNESS"
-      gosu orchestrator pnpm install --frozen-lockfile \
-        || gosu orchestrator pnpm install \
+      gosu sandbox pnpm install --frozen-lockfile \
+        || gosu sandbox pnpm install \
         || echo "[entrypoint] WARN: pnpm install failed"
-      gosu orchestrator pnpm --filter @openharness/sandbox run build \
+      gosu sandbox pnpm --filter @openharness/sandbox run build \
         || echo "[entrypoint] WARN: pnpm build failed"
     )
   fi
@@ -221,18 +221,18 @@ if [ -f "$HARNESS/packages/sandbox/package.json" ]; then
 fi
 
 # ─── Start heartbeat daemon (with watchdog) ──────────────────────
-WORKSPACE="/home/orchestrator/harness/workspace"
-DAEMON_SCRIPT="/home/orchestrator/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
+WORKSPACE="/home/sandbox/harness/workspace"
+DAEMON_SCRIPT="/home/sandbox/harness/packages/sandbox/dist/src/cli/heartbeat-daemon.js"
 HB_LOG="$WORKSPACE/heartbeats/heartbeat.log"
 mkdir -p "$WORKSPACE/heartbeats"
-# Ensure heartbeat.log is orchestrator-writable (entrypoint's tee runs as root and
+# Ensure heartbeat.log is sandbox-writable (entrypoint's tee runs as root and
 # would otherwise create it root-owned, making the daemon crash-loop on EACCES).
 touch "$HB_LOG" 2>/dev/null || true
-chown orchestrator:orchestrator "$HB_LOG" 2>/dev/null || true
+chown sandbox:sandbox "$HB_LOG" 2>/dev/null || true
 if command -v heartbeat-daemon &>/dev/null; then
   (
     while true; do
-      gosu orchestrator heartbeat-daemon start 2>&1 | tee -a "$HB_LOG"
+      gosu sandbox heartbeat-daemon start 2>&1 | tee -a "$HB_LOG"
       EXIT_CODE=$?
       echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] heartbeat-daemon exited ($EXIT_CODE), restarting in 5s..." >> "$HB_LOG"
       sleep 5
@@ -242,7 +242,7 @@ if command -v heartbeat-daemon &>/dev/null; then
 elif [ -f "$DAEMON_SCRIPT" ]; then
   (
     while true; do
-      gosu orchestrator node "$DAEMON_SCRIPT" start 2>&1 | tee -a "$HB_LOG"
+      gosu sandbox node "$DAEMON_SCRIPT" start 2>&1 | tee -a "$HB_LOG"
       EXIT_CODE=$?
       echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] heartbeat-daemon exited ($EXIT_CODE), restarting in 5s..." >> "$HB_LOG"
       sleep 5
@@ -261,33 +261,33 @@ if [ "${INSTALL_AGENT_BROWSER:-false}" = "true" ] && ! command -v agent-browser 
     || echo "[entrypoint] agent-browser install failed — skipping"
 fi
 
-# Run workspace startup (dev server + tunnel) as orchestrator user
-STARTUP="/home/orchestrator/harness/workspace/startup.sh"
+# Run workspace startup (dev server + tunnel) as sandbox user
+STARTUP="/home/sandbox/harness/workspace/startup.sh"
 if [ -f "$STARTUP" ]; then
-  gosu orchestrator bash "$STARTUP" 2>&1 | sed 's/^/  /' || true
+  gosu sandbox bash "$STARTUP" 2>&1 | sed 's/^/  /' || true
 fi
 
 # Copy Pi agent auth to Mom if Mom auth is missing/empty
-if [ -d "/home/orchestrator/.pi/agent" ] && [ -s "/home/orchestrator/.pi/agent/auth.json" ]; then
-  SLACKDIR="/home/orchestrator/.pi/slack"
+if [ -d "/home/sandbox/.pi/agent" ] && [ -s "/home/sandbox/.pi/agent/auth.json" ]; then
+  SLACKDIR="/home/sandbox/.pi/slack"
   if [ ! -s "$SLACKDIR/auth.json" ]; then
     mkdir -p "$SLACKDIR"
-    ln -sf /home/orchestrator/.pi/agent/auth.json "$SLACKDIR/auth.json"
-    chown -R orchestrator:orchestrator "$SLACKDIR"
+    ln -sf /home/sandbox/.pi/agent/auth.json "$SLACKDIR/auth.json"
+    chown -R sandbox:sandbox "$SLACKDIR"
   fi
 fi
 
 # Auto-start Mom (Slack bot) if tokens are present
 if [ -n "${SLACK_APP_TOKEN:-}" ] && [ -n "${SLACK_BOT_TOKEN:-}" ]; then
   if command -v mom &>/dev/null; then
-    gosu orchestrator tmux new-session -d -s slack \
+    gosu sandbox tmux new-session -d -s slack \
       'mom --sandbox=host ~/harness/workspace/.slack' 2>/dev/null || true
     echo "[entrypoint] Mom started (tmux attach -t slack)"
   fi
 fi
 
 # First-boot message if onboarding not complete
-if [ ! -f "/home/orchestrator/.claude/.onboarded" ]; then
+if [ ! -f "/home/sandbox/.claude/.onboarded" ]; then
   echo ""
   echo "  ┌─────────────────────────────────────────────────┐"
   echo "  │  First boot detected. Complete setup:           │"

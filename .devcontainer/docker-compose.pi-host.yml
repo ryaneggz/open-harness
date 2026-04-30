@@ -14,7 +14,7 @@
 # If the target is missing, Docker auto-creates it as a directory owned
 # by root — `pi` then fails to read/write auth.json.
 #
-# Requirements: Host UID MUST equal the orchestrator UID (1000). Pi's
+# Requirements: Host UID MUST equal the sandbox UID (1000). Pi's
 # auth.json files are mode 0600 (owner-only), so the group-membership
 # trick used elsewhere in entrypoint.sh does NOT grant access. If host
 # UID ≠ 1000, `pi` will fail to read credentials despite the bind-mount
@@ -32,12 +32,12 @@
 #
 # Permissions: Read-write (sandbox writes host sessions live).
 # Replaces: pi-auth named volume from base docker-compose.yml at the
-# /home/orchestrator/.pi target path. The named volume declaration stays in
+# /home/sandbox/.pi target path. The named volume declaration stays in
 # the base compose — it becomes orphaned (unmounted) while this overlay
 # is active and is reinstated when the overlay is removed.
 #
 # Entrypoint coordination: sets PI_HOST_BIND_MOUNT=1 so entrypoint.sh
-# skips its recursive chown on /home/orchestrator/.pi (which would otherwise
+# skips its recursive chown on /home/sandbox/.pi (which would otherwise
 # rewrite host file ownership).
 #
 # Usage: enable via .openharness/config.json composeOverrides[]:
@@ -46,6 +46,6 @@
 services:
   sandbox:
     volumes:
-      - ${HOST_PI_DIR:-~/.pi}:/home/orchestrator/.pi
+      - ${HOST_PI_DIR:-~/.pi}:/home/sandbox/.pi
     environment:
       - PI_HOST_BIND_MOUNT=1

@@ -16,9 +16,9 @@ done
 # ─── Root check ──────────────────────────────────────────────────────
 [[ $EUID -eq 0 ]] || die "This script must be run as root (or via sudo)."
 
-# ─── Orchestrator user ─────────────────────────────────────────────────
-ORCHESTRATOR_USER="orchestrator"
-ORCHESTRATOR_HOME="/home/$ORCHESTRATOR_USER"
+# ─── Sandbox user ───────────────────────────────────────────────────
+SANDBOX_USER="sandbox"
+SANDBOX_HOME="/home/$SANDBOX_USER"
 
 # ─── Collect all options upfront ─────────────────────────────────────
 INSTALL_BROWSER="${INSTALL_BROWSER:-false}"
@@ -100,14 +100,14 @@ apt-get install -y --no-install-recommends \
   zsh
 ok "Base packages installed"
 
-# ─── 2. Create orchestrator user ───────────────────────────────────────
-if ! id "$ORCHESTRATOR_USER" &>/dev/null; then
-  banner "Creating user $ORCHESTRATOR_USER"
-  useradd -m -s /bin/zsh "$ORCHESTRATOR_USER"
-  echo "$ORCHESTRATOR_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/"$ORCHESTRATOR_USER"
-  ok "User $ORCHESTRATOR_USER created"
+# ─── 2. Create sandbox user ─────────────────────────────────────────
+if ! id "$SANDBOX_USER" &>/dev/null; then
+  banner "Creating user $SANDBOX_USER"
+  useradd -m -s /bin/zsh "$SANDBOX_USER"
+  echo "$SANDBOX_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/"$SANDBOX_USER"
+  ok "User $SANDBOX_USER created"
 else
-  banner "User $ORCHESTRATOR_USER already exists"
+  banner "User $SANDBOX_USER already exists"
   ok "Skipped"
 fi
 
@@ -141,9 +141,9 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
 apt-get update
 apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin
-# Add orchestrator user to docker group (created by docker-ce-cli)
+# Add sandbox user to docker group (created by docker-ce-cli)
 groupadd -f docker
-usermod -aG docker "$ORCHESTRATOR_USER"
+usermod -aG docker "$SANDBOX_USER"
 ok "Docker CLI $(docker --version) + Compose installed"
 
 # ─── 6. pnpm (via corepack) ──────────────────────────────────────
@@ -239,10 +239,10 @@ fi
 if [[ "$INSTALL_AGENTMAIL" == true ]]; then
   banner "Installing AgentMail CLI"
   pnpm add -g agentmail-cli
-  # Store API key in orchestrator user's shell rc files if provided (not in shell history).
+  # Store API key in sandbox user's shell rc files if provided (not in shell history).
   # Write to both .bashrc and .zshrc so whichever shell the user lands in sees it.
   if [[ -n "$AGENTMAIL_KEY" ]]; then
-    su - "$ORCHESTRATOR_USER" -c "
+    su - "$SANDBOX_USER" -c "
       for RC in \$HOME/.bashrc \$HOME/.zshrc; do
         [ -f \"\$RC\" ] || continue
         grep -q 'AGENTMAIL_API_KEY' \"\$RC\" \
@@ -274,46 +274,46 @@ else
   ok "Skipped"
 fi
 
-# ─── 13. Git global config (for orchestrator user) ────────────────────
+# ─── 13. Git global config (for sandbox user) ────────────────────
 if [[ -n "$GIT_USER_NAME" ]]; then
-  su - "$ORCHESTRATOR_USER" -c "git config --global user.name '${GIT_USER_NAME}'"
+  su - "$SANDBOX_USER" -c "git config --global user.name '${GIT_USER_NAME}'"
 fi
 if [[ -n "$GIT_USER_EMAIL" ]]; then
-  su - "$ORCHESTRATOR_USER" -c "git config --global user.email '${GIT_USER_EMAIL}'"
+  su - "$SANDBOX_USER" -c "git config --global user.email '${GIT_USER_EMAIL}'"
 fi
 if [[ -n "$GIT_USER_NAME" || -n "$GIT_USER_EMAIL" ]]; then
-  ok "Git config set for $ORCHESTRATOR_USER"
+  ok "Git config set for $SANDBOX_USER"
 fi
 
-# ─── 14. SSH authorized key (for orchestrator user) ──────────────────
+# ─── 14. SSH authorized key (for sandbox user) ──────────────────
 if [[ -n "$SSH_PUBKEY" ]]; then
   banner "Configuring SSH authorized key"
-  SSHDIR="$ORCHESTRATOR_HOME/.ssh"
+  SSHDIR="$SANDBOX_HOME/.ssh"
   mkdir -p "$SSHDIR"
   echo "$SSH_PUBKEY" >> "$SSHDIR/authorized_keys"
   chmod 700 "$SSHDIR"
   chmod 600 "$SSHDIR/authorized_keys"
-  chown -R "$ORCHESTRATOR_USER:$ORCHESTRATOR_USER" "$SSHDIR"
-  ok "SSH public key added for $ORCHESTRATOR_USER"
+  chown -R "$SANDBOX_USER:$SANDBOX_USER" "$SSHDIR"
+  ok "SSH public key added for $SANDBOX_USER"
 fi
 
 # ─── 14b. Generate SSH keypair if none exists ────────────────────
-SSHDIR="$ORCHESTRATOR_HOME/.ssh"
+SSHDIR="$SANDBOX_HOME/.ssh"
 if [ ! -f "$SSHDIR/id_ed25519" ] && [ -z "$SSH_PUBKEY" ]; then
   banner "Generating SSH keypair"
   mkdir -p "$SSHDIR"
-  ssh-keygen -t ed25519 -f "$SSHDIR/id_ed25519" -N "" -C "orchestrator@$(hostname)"
+  ssh-keygen -t ed25519 -f "$SSHDIR/id_ed25519" -N "" -C "sandbox@$(hostname)"
   chmod 700 "$SSHDIR"
   chmod 600 "$SSHDIR/id_ed25519"
-  chown -R "$ORCHESTRATOR_USER:$ORCHESTRATOR_USER" "$SSHDIR"
+  chown -R "$SANDBOX_USER:$SANDBOX_USER" "$SSHDIR"
   ok "SSH keypair generated"
 fi
 
-# ─── 15. GitHub CLI auth (for orchestrator user) ──────────────────────
+# ─── 15. GitHub CLI auth (for sandbox user) ──────────────────────
 if [[ -n "$GH_TOKEN" ]]; then
   banner "Authenticating GitHub CLI"
-  echo "$GH_TOKEN" | su - "$ORCHESTRATOR_USER" -c "gh auth login --with-token"
-  ok "gh auth configured for $ORCHESTRATOR_USER"
+  echo "$GH_TOKEN" | su - "$SANDBOX_USER" -c "gh auth login --with-token"
+  ok "gh auth configured for $SANDBOX_USER"
 fi
 
 # ─── 16. Cleanup ─────────────────────────────────────────────────
@@ -324,8 +324,8 @@ ok "Done"
 # ─── Summary ─────────────────────────────────────────────────────────
 banner "Setup complete"
 printf "\n"
-printf "  ${CYAN}Orchestrator user${NC}: $ORCHESTRATOR_USER\n"
-printf "  ${CYAN}Workspace${NC}: $ORCHESTRATOR_HOME/harness/workspace\n"
+printf "  ${CYAN}Sandbox user${NC}: $SANDBOX_USER\n"
+printf "  ${CYAN}Workspace${NC}: $SANDBOX_HOME/harness/workspace\n"
 printf "\n"
 printf "  ${CYAN}Installed tools${NC}\n"
 printf "  ──────────────────────────────────────\n"
@@ -361,7 +361,7 @@ printf "\n"
 
 printf "  ${CYAN}Coding agents — next steps${NC}\n"
 printf "  ──────────────────────────────────────\n"
-printf "  su - $ORCHESTRATOR_USER\n"
+printf "  su - $SANDBOX_USER\n"
 printf "  cd workspace\n"
 if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
   printf "  claude                    # Claude Code (authenticate via OAuth)\n"
@@ -375,9 +375,9 @@ fi
 printf "\n"
 
 # ─── 18. Run workspace startup script ───────────────────────────
-STARTUP="$ORCHESTRATOR_HOME/harness/workspace/startup.sh"
+STARTUP="$SANDBOX_HOME/harness/workspace/startup.sh"
 if [ -f "$STARTUP" ]; then
   banner "Running workspace startup"
-  su - "$ORCHESTRATOR_USER" -c "bash $STARTUP"
+  su - "$SANDBOX_USER" -c "bash $STARTUP"
   ok "Startup complete"
 fi
