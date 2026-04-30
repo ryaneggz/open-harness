@@ -11,16 +11,16 @@ Open Harness uses `git worktree` to give each in-flight branch its own working t
 
 A git worktree is a second (or third, or fourth) checkout of the same repository on a different branch. All worktrees share the same `.git` directory and object store. Creating a worktree does not clone anything — it is a lightweight operation that creates a new directory linked to the repo.
 
-Inside the container, the primary checkout lives at `/home/orchestrator/harness`. Worktrees live under `/home/orchestrator/harness/.worktrees/`, which maps back to `.worktrees/` in the project root on the host.
+Inside the container, the primary checkout lives at `/home/sandbox/harness`. Worktrees live under `/home/sandbox/harness/.worktrees/`, which maps back to `.worktrees/` in the project root on the host.
 
 ## Directory Layout
 
 ```
-/home/orchestrator/harness/                       ← primary checkout (development branch)
-/home/orchestrator/harness/.worktrees/            ← worktree root (gitignored)
-/home/orchestrator/harness/.worktrees/.gitkeep    ← tracked so the directory exists in git
-/home/orchestrator/harness/.worktrees/task/164-docusaurus-docs-site/   ← worktree for task branch
-/home/orchestrator/harness/.worktrees/feat/42-slack-thread-replies/    ← worktree for feature branch
+/home/sandbox/harness/                       ← primary checkout (development branch)
+/home/sandbox/harness/.worktrees/            ← worktree root (gitignored)
+/home/sandbox/harness/.worktrees/.gitkeep    ← tracked so the directory exists in git
+/home/sandbox/harness/.worktrees/task/164-docusaurus-docs-site/   ← worktree for task branch
+/home/sandbox/harness/.worktrees/feat/42-slack-thread-replies/    ← worktree for feature branch
 ```
 
 The `.worktrees/` directory is gitignored via `.gitignore`. Only `.worktrees/.gitkeep` is committed, ensuring the directory exists after a fresh clone without committing any worktree content.
@@ -88,7 +88,7 @@ git worktree add -b task/164-docusaurus-docs-site \
   .worktrees/task/164-docusaurus-docs-site development
 ```
 
-Work happens in `/home/orchestrator/harness/.worktrees/task/164-docusaurus-docs-site/`. A PR is opened targeting `development`. When the PR merges, the worktree is removed with `git worktree remove .worktrees/task/164-docusaurus-docs-site`.
+Work happens in `/home/sandbox/harness/.worktrees/task/164-docusaurus-docs-site/`. A PR is opened targeting `development`. When the PR merges, the worktree is removed with `git worktree remove .worktrees/task/164-docusaurus-docs-site`.
 
 ## Topology
 
@@ -96,7 +96,7 @@ Open Harness runs on a single pattern: **one parent sandbox, N git worktrees, on
 
 ```mermaid
 flowchart TB
-  subgraph host["Host — /home/orchestrator/harness"]
+  subgraph host["Host — /home/sandbox/harness"]
     direction TB
     gitreg[".git/worktrees/<br/>(git's worktree registry)"]
     parent["workspace/<br/>(parent-branch workspace)"]
@@ -126,7 +126,7 @@ One container. N git worktrees. One daemon watching every worktree's `heartbeats
 
 ### Orchestrator
 
-- **Runs at:** the project root (`/home/orchestrator/harness`) — usually a Claude Code session attached to the sandbox.
+- **Runs at:** the project root (`/home/sandbox/harness`) — usually a Claude Code session attached to the sandbox.
 - **Owns:** harness source (`packages/sandbox/`, `.devcontainer/`, `install/`), git operations, GitHub issues/PRs/releases, sandbox lifecycle skills (`/provision`, `/destroy`, `/repair`), and the one-time scaffold of each new harness's `workspace/`.
 - **Does not write application code.** Agents do that inside their workspaces.
 
@@ -138,7 +138,7 @@ One container. N git worktrees. One daemon watching every worktree's `heartbeats
 
 ### Sandbox container
 
-Default name `oh-remote`. Bind-mounts `/home/orchestrator/harness` into the container so all worktrees are visible automatically. Hosts the shared toolchain (`claude`, `codex`, `pi`, `pnpm`, `git`, `gh`, Docker socket) and shared credentials (`~/.claude`, `~/.pi`, `~/.config/gh`). Boots via `install/entrypoint.sh`, which starts the heartbeat daemon under a watchdog.
+Default name `oh-remote`. Bind-mounts `/home/sandbox/harness` into the container so all worktrees are visible automatically. Hosts the shared toolchain (`claude`, `codex`, `pi`, `pnpm`, `git`, `gh`, Docker socket) and shared credentials (`~/.claude`, `~/.pi`, `~/.config/gh`). Boots via `install/entrypoint.sh`, which starts the heartbeat daemon under a watchdog.
 
 ### Heartbeat daemon
 
@@ -267,8 +267,8 @@ heartbeat-daemon status
 Read per-root logs:
 
 ```bash
-tail -f /home/orchestrator/harness/workspace/heartbeats/heartbeat.log
-tail -f /home/orchestrator/harness/.worktrees/agent/<name>/workspace/heartbeats/heartbeat.log
+tail -f /home/sandbox/harness/workspace/heartbeats/heartbeat.log
+tail -f /home/sandbox/harness/.worktrees/agent/<name>/workspace/heartbeats/heartbeat.log
 ```
 
 Retire a harness:

@@ -72,7 +72,7 @@ minutes; subsequent starts are a few seconds.
 oh shell my-agent
 ```
 
-You are now inside the sandbox as the `orchestrator` user.
+You are now inside the sandbox as the `sandbox` user. The working directory is `/home/sandbox/harness`.
 
 ### Step 5: One-time setup (inside the sandbox)
 

@@ -8,7 +8,6 @@
  */
 
 import type { Deps, ExecOptions, ExecResult, FsDeps, IoDeps, StepId } from "../types.js";
-import { ORCHESTRATOR_HOME } from "../../lib/config.js";
 
 export interface FakeFileState {
   [path: string]: string;
@@ -188,7 +187,7 @@ export function makeFakeDeps(opts: FakeDepsOptions = {}): FakeDeps {
 
   const deps: FakeDeps = {
     env,
-    home: opts.home ?? ORCHESTRATOR_HOME,
+    home: opts.home ?? "/home/sandbox",
     fs,
     exec,
     io,

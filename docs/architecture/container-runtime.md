@@ -44,16 +44,16 @@ The container mounts the project root and several named volumes:
 
 | Mount | Host path | Container path | Purpose |
 |-------|-----------|---------------|---------|
-| Project root | `..` (repo root) | `/home/orchestrator/harness` | Source code, worktrees, workspace |
-| OH config | `../.openharness` | `/home/orchestrator/.openharness` | Sandbox config, Caddyfile, exposures |
+| Project root | `..` (repo root) | `/home/sandbox/harness` | Source code, worktrees, workspace |
+| OH config | `../.openharness` | `/home/sandbox/.openharness` | Sandbox config, Caddyfile, exposures |
 | Docker socket | `/var/run/docker.sock` | `/var/run/docker.sock` | Nested docker for the `oh` CLI |
-| Claude auth | named volume `claude-auth` | `/home/orchestrator/.claude` | Claude Code credentials — persists across rebuilds |
-| Pi auth | named volume `pi-auth` | `/home/orchestrator/.pi` | Pi Agent OAuth tokens |
-| Codex auth | named volume `codex-auth` | `/home/orchestrator/.codex` | Codex credentials |
-| Cloudflared | named volume `cloudflared-auth` | `/home/orchestrator/.cloudflared` | Cloudflare tunnel credentials |
-| GitHub CLI | named volume `gh-config` | `/home/orchestrator/.config/gh` | `gh` auth tokens |
+| Claude auth | named volume `claude-auth` | `/home/sandbox/.claude` | Claude Code credentials — persists across rebuilds |
+| Pi auth | named volume `pi-auth` | `/home/sandbox/.pi` | Pi Agent OAuth tokens |
+| Codex auth | named volume `codex-auth` | `/home/sandbox/.codex` | Codex credentials |
+| Cloudflared | named volume `cloudflared-auth` | `/home/sandbox/.cloudflared` | Cloudflare tunnel credentials |
+| GitHub CLI | named volume `gh-config` | `/home/sandbox/.config/gh` | `gh` auth tokens |
 
-The bind-mount of the repo root at `/home/orchestrator/harness` means files written inside the container appear immediately on the host filesystem (and vice versa). This is how git worktrees created with `git worktree add .worktrees/<branch> <branch>` are visible to both the host and all processes inside the container without any copy step.
+The bind-mount of the repo root at `/home/sandbox/harness` means files written inside the container appear immediately on the host filesystem (and vice versa). This is how git worktrees created with `git worktree add .worktrees/<branch> <branch>` are visible to both the host and all processes inside the container without any copy step.
 
 The Docker socket mount gives the `oh` CLI inside the container access to the host Docker daemon, enabling nested container management — starting, stopping, and inspecting sibling containers from inside the sandbox.
 

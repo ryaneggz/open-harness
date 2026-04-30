@@ -4,7 +4,7 @@
 
 - **GitHub**: <username>
 - **Organization**: <org>
-- **Role**: Orchestrator operator — provisions/manages harnesses
+- **Role**: Orchestrator operator — provisions/manages agent sandboxes
 
 ## Preferences
 

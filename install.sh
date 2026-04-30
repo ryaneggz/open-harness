@@ -443,7 +443,7 @@ ok "Wrote .devcontainer/.env"
 #   1. Host UID == 1000 (credential files are mode 0600 — group-membership
 #      trick in entrypoint.sh cannot bypass owner-only reads).
 #   2. Host source dir pre-exists. Otherwise docker auto-creates it as
-#      root, and orchestrator (UID 1000) gets EACCES on first write.
+#      root, and the sandbox user (UID 1000) gets EACCES on first write.
 #
 # This block satisfies (2) by creating the dirs as the running user.
 # (1) is checked below and surfaced as a warning — the user must opt
@@ -464,7 +464,7 @@ fi
 
 __HOST_UID="$(id -u)"
 if [ "$__HOST_UID" != "1000" ]; then
-  warn "Host UID is $__HOST_UID — sandbox orchestrator user is UID 1000."
+  warn "Host UID is $__HOST_UID — sandbox user is UID 1000."
   warn "Credential files in ~/.claude, ~/.codex, ~/.pi are mode 0600;"
   warn "the sandbox WILL NOT be able to read them despite the bind-mount."
   warn ""
@@ -567,7 +567,6 @@ printf "\n${GREEN}Installation complete!${NC}\n\n"
 printf "  ${CYAN}Next steps${NC}\n"
 printf "  ──────────────────────────────────────\n"
 printf "\n"
-
 if [ "$INSTALL_MODE" = "cli" ] || [ "$INSTALL_MODE" = "node-then-cli" ]; then
   # CLI-first: Step 1 is the rc-source — without it, oh/node/pnpm look
   # "command not found" in the shell that ran curl. After that: cd into
@@ -597,7 +596,7 @@ if [ "$INSTALL_MODE" = "cli" ] || [ "$INSTALL_MODE" = "node-then-cli" ]; then
   printf "  running yet — that's intentional so you learn the CLI lifecycle.\n"
 elif [ "$INSTALL_MODE" = "docker" ]; then
   printf "  ${CYAN}Enter the sandbox:${NC}\n"
-  printf "       docker exec -it -u orchestrator %s bash\n\n" "$SANDBOX_NAME"
+  printf "       docker exec -it -u sandbox %s bash\n\n" "$SANDBOX_NAME"
   printf "  ${CYAN}One-time setup (inside the sandbox):${NC}\n"
   printf "       gh auth login\n"
   printf "       gh auth setup-git\n\n"

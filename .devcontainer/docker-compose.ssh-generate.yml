@@ -9,7 +9,7 @@
 services:
   sandbox:
     volumes:
-      - ssh-keys:/home/orchestrator/.ssh
+      - ssh-keys:/home/sandbox/.ssh
 
 volumes:
   ssh-keys:

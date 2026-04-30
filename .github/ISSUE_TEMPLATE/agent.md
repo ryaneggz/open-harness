@@ -1,7 +1,7 @@
 ---
-name: Harness
-about: Provision a new harness
-title: "[HARNESS] "
+name: Agent
+about: Provision a new agent workspace
+title: "[AGENT] "
 labels: agent
 assignees: ""
 ---
@@ -19,13 +19,12 @@ assignees: ""
 
 ## Workspace Setup
 
-> A harness is a configured environment (SOUL, MEMORY, branch, schedule) + an agent (Claude/Codex/Pi/Gemini). Harnesses are long-lived — they accumulate knowledge and work on multiple issues across their lifetime.
+> An agent is a persistent, isolated workspace with its own branch, memory, and context. Agents are long-lived — they accumulate knowledge and work on multiple issues across their lifetime.
 
 ### Metadata
 
 > **IMPORTANT**: The very first step should _ALWAYS_ be validating this metadata section to maintain a **CLEAN** development workflow.
 
-<!-- The "agent/" branch prefix and "agent:" YAML key are preserved as a stable git convention; see .claude/rules/git.md. -->
 ```yml
 agent: "<agent-name>"
 branch: "agent/<agent-name>"

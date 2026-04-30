@@ -174,7 +174,7 @@ The `$SANDBOX_NAME` container should be running. If postgres overlay is enabled,
 Confirm the sandbox container is up and the agent CLIs are reachable:
 
 ```bash
-docker exec -u orchestrator "$SANDBOX_NAME" bash -c 'node --version && claude --version 2>/dev/null || true'
+docker exec -u sandbox "$SANDBOX_NAME" bash -c 'node --version && claude --version 2>/dev/null || true'
 ```
 
 ### 6c. If something is wrong
@@ -192,7 +192,7 @@ Use `/repair` to diagnose and remediate from inside the container.
 If `ssh-generate` IS enabled in `.openharness/config.json`, the sandbox generated an ED25519 keypair on first boot. Read the public key so the user can add it to GitHub / GitLab:
 
 ```bash
-docker exec -u orchestrator "$SANDBOX_NAME" cat ~/.ssh/id_ed25519.pub 2>/dev/null || echo "(no SSH keypair — using gh auth for git)"
+docker exec -u sandbox "$SANDBOX_NAME" cat ~/.ssh/id_ed25519.pub 2>/dev/null || echo "(no SSH keypair — using gh auth for git)"
 ```
 
 If no keypair exists, skip this step — git auth via `gh auth setup-git` is the default.

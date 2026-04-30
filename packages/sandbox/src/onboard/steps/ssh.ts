@@ -15,7 +15,6 @@
  */
 
 import type { Step, StepResult } from "../types.js";
-import { ORCHESTRATOR_USER } from "../../lib/config.js";
 
 const GH_MARKER = "successfully authenticated";
 
@@ -62,17 +61,7 @@ export const sshStep: Step = {
 
     io.warn("No SSH key found — generating one");
     const hostname = exec.capture(["hostname"]).stdout.trim() || "sandbox";
-    exec.run([
-      "ssh-keygen",
-      "-t",
-      "ed25519",
-      "-f",
-      keyPath,
-      "-N",
-      "",
-      "-C",
-      `${ORCHESTRATOR_USER}@${hostname}`,
-    ]);
+    exec.run(["ssh-keygen", "-t", "ed25519", "-f", keyPath, "-N", "", "-C", `sandbox@${hostname}`]);
     printKey();
     io.raw("\n  Add this key to GitHub → Settings → SSH and GPG keys\n");
     io.raw("  Then press Enter to continue...\n");

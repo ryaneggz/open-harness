@@ -16,7 +16,6 @@ import {
 } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { realIo } from "./io.js";
-import { ORCHESTRATOR_HOME } from "../lib/config.js";
 import type { Deps, ExecOptions, ExecResult, FsDeps } from "./types.js";
 
 const fs: FsDeps = {
@@ -101,7 +100,7 @@ export function makeRealDeps(): Deps {
 
   return {
     env: envRecord,
-    home: process.env.HOME ?? ORCHESTRATOR_HOME,
+    home: process.env.HOME ?? "/home/sandbox",
     fs,
     exec: { run, runSafe, capture, which },
     io: realIo(),

@@ -1,7 +1,6 @@
 import { Type } from "typebox";
 import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
 import { execCmd } from "../lib/docker.js";
-import { ORCHESTRATOR_USER, ORCHESTRATOR_HOME } from "../lib/config.js";
 import { run } from "../lib/exec.js";
 
 export const RALPH_ACTIONS = ["prd", "setup", "run", "status", "reflect", "cleanup", "pr"] as const;
@@ -51,7 +50,7 @@ export const ralphTool: ToolDefinition = {
               "-c",
               'cd ~/harness/workspace && claude --dangerously-skip-permissions -p "Read the plan files in .claude/plans/ and generate a PRD using the /prd skill. Save to tasks/"',
             ],
-            { user: ORCHESTRATOR_USER, workdir: `${ORCHESTRATOR_HOME}/harness/workspace` },
+            { user: "sandbox", workdir: "/home/sandbox/harness/workspace" },
           );
           run(cmd);
           steps.push("PRD generated. Check tasks/ for the output.");
@@ -67,7 +66,7 @@ export const ralphTool: ToolDefinition = {
               "-c",
               'cd ~/harness/workspace && claude --dangerously-skip-permissions -p "Convert the latest PRD in tasks/ to .ralph/prd.json using the /ralph skill"',
             ],
-            { user: ORCHESTRATOR_USER, workdir: `${ORCHESTRATOR_HOME}/harness/workspace` },
+            { user: "sandbox", workdir: "/home/sandbox/harness/workspace" },
           );
           run(convertCmd);
 
@@ -79,7 +78,7 @@ export const ralphTool: ToolDefinition = {
               "-c",
               `cd ~/harness/workspace && git add tasks/ .ralph/prd.json .ralph/progress.txt 2>/dev/null; git commit -m "task: add PRD and prd.json for ralph" && git push -u origin HEAD && gh pr create --draft --base development --title "feat: $(jq -r .description .ralph/prd.json | head -c 60)" --body "PRD and prd.json ready for Ralph execution" 2>&1 || echo "PR may already exist"`,
             ],
-            { user: ORCHESTRATOR_USER, workdir: `${ORCHESTRATOR_HOME}/harness/workspace` },
+            { user: "sandbox", workdir: "/home/sandbox/harness/workspace" },
           );
           run(prCmd);
           steps.push("Draft PR created. Ready for ralph run.");
@@ -95,7 +94,7 @@ export const ralphTool: ToolDefinition = {
               "-c",
               `tmux new-session -d -s ralph "cd ~/harness/workspace && .ralph/ralph.sh --tool claude ${iterations}"`,
             ],
-            { user: ORCHESTRATOR_USER, workdir: `${ORCHESTRATOR_HOME}/harness/workspace` },
+            { user: "sandbox", workdir: "/home/sandbox/harness/workspace" },
           );
           run(cmd);
           steps.push("Ralph is running in tmux session 'ralph'.");
@@ -111,7 +110,7 @@ export const ralphTool: ToolDefinition = {
               "-c",
               `cd ~/harness/workspace && echo "=== Stories ===" && jq ".userStories[] | {id, title, passes}" .ralph/prd.json 2>/dev/null || echo "No prd.json found" && echo "" && echo "=== Progress (last 20 lines) ===" && tail -20 .ralph/progress.txt 2>/dev/null || echo "No progress.txt found" && echo "" && echo "=== tmux ===" && tmux has-session -t ralph 2>/dev/null && echo "Ralph tmux session: RUNNING" || echo "Ralph tmux session: NOT RUNNING"`,
             ],
-            { user: ORCHESTRATOR_USER, workdir: `${ORCHESTRATOR_HOME}/harness/workspace` },
+            { user: "sandbox", workdir: "/home/sandbox/harness/workspace" },
           );
           run(cmd);
           break;
@@ -126,7 +125,7 @@ export const ralphTool: ToolDefinition = {
               "-c",
               `cd ~/harness/workspace && claude --dangerously-skip-permissions -p "Read .ralph/progress.txt and .ralph/prd.json. Focus on: what would make the NEXT session better? Update MEMORY.md with actionable patterns, approaches to reuse, mistakes to avoid, and codebase insights. Append a session log to memory/$(date +%Y-%m-%d).md. Commit memory updates."`,
             ],
-            { user: ORCHESTRATOR_USER, workdir: `${ORCHESTRATOR_HOME}/harness/workspace` },
+            { user: "sandbox", workdir: "/home/sandbox/harness/workspace" },
           );
           run(cmd);
           steps.push("Memory updated with session reflections.");
@@ -142,7 +141,7 @@ export const ralphTool: ToolDefinition = {
               "-c",
               `cd ~/harness/workspace && git add -A && git diff --cached --quiet || git commit -m "task: cleanup before PR submission"`,
             ],
-            { user: ORCHESTRATOR_USER, workdir: `${ORCHESTRATOR_HOME}/harness/workspace` },
+            { user: "sandbox", workdir: "/home/sandbox/harness/workspace" },
           );
           run(cmd);
           steps.push("Cleanup complete. (Project-specific lint/test should be added per PRD.)");
@@ -158,7 +157,7 @@ export const ralphTool: ToolDefinition = {
               "-c",
               `cd ~/harness/workspace && BRANCH=$(jq -r .branchName .ralph/prd.json 2>/dev/null | sed 's|ralph/||') && mkdir -p .ralph/archive/$BRANCH && cp .ralph/prd.json .ralph/progress.txt .ralph/archive/$BRANCH/ 2>/dev/null && git add .ralph/archive/ && git commit -m "task: archive ralph run for $BRANCH" 2>/dev/null || true`,
             ],
-            { user: ORCHESTRATOR_USER, workdir: `${ORCHESTRATOR_HOME}/harness/workspace` },
+            { user: "sandbox", workdir: "/home/sandbox/harness/workspace" },
           );
           run(archiveCmd);
 
@@ -170,7 +169,7 @@ export const ralphTool: ToolDefinition = {
               "-c",
               `cd ~/harness/workspace && ALL_PASS=$(jq "[.userStories[].passes] | all" .ralph/prd.json 2>/dev/null) && if [ "$ALL_PASS" = "true" ]; then git push && gh pr ready && echo "PR is now ready for review!"; else echo "Not all stories pass yet. Run 'openharness ralph status ${name}' to check."; exit 1; fi`,
             ],
-            { user: ORCHESTRATOR_USER, workdir: `${ORCHESTRATOR_HOME}/harness/workspace` },
+            { user: "sandbox", workdir: "/home/sandbox/harness/workspace" },
           );
           run(prCmd);
           steps.push("PR taken out of draft.");
