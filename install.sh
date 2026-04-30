@@ -464,19 +464,51 @@ fi
 
 __HOST_UID="$(id -u)"
 if [ "$__HOST_UID" != "1000" ]; then
-  warn "Host UID is $__HOST_UID — sandbox user is UID 1000."
-  warn "Credential files in ~/.claude, ~/.codex, ~/.pi are mode 0600;"
-  warn "the sandbox WILL NOT be able to read them despite the bind-mount."
-  warn ""
-  warn "To avoid silent auth failures, edit"
-  warn "    $REPO_DIR/.openharness/config.json"
-  warn "and remove these overlays from composeOverrides:"
-  warn "    .devcontainer/docker-compose.claude-host.yml"
-  warn "    .devcontainer/docker-compose.codex-host.yml"
-  warn "    .devcontainer/docker-compose.pi-host.yml"
-  warn ""
-  warn "The base named volumes (claude-auth, codex-auth, pi-auth) will"
-  warn "take over and entrypoint.sh chowns them to UID 1000 on boot."
+  __OH_CONFIG="$REPO_DIR/.openharness/config.json"
+  if command -v jq >/dev/null 2>&1 && [ -f "$__OH_CONFIG" ]; then
+    # Filter *-host.yml entries out of composeOverrides. Mode-0600
+    # credential files in ~/.claude, ~/.codex, ~/.pi can't be read by
+    # the sandbox user (UID 1000) when the host UID differs, and
+    # mode-0700 dirs (e.g. ~/.pi/agent/sessions/) reject writes from
+    # non-owner UIDs — pi/oh would EACCES on first run. Drop the
+    # overlays so the base named volumes (claude-auth, codex-auth,
+    # pi-auth) take over; entrypoint.sh chowns those to UID 1000.
+    __OH_TMP="$(mktemp)"
+    if jq '.composeOverrides |= map(select(test("-host\\.yml$") | not))' \
+         "$__OH_CONFIG" > "$__OH_TMP" 2>/dev/null; then
+      if ! cmp -s "$__OH_CONFIG" "$__OH_TMP"; then
+        mv "$__OH_TMP" "$__OH_CONFIG"
+        ok "Host UID $__HOST_UID ≠ 1000 — disabled host-bind overlays in $__OH_CONFIG"
+        ok "Auth will live in named volumes; first run of claude/codex/pi inside the sandbox will authenticate"
+        warn "$__OH_CONFIG now has a local diff — \`git pull\` in $REPO_DIR will be skipped until you commit or revert it"
+      else
+        rm -f "$__OH_TMP"
+        ok "Host UID $__HOST_UID ≠ 1000 — host-bind overlays already disabled"
+      fi
+    else
+      rm -f "$__OH_TMP"
+      warn "jq failed to rewrite $__OH_CONFIG — falling back to manual instructions below."
+      __OH_FALLBACK=1
+    fi
+    unset __OH_TMP
+  else
+    __OH_FALLBACK=1
+  fi
+  if [ "${__OH_FALLBACK:-0}" = "1" ]; then
+    warn "Host UID is $__HOST_UID — sandbox user is UID 1000."
+    warn "Credential files in ~/.claude, ~/.codex, ~/.pi are mode 0600;"
+    warn "the sandbox WILL NOT be able to read them despite the bind-mount."
+    warn ""
+    warn "Install jq, OR edit $REPO_DIR/.openharness/config.json"
+    warn "and remove these overlays from composeOverrides:"
+    warn "    .devcontainer/docker-compose.claude-host.yml"
+    warn "    .devcontainer/docker-compose.codex-host.yml"
+    warn "    .devcontainer/docker-compose.pi-host.yml"
+    warn ""
+    warn "The base named volumes (claude-auth, codex-auth, pi-auth) will"
+    warn "take over and entrypoint.sh chowns them to UID 1000 on boot."
+  fi
+  unset __OH_CONFIG __OH_FALLBACK
 fi
 unset __HOST_UID
 
