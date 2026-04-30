@@ -1,5 +1,6 @@
 ---
 title: "Workspace Structure"
+sidebar_position: 4
 ---
 
 
@@ -82,7 +83,7 @@ Logs are append-only. Agents distill durable lessons from them into `MEMORY.md` 
 
 ## Heartbeats
 
-The `heartbeats/` directory contains heartbeat task definitions — markdown files with YAML frontmatter (`schedule`, `agent`, `active` fields). See the [Heartbeats guide](./heartbeats.md) for details.
+The `heartbeats/` directory contains heartbeat task definitions — markdown files with YAML frontmatter (`schedule`, `agent`, `active` fields). See the [Heartbeats guide](../heartbeats/overview.md) for details.
 
 ## Application code
 

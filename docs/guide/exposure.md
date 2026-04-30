@@ -1,5 +1,6 @@
 ---
 title: "Exposing apps"
+sidebar_position: 6
 ---
 
 # Exposing apps

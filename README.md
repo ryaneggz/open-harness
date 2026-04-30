@@ -29,7 +29,7 @@ oh shell my-project     # connect (interactive shell)
 oh clean my-project     # tear down
 ```
 
-Prefer VS Code or remote SSH? See [Connecting to a sandbox](https://github.com/ryaneggz/open-harness/blob/main/docs/getting-started/quickstart.md).
+Prefer VS Code or remote SSH? See [Connecting to a sandbox](https://oh.mifune.dev/docs/quickstart).
 
 Inside the shell, start working:
 
@@ -60,7 +60,7 @@ claude                                # or: pi, codex, gemini
 
 Cleanup: `docker compose -f .devcontainer/docker-compose.yml down -v`.
 
-For Postgres, Slack, SSH, or the Caddy gateway, chain overlay files with extra `-f` flags — see [Compose overlays](https://github.com/ryaneggz/open-harness/blob/main/docs/guide/overlays.md).
+For Postgres, Slack, SSH, or the Caddy gateway, chain overlay files with extra `-f` flags — see [Compose overlays](https://oh.mifune.dev/docs/guide/overlays).
 
 ## ✨ What you get
 
@@ -75,13 +75,13 @@ For Postgres, Slack, SSH, or the Caddy gateway, chain overlay files with extra `
 
 ## 📚 Where to go next
 
-- [Quickstart](https://github.com/ryaneggz/open-harness/blob/main/docs/getting-started/quickstart.md) — full step-by-step
-- [Onboarding](https://github.com/ryaneggz/open-harness/blob/main/docs/getting-started/onboarding.md) — auth wizard walkthrough
-- [Compose overlays](https://github.com/ryaneggz/open-harness/blob/main/docs/guide/overlays.md) — Postgres, Slack, SSH, gateway, Cloudflare
-- [Slack bot](https://github.com/ryaneggz/open-harness/blob/main/docs/slack/overview.md) — Mom + Pi via Socket Mode
-- [CLI reference](https://github.com/ryaneggz/open-harness/blob/main/docs/cli/commands.md) — every `oh` command
-- [Heartbeats](https://github.com/ryaneggz/open-harness/blob/main/docs/guide/heartbeats.md) — cron-scheduled autonomous tasks
-- [Architecture](https://github.com/ryaneggz/open-harness/blob/main/docs/architecture/orchestrator-worktrees.md) — one container, N worktrees, one daemon
+- [Quickstart](https://oh.mifune.dev/docs/quickstart) — full step-by-step
+- [Onboarding](https://oh.mifune.dev/docs/onboarding) — auth wizard walkthrough
+- [Compose overlays](https://oh.mifune.dev/docs/guide/overlays) — Postgres, Slack, SSH, gateway, Cloudflare
+- [Slack bot](https://oh.mifune.dev/docs/slack/overview) — Mom + Pi via Socket Mode
+- [CLI reference](https://oh.mifune.dev/docs/cli/overview) — every `oh` command
+- [Heartbeats](https://oh.mifune.dev/docs/heartbeats/overview) — cron-scheduled autonomous tasks
+- [Architecture](https://oh.mifune.dev/docs/architecture/worktrees) — one container, N worktrees, one daemon
 
 ## 🗂️ Project layout
 
@@ -111,4 +111,4 @@ MIT.
 
 ---
 
-[Full documentation](https://github.com/ryaneggz/open-harness/tree/main/docs)
+[Full documentation](https://oh.mifune.dev/docs)

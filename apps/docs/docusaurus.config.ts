@@ -61,8 +61,10 @@ const config: Config = {
       {
         hashed: true,
         indexDocs: true,
-        indexBlog: false,
+        indexBlog: true,
         indexPages: true,
+        docsDir: "../../docs",
+        blogDir: "../../blog",
         docsRouteBasePath: "/docs",
         highlightSearchTermsOnTargetPage: true,
         searchBarShortcut: true,
@@ -77,13 +79,24 @@ const config: Config = {
       "classic",
       {
         docs: {
+          path: "../../docs",
           sidebarPath: "./sidebars.ts",
-          editUrl:
-            "https://github.com/ryaneggz/open-harness/edit/main/apps/docs/",
+          editUrl: ({ docPath }) =>
+            `https://github.com/ryaneggz/open-harness/edit/main/docs/${docPath}`,
           routeBasePath: "docs",
           showLastUpdateTime: true,
         },
-        blog: false,
+        blog: {
+          path: "../../blog",
+          showReadingTime: true,
+          blogTitle: "Open Harness Blog",
+          blogDescription: "Notes from building Open Harness",
+          postsPerPage: 10,
+          feedOptions: { type: ["rss", "atom"], title: "Open Harness Blog" },
+          editUrl: ({ blogPath }) =>
+            `https://github.com/ryaneggz/open-harness/edit/main/blog/${blogPath}`,
+          routeBasePath: "blog",
+        },
         theme: {
           customCss: "./src/css/custom.css",
         },
@@ -136,6 +149,11 @@ const config: Config = {
           sidebarId: "docs",
           position: "left",
           label: "Docs",
+        },
+        {
+          to: "/blog",
+          label: "Blog",
+          position: "left",
         },
         {
           href: "https://github.com/ryaneggz/open-harness",

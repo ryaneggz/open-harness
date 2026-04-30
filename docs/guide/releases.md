@@ -1,5 +1,6 @@
 ---
 title: "Releases"
+sidebar_position: 10
 ---
 
 

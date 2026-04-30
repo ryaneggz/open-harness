@@ -1,5 +1,6 @@
 ---
 title: "Skills"
+sidebar_position: 5
 ---
 
 

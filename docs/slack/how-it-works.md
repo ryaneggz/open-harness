@@ -1,5 +1,6 @@
 ---
 title: "How It Works"
+sidebar_position: 3
 ---
 
 

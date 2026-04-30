@@ -1,5 +1,6 @@
 ---
 title: "Compose Overlays"
+sidebar_position: 2
 ---
 
 

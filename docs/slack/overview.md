@@ -1,5 +1,6 @@
 ---
 title: "Slack Bot"
+sidebar_position: 1
 ---
 
 

@@ -1,40 +1,95 @@
 ---
+sidebar_position: 1
 title: "Architecture Overview"
 ---
 
+# Architecture Overview
 
-Open Harness is a monorepo that gives you a single Docker **sandbox** (container) where you run as many **harnesses** as you like — each a git worktree with its own branch, identity, and schedule. The root harness is the **orchestrator**: it provisions and manages the rest. The system has four layers:
+Open Harness runs every AI agent inside a single Docker container. That container hosts multiple git worktrees side by side, one per agent branch. A heartbeat daemon watches all worktrees and fires scheduled tasks. The orchestration layer — the `oh` CLI and the Docker Compose configuration — lives on the host and manages the container lifecycle without entering it for day-to-day work.
 
-## 1. CLI & Sandbox Package (`packages/sandbox/`)
+## The Shape of the System
 
-`@openharness/sandbox` is the core of the system. The `openharness` binary lives in `src/cli/` and handles all user-facing commands: starting, stopping, entering, and cleaning up sandboxes. Container lifecycle operations — Docker Compose command builders and tool definitions — live in `src/tools/` and `src/lib/`. Each tool (sandbox, run, stop, clean, shell, etc.) constructs and executes Docker commands against the `.devcontainer/` configuration.
+```mermaid
+graph TD
+  subgraph Host
+    CLI["oh CLI<br/>(openharness)"]
+    Compose[".devcontainer/<br/>docker-compose.yml"]
+  end
 
-The package also serves as a Pi Agent extension, registering all tools as both LLM-callable functions and slash commands.
+  subgraph Container["Docker Container (openharness)"]
+    Agent1["Agent: claude<br/>(worktree: main)"]
+    Agent2["Agent: pi<br/>(worktree: task/164)"]
+    AgentN["Agent: codex<br/>(worktree: feat/42)"]
+    Daemon["Heartbeat Daemon<br/>(node daemon.ts)"]
+    Caddy["Caddy Gateway<br/>(port 8443)"]
+  end
 
-## 2. Container Infrastructure (`.devcontainer/`)
+  CLI --> Compose
+  Compose --> Container
+  CLI -->|"oh shell / oh expose"| Container
+  Daemon -->|"watches heartbeats/"| Agent1
+  Daemon -->|"watches heartbeats/"| Agent2
+  Daemon -->|"watches heartbeats/"| AgentN
+  Caddy -->|"reverse proxy"| Agent1
+```
 
-The Dockerfile and Compose files define the sandbox environment:
+**ASCII version** (for terminal-friendly viewing):
 
-- **Dockerfile**: Debian Bookworm with Node.js 22, pnpm, agent CLIs, Docker CLI, GitHub CLI, and dev tools
-- **docker-compose.yml**: Base service with SSH, workspace mount, named volumes for auth persistence
-- **Compose overlays**: Optional services (PostgreSQL, Cloudflare, Docker-in-Docker, SSH) toggled via `.openharness/config.json`
-- **entrypoint.sh**: Container startup logic (Docker GID matching, cron, heartbeat daemon, onboarding)
+```text
+┌─────────────────────────────────────────────────────────┐
+│  HOST                                                   │
+│  ┌──────────────────┐   ┌──────────────────────────┐   │
+│  │  oh CLI          │   │  docker-compose.yml       │   │
+│  │  (openharness)   │──▶│  (.devcontainer/)         │   │
+│  └──────────────────┘   └────────────┬─────────────┘   │
+│                                      │ builds/starts    │
+└──────────────────────────────────────┼─────────────────┘
+                                       ▼
+┌──────────────────────────────────────────────────────────┐
+│  DOCKER CONTAINER  (openharness)                         │
+│                                                          │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │  Orchestration Layer                               │  │
+│  │  oh CLI (inside) · gh · docker CLI · tmux          │  │
+│  └───────────┬────────────────────────────────────────┘  │
+│              │                                           │
+│  ┌───────────▼──────────────────────────────────────┐   │
+│  │  Worktrees (bind-mounted from host)               │   │
+│  │  /home/orchestrator/harness/                (main)     │   │
+│  │  /home/orchestrator/harness/.worktrees/task/164  (PR)  │   │
+│  │  /home/orchestrator/harness/.worktrees/feat/42   (PR)  │   │
+│  └───────────┬──────────────────────────────────────┘   │
+│              │                                           │
+│  ┌───────────▼──────────────────────────────────────┐   │
+│  │  Agents (tmux sessions)                           │   │
+│  │  agent-claude  ·  agent-pi  ·  agent-codex        │   │
+│  └───────────┬──────────────────────────────────────┘   │
+│              │                                           │
+│  ┌───────────▼──────────────────────────────────────┐   │
+│  │  Heartbeat Daemon                                 │   │
+│  │  Watches workspace/heartbeats/ in every worktree  │   │
+│  │  Fires cron jobs → invokes agent CLI              │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                          │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │  Caddy Gateway (port 8443)                        │   │
+│  │  Routes https://<name>.<sandbox>.localhost → app  │   │
+│  └──────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────┘
+```
 
-## 3. Orchestrator + Worktree Topology
+## Key Principles
 
-The running configuration is not "one sandbox per agent" — it's **one parent sandbox, N git worktrees, one heartbeat daemon**. Every harness is a git branch checked out as a worktree under `.worktrees/`, each shipping its own `workspace/` (SOUL.md, skills, heartbeats, memory, CRM, wiki). The container bind-mounts the entire repo, so all worktrees are visible to one shared toolchain and one shared credential set.
+**One container, many agents.** All AI agent CLIs — Claude Code, Pi, Codex — share the same sandbox image built from `.devcontainer/Dockerfile`. There is no separate image per agent. Isolation is achieved through git worktrees and tmux sessions, not separate containers.
 
-Ownership splits cleanly:
+**Host stays thin.** The host only runs Docker and the `oh` CLI. No Node runtime, no Python, and no agent toolchain is required on the developer's machine. The project root is bind-mounted into the container at `/home/orchestrator/harness`, so files written inside the container are immediately visible on the host and in git.
 
-- **Orchestrator** (session at the project root): owns harness source, git operations, GitHub issues/PRs/releases, and the one-time scaffold of each new harness's workspace.
-- **Worktree harness** (session inside `.worktrees/<prefix>/<slug>/workspace/`): owns its workspace subtree and its branch history.
+**Worktrees are the unit of isolation.** Each in-flight branch maps to a worktree under `.worktrees/`. The heartbeat daemon discovers all active worktrees and manages schedules independently per worktree. Agents work in their own branch without touching each other's working tree.
 
-See [Orchestrator + Worktrees](./orchestrator-worktrees.md) for the full topology, lifecycle, and isolation properties.
+**Process lifecycle is owned by tmux.** Every long-running process — dev servers, agents, tunnels, heartbeat daemon — runs in a named tmux session. This enables attach/detach, log capture via `tee /tmp/<session>.log`, and deterministic restart without `nohup` or background processes.
 
-## 4. Heartbeat Daemon
+## Where to go next
 
-A single Node process inside the sandbox watches every worktree's `workspace/heartbeats/` directory at once. It discovers roots from `git worktree list --porcelain` (the authoritative registry), spawns each heartbeat with `cwd` inside the correct worktree, and writes per-root logs. A global semaphore (`HEARTBEAT_MAX_CONCURRENT`, default 2) prevents aligned schedules from saturating shared API quotas. See the [Heartbeats guide](../guide/heartbeats.md) for configuration detail.
-
-## Workspace Template (`workspace/`)
-
-The workspace template provides harness identity (SOUL.md, MEMORY.md), operating procedures (AGENTS.md), coding standards (`.claude/rules/`), skills (`.claude/skills/`), and heartbeat schedules. Bind-mounted into the container; each worktree carries its own copy, evolved independently on its branch.
+- [Container Runtime](./container-runtime) — Dockerfile base, preinstalled tools, bind mounts, Caddy overlay.
+- [Worktrees](./worktrees) — Branch naming, `.worktrees/` path, isolation rules.
+- [Daemon](./daemon) — Heartbeat polling, config location, sync command.
