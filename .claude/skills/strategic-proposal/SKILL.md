@@ -71,7 +71,7 @@ Assemble a structured markdown briefing to pass to ALL 5 experts:
 ## Current State Briefing
 
 ### Product Vision
-1. Document Open Harness — the parent framework for AI agent harnesses
+1. Document Open Harness — the parent framework for AI agent sandboxes
 2. Let users promote their forks — fork registry/showcase
 3. End goal: curate Docker registries with monthly licensing — SaaS marketplace
 
