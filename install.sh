@@ -504,38 +504,52 @@ if [ "$INSTALL_MODE" = "docker" ]; then
 fi
 
 # ─── Mode-aware Next Steps ───────────────────────────────────────────
+# Curl-piped install runs in a child bash; child shells can't export PATH
+# back into the parent. nvm + `pnpm setup` write the needed exports to the
+# user's rc file — so Step 1 of the CLI paths is "source it now". Detect
+# the user's actual shell so the printed command matches.
+__user_shell="$(basename "${SHELL:-/bin/bash}")"
+# shellcheck disable=SC2088   # the tilde is intentionally literal — we PRINT
+# this string for the user to type, so their shell does the expansion.
+case "$__user_shell" in
+  zsh)  __rc_file="~/.zshrc" ;;
+  bash) __rc_file="~/.bashrc" ;;
+  fish) __rc_file="~/.config/fish/config.fish" ;;
+  *)    __rc_file="~/.${__user_shell}rc" ;;
+esac
+
 printf "\n${GREEN}Installation complete!${NC}\n\n"
 printf "  ${CYAN}Next steps${NC}\n"
 printf "  ──────────────────────────────────────\n"
 printf "\n"
 
 if [ "$INSTALL_MODE" = "cli" ] || [ "$INSTALL_MODE" = "node-then-cli" ]; then
-  # CLI-first: lead with cd \$REPO_DIR (oh sandbox resolves compose paths
-  # relative to CWD), then explicit oh sandbox / oh shell steps. gh auth
-  # runs INSIDE the shell — gh's credential helper writes into the sandbox
-  # home, not the host home.
-  printf "  ${CYAN}1. Move into the repo${NC} (oh sandbox resolves compose paths relative to CWD):\n"
+  # CLI-first: Step 1 is the rc-source — without it, oh/node/pnpm look
+  # "command not found" in the shell that ran curl. After that: cd into
+  # repo (oh sandbox resolves compose paths relative to CWD), provision,
+  # open a shell, and finally the in-sandbox auth wizard (gh's credential
+  # helper writes into the sandbox home, not the host home).
+  printf "  ${YELLOW}1. Load Node + pnpm + oh into THIS shell${NC} (required — without this,\n"
+  printf "     'oh' / 'node' / 'pnpm' will be 'command not found' here):\n"
+  printf "       source %s\n" "$__rc_file"
+  if [ "${OH_FISH_REMINDER:-false}" = true ]; then
+    printf "       ${YELLOW}# Fish:${NC} nvm does NOT source into Fish — install nvm.fish or\n"
+    printf "       #        fisher first, otherwise 'node' will still be missing.\n"
+  fi
+  printf "     (Or open a new terminal — same effect.)\n\n"
+  printf "  ${CYAN}2. Move into the repo${NC} (oh sandbox resolves compose paths relative to CWD):\n"
   printf "       cd %s\n\n" "$REPO_DIR"
-  printf "  ${CYAN}2. Provision your sandbox:${NC}\n"
+  printf "  ${CYAN}3. Provision your sandbox:${NC}\n"
   printf "       oh sandbox %s\n\n" "$SANDBOX_NAME"
-  printf "  ${CYAN}3. Open a shell in the sandbox:${NC}\n"
+  printf "  ${CYAN}4. Open a shell in the sandbox:${NC}\n"
   printf "       oh shell %s\n\n" "$SANDBOX_NAME"
-  printf "  ${CYAN}4. Inside the sandbox, run the one-time auth wizard:${NC}\n"
+  printf "  ${CYAN}5. Inside the sandbox, run the one-time auth wizard:${NC}\n"
   printf "       gh auth login && gh auth setup-git\n"
   printf "       pi                                  # Pi Agent OAuth (Slack / heartbeats)\n\n"
   printf "  ${CYAN}Tear down later (from host):${NC}\n"
   printf "       oh clean %s\n\n" "$SANDBOX_NAME"
   printf "  ${CYAN}Note:${NC} 'oh sandbox' runs docker compose for you. The container is NOT\n"
   printf "  running yet — that's intentional so you learn the CLI lifecycle.\n"
-
-  if [ "$INSTALL_MODE" = "node-then-cli" ]; then
-    printf "\n"
-    printf "  ${YELLOW}Reminder:${NC} nvm wrote to ~/.bashrc — open a new shell, or run\n"
-    printf "  'source ~/.bashrc', so 'node' / 'pnpm' / 'oh' stay on PATH later.\n"
-    if [ "${OH_FISH_REMINDER:-false}" = true ]; then
-      printf "  Fish users: install nvm.fish or fisher; nvm doesn't source into Fish.\n"
-    fi
-  fi
 elif [ "$INSTALL_MODE" = "docker" ]; then
   printf "  ${CYAN}Enter the sandbox:${NC}\n"
   printf "       docker exec -it -u orchestrator %s bash\n\n" "$SANDBOX_NAME"
