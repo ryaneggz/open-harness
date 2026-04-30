@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Surface silent set -e exits — without this, any non-zero return mid-script
+# kills bash with no `ERROR:` line and the user is left staring at a prompt
+# wondering why install bailed.
+trap 'printf "\n\033[0;31mERROR:\033[0m install.sh aborted (exit %s) at line %s: %s\n" "$?" "$LINENO" "$BASH_COMMAND" >&2' ERR
+
 # ─── Colours / helpers ───────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 banner() { printf "\n${CYAN}==> %s${NC}\n" "$*"; }
@@ -117,20 +122,42 @@ install_nvm() {
     ok "nvm $NVM_VERSION installed (SHA-256 verified)"
   fi
 
+  # nvm.sh and nvm's internal helpers are NOT strict-mode safe — they `return 1`
+  # on intentional branches, source unset vars (set -u), and run pipelines whose
+  # middle commands fail under pipefail. Bracket: relax strict mode for the nvm
+  # surface, restore immediately after, then check $? explicitly.
+  set +euo pipefail
   # shellcheck disable=SC1090,SC1091
   . "$NVM_DIR/nvm.sh"
-  if ! command -v nvm >/dev/null 2>&1; then
-    die "nvm sourced but 'nvm' is not on PATH. Aborting before nvm install. Try: 'source ~/.bashrc' and re-run."
+  __nvm_install_rc=0
+  if command -v nvm >/dev/null 2>&1; then
+    nvm install "$NODE_LTS_MAJOR"
+    __nvm_install_rc=$?
+    nvm alias default "$NODE_LTS_MAJOR"
+  else
+    __nvm_install_rc=127
   fi
+  set -euo pipefail
 
-  nvm install "$NODE_LTS_MAJOR" --lts
-  nvm alias default "$NODE_LTS_MAJOR"
+  if [ "$__nvm_install_rc" = 127 ]; then
+    die "nvm sourced but 'nvm' is not on PATH. Try: 'source ~/.bashrc' and re-run."
+  elif [ "$__nvm_install_rc" -ne 0 ]; then
+    die "nvm install $NODE_LTS_MAJOR failed (exit $__nvm_install_rc). If your existing ~/.nvm is from an older release, try: rm -rf ~/.nvm && re-run install.sh. For verbose output: bash -x install.sh."
+  fi
+  unset __nvm_install_rc
   ok "Node $(node --version) installed via nvm"
 
-  # Order matters: corepack runs in the nvm-managed Node context, never against
-  # system Node (which often needs sudo for global pnpm install).
+  # corepack invokes npm helpers that under set -e/pipefail can propagate
+  # transient pnpm registry hiccups as fatal. Same bracket pattern. Pin pnpm
+  # to package.json#packageManager — `pnpm@latest` is a network resolve every
+  # install + drift risk.
+  set +eu
   corepack enable
-  corepack prepare pnpm@latest --activate
+  corepack prepare pnpm@10.33.0 --activate
+  set -euo pipefail
+  if ! command -v pnpm >/dev/null 2>&1; then
+    die "pnpm not on PATH after 'corepack prepare'. Check that ~/.nvm shims are loaded."
+  fi
   ok "pnpm $(pnpm --version) — enabled via corepack"
 
   # Re-detect to verify the install actually produced a usable Node 20+.
@@ -434,7 +461,7 @@ if [ "$INSTALL_MODE" = "cli" ] || [ "$INSTALL_MODE" = "node-then-cli" ]; then
     ok "pnpm $(pnpm --version) — already installed"
   elif command -v corepack >/dev/null 2>&1; then
     corepack enable
-    corepack prepare pnpm@latest --activate
+    corepack prepare pnpm@10.33.0 --activate
     ok "pnpm $(pnpm --version) — enabled via corepack"
   else
     npm install -g pnpm
