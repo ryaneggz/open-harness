@@ -1,5 +1,6 @@
 ---
 title: "Events"
+sidebar_position: 6
 ---
 
 
@@ -82,4 +83,4 @@ Example: a periodic event checks for new emails every 15 minutes. If there are n
 
 ## Events vs Heartbeats
 
-> Events and [Heartbeats](../guide/heartbeats.md) are different scheduling systems. Events are Slack-bot-specific -- JSON files that target a Slack channel. Heartbeats are sandbox-level -- cron schedules that invoke an agent CLI on a `.md` file. Use events for Slack-channel tasks; use heartbeats for general sandbox automation.
+> Events and [Heartbeats](../heartbeats/overview.md) are different scheduling systems. Events are Slack-bot-specific -- JSON files that target a Slack channel. Heartbeats are sandbox-level -- cron schedules that invoke an agent CLI on a `.md` file. Use events for Slack-channel tasks; use heartbeats for general sandbox automation.

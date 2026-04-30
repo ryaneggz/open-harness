@@ -1,0 +1,10 @@
+{
+  "label": "Heartbeats",
+  "position": 12,
+  "collapsible": true,
+  "collapsed": true,
+  "link": {
+    "type": "doc",
+    "id": "heartbeats/overview"
+  }
+}

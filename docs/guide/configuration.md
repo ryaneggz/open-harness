@@ -1,5 +1,6 @@
 ---
 title: "Configuration"
+sidebar_position: 1
 ---
 
 
@@ -32,7 +33,7 @@ The `.example.env` file contains all available variables with comments explainin
 
 ### Heartbeats
 
-Heartbeats are cron-scheduled tasks that run an AI agent CLI inside the sandbox on a recurring schedule (e.g., hourly issue triage). Each heartbeat is a `.md` file in `workspace/heartbeats/` with YAML frontmatter defining its schedule, agent, and active hours. See the [heartbeats guide](./heartbeats.md) for details.
+Heartbeats are cron-scheduled tasks that run an AI agent CLI inside the sandbox on a recurring schedule (e.g., hourly issue triage). Each heartbeat is a `.md` file in `workspace/heartbeats/` with YAML frontmatter defining its schedule, agent, and active hours. See the [heartbeats guide](../heartbeats/overview.md) for details.
 
 | Variable | Default | Description |
 |----------|---------|-------------|

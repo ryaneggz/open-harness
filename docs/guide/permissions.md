@@ -1,5 +1,6 @@
 ---
 title: "Permissions & Security"
+sidebar_position: 3
 ---
 
 
