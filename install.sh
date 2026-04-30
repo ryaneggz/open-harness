@@ -389,7 +389,16 @@ if [ -f "$SCRIPT_DIR/packages/sandbox/package.json" ] && [ -f "$SCRIPT_DIR/pnpm-
   REPO_DIR="$SCRIPT_DIR"
   ok "Using local repo: $REPO_DIR"
 else
-  REPO_DIR="$HOME/.openharness"
+  REPO_DIR="$HOME/openharness"
+  # One-time migration: legacy curl-pipe installs cloned to ~/.openharness,
+  # which collides visually with the in-repo `.openharness/` config dir.
+  # If the new path is absent and the old one is a clone, move it.
+  LEGACY_REPO="$HOME/.openharness"
+  if [ ! -d "$REPO_DIR" ] && [ -d "$LEGACY_REPO/.git" ]; then
+    mv "$LEGACY_REPO" "$REPO_DIR"
+    ok "Migrated $LEGACY_REPO → $REPO_DIR"
+  fi
+  unset LEGACY_REPO
   if [ -d "$REPO_DIR/.git" ]; then
     # Gate pull on clean working tree — don't abort on local edits.
     if git -C "$REPO_DIR" diff --quiet 2>/dev/null && git -C "$REPO_DIR" diff --cached --quiet 2>/dev/null; then

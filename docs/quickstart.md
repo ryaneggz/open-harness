@@ -58,7 +58,7 @@ From the directory where you cloned the repo (note: `oh sandbox` resolves
 compose paths relative to the current working directory):
 
 ```bash
-cd ~/.openharness   # or wherever the installer cloned the repo
+cd ~/openharness    # or wherever the installer cloned the repo
 oh sandbox my-agent
 ```
 
