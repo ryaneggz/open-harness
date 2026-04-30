@@ -33,6 +33,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 - 26 docs pages converted from Nextra MDX to plain markdown rendered by GitHub.
 
 ### Fixed
+- `install.sh` bootstraps `PNPM_HOME` before `pnpm link --global` so the CLI install no longer dies with `ERR_PNPM_NO_GLOBAL_BIN_DIR` on fresh nvm-installed Node. Runs `pnpm setup` (writes `PNPM_HOME` export to `~/.bashrc` + `~/.zshrc`) and also exports `PNPM_HOME`/`PATH` inline so the link step succeeds in the current shell regardless of rc state.
 - `install.sh` no longer silently exits when sourcing a pre-existing `~/.nvm/nvm.sh` under `set -euo pipefail`. nvm + corepack calls are bracketed with relaxed strict mode and explicit `$?` checks, an `ERR` trap surfaces unexpected failures with the failing command and line, and pnpm is pinned to `10.33.0` (matches `package.json#packageManager`) instead of resolving `pnpm@latest` over the network on every install.
 - Slack bot no longer drops oversized agent replies with cascading `msg_too_long` errors. Main message is capped at 2,900 chars with a `_message truncated — full response in thread_` footer; full content spills to thread replies; `setWorking(false)` always clears the working indicator. ([#135](https://github.com/ryaneggz/open-harness/issues/135))
 
