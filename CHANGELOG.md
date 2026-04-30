@@ -20,6 +20,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 - Docusaurus v3 docs site at `apps/docs` deployed to oh.mifune.dev ([#164](https://github.com/ryaneggz/open-harness/issues/164)).
 
 ### Changed
+- Reverted the sandbox/orchestrator vocabulary realignment ([#170](https://github.com/ryaneggz/open-harness/issues/170), [#172](https://github.com/ryaneggz/open-harness/issues/172)). The in-container Linux user is `sandbox` again (UID/GID 1000 preserved); the `ORCHESTRATOR_USER`/`ORCHESTRATOR_HOME` constants are removed. The package name `@openharness/sandbox`, compose service, container default, `SANDBOX_NAME` env var, `POSTGRES_USER`, and `sandbox_*` Pi tool prefix were never changed. `install/banner.sh` carries an inverted migration guard for users coming back from a renamed image. ([#198](https://github.com/ryaneggz/open-harness/issues/198))
 - Consolidate documentation: `/docs/` is now the single source of truth, served by Docusaurus from `apps/docs/` via `path: '../../docs'`. Enabled blog at `/blog/`. Removed the duplicate `apps/docs/docs/` tree. ([#178](https://github.com/ryaneggz/open-harness/pull/178))
 - Installer auto-detects Node 20+; new `--cli` / `--docker-only` / `--install-node` flags; `--with-cli` deprecated. ([#176](https://github.com/ryaneggz/open-harness/pull/176)).
 - README and installation docs now use the short `https://oh.mifune.dev/install.sh` URL (302 redirect to the raw GitHub install script on `main`) instead of the long `raw.githubusercontent.com` URL.

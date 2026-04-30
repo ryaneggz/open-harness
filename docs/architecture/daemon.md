@@ -102,7 +102,7 @@ When you start a sandbox (`openharness sandbox` or `docker compose up`), this se
 1. **Docker builds the image** from `.devcontainer/Dockerfile` — Debian Bookworm with Node 22, agent CLIs, and all dev tools baked in.
 
 2. **docker-compose.yml starts the container** with:
-   - Workspace bind-mounted at `/home/orchestrator/harness`
+   - Workspace bind-mounted at `/home/sandbox/harness`
    - Named volumes for auth persistence (Claude, Cloudflare, GitHub CLI configs)
    - Compose overlays add optional services based on `.openharness/config.json`
 

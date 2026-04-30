@@ -89,3 +89,15 @@ printf '\n'
 printf '  Shortcuts: claude · pi · heartbeat-daemon status\n'
 printf '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
 printf '\n'
+
+# Migration guard — orchestrator → sandbox user revert
+# Fires only when the old /home/orchestrator directory still exists and the
+# current user is sandbox (upgraded container post-revert, no volume reset).
+if [ -d "/home/orchestrator" ] && [ "$(whoami)" = "sandbox" ]; then
+  printf '\n'
+  printf '  [!] Container reverted orchestrator → sandbox. /home/orchestrator still present.\n'
+  printf '      Recommended (preserves auth):\n'
+  printf '        sudo chown -R 1000:1000 /home/sandbox\n'
+  printf '      Reset: docker compose down -v && docker compose up --build\n'
+  printf '\n'
+fi

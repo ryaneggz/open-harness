@@ -123,7 +123,7 @@ git clone https://github.com/ryaneggz/open-harness.git && cd open-harness
 cp .devcontainer/.example.env .devcontainer/.env
 # Edit .devcontainer/.env: set SANDBOX_NAME and any optional tokens
 docker compose -f .devcontainer/docker-compose.yml up -d --build
-docker compose -f .devcontainer/docker-compose.yml exec -u orchestrator sandbox zsh
+docker compose -f .devcontainer/docker-compose.yml exec -u sandbox sandbox zsh
 ```
 
 In this mode you manage the sandbox lifecycle with `docker compose` commands directly rather than the `oh` CLI. The one-line installer's `--docker-only` flag automates these same steps. The one-line installer's `--docker-only` flag automates these same steps.
