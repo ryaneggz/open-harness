@@ -435,6 +435,51 @@ ENVEOF
 unset __SN_ESC __SP_ESC
 ok "Wrote .devcontainer/.env"
 
+# ─── Pre-create host auth source dirs ────────────────────────────────
+# The default config enables three host-bind overlays
+# (claude-host.yml, codex-host.yml, pi-host.yml) that bind ~/.claude,
+# ~/.codex, ~/.pi from the host into the container. Two preconditions
+# (each documented in the overlay headers):
+#   1. Host UID == 1000 (credential files are mode 0600 — group-membership
+#      trick in entrypoint.sh cannot bypass owner-only reads).
+#   2. Host source dir pre-exists. Otherwise docker auto-creates it as
+#      root, and orchestrator (UID 1000) gets EACCES on first write.
+#
+# This block satisfies (2) by creating the dirs as the running user.
+# (1) is checked below and surfaced as a warning — the user must opt
+# out by hand if their host UID isn't 1000.
+banner "Preparing host auth dirs for sandbox bind-mounts"
+for d in .claude .codex .pi; do
+  if [ ! -d "$HOME/$d" ]; then
+    mkdir -p "$HOME/$d"
+    ok "Created ~/$d (empty — first-time auth will populate it)"
+  else
+    ok "~/$d already exists — host auth will share into the sandbox"
+  fi
+done
+if [ ! -e "$HOME/.claude.json" ]; then
+  printf '{}\n' > "$HOME/.claude.json"
+  ok "Created ~/.claude.json (empty)"
+fi
+
+__HOST_UID="$(id -u)"
+if [ "$__HOST_UID" != "1000" ]; then
+  warn "Host UID is $__HOST_UID — sandbox orchestrator user is UID 1000."
+  warn "Credential files in ~/.claude, ~/.codex, ~/.pi are mode 0600;"
+  warn "the sandbox WILL NOT be able to read them despite the bind-mount."
+  warn ""
+  warn "To avoid silent auth failures, edit"
+  warn "    $REPO_DIR/.openharness/config.json"
+  warn "and remove these overlays from composeOverrides:"
+  warn "    .devcontainer/docker-compose.claude-host.yml"
+  warn "    .devcontainer/docker-compose.codex-host.yml"
+  warn "    .devcontainer/docker-compose.pi-host.yml"
+  warn ""
+  warn "The base named volumes (claude-auth, codex-auth, pi-auth) will"
+  warn "take over and entrypoint.sh chowns them to UID 1000 on boot."
+fi
+unset __HOST_UID
+
 # ─── 5/6. Execute the chosen mode ────────────────────────────────────
 # CLI-first paths do NOT auto-start a sandbox — the user runs `oh sandbox`
 # themselves so they learn the lifecycle. Docker-first runs compose up.
