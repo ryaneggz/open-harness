@@ -20,6 +20,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 - Docusaurus v3 docs site at `apps/docs` deployed to oh.mifune.dev ([#164](https://github.com/ryaneggz/open-harness/issues/164)).
 
 ### Changed
+- Consolidate documentation: `/docs/` is now the single source of truth, served by Docusaurus from `apps/docs/` via `path: '../../docs'`. Enabled blog at `/blog/`. Removed the duplicate `apps/docs/docs/` tree. ([#178](https://github.com/ryaneggz/open-harness/pull/178))
 - Installer auto-detects Node 20+; new `--cli` / `--docker-only` / `--install-node` flags; `--with-cli` deprecated. ([#176](https://github.com/ryaneggz/open-harness/pull/176)).
 - Realigned sandbox/harness/agent vocabulary across docs to clarify that one sandbox hosts many harnesses and the orchestrator is the root harness role, not a separate primitive ([#170](https://github.com/ryaneggz/open-harness/issues/170)).
 - **Breaking**: in-container Linux user renamed `sandbox` → `orchestrator` (UID/GID 1000 preserved so existing volumes remain readable). Requires fresh image pull AND full rebuild — `docker compose pull && docker compose up --build`. To preserve auth credentials after upgrade: `docker exec -u root <container> chown -R 1000:1000 /home/orchestrator`. To reset: `docker compose down -v && docker compose up --build` (destroys claude/codex/pi/cloudflared/gh auth). A migration banner in `install/banner.sh` warns when the old `/home/sandbox` directory is detected ([#172](https://github.com/ryaneggz/open-harness/issues/172)).
@@ -35,6 +36,7 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 - Slack bot no longer drops oversized agent replies with cascading `msg_too_long` errors. Main message is capped at 2,900 chars with a `_message truncated — full response in thread_` footer; full content spills to thread replies; `setWorking(false)` always clears the working indicator. ([#135](https://github.com/ryaneggz/open-harness/issues/135))
 
 ### Removed
+- Removed legacy `/docs/{plans,wiki,launch-runbook,blog}/` and `apps/docs/docs/` tree (consolidated into `/docs/`). ([#178](https://github.com/ryaneggz/open-harness/pull/178))
 - Nextra docs site and the `.github/workflows/docs.yml` deployment — documentation is now plain markdown in `docs/`, read in the GitHub UI.
 - Reference Next.js application at `workspace/projects/next-app/`, along with its CI jobs (`workspace/projects/next-app` paths in `ci.yml` / `release.yml`) and the release pre-flight gate referencing it.
 - Root `package.json` scripts: `dev`, `docs:dev`, `docs:build`, `docs:preview`.

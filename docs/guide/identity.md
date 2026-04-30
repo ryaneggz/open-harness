@@ -1,5 +1,6 @@
 ---
 title: "Identity & Memory"
+sidebar_position: 7
 ---
 
 
@@ -27,7 +28,7 @@ Defines the agent's persona and boundaries. The agent may evolve it over time bu
 
 Curated, durable memory distilled from daily logs. Contains decisions, lessons learned, recurring patterns, and triage history. Symlinked to `.slack/MEMORY.md` so all agent interfaces share the same memory. See [Slack Bot Memory](../slack/memory.md) for how the bot uses these files.
 
-Memory stores **operational self-awareness** — what the agent learned from doing work. For **structured domain knowledge** extracted from external documents, see the [Wiki](./wiki.md) system instead.
+Memory stores **operational self-awareness** — what the agent learned from doing work. For **structured domain knowledge** extracted from external documents, see the Wiki system instead.
 
 ## Memory protocol
 

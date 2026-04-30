@@ -4,12 +4,16 @@ on:
   pull_request:
     paths:
       - "apps/docs/**"
+      - "docs/**"
+      - "blog/**"
       - ".github/workflows/docs.yml"
   push:
     branches:
       - main
     paths:
       - "apps/docs/**"
+      - "docs/**"
+      - "blog/**"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
 
@@ -27,6 +31,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
