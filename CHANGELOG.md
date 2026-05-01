@@ -9,6 +9,15 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 ## [Unreleased]
 
 ### Added
+### Changed
+### Fixed
+### Removed
+### Deprecated
+### Security
+
+## [2026.4.30] - 2026-04-30
+
+### Added
 - README "Docker only (no installer)" section — concise compose-based deploy path for hosts that have only Docker + git.
 - Per-page OpenGraph + canonical link tags via theme.config.tsx head function ([#140](https://github.com/ryaneggz/open-harness/issues/140)).
 - Blog post draft: Worktree-per-agent — stages for Wed publish ([#145](https://github.com/ryaneggz/open-harness/pull/145)).
