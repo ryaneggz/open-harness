@@ -58,8 +58,27 @@ RUN corepack enable && corepack prepare pnpm@latest --activate \
 # Use npm (not pnpm) for global CLI installs. Agent CLI packages require
 # postinstall scripts to download platform-native binaries; npm executes these
 # by default without extra configuration.
-RUN npm install -g @anthropic-ai/claude-code @openai/codex @mariozechner/pi-coding-agent \
- && claude --version && codex --version && pi --version
+#
+# AGENTS is a comma-separated list of agent CLI keys to install. The default
+# preserves the historical behavior (claude-code + codex + pi-coding-agent).
+# Downstream images (e.g. a slimmer base) can override at build time:
+#   docker build --build-arg AGENTS="claude-code,codex" .
+SHELL ["/bin/bash", "-c"]
+
+ARG AGENTS="claude-code,codex,pi-coding-agent"
+
+RUN set -e; \
+    declare -A PKG=( \
+        [claude-code]=@anthropic-ai/claude-code \
+        [codex]=@openai/codex \
+        [pi-coding-agent]=@mariozechner/pi-coding-agent \
+    ); \
+    IFS=',' read -ra agents <<< "$AGENTS"; \
+    for a in "${agents[@]}"; do \
+        pkg="${PKG[$a]:-}"; \
+        if [ -n "$pkg" ]; then npm install -g "$pkg"; \
+        else echo "Unknown agent: $a"; exit 1; fi; \
+    done
 
 # ─── Sandbox user ──────────────────────────────────────────────────
 RUN useradd -m -s /bin/zsh sandbox \
