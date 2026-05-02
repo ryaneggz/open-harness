@@ -34,6 +34,7 @@
   },
   "dependencies": {
     "@mariozechner/pi-coding-agent": "0.70.0",
+    "commander": "^12.0.0",
     "croner": "^9.1.0",
     "typebox": "^1.0.0"
   },
