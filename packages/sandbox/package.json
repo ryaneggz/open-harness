@@ -21,8 +21,13 @@
   "exports": {
     ".": "./dist/src/index.js"
   },
+  "files": [
+    "dist/",
+    "extensions/",
+    "README.md"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && chmod +x dist/src/cli/index.js dist/src/cli/heartbeat-daemon.js",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",

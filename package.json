@@ -5,7 +5,8 @@
   "description": "Open Harness — AI Agent Sandbox Orchestrator",
   "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "setup": "pnpm install && pnpm -r --if-present run build && pnpm link --global ./packages/sandbox",
+    "setup": "pnpm install && pnpm -r --if-present run build",
+    "link:cli": "pnpm --dir packages/sandbox link --global",
     "build": "pnpm -r --if-present run build",
     "test": "pnpm -r --if-present run test",
     "lint": "pnpm -r --if-present run lint",
