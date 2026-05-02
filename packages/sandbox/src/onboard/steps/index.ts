@@ -6,7 +6,11 @@ import { githubStep } from "./github.js";
 import { llmStep } from "./llm.js";
 import { slackStep } from "./slack.js";
 import { sshStep } from "./ssh.js";
-import { HARNESS_REGISTRY_PATH, readHarnessRegistry, type InstalledHarness } from "../registry.js";
+import {
+  HARNESS_REGISTRY_PATH,
+  readHarnessRegistry,
+  type InstalledHarness,
+} from "../../harness/registry.js";
 import type { PackStep, Step, StepId } from "../types.js";
 
 /**

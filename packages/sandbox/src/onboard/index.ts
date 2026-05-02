@@ -19,6 +19,6 @@ export {
   parseHarnessRegistry,
   type HarnessRegistry,
   type InstalledHarness,
-} from "./registry.js";
+} from "../harness/registry.js";
 export type { Deps, HarnessPack, PackStep, Step, StepId, StepResult, StepStatus } from "./types.js";
 export { UnknownStepError, STEP_IDS } from "./types.js";
