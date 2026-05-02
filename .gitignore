@@ -1,5 +1,6 @@
 **/.env*
 .worktrees/*
+.claude/worktrees/
 tasks/*/archive/
 !.worktrees/.gitkeep
 
