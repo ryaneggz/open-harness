@@ -23,12 +23,25 @@ If you are working inside the orchestrator sandbox, the `oh` CLI and git credent
 gh auth login && gh auth setup-git
 ```
 
-Link the development binary for quick testing:
+### Build and link the CLI for development
+
+The `oh` CLI is published as `@openharness/sandbox`. To use the in-tree version of the CLI globally during development:
 
 ```bash
-pnpm link -g
-oh version
+# 1. Install deps + build all workspace packages
+pnpm run setup
+
+# 2. Make `oh` available globally (uses pnpm's global link)
+pnpm run link:cli
+
+# 3. Verify
+oh --version    # → 0.1.0
+oh --help       # → Commander-generated help with all subcommands
 ```
+
+**Inside the orchestrator sandbox**, the entrypoint script (`/.devcontainer/entrypoint.sh`) automatically rebuilds the CLI on container boot and symlinks it into `/usr/local/bin/{oh,openharness,heartbeat-daemon}`. Running `pnpm run link:cli` is only needed on a local laptop checkout.
+
+**npm publish path** (for downstream packs that depend on `@openharness/sandbox`): the `bin`, `files`, and `exports` fields are configured so `npm publish` from `packages/sandbox/` produces a fully-installable package.
 
 ## Branch Naming
 

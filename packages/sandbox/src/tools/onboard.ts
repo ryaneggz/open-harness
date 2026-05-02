@@ -1,5 +1,5 @@
 import { Type } from "typebox";
-import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
+import type { ToolDefinition } from "../types.js";
 import { runOnboardCommand } from "../cli/onboard.js";
 
 export const onboardTool: ToolDefinition = {

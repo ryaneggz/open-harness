@@ -3,257 +3,239 @@
 /**
  * openharness — Open Harness CLI
  *
- * Subcommands run docker compose directly — no AI model needed.
- * Run with no arguments to launch the Pi agent (AI mode).
+ * Commander.js-based subcommand router. Each action lives in
+ * `./actions/*.ts` and is lazy-loaded via dynamic import so cold-start
+ * stays fast for `--help` / `--version`.
  */
 
-import { main, VERSION } from "@mariozechner/pi-coding-agent";
-import {
-  SUBCOMMANDS,
-  HOST_ONLY_COMMANDS,
-  isInsideContainer,
-  parseToolArgs,
-  resolveSubcommand,
-  helpText,
-} from "./cli.js";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { Command } from "commander";
 
-const args = process.argv.slice(2);
-const firstArg = args[0];
-
-if (firstArg === "--help" || firstArg === "-h") {
-  console.log(helpText(VERSION));
-  process.exit(0);
+function readVersion(): string {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    // dist/src/cli/index.js → ../../../package.json
+    // src/cli/index.ts (tsx) → ../../package.json
+    const candidates = [
+      join(here, "..", "..", "..", "package.json"),
+      join(here, "..", "..", "package.json"),
+    ];
+    for (const path of candidates) {
+      if (existsSync(path)) {
+        const pkg = JSON.parse(readFileSync(path, "utf-8")) as { version?: string };
+        if (typeof pkg.version === "string") return pkg.version;
+      }
+    }
+  } catch {
+    // fallthrough
+  }
+  return "0.0.0";
 }
 
-if (firstArg === "--version" || firstArg === "-v") {
-  console.log(`openharness 0.1.0 (pi ${VERSION})`);
-  process.exit(0);
+export function isInsideContainer(): boolean {
+  return existsSync("/.dockerenv");
 }
 
-// Block host-only commands inside the container
-if (firstArg && HOST_ONLY_COMMANDS.has(firstArg) && isInsideContainer()) {
-  console.error(`Error: 'openharness ${firstArg}' is a host-only command.`);
-  console.error("You are inside the sandbox. Run this from the host instead.");
-  process.exit(1);
-}
-
-// Subcommand dispatch — runs docker compose directly, no AI model
-if (firstArg && SUBCOMMANDS.has(firstArg)) {
-  runSubcommand(firstArg, args.slice(1)).catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
-} else {
-  // Forward to Pi main() for AI agent mode — extensions auto-discovered via pi.extensions
-  main(args).catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
-}
+export const HOST_ONLY_COMMANDS = new Set(["sandbox", "run", "stop", "clean", "shell", "list"]);
 
 /**
- * Execute a subcommand by calling lib functions directly.
- * No Pi SDK, no AI model — just docker compose.
+ * Build the Commander program. Exported for tests so they can introspect
+ * registered subcommands and option flags without spawning a process.
  */
-async function runSubcommand(command: string, cmdArgs: string[]) {
-  const { SandboxConfig } = await import("../lib/config.js");
-  const { composeUp, composeDown, composeEnv, execCmd, psCmd } = await import("../lib/docker.js");
-  const { run, runSafe } = await import("../lib/exec.js");
+export function buildProgram(): Command {
+  const program = new Command();
+  program
+    .name("oh")
+    .description("openharness — sandbox-for-harnesses platform")
+    .version(readVersion(), "-v, --version");
 
-  const params = parseToolArgs(cmdArgs);
+  // ─── Container lifecycle (host-only) ────────────────────────────────
+  program
+    .command("sandbox [name]")
+    .description("provision (build + start) a sandbox")
+    .action(async (name?: string) => {
+      const { sandboxAction } = await import("./actions/sandbox.js");
+      await sandboxAction(name);
+    });
 
-  switch (command) {
-    case "sandbox": {
-      const config = new SandboxConfig({ name: params.name as string | undefined });
-      const env = composeEnv(config);
-      console.log(`Starting sandbox '${config.name}'...`);
-      console.log(`Compose files: ${config.composeFiles.join(", ")}`);
-      run(composeUp(config), { env });
+  program
+    .command("run [name]")
+    .description("start the sandbox container")
+    .action(async (name?: string) => {
+      const { runAction } = await import("./actions/run.js");
+      await runAction(name);
+    });
 
-      // Validate container is running
-      const { execSync } = await import("node:child_process");
-      let running = false;
-      try {
-        const status = execSync(`docker inspect -f '{{.State.Running}}' ${config.name}`, {
-          encoding: "utf-8",
-          stdio: "pipe",
-        }).trim();
-        running = status === "true";
-      } catch {
-        // container not found
-      }
+  program
+    .command("stop [name]")
+    .description("stop and remove the sandbox container")
+    .action(async (name?: string) => {
+      const { stopAction } = await import("./actions/stop.js");
+      await stopAction(name);
+    });
 
-      if (!running) {
-        console.error(`\nError: container '${config.name}' is not running.`);
-        console.error("Check logs: docker logs " + config.name);
-        process.exit(1);
-      }
+  program
+    .command("clean [name]")
+    .description("full cleanup (containers + volumes)")
+    .action(async (name?: string) => {
+      const { cleanAction } = await import("./actions/clean.js");
+      await cleanAction(name);
+    });
 
-      // Get port mappings (only show what's actually mapped)
-      let sshPort: string | null = null;
-      let appPort: string | null = null;
-      try {
-        const ports = execSync(`docker port ${config.name}`, {
-          encoding: "utf-8",
-          stdio: "pipe",
-        }).trim();
-        const sshMatch = ports.match(/22\/tcp -> [\d.]+:(\d+)/);
-        const appMatch = ports.match(/3000\/tcp -> [\d.]+:(\d+)/);
-        if (sshMatch) sshPort = sshMatch[1];
-        if (appMatch) appPort = appMatch[1];
-      } catch {
-        // no ports mapped
-      }
+  program
+    .command("shell <name>")
+    .description("open an interactive shell in the sandbox")
+    .action(async (name: string) => {
+      const { shellAction } = await import("./actions/shell.js");
+      await shellAction(name);
+    });
 
-      console.log(`\n  Sandbox '${config.name}' is running!\n`);
-      console.log("  Connect:");
-      if (sshPort) {
-        console.log(`    SSH:    ssh sandbox@localhost -p ${sshPort}`);
-      }
-      console.log(`    Shell:  openharness shell ${config.name}`);
-      if (appPort) {
-        console.log(`    App:    http://localhost:${appPort}`);
-      }
-      console.log("");
-      console.log("  Next steps:");
-      console.log(`    openharness onboard ${config.name}    # one-time auth setup`);
-      break;
-    }
+  program
+    .command("list")
+    .description("list running sandboxes")
+    .action(async () => {
+      const { listAction } = await import("./actions/list.js");
+      await listAction();
+    });
 
-    case "run": {
-      const config = new SandboxConfig({ name: params.name as string | undefined });
-      run(composeUp(config), { env: composeEnv(config) });
-      console.log(`Sandbox '${config.name}' started.`);
-      break;
-    }
+  // ─── Onboarding ─────────────────────────────────────────────────────
+  program
+    .command("onboard [target]")
+    .description(
+      "setup wizard — sandbox name OR a single step (slack, llm, ssh, github, cloudflare, claude)",
+    )
+    .option("--force", "re-run completed steps")
+    .option("--only <step>", "run only the named step")
+    .action(async (target: string | undefined, opts: { force?: boolean; only?: string }) => {
+      const { onboardAction } = await import("./actions/onboard.js");
+      await onboardAction(target, { force: opts.force, only: opts.only });
+    });
 
-    case "stop": {
-      const config = new SandboxConfig({ name: params.name as string | undefined });
-      try {
-        run(composeDown(config), { env: composeEnv(config) });
-        console.log(`Sandbox '${config.name}' stopped.`);
-      } catch {
-        console.error(`Error: no sandbox '${config.name}' found to stop.`);
-        process.exit(1);
-      }
-      break;
-    }
+  // ─── Heartbeat group (start | stop | status) ────────────────────────
+  const heartbeat = program.command("heartbeat").description("manage the heartbeat daemon");
+  heartbeat
+    .command("start <name>")
+    .description("re-read heartbeat .md files and apply schedules")
+    .action(async (name: string) => {
+      const { heartbeatStartAction } = await import("./actions/heartbeat.js");
+      await heartbeatStartAction(name);
+    });
+  heartbeat
+    .command("stop <name>")
+    .description("remove all heartbeat schedules")
+    .action(async (name: string) => {
+      const { heartbeatStopAction } = await import("./actions/heartbeat.js");
+      await heartbeatStopAction(name);
+    });
+  heartbeat
+    .command("status <name>")
+    .description("show schedules and recent logs")
+    .action(async (name: string) => {
+      const { heartbeatStatusAction } = await import("./actions/heartbeat.js");
+      await heartbeatStatusAction(name);
+    });
 
-    case "clean": {
-      const config = new SandboxConfig({ name: params.name as string | undefined });
-      const stopped = runSafe(composeDown(config, true), { env: composeEnv(config) });
-      console.log(
-        stopped
-          ? `Sandbox '${config.name}' cleaned (containers stopped, volumes removed).`
-          : `No running sandbox '${config.name}' found.`,
-      );
-      break;
-    }
+  // ─── Worktree ───────────────────────────────────────────────────────
+  program
+    .command("worktree <name>")
+    .description("create a git worktree for branch isolation")
+    .option("--base-branch <branch>", "base branch (default: development)")
+    .action(async (name: string, opts: { baseBranch?: string }) => {
+      const { worktreeAction } = await import("./actions/worktree.js");
+      await worktreeAction(name, { baseBranch: opts.baseBranch });
+    });
 
-    case "shell": {
-      if (!params.name) {
-        console.error("Usage: openharness shell <name>");
-        process.exit(1);
-      }
-      const cmd = execCmd(params.name as string, ["bash", "--login"], {
-        user: "sandbox",
-        interactive: true,
-        workdir: "/home/sandbox/harness",
-      });
-      const { spawnSync } = await import("node:child_process");
-      spawnSync(cmd[0], cmd.slice(1), { stdio: "inherit" });
-      break;
-    }
+  // ─── Gateway / expose ───────────────────────────────────────────────
+  program
+    .command("ports [name]")
+    .description("inspect listeners and exposed routes")
+    .action(async (name?: string) => {
+      const { portsAction } = await import("./actions/ports.js");
+      await portsAction(name);
+    });
 
-    case "list": {
-      const { execSync } = await import("node:child_process");
-      console.log("\n  Running containers:");
-      try {
-        const ps = execSync(psCmd().join(" "), { encoding: "utf-8" }).trim();
-        console.log(ps || "  (none)");
-      } catch {
-        console.log("  (docker not available or no containers running)");
-      }
-      break;
-    }
+  program
+    .command("expose <name> <port>")
+    .description("expose a sandbox app via a Caddy route")
+    .action(async (name: string, port: string) => {
+      const { exposeAction } = await import("./actions/expose.js");
+      await exposeAction(name, port);
+    });
 
-    case "onboard": {
-      const { runOnboardCommand } = await import("./onboard.js");
-      const name = params.name as string | undefined;
-      const only = typeof params.action === "string" ? params.action : undefined;
-      const exitCode = await runOnboardCommand({
-        name,
-        force: params.force as boolean | undefined,
-        only,
-      });
-      if (exitCode !== 0) process.exit(exitCode);
-      break;
-    }
+  program
+    .command("unexpose <name>")
+    .description("remove a Caddy route")
+    .action(async (name: string) => {
+      const { unexposeAction } = await import("./actions/unexpose.js");
+      await unexposeAction(name);
+    });
 
-    case "heartbeat": {
-      const tools = await import("../tools/index.js");
-      const resolved = resolveSubcommand("heartbeat", cmdArgs, tools);
-      if ("error" in resolved) {
-        console.error(resolved.error);
-        process.exit(1);
-      }
-      const result = await resolved.tool.execute(
-        "cli",
-        resolved.params,
-        undefined,
-        undefined,
-        undefined as never,
-      );
-      for (const item of result.content) {
-        if (item.type === "text" && "text" in item) console.log(item.text);
-      }
-      break;
-    }
+  program
+    .command("open <target>")
+    .description("open a route's URL (by name or port)")
+    .action(async (target: string) => {
+      const { openAction } = await import("./actions/open.js");
+      await openAction(target);
+    });
 
-    case "worktree": {
-      if (!params.name) {
-        console.error("Usage: openharness worktree <name> [--base-branch <branch>]");
-        process.exit(1);
-      }
-      const { worktreeTool } = await import("../tools/index.js");
-      const result = await worktreeTool.execute(
-        "cli",
-        params,
-        undefined,
-        undefined,
-        undefined as never,
-      );
-      for (const item of result.content) {
-        if (item.type === "text" && "text" in item) console.log(item.text);
-      }
-      break;
-    }
+  // ─── Harness packs (NEW from openharness/mifune split) ──────────────
+  // Placeholder action handlers — real implementation lands in T5
+  // alongside src/harness/pack.ts and src/harness/registry.ts.
+  const harness = program.command("harness").description("manage harness packs");
+  harness
+    .command("add <spec>")
+    .description("install a harness pack (npm package, owner/repo, git URL, or local path)")
+    .action(async (spec: string) => {
+      const { harnessAddAction } = await import("./actions/harness.js");
+      await harnessAddAction(spec);
+    });
+  harness
+    .command("list")
+    .description("list installed harness packs")
+    .action(async () => {
+      const { harnessListAction } = await import("./actions/harness.js");
+      await harnessListAction();
+    });
+  harness
+    .command("remove <name>")
+    .description("uninstall a harness pack")
+    .action(async (name: string) => {
+      const { harnessRemoveAction } = await import("./actions/harness.js");
+      await harnessRemoveAction(name);
+    });
 
-    case "ports":
-    case "expose":
-    case "unexpose":
-    case "open": {
-      const tools = await import("../tools/index.js");
-      const resolved = resolveSubcommand(command, cmdArgs, tools);
-      if ("error" in resolved) {
-        console.error(resolved.error);
-        process.exit(1);
-      }
-      const result = await resolved.tool.execute(
-        "cli",
-        resolved.params,
-        undefined,
-        undefined,
-        undefined as never,
-      );
-      for (const item of result.content) {
-        if (item.type === "text" && "text" in item) console.log(item.text);
-      }
-      break;
-    }
-
-    default:
-      console.error(`Unknown command: ${command}`);
+  // ─── Host-only enforcement (replaces ad-hoc HOST_ONLY_COMMANDS check)
+  program.hook("preAction", (thisCommand) => {
+    if (HOST_ONLY_COMMANDS.has(thisCommand.name()) && isInsideContainer()) {
+      console.error(`Error: 'oh ${thisCommand.name()}' is a host-only command.`);
+      console.error("You are inside the sandbox. Run this from the host instead.");
       process.exit(1);
-  }
+    }
+  });
+
+  return program;
 }
+
+const program = buildProgram();
+
+const isMainModule = (() => {
+  if (typeof process.argv[1] !== "string") return false;
+  try {
+    const here = fileURLToPath(import.meta.url);
+    return here === process.argv[1] || process.argv[1].endsWith("cli/index.js");
+  } catch {
+    return false;
+  }
+})();
+
+if (isMainModule) {
+  program.parseAsync(process.argv).catch((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(msg);
+    process.exit(1);
+  });
+}
+
+export { program };

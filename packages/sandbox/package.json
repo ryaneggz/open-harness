@@ -21,8 +21,13 @@
   "exports": {
     ".": "./dist/src/index.js"
   },
+  "files": [
+    "dist/",
+    "extensions/",
+    "README.md"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && chmod +x dist/src/cli/index.js dist/src/cli/heartbeat-daemon.js",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -34,6 +39,7 @@
   },
   "dependencies": {
     "@mariozechner/pi-coding-agent": "0.70.0",
+    "commander": "^12.0.0",
     "croner": "^9.1.0",
     "typebox": "^1.0.0"
   },
