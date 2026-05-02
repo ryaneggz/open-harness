@@ -1,5 +1,5 @@
 import { Type } from "typebox";
-import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
+import type { ToolDefinition } from "../types.js";
 import { SandboxConfig } from "../lib/config.js";
 import { execCmd } from "../lib/docker.js";
 import { captureSafe } from "../lib/exec.js";

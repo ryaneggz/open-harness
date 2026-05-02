@@ -7,7 +7,7 @@
  */
 
 import { existsSync } from "node:fs";
-import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
+import type { ToolDefinition } from "../types.js";
 
 // ─── Environment ──────────────────────────────────────────────────
 

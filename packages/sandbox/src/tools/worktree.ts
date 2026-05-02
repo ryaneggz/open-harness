@@ -2,7 +2,7 @@ import { Type } from "typebox";
 import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
+import type { ToolDefinition } from "../types.js";
 
 export const worktreeTool: ToolDefinition = {
   name: "sandbox_worktree",

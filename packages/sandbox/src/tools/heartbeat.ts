@@ -1,5 +1,5 @@
 import { Type } from "typebox";
-import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
+import type { ToolDefinition } from "../types.js";
 import { execCmd } from "../lib/docker.js";
 import { run } from "../lib/exec.js";
 

@@ -1,6 +1,6 @@
 import { Type } from "typebox";
 import { execSync } from "node:child_process";
-import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
+import type { ToolDefinition } from "../types.js";
 
 export const listTool: ToolDefinition = {
   name: "sandbox_list",

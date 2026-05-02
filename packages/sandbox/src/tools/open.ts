@@ -1,5 +1,5 @@
 import { Type } from "typebox";
-import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
+import type { ToolDefinition } from "../types.js";
 import { findRouteByName, findRouteByPort } from "../lib/exposures.js";
 import { runSafe } from "../lib/exec.js";
 

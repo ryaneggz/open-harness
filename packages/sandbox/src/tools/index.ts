@@ -1,4 +1,4 @@
-import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
+import type { ToolDefinition } from "../types.js";
 import { listTool } from "./list.js";
 import { runTool } from "./run.js";
 import { shellTool } from "./shell.js";
