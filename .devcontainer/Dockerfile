@@ -60,18 +60,16 @@ RUN corepack enable && corepack prepare pnpm@latest --activate \
 # by default without extra configuration.
 #
 # AGENTS is a comma-separated list of agent CLI keys to install. The default
-# preserves the historical behavior (claude-code + codex + pi-coding-agent).
-# Downstream images (e.g. a slimmer base) can override at build time:
-#   docker build --build-arg AGENTS="claude-code,codex" .
+# is claude-code + codex (vendor-neutral). Downstream harness packs (e.g.
+# @ryaneggz/mifune) install additional CLIs via their install-hook.sh.
 SHELL ["/bin/bash", "-c"]
 
-ARG AGENTS="claude-code,codex,pi-coding-agent"
+ARG AGENTS="claude-code,codex"
 
 RUN set -e; \
     declare -A PKG=( \
         [claude-code]=@anthropic-ai/claude-code \
         [codex]=@openai/codex \
-        [pi-coding-agent]=@mariozechner/pi-coding-agent \
     ); \
     IFS=',' read -ra agents <<< "$AGENTS"; \
     for a in "${agents[@]}"; do \
@@ -110,9 +108,7 @@ RUN printf '%s\n' \
 
 # Shell aliases for agent CLIs (bash fallback — .zshrc ships with these baked in)
 RUN echo "alias claude='claude --dangerously-skip-permissions'" >> /home/sandbox/.bashrc \
- && echo "alias codex='codex --full-auto'" >> /home/sandbox/.bashrc \
- && echo "alias pi='pi'" >> /home/sandbox/.bashrc \
- && echo "alias mom='mom --sandbox=host ~/harness/workspace/.slack'" >> /home/sandbox/.bashrc
+ && echo "alias codex='codex --full-auto'" >> /home/sandbox/.bashrc
 
 # Git safe.directory for bind-mounted project
 RUN su - sandbox -c "git config --global --add safe.directory /home/sandbox/harness"

@@ -8,6 +8,9 @@ Update policy and release automation live in [`.claude/rules/git.md`](.claude/ru
 
 ## [Unreleased]
 
+### Removed
+- **BREAKING**: `@mariozechner/pi-coding-agent` is no longer a dependency. The pi agent CLI and Mom Slack bot have been extracted to a separate harness pack at [`ryaneggz/mifune`](https://github.com/ryaneggz/mifune) (npm: `@ryaneggz/mifune`). Install with `oh harness add @ryaneggz/mifune`. ([#208](https://github.com/ryaneggz/open-harness/pull/208))
+
 ### Added
 - README "Docker only (no installer)" section — concise compose-based deploy path for hosts that have only Docker + git.
 - Per-page OpenGraph + canonical link tags via theme.config.tsx head function ([#140](https://github.com/ryaneggz/open-harness/issues/140)).

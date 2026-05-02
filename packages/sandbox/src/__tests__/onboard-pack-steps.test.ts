@@ -154,9 +154,10 @@ describe("getAllSteps", () => {
     const ids = steps.map((s) => s.id);
     expect(ids).toContain("llm");
     expect(ids).toContain("github");
-    expect(ids).toContain("slack");
     expect(ids).toContain("ssh");
     expect(ids).toContain("cloudflare");
     expect(ids).toContain("claude");
+    // slack moved to @ryaneggz/mifune harness pack — not a core step
+    expect(ids).not.toContain("slack");
   });
 });

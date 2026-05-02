@@ -35,11 +35,11 @@ oh onboard --force
 
 ### Step 1 — LLM provider
 
-Authenticates with an LLM provider (Anthropic, OpenAI, Google, or another supported provider) so Claude Code, Pi, and the Mom Slack bot can make API calls.
+Authenticates with an LLM provider (Anthropic, OpenAI, Google, or another supported provider) so Claude Code and Codex can make API calls.
 
-The wizard launches `openharness` in interactive mode to complete the OAuth flow. Auth is stored in `~/.pi/agent/auth.json` inside the sandbox and shared with Mom automatically.
+The wizard launches the agent CLIs in interactive mode to complete the OAuth flow.
 
-**Skipped when:** `~/.pi/agent/auth.json` already exists, or `OPENAI_API_KEY` is set in the environment.
+**Skipped when:** the agent CLI's auth file already exists, or `OPENAI_API_KEY` is set in the environment.
 
 ### Step 2 — GitHub CLI
 
@@ -53,15 +53,11 @@ When prompted for a preferred protocol, choose SSH. The CLI generates an ed25519
 
 **Skipped when:** `gh auth status` succeeds.
 
-### Step 3 — Slack (Mom bot)
+### Step 3 — Slack (Mom bot, opt-in via `@ryaneggz/mifune` pack)
 
-Configures the Mom Slack bot with a Socket Mode app token (`SLACK_APP_TOKEN`) and a bot token (`SLACK_BOT_TOKEN`).
+The Slack onboarding step ships with the [`@ryaneggz/mifune`](https://github.com/ryaneggz/mifune) harness pack, not core openharness. Install with `oh harness add @ryaneggz/mifune` to register the step.
 
-If the tokens are already in `.devcontainer/.env`, the wizard validates that Mom is connected. If Mom was started automatically by the container entrypoint, it confirms it is running without restarting. If tokens are missing, the wizard walks through Slack app creation.
-
-Tokens are persisted to `.env` so they survive container rebuilds.
-
-**Skipped when:** both tokens are set and Mom is already connected.
+The pack configures the Mom Slack bot with a Socket Mode app token (`SLACK_APP_TOKEN`) and a bot token (`SLACK_BOT_TOKEN`).
 
 To set tokens manually, add them to `.devcontainer/.env`:
 

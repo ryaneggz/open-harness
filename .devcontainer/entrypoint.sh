@@ -13,19 +13,17 @@ if [ -S "$SOCK" ]; then
 fi
 
 # Fix ownership of mounted volumes (created as root by Docker).
-# Skip .claude / .codex / .pi when their host-mount overlays are active —
+# Skip .claude / .codex when their host-mount overlays are active —
 # they're host bind-mounts and chown would rewrite host file ownership
-# (see docker-compose.claude-host.yml, docker-compose.codex-host.yml,
-# docker-compose.pi-host.yml).
-for dir in .claude .codex .pi .cloudflared .config/gh .ssh .openharness; do
+# (see docker-compose.claude-host.yml, docker-compose.codex-host.yml).
+# Harness packs that introduce their own host-mount overlays should add
+# their own skip clauses or run a *-entrypoint-hook.sh.
+for dir in .claude .codex .cloudflared .config/gh .ssh .openharness; do
   if [ -d "/home/sandbox/$dir" ]; then
     if [ "$dir" = ".claude" ] && [ "${CLAUDE_HOST_BIND_MOUNT:-0}" = "1" ]; then
       continue
     fi
     if [ "$dir" = ".codex" ] && [ "${CODEX_HOST_BIND_MOUNT:-0}" = "1" ]; then
-      continue
-    fi
-    if [ "$dir" = ".pi" ] && [ "${PI_HOST_BIND_MOUNT:-0}" = "1" ]; then
       continue
     fi
     chown -R sandbox:sandbox "/home/sandbox/$dir" 2>/dev/null || true
@@ -267,24 +265,10 @@ if [ -f "$STARTUP" ]; then
   gosu sandbox bash "$STARTUP" 2>&1 | sed 's/^/  /' || true
 fi
 
-# Copy Pi agent auth to Mom if Mom auth is missing/empty
-if [ -d "/home/sandbox/.pi/agent" ] && [ -s "/home/sandbox/.pi/agent/auth.json" ]; then
-  SLACKDIR="/home/sandbox/.pi/slack"
-  if [ ! -s "$SLACKDIR/auth.json" ]; then
-    mkdir -p "$SLACKDIR"
-    ln -sf /home/sandbox/.pi/agent/auth.json "$SLACKDIR/auth.json"
-    chown -R sandbox:sandbox "$SLACKDIR"
-  fi
-fi
-
-# Auto-start Mom (Slack bot) if tokens are present
-if [ -n "${SLACK_APP_TOKEN:-}" ] && [ -n "${SLACK_BOT_TOKEN:-}" ]; then
-  if command -v mom &>/dev/null; then
-    gosu sandbox tmux new-session -d -s slack \
-      'mom --sandbox=host ~/harness/workspace/.slack' 2>/dev/null || true
-    echo "[entrypoint] Mom started (tmux attach -t slack)"
-  fi
-fi
+# Source any harness-pack entrypoint hooks (installed by `oh harness add`)
+for hook in /usr/local/bin/*-entrypoint-hook.sh; do
+  [ -x "$hook" ] && "$hook"
+done
 
 # First-boot message if onboarding not complete
 if [ ! -f "/home/sandbox/.claude/.onboarded" ]; then

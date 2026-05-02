@@ -146,9 +146,10 @@ Debian Bookworm (slim). The `sandbox` user has passwordless sudo.
 |------|---------|-------------|
 | Claude Code | `claude` | Anthropic's coding agent (aliased to `claude --dangerously-skip-permissions`) |
 | OpenAI Codex | `codex` | OpenAI's coding agent (aliased to `codex --full-auto`) |
-| Pi Agent | `pi` | Pi coding agent — powers Slack bot, heartbeats, and extensions |
-| Mom (Slack bot) | `mom` | Slack bot that delegates messages to Pi agent |
 | agent-browser | `agent-browser` | Headless Chromium for web-capable agents |
+
+Pi Agent + Mom Slack bot are available via the [`@ryaneggz/mifune`](https://github.com/ryaneggz/mifune) harness pack:
+`oh harness add @ryaneggz/mifune`.
 
 ### Runtimes & package managers
 

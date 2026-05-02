@@ -1,20 +1,12 @@
 {
   "name": "@openharness/sandbox",
   "version": "0.1.0",
-  "description": "Open Harness CLI and sandbox tools \u2014 Docker containers, git worktrees, heartbeats",
+  "description": "Open Harness CLI and sandbox tools — Docker containers, git worktrees, heartbeats",
   "type": "module",
   "bin": {
     "openharness": "./dist/src/cli/index.js",
     "oh": "./dist/src/cli/index.js",
     "heartbeat-daemon": "./dist/src/cli/heartbeat-daemon.js"
-  },
-  "keywords": [
-    "pi-package"
-  ],
-  "pi": {
-    "extensions": [
-      "./extensions"
-    ]
   },
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -23,7 +15,6 @@
   },
   "files": [
     "dist/",
-    "extensions/",
     "README.md"
   ],
   "scripts": {
@@ -31,19 +22,19 @@
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint src/ extensions/",
-    "lint:fix": "eslint src/ extensions/ --fix",
-    "format": "prettier --write 'src/**/*.ts' 'extensions/**/*.ts'",
-    "format:check": "prettier --check 'src/**/*.ts' 'extensions/**/*.ts'",
-    "ci": "eslint src/ extensions/ && prettier --check 'src/**/*.ts' 'extensions/**/*.ts' && vitest run"
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write 'src/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts'",
+    "ci": "eslint src/ && prettier --check 'src/**/*.ts' && vitest run"
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "0.70.0",
     "commander": "^12.0.0",
     "croner": "^9.1.0",
     "typebox": "^1.0.0"
   },
   "devDependencies": {
+    "@types/node": "^24.3.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",
@@ -54,10 +45,6 @@
   },
   "lint-staged": {
     "src/**/*.ts": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "extensions/**/*.ts": [
       "eslint --fix",
       "prettier --write"
     ]

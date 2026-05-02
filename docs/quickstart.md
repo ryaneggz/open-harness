@@ -81,7 +81,6 @@ Run these once, inside the shell you just opened:
 ```bash
 gh auth login            # GitHub CLI — lets the agent open PRs and issues
 gh auth setup-git        # git credential helper (no SSH keys needed)
-pi                       # Pi Agent OAuth — powers Slack, heartbeats, extensions
 ```
 
 These write credentials into the sandbox home directory, not your host home.
@@ -91,7 +90,13 @@ These write credentials into the sandbox home directory, not your host home.
 ```bash
 claude                   # Claude Code — terminal coding agent
 # or
-pi                       # Pi Agent — Slack, heartbeats, extensions
+codex                    # OpenAI Codex
+```
+
+For Slack-driven Pi+Mom, install the mifune harness pack:
+
+```bash
+oh harness add @ryaneggz/mifune
 ```
 
 You now have a working sandbox with an active agent session.

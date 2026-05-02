@@ -5,7 +5,7 @@ title: "Agents Overview"
 
 # Agents Overview
 
-Open Harness supports four AI coding agents out of the box: Claude Code, Codex, Gemini CLI, and Pi Agent. All four are installed into the same sandbox image and can run side-by-side, each in its own git worktree, with its own identity and its own cron schedule.
+Open Harness ships with Claude Code and Codex preinstalled in the sandbox image. Additional agents (Gemini CLI, Pi Agent + Mom Slack bot) are available as opt-in installs or via [harness packs](../guide/bring-your-own-harness.md) like [`@ryaneggz/mifune`](https://github.com/ryaneggz/mifune). All agents can run side-by-side in the same sandbox, each in its own git worktree, with its own identity and its own cron schedule.
 
 ## Why run multiple agents at once?
 
@@ -19,22 +19,26 @@ Open Harness makes this practical by giving each agent:
 
 ## Supported agents
 
-| Agent | Role | Start command |
-|---|---|---|
-| [Claude Code](./claude-code.md) | General-purpose terminal coding agent | `claude` |
-| [Codex](./codex.md) | Fully autonomous code generation and editing | `codex` |
-| [Gemini CLI](./gemini.md) | Google Gemini-powered CLI agent | `gemini` |
-| [Pi Agent](./pi.md) | Automations, Slack, heartbeats, and extensions | `pi` |
+| Agent | Role | Start command | Source |
+|---|---|---|---|
+| [Claude Code](./claude-code.md) | General-purpose terminal coding agent | `claude` | preinstalled |
+| [Codex](./codex.md) | Fully autonomous code generation and editing | `codex` | preinstalled |
+| [Gemini CLI](./gemini.md) | Google Gemini-powered CLI agent | `gemini` | opt-in install |
+| Pi Agent | Automations, Slack, heartbeats, and extensions | `pi` | [`@ryaneggz/mifune`](https://github.com/ryaneggz/mifune) harness pack |
 
 ## Installation
 
-All four agents are installed during sandbox setup via `install/setup.sh`. Claude Code, Codex, and Pi Agent are installed by default. Gemini CLI is available as an additional install. Each is available system-wide in the sandbox after provisioning:
+Claude Code and Codex are installed in the base sandbox image and available system-wide after provisioning:
 
 ```bash
 claude --version
 codex --version
-pi --version
-gemini --version
+```
+
+For Pi Agent + the Mom Slack bot, install the mifune harness pack:
+
+```bash
+oh harness add @ryaneggz/mifune
 ```
 
 ## Running agents in parallel
@@ -44,7 +48,6 @@ Use separate tmux sessions so each agent's output stays isolated and survives di
 ```bash
 tmux new-session -d -s agent-claude 'claude'
 tmux new-session -d -s agent-codex  'codex --full-auto'
-tmux new-session -d -s agent-pi     'pi'
 ```
 
 Attach to any session at any time:

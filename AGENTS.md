@@ -34,13 +34,16 @@ Provision a new agent sandbox. The sandbox uses `.devcontainer/` as the base env
 4. Complete onboarding (one-time, inside the sandbox):
    ```bash
    gh auth login && gh auth setup-git
-   pi                               # authenticate Pi Agent (OAuth) — powers Slack, heartbeats, and extensions
    ```
 
 5. Start the agent:
    ```bash
    claude                           # terminal coding agent
-   pi                               # automations — Slack, heartbeats, extensions
+   ```
+
+   For Pi+Mom (Slack bot) install the mifune harness pack:
+   ```bash
+   oh harness add @ryaneggz/mifune
    ```
 
 ### Validate
@@ -53,7 +56,7 @@ Verify a sandbox is healthy.
    ```
 2. **Verify workspace** (inside the sandbox via `openharness shell <name>`):
    - `AGENTS.md`, `SOUL.md`, `MEMORY.md` exist in workspace
-   - Target agent CLI is installed (`claude --version`, `codex --version`, `pi --version`)
+   - Target agent CLI is installed (`claude --version`, `codex --version`)
    - Docker socket accessible if needed (`docker ps`)
 3. **Check heartbeat** (if configured):
    ```bash
@@ -135,10 +138,6 @@ workspace/            # Template for all agent workspaces
     strategy-review/  # Template: measure decision quality over time
 packages/sandbox/     # @openharness/sandbox (CLI + container lifecycle tools)
   src/cli/            # openharness binary entry point
-packages/slack/       # Vendored fork of pi-mom Slack bot (see .claude/rules/slack-package.md)
-  src/                # TypeScript source (canonical — all edits here)
-  dist/               # Compiled ESM output (committed, rebuilt before commit)
-  src/__tests__/      # 64+ vitest tests (run in CI)
 .github/ISSUE_TEMPLATE/  # agent, audit, bug, feature, skill, task
 .claude/skills/          # Orchestrator skills (e.g., /provision)
 .claude/specs/           # Architecture specs and decision records
