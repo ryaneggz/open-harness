@@ -147,21 +147,39 @@ Every agent MUST start with properly configured YAML front matter:
 
 ```yaml
 ---
-name: agent-name              # Required: lowercase-with-hyphens
-description: |                # Required: When Claude should use this agent
+name: agent-name              # Required: lowercase letters and hyphens
+description: |                # Required: when Claude should delegate to this subagent
   Brief description of agent purpose and expertise.
-  Use "PROACTIVELY" for automatic delegation.
-  Use "MUST BE USED" for required delegation.
-  Be specific about when to invoke.
-tools: Tool1, Tool2, Tool3   # Optional: Comma-separated, omit to inherit all
-model: sonnet                # Optional: opus, sonnet, haiku, inherit, or omit for default
-effort: medium               # Optional: low, medium, high, max — effort level override
-permissionMode: default      # Optional: default, acceptEdits, bypassPermissions, plan, ignore
-skills: skill1, skill2       # Optional: Preload specific skills (don't inherit from parent)
-mcpServers: server1, server2 # Optional: Enable specific MCP servers
-disableModelInvocation: false # Optional: Prevent Claude from spawning this agent automatically
+  Include "use proactively" to encourage automatic delegation.
+  Be specific about trigger conditions.
+tools: Tool1, Tool2, Tool3   # Optional: comma-separated allowlist; omit to inherit all
+disallowedTools: Write, Edit  # Optional: denylist applied first, then `tools` resolves against the rest
+model: sonnet                # Optional: opus|sonnet|haiku, full ID (claude-opus-4-7), or inherit. Default: inherit
+permissionMode: default      # Optional: default, acceptEdits, auto, dontAsk, bypassPermissions, plan
+maxTurns: 20                 # Optional: hard cap on agentic turns
+effort: medium               # Optional: low, medium, high, xhigh, max — overrides session effort
+skills: skill1, skill2       # Optional: preload skills (full content injected at startup; not inherited)
+mcpServers:                  # Optional: scope MCP servers to this subagent (string ref or inline def)
+  - github                   # reference an already-configured server
+  - playwright:              # or define inline (same schema as .mcp.json entries)
+      type: stdio
+      command: npx
+      args: ["-y", "@playwright/mcp@latest"]
+hooks:                       # Optional: lifecycle hooks scoped to this subagent
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "./scripts/validate.sh"
+memory: project              # Optional: user|project|local — persistent agent memory across sessions
+background: false            # Optional: true to always run as a background task
+isolation: worktree          # Optional: run in a temporary git worktree (auto-cleaned if no changes)
+color: blue                  # Optional: red|blue|green|yellow|purple|orange|pink|cyan
+initialPrompt: "..."         # Optional: auto-submitted first user turn when run as main session via --agent
 ---
 ```
+
+**No `disableModelInvocation` for agents** — that's a *skill* field. Agents are invoked via the Agent tool, the `/agents` UI, `@-mention`, or `--agent`; control delegation by tightening the `description` and listing the agent in `permissions.deny` as `Agent(<name>)` if needed.
 
 **Critical Front Matter Guidelines**:
 
@@ -171,27 +189,27 @@ disableModelInvocation: false # Optional: Prevent Claude from spawning this agen
    - Examples: `code-reviewer`, `test-runner`, `api-builder`
 
 2. **Description**:
-   - First line: Brief role description
-   - Include "PROACTIVELY" if agent should be auto-invoked
-   - Include "MUST BE USED" for required delegation scenarios
-   - Be specific about trigger conditions
-   - Example: "Expert code reviewer. Use PROACTIVELY after writing or modifying code to ensure quality and security."
+   - First line: brief role description
+   - Include "use proactively" to encourage automatic delegation (this is the phrasing the official docs recommend)
+   - Be specific about trigger conditions — Claude matches the description against task context
+   - Example: "Expert code reviewer. Use proactively after writing or modifying code to ensure quality and security."
 
-3. **Tools** (Principle of Least Privilege):
+3. **Tools** (principle of least privilege):
    - **Exploration agents**: `Read, Glob, Grep, Bash`
    - **Code modification agents**: `Read, Glob, Grep, Edit, Write, Bash`
    - **Testing agents**: `Read, Glob, Grep, Bash`
-   - **Full access**: Omit field (inherits all tools)
-   - **Security**: Only grant necessary tools
+   - **Full access**: omit field (inherits all tools, including MCP)
+   - **Denylist alternative**: use `disallowedTools` to remove specific tools while keeping the rest of the inherited set (e.g. `disallowedTools: Write, Edit` keeps Bash + MCP)
+   - **Restrict spawnable subagents**: when this agent runs as the main session via `--agent`, `tools: Agent(worker, researcher)` allowlists which subagent types it can spawn (omit `Agent` entirely to disallow spawning anything)
 
 4. **Model Selection**:
-   - Current model family: Claude 4.6 and 4.5
-   - Model shortnames: `opus`, `sonnet`, `haiku` (these work in the frontmatter)
-   - **`opus`**: Most capable — synthesis, judgment, advisory roles
-   - **`sonnet`**: Default executor — code generation, reasoning, architecture decisions
-   - **`haiku`**: Fast searches, simple analysis, quick lookups
-   - **`inherit`**: Use parent's model for consistency
-   - **Omit**: Use default sub-agent model
+   - Current model family: Claude 4.7 (Opus 4.7, Sonnet 4.6, Haiku 4.5)
+   - Accepted values: shortname (`opus`, `sonnet`, `haiku`), full model ID (e.g. `claude-opus-4-7`, `claude-sonnet-4-6`), or `inherit`
+   - Default when omitted: `inherit` (uses the parent conversation's model)
+   - **`opus`**: most capable — synthesis, judgment, advisory roles
+   - **`sonnet`**: default executor — code generation, reasoning, architecture decisions
+   - **`haiku`**: fast searches, simple analysis, quick lookups
+   - Resolution order: `CLAUDE_CODE_SUBAGENT_MODEL` env var > per-invocation `model` arg > frontmatter > main conversation
 
    **Advisor Strategy (direct API consumers only)**:
    When building agents that make direct Anthropic API calls (e.g., Slack bot),
@@ -201,33 +219,75 @@ disableModelInvocation: false # Optional: Prevent Claude from spawning this agen
    does not expose the advisor API parameter.
 
 5. **Permission Mode**:
-   - **`default`**: Normal permission prompts
-   - **`acceptEdits`**: Auto-accept edit operations
-   - **`bypassPermissions`**: Skip permission prompts entirely
-   - **`plan`**: Read-only exploration mode
-   - **`ignore`**: Ignore permissions (use cautiously)
+   - **`default`**: standard permission prompts
+   - **`acceptEdits`**: auto-accept file edits and common filesystem commands within the working directory / `additionalDirectories`
+   - **`auto`**: a background classifier reviews commands and protected-directory writes (parent's auto mode is inherited and overrides any frontmatter setting)
+   - **`dontAsk`**: auto-deny prompts (explicitly allowed tools still work)
+   - **`bypassPermissions`**: skip permission prompts entirely (still blocks `rm -rf /` and similar circuit-breakers)
+   - **`plan`**: read-only exploration mode
+   - Parent's `bypassPermissions` or `acceptEdits` takes precedence — a subagent cannot downgrade them.
 
 6. **Effort**:
-   - Controls how much compute the agent applies to its task
-   - **`low`**: Quick, minimal-depth work
-   - **`medium`**: Balanced (default behavior)
-   - **`high`**: Thorough, detailed work
-   - **`max`**: Exhaustive — use for critical or complex tasks
+   - Overrides the session effort level for the subagent's lifetime
+   - Options: `low`, `medium`, `high`, `xhigh`, `max` (available levels depend on the model)
+   - Default: inherits from session
 
-7. **Skills**:
-   - Preload specific skills into the agent's context
-   - Skills listed here do NOT inherit from the parent agent
-   - Use when the agent needs domain-specific slash commands
+7. **Skills (preload)**:
+   - Full skill content is **injected into the subagent's system context at startup** — not just made available for invocation
+   - Subagents do NOT inherit skills from the parent; you must list them explicitly
+   - Cannot preload skills that set `disable-model-invocation: true` (those are excluded from the invocable set)
 
 8. **MCP Servers**:
-   - Enable specific MCP (Model Context Protocol) servers for the agent
-   - Only grant servers the agent actually needs
-   - Example: `mcpServers: github, linear` for an issue triage agent
+   - Each entry is either a string (references an already-configured server) or an inline object (same schema as `.mcp.json`: `stdio`, `http`, `sse`, `ws`)
+   - Inline servers connect when the subagent starts and disconnect when it finishes — useful for keeping a server's tool descriptions out of the parent conversation
+   - Ignored for plugin-provided subagents (security restriction)
 
-9. **Disable Model Invocation**:
-   - Set `disableModelInvocation: true` to prevent Claude from automatically spawning this agent
-   - Use for agents that should only be invoked explicitly by the user
-   - Defaults to `false` (Claude can auto-invoke based on description triggers)
+9. **maxTurns**:
+   - Hard cap on agentic turns before the subagent is forcibly stopped — useful for bounded-cost research/cleanup tasks
+
+10. **memory** (persistent agent memory):
+    - `user` → `~/.claude/agent-memory/<agent-name>/` (cross-project)
+    - `project` → `.claude/agent-memory/<agent-name>/` (project-shared, version-controlled)
+    - `local` → `.claude/agent-memory-local/<agent-name>/` (project-private, gitignore)
+    - When set, Read/Write/Edit are auto-enabled and the first 200 lines / 25 KB of `MEMORY.md` are injected. Tell the agent in its prompt to consult and update memory.
+
+11. **background**:
+    - `true` runs the subagent as a background task by default. Permissions are pre-approved at launch; clarifying-question tools fail mid-run rather than prompting.
+
+12. **isolation**:
+    - `worktree` runs the subagent in a temporary git worktree (auto-cleaned if the subagent makes no changes). Use for risky refactors, parallel experiments, or anything you want to be able to throw away.
+
+13. **color** / **initialPrompt**:
+    - `color` sets the UI tag for the subagent (`red|blue|green|yellow|purple|orange|pink|cyan`).
+    - `initialPrompt` is auto-submitted as the first user turn when the agent runs as the main session via `--agent` / the `agent` setting (skills and commands are processed; prepended to any user prompt).
+
+14. **hooks** (lifecycle hooks scoped to this subagent):
+    - `PreToolUse` / `PostToolUse` (matched by tool name) — validate or post-process tool calls
+    - `Stop` — fires when the subagent finishes (auto-converted to `SubagentStop` at runtime)
+    - Ignored for plugin-provided subagents (security restriction)
+    - For project-level subagent lifecycle events, configure `SubagentStart` / `SubagentStop` in `settings.json` instead
+
+### Built-in Subagents (don't reinvent these)
+
+Claude Code ships several subagents Claude delegates to automatically. Don't create custom agents that duplicate them — extend or specialize instead.
+
+| Agent | Model | Tools | Purpose |
+|-------|-------|-------|---------|
+| `Explore` | Haiku | read-only | Fast file discovery, code search, codebase exploration. Caller passes `quick`/`medium`/`very thorough`. |
+| `Plan` | inherit | read-only | Codebase research during plan mode. |
+| `general-purpose` | inherit | all tools | Complex multi-step tasks needing exploration + modification. |
+| `statusline-setup` | Sonnet | (UI) | Configures status line via `/statusline`. |
+| `Claude Code Guide` | Haiku | (docs) | Answers Claude Code feature questions. |
+
+### Invocation Modes
+
+| Mode | How | When |
+|------|-----|------|
+| Auto-delegation | Claude matches `description` against task | Natural language ("review this") |
+| @-mention | `@<agent-name>` in chat | Force a specific subagent for one task |
+| `--agent <name>` CLI flag / `agent` setting | Whole session uses the subagent's prompt + tools + model | Make the agent the session driver |
+| `claude --agents '<json>'` | Inline JSON definition | One-off, scripted, or test agents (not saved to disk) |
+| `permissions.deny: ["Agent(<name>)"]` | Block | Disable a built-in or custom subagent |
 
 ### When to Use Agents vs Skills with `context: fork`
 
@@ -418,7 +478,7 @@ Include practical examples that demonstrate expected behavior:
 - [ ] Effort level is set if non-default behavior is needed
 - [ ] Skills are listed only if the agent needs specific slash commands
 - [ ] MCP servers are limited to those actually required
-- [ ] disableModelInvocation is set if agent should not be auto-spawned
+- [ ] If you want to block auto-delegation, add `Agent(<name>)` to `permissions.deny` (there is **no** `disableModelInvocation` for agents)
 
 **Content Validation**:
 - [ ] **Clarity**: Is every instruction clear and unambiguous?
@@ -740,10 +800,11 @@ Before creating agent file, verify:
 - [ ] Tool list follows principle of least privilege
 - [ ] Model selection optimizes for task complexity vs performance
 - [ ] Permission mode is appropriate for agent operations
-- [ ] Effort level is set appropriately (omit for default medium)
-- [ ] Skills field only includes skills the agent actually needs
-- [ ] MCP servers are scoped to minimum necessary
-- [ ] disableModelInvocation is considered for sensitive or heavy agents
+- [ ] Effort level is set appropriately (omit to inherit from session)
+- [ ] Skills field only includes skills the agent actually needs (full content is injected at startup)
+- [ ] MCP servers are scoped to minimum necessary; inline-define servers you don't want polluting the parent context
+- [ ] `memory: project` set if the agent should accumulate cross-session learnings; `isolation: worktree` for risky changes
+- [ ] `Agent(<name>)` deny rule considered for sensitive agents (no per-agent `disableModelInvocation`)
 
 **Codebase Exploration**:
 - [ ] Relevant directories identified and explored
