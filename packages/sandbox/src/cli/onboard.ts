@@ -10,7 +10,7 @@ import { execCmd } from "../lib/docker.js";
 import { makeRealDeps } from "../onboard/deps.js";
 import { runOnboarding } from "../onboard/orchestrator.js";
 import { parseArgs } from "../onboard/args.js";
-import { ALL_STEPS } from "../onboard/steps/index.js";
+import { getAllSteps } from "../onboard/steps/index.js";
 import { STEP_IDS, UnknownStepError } from "../onboard/types.js";
 
 export interface OnboardInvocationOptions {
@@ -78,6 +78,7 @@ async function runInContainerMode(opts: OnboardInvocationOptions): Promise<numbe
   }
 
   const deps = makeRealDeps();
-  const { exitCode } = await runOnboarding(ALL_STEPS, deps, parsed);
+  const steps = await getAllSteps();
+  const { exitCode } = await runOnboarding(steps, deps, parsed);
   return exitCode;
 }

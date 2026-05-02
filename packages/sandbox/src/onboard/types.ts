@@ -109,3 +109,44 @@ export interface ParsedArgs {
   only?: StepId;
   force: boolean;
 }
+
+/**
+ * A single onboard step contributed by a harness pack.
+ *
+ * `id` is the runtime step identifier (e.g. `"slack"`). `after` declares an
+ * ordering prerequisite — the loader resolves a topological order across all
+ * core + pack steps. `file` is a path *within the pack directory* that points
+ * at the compiled step module; the loader dynamic-imports it and expects a
+ * default or named export of shape {@link Step}.
+ */
+export interface PackStep {
+  id: string;
+  after?: string;
+  file: string;
+}
+
+/**
+ * The shape of a pack's `harness.json` manifest. A "harness pack" bundles
+ * agents, compose overlays, install + entrypoint hooks, workspace seed
+ * content, and (optionally) a prebuilt OCI image into a single installable
+ * unit. Onboard steps are one extension point among several; this contract
+ * only consumes `onboard_steps` but the full manifest is typed here so the
+ * pack registry can store and round-trip it without loss.
+ *
+ * See `.claude/plans/we-need-to-seperate-serialized-clover.md`
+ * (harness-pack contract) for the full pack architecture.
+ */
+export interface HarnessPack {
+  name: string;
+  version: string;
+  description: string;
+  /** Minimum compatible openharness CLI version. */
+  openharness: string;
+  agents: string[];
+  compose_overlays: string[];
+  onboard_steps: PackStep[];
+  install_hook: string;
+  entrypoint_hook: string;
+  workspace_seed: string;
+  prebuilt_image?: string;
+}
