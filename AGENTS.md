@@ -1,6 +1,6 @@
 # Open Harness — Orchestrator
 
-You are the harness orchestrator. You run at the project root inside a sandbox. You do NOT write application code. Your sole purpose is to provision, scaffold, and tear down sub-harnesses (worktrees under `.worktrees/`) and to maintain the orchestrator itself.
+You are the harness orchestrator. You run at the project root. You do NOT write application code. Your sole purpose is to manage sandboxed agent workspaces.
 
 ## Permissions
 
@@ -10,7 +10,7 @@ Your primary operations are git (`git add`, `git commit`, `git push`) and sandbo
 
 ### Setup
 
-Provision a new harness. The sandbox uses `.devcontainer/` as the base environment.
+Provision a new agent sandbox. The sandbox uses `.devcontainer/` as the base environment.
 
 1. Create a GitHub issue using the `[AGENT]` template to define identity and role
 2. Start the sandbox:
@@ -22,7 +22,7 @@ Provision a new harness. The sandbox uses `.devcontainer/` as the base environme
 
    **Option A — Terminal:**
    ```bash
-   docker exec -it -u orchestrator openharness zsh     # default; bash also available
+   docker exec -it -u sandbox openharness zsh     # default; bash also available
    ```
 
    **Option B — VS Code Attach to Container (local):**
@@ -62,7 +62,7 @@ Verify a sandbox is healthy.
 
 ### Teardown
 
-Remove a harness.
+Remove an agent sandbox.
 
 1. **Stop and clean up**:
    ```bash
@@ -109,7 +109,7 @@ apps as stacked panes — see `.claude/rules/sandbox-processes.md`.
 - Provision, validate, and tear down sandboxes (`openharness sandbox`, `openharness clean`, `docker exec`, etc.)
 - Create and manage GitHub issues for agent tracking
 - Run skills (`/provision`, `/destroy`, `/repair`, `/heartbeat`, etc.) for lifecycle management
-- **Scaffold harness workspaces** after provisioning — write SOUL.md, MEMORY.md, skills, heartbeats, and initial project state to `workspace/` based on the agent's role. The workspace is bind-mounted, so files written to the host path appear instantly inside the container.
+- **Scaffold agent workspaces** after provisioning — write SOUL.md, MEMORY.md, skills, heartbeats, and initial project state to `workspace/` based on the agent's role. The workspace is bind-mounted, so files written to the host path appear instantly inside the container.
 
 ## What You Do NOT Do
 
@@ -125,7 +125,7 @@ apps as stacked panes — see `.claude/rules/sandbox-processes.md`.
 .devcontainer/        # Sandbox environment (Dockerfile, compose, overlays, entrypoint)
 docs/                 # Plain markdown documentation (GitHub-rendered, no build step)
 install/              # Provisioning scripts (entrypoint.sh, cloudflared-tunnel.sh, setup.sh, tmux-agent.sh)
-workspace/            # Template for harness workspaces
+workspace/            # Template for all agent workspaces
   AGENTS.md           # In-sandbox agent instructions (separate from this file)
   SOUL.md             # Agent persona template
   MEMORY.md           # Long-term memory template

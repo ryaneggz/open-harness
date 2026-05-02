@@ -35,7 +35,7 @@ Started: Wed Apr  8 20:54:00 MDT 2026
 - Files changed: `workspace/next-app/src/app/api/health/route.ts`
 - **Learnings for future iterations:**
   - Run `npx tsc --noEmit` from `workspace/next-app/` (nested dir), NOT from the git root — the `@/` alias and `next` types only resolve correctly from the nested tsconfig
-  - The git root is `/home/orchestrator/workspace/next-app/` but the Next.js source lives at `workspace/next-app/src/` within it — all source file paths are relative to git root
+  - The git root is `/home/sandbox/workspace/next-app/` but the Next.js source lives at `workspace/next-app/src/` within it — all source file paths are relative to git root
   - Root `package.json` is monorepo config only — do NOT install Next.js app deps there; they belong in `workspace/next-app/package.json`
   - `npx prisma generate` must be run from `workspace/next-app/` where prisma.config.ts lives
 - `workspace/` is gitignored — use `git add -f` to stage files under that path

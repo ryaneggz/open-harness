@@ -35,7 +35,7 @@ describe("runOnboarding", () => {
       claude: "done",
     });
 
-    const markerPath = "/home/orchestrator/.claude/.onboarded";
+    const markerPath = "/home/sandbox/.claude/.onboarded";
     expect(deps.files.has(markerPath)).toBe(true);
     const saved = JSON.parse(deps.files.get(markerPath)!);
     expect(saved.version).toBe(1);
@@ -54,7 +54,7 @@ describe("runOnboarding", () => {
     expect(exitCode).toBe(0);
     expect(results).toEqual({ slack: "skipped" });
     // No marker on --only.
-    expect(deps.files.has("/home/orchestrator/.claude/.onboarded")).toBe(false);
+    expect(deps.files.has("/home/sandbox/.claude/.onboarded")).toBe(false);
   });
 
   it("--only with failed step → exit 1", async () => {
@@ -70,7 +70,7 @@ describe("runOnboarding", () => {
   it("marker present + !force + !only → short-circuits without running steps", async () => {
     const deps = makeFakeDeps({
       files: {
-        "/home/orchestrator/.claude/.onboarded": JSON.stringify({
+        "/home/sandbox/.claude/.onboarded": JSON.stringify({
           version: 1,
           completedAt: "2026-04-20T00:00:00Z",
           steps: { llm: { status: "done" } },
@@ -88,7 +88,7 @@ describe("runOnboarding", () => {
     const deps = makeFakeDeps({
       now: "2026-04-21T05:00:00Z",
       files: {
-        "/home/orchestrator/.claude/.onboarded": JSON.stringify({
+        "/home/sandbox/.claude/.onboarded": JSON.stringify({
           version: 1,
           completedAt: "2026-04-20T00:00:00Z",
           steps: { llm: { status: "done" } },
@@ -97,7 +97,7 @@ describe("runOnboarding", () => {
     });
     const { results } = await runOnboarding(allSteps, deps, { force: true });
     expect(Object.keys(results).length).toBe(6);
-    const saved = JSON.parse(deps.files.get("/home/orchestrator/.claude/.onboarded")!);
+    const saved = JSON.parse(deps.files.get("/home/sandbox/.claude/.onboarded")!);
     expect(saved.completedAt).toBe("2026-04-21T05:00:00Z");
   });
 

@@ -389,7 +389,16 @@ if [ -f "$SCRIPT_DIR/packages/sandbox/package.json" ] && [ -f "$SCRIPT_DIR/pnpm-
   REPO_DIR="$SCRIPT_DIR"
   ok "Using local repo: $REPO_DIR"
 else
-  REPO_DIR="$HOME/.openharness"
+  REPO_DIR="$HOME/openharness"
+  # One-time migration: legacy curl-pipe installs cloned to ~/.openharness,
+  # which collides visually with the in-repo `.openharness/` config dir.
+  # If the new path is absent and the old one is a clone, move it.
+  LEGACY_REPO="$HOME/.openharness"
+  if [ ! -d "$REPO_DIR" ] && [ -d "$LEGACY_REPO/.git" ]; then
+    mv "$LEGACY_REPO" "$REPO_DIR"
+    ok "Migrated $LEGACY_REPO → $REPO_DIR"
+  fi
+  unset LEGACY_REPO
   if [ -d "$REPO_DIR/.git" ]; then
     # Gate pull on clean working tree — don't abort on local edits.
     if git -C "$REPO_DIR" diff --quiet 2>/dev/null && git -C "$REPO_DIR" diff --cached --quiet 2>/dev/null; then
@@ -434,6 +443,83 @@ SANDBOX_PASSWORD='$__SP_ESC'
 ENVEOF
 unset __SN_ESC __SP_ESC
 ok "Wrote .devcontainer/.env"
+
+# ─── Pre-create host auth source dirs ────────────────────────────────
+# The default config enables three host-bind overlays
+# (claude-host.yml, codex-host.yml, pi-host.yml) that bind ~/.claude,
+# ~/.codex, ~/.pi from the host into the container. Two preconditions
+# (each documented in the overlay headers):
+#   1. Host UID == 1000 (credential files are mode 0600 — group-membership
+#      trick in entrypoint.sh cannot bypass owner-only reads).
+#   2. Host source dir pre-exists. Otherwise docker auto-creates it as
+#      root, and the sandbox user (UID 1000) gets EACCES on first write.
+#
+# This block satisfies (2) by creating the dirs as the running user.
+# (1) is checked below and surfaced as a warning — the user must opt
+# out by hand if their host UID isn't 1000.
+banner "Preparing host auth dirs for sandbox bind-mounts"
+for d in .claude .codex .pi; do
+  if [ ! -d "$HOME/$d" ]; then
+    mkdir -p "$HOME/$d"
+    ok "Created ~/$d (empty — first-time auth will populate it)"
+  else
+    ok "~/$d already exists — host auth will share into the sandbox"
+  fi
+done
+if [ ! -e "$HOME/.claude.json" ]; then
+  printf '{}\n' > "$HOME/.claude.json"
+  ok "Created ~/.claude.json (empty)"
+fi
+
+__HOST_UID="$(id -u)"
+if [ "$__HOST_UID" != "1000" ]; then
+  __OH_CONFIG="$REPO_DIR/.openharness/config.json"
+  if command -v jq >/dev/null 2>&1 && [ -f "$__OH_CONFIG" ]; then
+    # Filter *-host.yml entries out of composeOverrides. Mode-0600
+    # credential files in ~/.claude, ~/.codex, ~/.pi can't be read by
+    # the sandbox user (UID 1000) when the host UID differs, and
+    # mode-0700 dirs (e.g. ~/.pi/agent/sessions/) reject writes from
+    # non-owner UIDs — pi/oh would EACCES on first run. Drop the
+    # overlays so the base named volumes (claude-auth, codex-auth,
+    # pi-auth) take over; entrypoint.sh chowns those to UID 1000.
+    __OH_TMP="$(mktemp)"
+    if jq '.composeOverrides |= map(select(test("-host\\.yml$") | not))' \
+         "$__OH_CONFIG" > "$__OH_TMP" 2>/dev/null; then
+      if ! cmp -s "$__OH_CONFIG" "$__OH_TMP"; then
+        mv "$__OH_TMP" "$__OH_CONFIG"
+        ok "Host UID $__HOST_UID ≠ 1000 — disabled host-bind overlays in $__OH_CONFIG"
+        ok "Auth will live in named volumes; first run of claude/codex/pi inside the sandbox will authenticate"
+        warn "$__OH_CONFIG now has a local diff — \`git pull\` in $REPO_DIR will be skipped until you commit or revert it"
+      else
+        rm -f "$__OH_TMP"
+        ok "Host UID $__HOST_UID ≠ 1000 — host-bind overlays already disabled"
+      fi
+    else
+      rm -f "$__OH_TMP"
+      warn "jq failed to rewrite $__OH_CONFIG — falling back to manual instructions below."
+      __OH_FALLBACK=1
+    fi
+    unset __OH_TMP
+  else
+    __OH_FALLBACK=1
+  fi
+  if [ "${__OH_FALLBACK:-0}" = "1" ]; then
+    warn "Host UID is $__HOST_UID — sandbox user is UID 1000."
+    warn "Credential files in ~/.claude, ~/.codex, ~/.pi are mode 0600;"
+    warn "the sandbox WILL NOT be able to read them despite the bind-mount."
+    warn ""
+    warn "Install jq, OR edit $REPO_DIR/.openharness/config.json"
+    warn "and remove these overlays from composeOverrides:"
+    warn "    .devcontainer/docker-compose.claude-host.yml"
+    warn "    .devcontainer/docker-compose.codex-host.yml"
+    warn "    .devcontainer/docker-compose.pi-host.yml"
+    warn ""
+    warn "The base named volumes (claude-auth, codex-auth, pi-auth) will"
+    warn "take over and entrypoint.sh chowns them to UID 1000 on boot."
+  fi
+  unset __OH_CONFIG __OH_FALLBACK
+fi
+unset __HOST_UID
 
 # ─── 5/6. Execute the chosen mode ────────────────────────────────────
 # CLI-first paths do NOT auto-start a sandbox — the user runs `oh sandbox`
@@ -522,7 +608,6 @@ printf "\n${GREEN}Installation complete!${NC}\n\n"
 printf "  ${CYAN}Next steps${NC}\n"
 printf "  ──────────────────────────────────────\n"
 printf "\n"
-
 if [ "$INSTALL_MODE" = "cli" ] || [ "$INSTALL_MODE" = "node-then-cli" ]; then
   # CLI-first: Step 1 is the rc-source — without it, oh/node/pnpm look
   # "command not found" in the shell that ran curl. After that: cd into
@@ -552,7 +637,7 @@ if [ "$INSTALL_MODE" = "cli" ] || [ "$INSTALL_MODE" = "node-then-cli" ]; then
   printf "  running yet — that's intentional so you learn the CLI lifecycle.\n"
 elif [ "$INSTALL_MODE" = "docker" ]; then
   printf "  ${CYAN}Enter the sandbox:${NC}\n"
-  printf "       docker exec -it -u orchestrator %s bash\n\n" "$SANDBOX_NAME"
+  printf "       docker exec -it -u sandbox %s bash\n\n" "$SANDBOX_NAME"
   printf "  ${CYAN}One-time setup (inside the sandbox):${NC}\n"
   printf "       gh auth login\n"
   printf "       gh auth setup-git\n\n"

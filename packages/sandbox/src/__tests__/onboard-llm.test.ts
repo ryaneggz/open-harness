@@ -5,7 +5,7 @@ import { execWasCalled, ioMessages, makeFakeDeps } from "../onboard/testing/fake
 describe("llm step", () => {
   it("populated auth.json → done, no prompt", async () => {
     const deps = makeFakeDeps({
-      files: { "/home/orchestrator/.pi/agent/auth.json": JSON.stringify({ openai: { key: "x" } }) },
+      files: { "/home/sandbox/.pi/agent/auth.json": JSON.stringify({ openai: { key: "x" } }) },
     });
     const result = await llmStep.run(deps, { force: false });
     expect(result.status).toBe("done");
@@ -16,7 +16,7 @@ describe("llm step", () => {
   it("empty '{}' auth.json is treated as missing", async () => {
     const deps = makeFakeDeps({
       env: { OPENAI_API_KEY: "sk-1234" },
-      files: { "/home/orchestrator/.pi/agent/auth.json": "{}" },
+      files: { "/home/sandbox/.pi/agent/auth.json": "{}" },
     });
     const result = await llmStep.run(deps, { force: false });
     expect(result.status).toBe("done");
@@ -38,7 +38,7 @@ describe("llm step", () => {
           match: /^openharness$/,
           sideEffect: () => {
             deps.files.set(
-              "/home/orchestrator/.pi/agent/auth.json",
+              "/home/sandbox/.pi/agent/auth.json",
               JSON.stringify({ openai: { key: "x" } }),
             );
           },
@@ -49,8 +49,8 @@ describe("llm step", () => {
     const result = await llmStep.run(deps, { force: false });
     expect(result.status).toBe("done");
     expect(deps.recorder.symlinks).toContainEqual({
-      target: "/home/orchestrator/.pi/agent/auth.json",
-      link: "/home/orchestrator/.pi/slack/auth.json",
+      target: "/home/sandbox/.pi/agent/auth.json",
+      link: "/home/sandbox/.pi/slack/auth.json",
     });
   });
 

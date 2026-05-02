@@ -190,7 +190,7 @@ sequenceDiagram
         User->>Installer: 2
         Installer->>Docker: docker compose up -d --build
         Docker-->>Installer: container running
-        Installer->>User: "Run: docker exec -it -u orchestrator ... bash"
+        Installer->>User: "Run: docker exec -it -u sandbox ... bash"
     else User picks 3 or --no
         User->>Installer: 3
         Installer->>User: "Aborted. Install Node 20+ and re-run."
@@ -462,7 +462,7 @@ If we just installed nvm via the `node-then-cli` path, append:
 Installation complete! Sandbox '<SANDBOX_NAME>' is running.
 
   Enter the sandbox:
-    docker exec -it -u orchestrator <SANDBOX_NAME> bash
+    docker exec -it -u sandbox <SANDBOX_NAME> bash
 
   One-time setup (inside the sandbox):
     gh auth login

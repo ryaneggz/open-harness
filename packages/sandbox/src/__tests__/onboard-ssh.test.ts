@@ -5,7 +5,7 @@ import { execWasCalled, ioMessages, makeFakeDeps } from "../onboard/testing/fake
 describe("ssh step", () => {
   it("existing key + verified github → done", async () => {
     const deps = makeFakeDeps({
-      files: { "/home/orchestrator/.ssh/id_ed25519.pub": "ssh-ed25519 AAAA orchestrator@host\n" },
+      files: { "/home/sandbox/.ssh/id_ed25519.pub": "ssh-ed25519 AAAA sandbox@host\n" },
       execStubs: [
         {
           match: /^ssh -T git@github\.com$/,
@@ -25,7 +25,7 @@ describe("ssh step", () => {
   it("existing key but first verify fails → prompts, second try succeeds", async () => {
     let calls = 0;
     const deps = makeFakeDeps({
-      files: { "/home/orchestrator/.ssh/id_ed25519.pub": "ssh-ed25519 AAAA orchestrator@host" },
+      files: { "/home/sandbox/.ssh/id_ed25519.pub": "ssh-ed25519 AAAA sandbox@host" },
       execStubs: [
         {
           match: /^ssh -T git@github\.com$/,
@@ -55,7 +55,7 @@ describe("ssh step", () => {
 
   it("existing key + both verifies fail → unverified", async () => {
     const deps = makeFakeDeps({
-      files: { "/home/orchestrator/.ssh/id_ed25519.pub": "ssh-ed25519 AAAA" },
+      files: { "/home/sandbox/.ssh/id_ed25519.pub": "ssh-ed25519 AAAA" },
       execStubs: [
         {
           match: /^ssh -T git@github\.com$/,
@@ -76,8 +76,8 @@ describe("ssh step", () => {
           result: { status: 0, stdout: "", stderr: "" },
           sideEffect: () => {
             deps.files.set(
-              "/home/orchestrator/.ssh/id_ed25519.pub",
-              "ssh-ed25519 GEN orchestrator@test-host",
+              "/home/sandbox/.ssh/id_ed25519.pub",
+              "ssh-ed25519 GEN sandbox@test-host",
             );
           },
         },
