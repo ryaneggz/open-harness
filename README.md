@@ -66,7 +66,7 @@ For Postgres, Slack, SSH, or the Caddy gateway, chain overlay files with extra `
 
 | | |
 |---|---|
-| **AI agents** | Claude Code, OpenAI Codex, Pi Agent, Mom (Slack bot) |
+| **AI agents** | Claude Code, OpenAI Codex (others via [harness packs](https://oh.mifune.dev/docs/guide/bring-your-own-harness)) |
 | **Runtimes** | Node 22, pnpm, Bun, uv (Python) |
 | **DevOps** | Docker CLI + Compose, GitHub CLI, cloudflared, tmux, cron |
 | **Browser** | agent-browser + Chromium (headless) |
@@ -77,8 +77,8 @@ For Postgres, Slack, SSH, or the Caddy gateway, chain overlay files with extra `
 
 - [Quickstart](https://oh.mifune.dev/docs/quickstart) — full step-by-step
 - [Onboarding](https://oh.mifune.dev/docs/onboarding) — auth wizard walkthrough
-- [Compose overlays](https://oh.mifune.dev/docs/guide/overlays) — Postgres, Slack, SSH, gateway, Cloudflare
-- [Slack bot](https://oh.mifune.dev/docs/slack/overview) — Mom + Pi via Socket Mode
+- [Compose overlays](https://oh.mifune.dev/docs/guide/overlays) — Postgres, SSH, gateway, Cloudflare
+- [Bring your own harness](https://oh.mifune.dev/docs/guide/bring-your-own-harness) — install harness packs (e.g. [`@ryaneggz/mifune`](https://github.com/ryaneggz/mifune) for the Pi+Mom Slack bot)
 - [CLI reference](https://oh.mifune.dev/docs/cli/overview) — every `oh` command
 - [Heartbeats](https://oh.mifune.dev/docs/heartbeats/overview) — cron-scheduled autonomous tasks
 - [Architecture](https://oh.mifune.dev/docs/architecture/worktrees) — one container, N worktrees, one daemon
@@ -92,8 +92,9 @@ install/          # Provisioning scripts
 workspace/        # Agent workspace template (bind-mounted)
 packages/
   sandbox/        # @openharness/sandbox — CLI + container lifecycle
-  slack/          # Vendored fork of pi-mom — Slack bot
 ```
+
+For pi+slack functionality, install the [`@ryaneggz/mifune`](https://github.com/ryaneggz/mifune) harness pack via `oh harness add @ryaneggz/mifune`.
 
 ## 🧹 Cleanup
 

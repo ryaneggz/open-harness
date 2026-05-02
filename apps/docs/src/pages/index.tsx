@@ -7,7 +7,7 @@ import styles from "./index.module.css";
 const QUICKSTART = `# install — auto-detects Node 20+ and configures accordingly
 curl -fsSL https://oh.mifune.dev/install.sh | bash
 
-# authenticate Claude, Codex, Gemini, Slack
+# authenticate Claude, Codex, Gemini
 oh onboard
 
 # drop into your isolated sandbox
@@ -37,12 +37,6 @@ const AGENTS: Array<{
     href: "/docs/agents/gemini",
     icon: <img src="/img/agents/gemini.png" alt="" width={28} height={28} />,
   },
-  {
-    name: "Pi",
-    description: "Slack, heartbeats, and extensions.",
-    href: "/docs/agents/pi",
-    icon: <PiIcon />,
-  },
 ];
 
 const WHY: Array<{ title: string; body: string }> = [
@@ -52,7 +46,7 @@ const WHY: Array<{ title: string; body: string }> = [
   },
   {
     title: "Parallel, not serialized",
-    body: "Claude, Codex, Gemini, and Pi run side-by-side. One container, N worktrees, all working at once.",
+    body: "Claude, Codex, and Gemini run side-by-side. One container, N worktrees, all working at once.",
   },
   {
     title: "Per-agent state",
@@ -214,19 +208,3 @@ export default function Home(): React.ReactElement {
   );
 }
 
-/* ---------- Pi icon ----------
- * Inlined so `currentColor` adapts to light/dark theme. The other three
- * agents have official PNG/SVG marks with their own colors (see /img/agents/). */
-
-function PiIcon(): React.ReactElement {
-  return (
-    <svg viewBox="0 0 800 800" width="28" height="28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path
-        fill="currentColor"
-        fillRule="evenodd"
-        d="M165.29 165.29 H517.36 V400 H400 V517.36 H282.65 V634.72 H165.29 Z M282.65 282.65 V400 H400 V282.65 Z"
-      />
-      <path fill="currentColor" d="M517.36 400 H634.72 V634.72 H517.36 Z" />
-    </svg>
-  );
-}

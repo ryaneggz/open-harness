@@ -4,7 +4,7 @@ sidebar_position: 2
 ---
 
 
-All sandboxes are built from `.devcontainer/Dockerfile` — a Debian Bookworm image with Node.js 22, pnpm, agent CLIs (Claude Code, Codex, Pi Agent), and dev tools pre-installed.
+All sandboxes are built from `.devcontainer/Dockerfile` — a Debian Bookworm image with Node.js 22, pnpm, agent CLIs (Claude Code, Codex), and dev tools pre-installed.
 
 Compose overlays in `.devcontainer/` add optional services. Enable them in `.openharness/config.json`.
 
@@ -18,7 +18,6 @@ Compose overlays in `.devcontainer/` add optional services. Enable them in `.ope
 | `docker-compose.ssh.yml` | Mount host `~/.ssh` read-only |
 | `docker-compose.ssh-generate.yml` | Generate keypair in persistent volume |
 | `docker-compose.sshd.yml` | SSH server daemon (port 2222, password auth) |
-| `docker-compose.slack.yml` | [Slack bot tokens + LLM provider config](../slack/setup.md) |
 | `docker-compose.claude-host.yml` | Bind-mount host `~/.claude` (auth, memory, projects) — opt-in |
 | `docker-compose.gateway.yml` | [Caddy reverse-proxy sidecar](./exposure.md) (auto-activated by first `openharness expose`) |
 

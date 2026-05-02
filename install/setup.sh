@@ -24,8 +24,6 @@ SANDBOX_HOME="/home/$SANDBOX_USER"
 INSTALL_BROWSER="${INSTALL_BROWSER:-false}"
 INSTALL_CLAUDE_CODE="${INSTALL_CLAUDE_CODE:-true}"
 INSTALL_CODEX="${INSTALL_CODEX:-true}"
-INSTALL_PI_AGENT="${INSTALL_PI_AGENT:-true}"
-INSTALL_MOM="${INSTALL_MOM:-false}"
 INSTALL_AGENTMAIL="${INSTALL_AGENTMAIL:-false}"
 INSTALL_CLOUDFLARED="${INSTALL_CLOUDFLARED:-false}"
 SSH_PUBKEY="${SSH_PUBKEY:-}"
@@ -54,14 +52,6 @@ if [[ "$NON_INTERACTIVE" == false ]]; then
   printf "\n  Install OpenAI Codex CLI? (https://github.com/openai/codex)\n"
   read -rp "  Install Codex? [Y/n]: " answer
   [[ "$answer" =~ ^[Nn]$ ]] && INSTALL_CODEX=false
-
-  printf "\n  Install Pi Coding Agent? (https://shittycodingagent.ai)\n"
-  read -rp "  Install Pi Agent? [Y/n]: " answer
-  [[ "$answer" =~ ^[Nn]$ ]] && INSTALL_PI_AGENT=false
-
-  printf "\n  Install Mom Slack Bot? (https://github.com/badlogic/pi-mono/tree/main/packages/mom)\n"
-  read -rp "  Install Mom? [y/N]: " answer
-  [[ "$answer" =~ ^[Yy]$ ]] && INSTALL_MOM=true
 
   printf "\n  Install AgentMail CLI? (https://docs.agentmail.to/integrations/cli)\n"
   read -rp "  Install AgentMail? [y/N]: " answer
@@ -209,33 +199,7 @@ else
   ok "Skipped"
 fi
 
-# ─── 11. Pi Coding Agent (optional) ──────────────────────────────
-if command -v pi &>/dev/null; then
-  banner "Pi Coding Agent already installed"
-  ok "pi $(pi --version 2>/dev/null || echo 'present') — skipped"
-elif [[ "$INSTALL_PI_AGENT" == true ]]; then
-  banner "Installing Pi Coding Agent"
-  pnpm add -g @mariozechner/pi-coding-agent
-  ok "Pi Coding Agent installed"
-else
-  banner "Skipping Pi Agent"
-  ok "Skipped"
-fi
-
-# ─── 11b. Mom Slack Bot (optional) ───────────────────────────────────
-if command -v mom &>/dev/null; then
-  banner "Mom already installed"
-  ok "mom $(mom --version 2>/dev/null || echo 'present') — skipped"
-elif [[ "$INSTALL_MOM" == true ]]; then
-  banner "Installing Mom (Slack Bot)"
-  pnpm add -g @mariozechner/pi-mom
-  ok "Mom installed"
-else
-  banner "Skipping Mom"
-  ok "Skipped"
-fi
-
-# ─── 12. AgentMail CLI (optional) ─────────────────────────────────
+# ─── 11. AgentMail CLI (optional) ─────────────────────────────────
 if [[ "$INSTALL_AGENTMAIL" == true ]]; then
   banner "Installing AgentMail CLI"
   pnpm add -g agentmail-cli
@@ -345,12 +309,6 @@ fi
 if [[ "$INSTALL_CODEX" == true ]]; then
   printf "  codex    : %s\n" "$(codex --version 2>/dev/null || echo 'installed')"
 fi
-if [[ "$INSTALL_PI_AGENT" == true ]]; then
-  printf "  pi       : %s\n" "$(pi --version 2>/dev/null || echo 'installed')"
-fi
-if [[ "$INSTALL_MOM" == true ]]; then
-  printf "  mom    : %s\n" "$(mom --version 2>/dev/null || echo 'installed')"
-fi
 if [[ "$INSTALL_AGENTMAIL" == true ]]; then
   printf "  agentmail: %s\n" "$(agentmail --version 2>/dev/null || echo 'installed')"
 fi
@@ -369,9 +327,10 @@ fi
 if [[ "$INSTALL_CODEX" == true ]]; then
   printf "  codex                     # OpenAI Codex\n"
 fi
-if [[ "$INSTALL_PI_AGENT" == true ]]; then
-  printf "  pi                        # Pi Coding Agent\n"
-fi
+printf "\n"
+printf "  ${CYAN}Optional harness packs${NC}\n"
+printf "  ──────────────────────────────────────\n"
+printf "  oh harness add @ryaneggz/mifune    # Pi+Mom (Slack bot + pi agent)\n"
 printf "\n"
 
 # ─── 18. Run workspace startup script ───────────────────────────

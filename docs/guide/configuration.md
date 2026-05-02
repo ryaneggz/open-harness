@@ -48,9 +48,9 @@ Only applies when an SSH overlay is enabled. See [overlays](./overlays.md#ssh-ke
 |----------|---------|-------------|
 | `HOST_SSH_DIR` | _(empty)_ | Path to your host SSH directory, mounted read-only into the container. Lets git inside the sandbox use your existing SSH keys. **Setting this automatically enables the `ssh.yml` overlay** — no need to add it to `config.json` manually. |
 
-### Slack bot (overlay)
+### Slack bot (via [`@ryaneggz/mifune`](https://github.com/ryaneggz/mifune) pack)
 
-Only applies when the `slack.yml` overlay is enabled. The Slack bot (Mom) connects to a Slack workspace via Socket Mode and responds to messages using an AI agent. See [Slack setup](../slack/setup.md).
+The Slack bot ships with the `@ryaneggz/mifune` harness pack — install with `oh harness add @ryaneggz/mifune`. The bot (Mom) connects to a Slack workspace via Socket Mode and responds to messages using an AI agent.
 
 | Variable | Default | Description |
 |----------|---------|-------------|

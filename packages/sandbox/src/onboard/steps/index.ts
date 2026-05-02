@@ -4,7 +4,6 @@ import { claudeStep } from "./claude.js";
 import { cloudflareStep } from "./cloudflare.js";
 import { githubStep } from "./github.js";
 import { llmStep } from "./llm.js";
-import { slackStep } from "./slack.js";
 import { sshStep } from "./ssh.js";
 import {
   HARNESS_REGISTRY_PATH,
@@ -14,23 +13,26 @@ import {
 import type { PackStep, Step, StepId } from "../types.js";
 
 /**
- * Execution order: llm → github → slack → ssh → cloudflare → claude.
+ * Execution order: llm → github → ssh → cloudflare → claude.
  *
  * GitHub runs second (right after LLM) so that its credentials are in place
  * before anything else, and — crucially — before SSH. `gh auth login` can
  * generate and upload an SSH key itself, which lets the ssh step fast-path
  * in the common case. See .claude/specs/onboard-github-before-ssh.md.
+ *
+ * Pack-contributed steps (e.g. the `slack` step from `@ryaneggz/mifune`)
+ * are loaded via `loadPackSteps()` and merged into the execution order at
+ * runtime based on each pack's `onboard_steps[].after` declaration.
  */
 export const ALL_STEPS: readonly Step[] = [
   llmStep,
   githubStep,
-  slackStep,
   sshStep,
   cloudflareStep,
   claudeStep,
 ] as const;
 
-export { llmStep, slackStep, sshStep, githubStep, cloudflareStep, claudeStep };
+export { llmStep, sshStep, githubStep, cloudflareStep, claudeStep };
 
 /**
  * Optional injection point for `loadPackSteps` — tests can replace the module
