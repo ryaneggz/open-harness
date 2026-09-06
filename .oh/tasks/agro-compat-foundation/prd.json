@@ -16,8 +16,8 @@
         "Typecheck passes; tests pass."
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "compat.ts + 36 shared vectors; compat.test.ts 46 tests green; tsc clean (dbc82ed4)"
     },
     {
       "id": "US-002",
@@ -30,8 +30,8 @@
         "Tests pass."
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "compat.sh, compat-shell.test.ts 39 tests green incl. exit 3 conflicts and no-side-effect sourcing (dbc82ed4)"
     },
     {
       "id": "US-003",
@@ -49,8 +49,8 @@
         "Typecheck passes; tests pass."
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "project/oh-config/registry/lifecycle/detect/harness/docker-compose.sh/entrypoint/Dockerfile wired; baseline + dual-generation tests green; probes sandbox-registry, oh-image-only-deploy, oh-compose-env-wiring, oh-config-surfaces adapted (dbc82ed4)"
     },
     {
       "id": "US-004",
@@ -67,8 +67,8 @@
         "Typecheck passes; tests pass."
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "migrate.ts + migrate.test.ts 16 tests: plan no-mutation, retire, conflict refusal, symlink-escape refusal, lock, revalidation, partial failure, rewrite (042d1f4d)"
     },
     {
       "id": "US-005",
@@ -81,8 +81,8 @@
         "Tests pass."
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "compat-inventory.json (47 variables, 16 paths), compat-inventory.test.ts 5 tests, agro-compat-inventory.sh PASS and REGRESSION under injected OH_FAULT_INJECTED (042d1f4d)"
     },
     {
       "id": "US-006",
@@ -96,8 +96,8 @@
         "Typecheck passes; `git diff --check` is clean."
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "docs/agro-compatibility.md, docs/rfcs/rfc-agro-migration.md + index rows, CHANGELOG entry (<=250 chars), comments on #940/#941/#942; git diff --check clean (042d1f4d)"
     }
   ]
 }
