@@ -1,0 +1,3 @@
+# progress
+
+2026-09-06T18:15Z plan: base 9261d512 (origin/development after #987 merge); queries "cli install release update" (+--patterns); read release-versioning (NEEDS-REVIEW), oh-cli-portable-lifecycle, pattern-cli-bundled-asset-relative-import; inventories by two read-only workers; six stories; owner orchestrates, workers implement disjoint files per wave.
