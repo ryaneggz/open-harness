@@ -53,7 +53,8 @@ COPY .oh/scripts/docker-compose.sh .oh/scripts/check-host-port.sh .oh/scripts/co
 COPY .oh/cli/ /opt/oh/
 RUN cd /opt/oh && OH_ASSET_ROOT=/opt/oh-assets npm install --no-audit --no-fund && OH_ASSET_ROOT=/opt/oh-assets npm run build \
  && chmod +x /opt/oh/dist/oh.js \
- && ln -sf /opt/oh/dist/oh.js /usr/local/bin/oh
+ && ln -sf /opt/oh/dist/oh.js /usr/local/bin/oh \
+ && ln -sf /opt/oh/dist/agro.js /usr/local/bin/agro
 
 RUN userdel -r node 2>/dev/null || true \
  && useradd -m -u 1000 -s /bin/zsh sandbox \
@@ -123,6 +124,9 @@ RUN mkdir -p /.devcontainer && echo '{"workspaceFolder":"/home/sandbox/harness",
 
 LABEL devcontainer.metadata='[{"remoteUser":"sandbox","workspaceFolder":"/home/sandbox/harness"}]'
 LABEL org.opencontainers.image.licenses="Apache-2.0"
+LABEL org.opencontainers.image.source="https://github.com/mifunedev/openharness"
+LABEL org.opencontainers.image.title="agro"
+LABEL org.opencontainers.image.description="AGRO sandbox image (compatibility alias: openharness)"
 
 COPY --chown=sandbox:sandbox . /opt/oh-seed/
 

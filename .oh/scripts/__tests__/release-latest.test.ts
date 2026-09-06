@@ -18,6 +18,9 @@ const MAIN_SHA = "0123456789abcdef0123456789abcdef01234567";
 const MASTER_SHA = "89abcdef0123456789abcdef0123456789abcdef";
 const STALE_SHA = "fedcba9876543210fedcba9876543210fedcba98";
 const DIGEST = `sha256:${"a".repeat(64)}`;
+const OTHER_DIGEST = `sha256:${"b".repeat(64)}`;
+const LEGACY = "ghcr.io/example/openharness";
+const AGRO = "ghcr.io/example/agro";
 
 let fixture = "";
 let bin = "";
@@ -40,7 +43,7 @@ function run(
       FAKE_DOCKER_LOG: dockerLog,
       FAKE_DOCKER_INSPECTION: `Name: test\nMediaType: application/vnd.oci.image.index.v1+json\nDigest: ${DIGEST}`,
       FAKE_GIT_REFS: `${MAIN_SHA}\trefs/heads/main`,
-      IMAGE_REPOSITORY: "ghcr.io/example/openharness",
+      IMAGE_REPOSITORIES: `${LEGACY} ${AGRO}`,
       RELEASE_BRANCH: "main",
       RELEASE_SHA: MAIN_SHA,
       RELEASE_VERSION: "0.1.0",
@@ -67,7 +70,9 @@ printf '%s\n' "\${FAKE_GIT_REFS}"
     `#!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" >> "$FAKE_DOCKER_LOG"
-if [[ "$*" == "buildx imagetools inspect "* ]]; then
+if [[ "$*" == "buildx imagetools inspect "*"/agro:"* && -n "\${FAKE_DOCKER_INSPECTION_AGRO:-}" ]]; then
+  printf '%b\n' "$FAKE_DOCKER_INSPECTION_AGRO"
+elif [[ "$*" == "buildx imagetools inspect "* ]]; then
   printf '%b\n' "$FAKE_DOCKER_INSPECTION"
 elif [[ "$*" != "buildx imagetools create "* ]]; then
   echo "unexpected docker invocation: $*" >&2
@@ -82,15 +87,49 @@ afterEach(() => {
 });
 
 describe("promote-release-latest.sh", () => {
-  it("promotes a fresh canonical main image by immutable digest", () => {
+  it("promotes latest on every repository by one immutable digest after resolving all of them", () => {
     const result = run("promote");
 
     expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toContain("Promoted ghcr.io/example/openharness:0.1.0");
+    expect(result.stdout).toContain(`Promoted ${LEGACY}:0.1.0`);
+    expect(result.stdout).toContain(`Promoted ${AGRO}:0.1.0`);
     expect(readFileSync(dockerLog, "utf8").trim().split("\n")).toEqual([
-      "buildx imagetools inspect ghcr.io/example/openharness:0.1.0",
-      `buildx imagetools create --tag ghcr.io/example/openharness:latest ghcr.io/example/openharness:0.1.0@${DIGEST}`,
+      `buildx imagetools inspect ${LEGACY}:0.1.0`,
+      `buildx imagetools inspect ${AGRO}:0.1.0`,
+      `buildx imagetools create --tag ${LEGACY}:latest ${LEGACY}:0.1.0@${DIGEST}`,
+      `buildx imagetools create --tag ${AGRO}:latest ${AGRO}:0.1.0@${DIGEST}`,
     ]);
+  });
+
+  it("refuses to promote any repository when the version digests differ", () => {
+    const result = run("promote", {
+      FAKE_DOCKER_INSPECTION_AGRO: `Name: test\nDigest: ${OTHER_DIGEST}`,
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("refusing to promote latest");
+    expect(result.stderr).toContain(`${LEGACY}:0.1.0 is ${DIGEST}`);
+    expect(result.stderr).toContain(`${AGRO}:0.1.0 is ${OTHER_DIGEST}`);
+    expect(readFileSync(dockerLog, "utf8")).not.toContain("imagetools create");
+  });
+
+  it("promotes a single repository when IMAGE_REPOSITORIES names only one", () => {
+    const result = run("promote", { IMAGE_REPOSITORIES: LEGACY });
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(readFileSync(dockerLog, "utf8").trim().split("\n")).toEqual([
+      `buildx imagetools inspect ${LEGACY}:0.1.0`,
+      `buildx imagetools create --tag ${LEGACY}:latest ${LEGACY}:0.1.0@${DIGEST}`,
+    ]);
+  });
+
+  it("defaults to both public repositories", () => {
+    const source = readFileSync(HELPER, "utf8");
+
+    expect(source).toContain(
+      "IMAGE_REPOSITORIES=${IMAGE_REPOSITORIES:-ghcr.io/mifunedev/openharness ghcr.io/mifunedev/agro}",
+    );
+    expect(source).not.toContain("IMAGE_REPOSITORY=");
   });
 
   it("prefers main and never lets a master run regress latest across branches", () => {

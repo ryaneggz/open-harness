@@ -64,10 +64,10 @@ if [[ ! -f "$MAP" ]]; then
   missing+=("S4: docs/lifecycle-commands.md is missing — the verb reference has no home")
 else
   for verb in "${CLI_VERBS[@]}" "${COMPOSE_TABLE_VERBS[@]}"; do
-    grep -qE "\`oh $verb( |\`)" "$MAP" \
+    grep -qE "\`(agro|oh) $verb( |\`)" "$MAP" \
       || missing+=("S4: \`oh $verb\` dispatches but is not documented in docs/lifecycle-commands.md")
   done
-  grep -qE '`oh compose config`' "$MAP" \
+  grep -qE '`(agro|oh) compose config`' "$MAP" \
     || missing+=("S4: \`oh compose config\` is not documented in docs/lifecycle-commands.md")
 fi
 

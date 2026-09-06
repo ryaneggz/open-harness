@@ -3,6 +3,7 @@ import { dirname, join, resolve } from "node:path";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { runUpdate } from "./commands/update.js";
+import { DEFAULT_ARTIFACT_URL, defaultDeps, runSelfUpgrade } from "./commands/self-upgrade.js";
 import { runCloud } from "./commands/cloud.js";
 import {
   configFieldList,
@@ -49,6 +50,7 @@ import {
 } from "./commands/tool.js";
 import { installableToolIds, toolIds } from "./lib/tools/catalog.js";
 import { sourceDocsUrl } from "./lib/docs.js";
+import { AGRO_PRODUCT, LEGACY_PRODUCT, resolveProduct, type Product } from "./lib/product.js";
 import {
   fetchRemoteSource,
   DEFAULT_REPO_URL,
@@ -87,46 +89,52 @@ function integrationLines(): string {
     .join("\n");
 }
 
-export function printOhHelp(): void {
-  process.stdout.write(`oh — Open Harness CLI (v${VERSION})
+function compatibilityNote(product: Product): string {
+  if (product.name !== "oh") return "";
+  return `${product.bin} is the compatibility entry point for ${AGRO_PRODUCT.bin} (npm: ${AGRO_PRODUCT.packageName}).\n`;
+}
+
+export function printOhHelp(product: Product = LEGACY_PRODUCT): void {
+  const { bin, title } = product;
+  process.stdout.write(`${bin} — ${title} (v${VERSION})
 
 Usage:
-  oh sandbox <args...>      Create and list sandboxes (install|list)
-  oh shell [name]           Open a zsh shell in the running sandbox container
-  oh config <args...>       Read and write oh.json (show|set), or run a wizard
-  oh secret <args...>       Read and write the gitignored root .env (set|list)
-  oh update                 Vendor or upgrade the .oh/ control plane
-  oh stop [name]            Stop the sandbox, preserving volumes
-  oh restart [name]         Restart the sandbox service
-  oh logs [name]            Tail sandbox logs (follows)
-  oh ps [name]              Show sandbox service status
-  oh destroy [name]         Remove the sandbox and wipe its named volumes
-  oh compose config         Print the resolved docker compose configuration
-  oh harness <args...>      Install and inspect agent CLI harnesses
-  oh tool <args...>         Install and inspect sandbox tooling
-  oh gateway <args...>      Manage a messaging client session (pi|hermes)
-  oh cloud <args...>        Manage OpenHarness Cloud nodes
-  oh --version              Print version
-  oh --help                 Show this help
+  ${bin} sandbox <args...>      Create and list sandboxes (install|list)
+  ${bin} shell [name]           Open a zsh shell in the running sandbox container
+  ${bin} config <args...>       Read and write oh.json (show|set), or run a wizard
+  ${bin} secret <args...>       Read and write the gitignored root .env (set|list)
+  ${bin} update                 Vendor or upgrade the .oh/ control plane
+  ${bin} stop [name]            Stop the sandbox, preserving volumes
+  ${bin} restart [name]         Restart the sandbox service
+  ${bin} logs [name]            Tail sandbox logs (follows)
+  ${bin} ps [name]              Show sandbox service status
+  ${bin} destroy [name]         Remove the sandbox and wipe its named volumes
+  ${bin} compose config         Print the resolved docker compose configuration
+  ${bin} harness <args...>      Install and inspect agent CLI harnesses
+  ${bin} tool <args...>         Install and inspect sandbox tooling
+  ${bin} gateway <args...>      Manage a messaging client session (pi|hermes)
+  ${bin} cloud <args...>        Manage OpenHarness Cloud nodes
+  ${bin} --version              Print version
+  ${bin} --help                 Show this help
 
 Integrations:
 ${integrationLines()}
-`);
+${compatibilityNote(product)}`);
 }
 
-function printConfigHelp(): void {
-  process.stdout.write(`oh config — Read and write oh.json, the tracked non-secret settings
+function printConfigHelp(bin: string = LEGACY_PRODUCT.bin): void {
+  process.stdout.write(`${bin} config — Read and write oh.json, the tracked non-secret settings
 
 Usage:
-  oh config show [--sandbox <name>]
-  oh config set <field> <value> [--sandbox <name>]
-  oh config repo                  Create your own GitHub repo and point origin at it
-  oh config <integration>         Run an integration wizard
-  oh config <integration> --help
+  ${bin} config show [--sandbox <name>]
+  ${bin} config set <field> <value> [--sandbox <name>]
+  ${bin} config repo                  Create your own GitHub repo and point origin at it
+  ${bin} config <integration>         Run an integration wizard
+  ${bin} config <integration> --help
 
 oh.json holds every non-secret setting and is tracked by git. Credentials live
-in the gitignored root .env — write those with \`oh secret set <KEY>\`. Apply a
-change with \`oh stop <name> && oh sandbox install docker --name <name>\`. Field
+in the gitignored root .env — write those with \`${bin} secret set <KEY>\`. Apply a
+change with \`${bin} stop <name> && ${bin} sandbox install docker --name <name>\`. Field
 reference:
 ${sourceDocsUrl("docs/configuration.md")}
 
@@ -138,30 +146,71 @@ ${integrationLines()}
 `);
 }
 
-export function printSecretHelp(): void {
-  process.stdout.write(`oh secret — Read and write the gitignored root .env
+export function printSecretHelp(bin: string = LEGACY_PRODUCT.bin): void {
+  process.stdout.write(`${bin} secret — Read and write the gitignored root .env
 
 Usage:
-  oh secret set <KEY> [--sandbox <name>]   Prompt for the value (input hidden)
-  oh secret list [--sandbox <name>]        List the keys that hold a value
+  ${bin} secret set <KEY> [--sandbox <name>]   Prompt for the value (input hidden)
+  ${bin} secret list [--sandbox <name>]        List the keys that hold a value
 
 Without --sandbox both verbs write the equipped project root; with it they write
-the registry entry \`oh sandbox list\` names.
+the registry entry \`${bin} sandbox list\` names.
 
 The value is never read from the command line — an argument would land in your
-shell history. \`oh secret list\` never prints a raw value. .env is mode 0600 and
-gitignored; every non-secret setting belongs in oh.json (\`oh config set\`).
+shell history. \`${bin} secret list\` never prints a raw value. .env is mode 0600 and
+gitignored; every non-secret setting belongs in oh.json (\`${bin} config set\`).
 
 Keys:
 ${secretKeyList()}
 `);
 }
 
-function printUpdateHelp(): void {
-  process.stdout.write(`oh update — Vendor or upgrade the .oh/ control plane
+function printSelfUpgradeHelp(bin: string): void {
+  process.stdout.write(`${bin} update — Upgrade the installed ${bin} CLI
 
 Usage:
-  oh update [--from <dir> | --from-remote [--ref <ref>]] [--dry-run] [--force]
+  ${bin} update [--dry-run]
+
+Upgrades exactly one thing: the ${bin} executable that is running. It writes no
+project file — no .oh/, no oh.json, no .env — and it never asks for sudo.
+
+The upgrade follows whichever mechanism installed this executable:
+  npm-managed    realpath under node_modules/${AGRO_PRODUCT.packageName}/: reads the registry
+                 version with \`npm view\`, then runs
+                 \`npm install -g --prefix <owning prefix> ${AGRO_PRODUCT.packageName}@<version>\`.
+  standalone     a plain file (get-agro.sh): downloads AGRO_JS_URL (falls back to
+                 OH_JS_URL; default
+                 ${DEFAULT_ARTIFACT_URL})
+                 into the same directory, checks its shebang and \`--version\`,
+                 renames it over the executable, and keeps <path>.prev until the
+                 new file verifies.
+
+It refuses, with the supported procedure, when the executable is shipped by the
+sandbox image (/opt/oh), is a source checkout's dist/, belongs to the legacy
+${LEGACY_PRODUCT.packageName} package, cannot be resolved, sits in a read-only
+directory, is shadowed by another ${bin} earlier on PATH, or does not report the
+running version. Downgrades are refused. When the installed version is already
+current it changes nothing.
+
+Flags:
+  --dry-run       Report the installation kind, target, and versions without
+                  changing anything.
+
+Project payload vendoring (.oh/ + crons/) is \`oh update\` during the
+compatibility window; its --from, --from-remote, --ref and --force flags are
+not accepted here.
+`);
+}
+
+export function printUpdateHelp(bin: string = LEGACY_PRODUCT.bin): void {
+  if (bin === AGRO_PRODUCT.bin) {
+    printSelfUpgradeHelp(bin);
+    return;
+  }
+  process.stdout.write(`${bin} update — Vendor or upgrade the .oh/ control plane
+
+Usage:
+  ${bin} update [--from <dir> | --from-remote [--ref <ref>]] [--dry-run] [--force]
 
 Writes ONLY the .oh/ control plane and crons/ (skills, scripts, CLI) into the
 current directory. An empty directory is equipped from scratch; everything else
@@ -190,13 +239,13 @@ export function runtimeLines(): string {
   ).join("\n");
 }
 
-export function printSandboxHelp(): void {
-  process.stdout.write(`oh sandbox — Create and list sandboxes
+export function printSandboxHelp(bin: string = LEGACY_PRODUCT.bin): void {
+  process.stdout.write(`${bin} sandbox — Create and list sandboxes
 
 Usage:
-  oh sandbox install <runtime> [--name <name>] [--repo <dir>] [--yes]
+  ${bin} sandbox install <runtime> [--name <name>] [--repo <dir>] [--yes]
                                [--image[=<ref>]] [--no-build] [--print-argv]
-  oh sandbox list [--json]
+  ${bin} sandbox list [--json]
 
 \`install\` writes a sandbox entry under \${OH_HOME:-~/.oh}/sandboxes/<name>/,
 materialises the compose files and the compose wrapper into it, then starts the
@@ -224,36 +273,36 @@ Flags:
 Runtimes:
 ${runtimeLines()}
 
-Next: oh shell <name>
+Next: ${bin} shell <name>
 `);
 }
 
-export function printShellHelp(): void {
-  process.stdout.write(`oh shell — Open a shell in the running sandbox container
+export function printShellHelp(bin: string = LEGACY_PRODUCT.bin): void {
+  process.stdout.write(`${bin} shell — Open a shell in the running sandbox container
 
 Usage:
-  oh shell [name]
+  ${bin} shell [name]
 
 Runs \`docker exec -it -u sandbox <container> zsh\`. [name] is a sandbox entry
-from \`oh sandbox list\`; with exactly one registered sandbox, or from inside a
+from \`${bin} sandbox list\`; with exactly one registered sandbox, or from inside a
 checkout a sandbox was created for, it can be omitted. The container is the
 entry's own name, or "${DEFAULT_CONTAINER_NAME}" when the entry sets none. Exits with docker's
 exit code.
 `);
 }
 
-export function printHarnessHelp(): void {
-  process.stdout.write(`oh harness — Install and inspect agent CLI harnesses
+export function printHarnessHelp(bin: string = LEGACY_PRODUCT.bin): void {
+  process.stdout.write(`${bin} harness — Install and inspect agent CLI harnesses
 
 Usage:
-  oh harness list                     List known harnesses and their state
-  oh harness install <name>           Install a harness into the sandbox
-  oh harness status [name]            Show installed state
+  ${bin} harness list                     List known harnesses and their state
+  ${bin} harness install <name>           Install a harness into the sandbox
+  ${bin} harness status [name]            Show installed state
 
 \`install\` is the only door: it probes the running sandbox, installs the harness
 into the persistent home volume, and reports. It reads and writes no \`oh.json\`
 field, and it never rebuilds or restarts the sandbox. It requires a running
-sandbox — start one with \`oh sandbox\` first.
+sandbox — start one with \`${bin} sandbox\` first.
 
 Flags:
   --json           Machine-readable output (list/status)
@@ -263,14 +312,14 @@ ${harnessIds().map((h) => `  ${h}`).join("\n")}
 `);
 }
 
-export function printGatewayHelp(): void {
-  process.stdout.write(`oh gateway — Manage a messaging client session (Slack bridge)
+export function printGatewayHelp(bin: string = LEGACY_PRODUCT.bin): void {
+  process.stdout.write(`${bin} gateway — Manage a messaging client session (Slack bridge)
 
 Usage:
-  oh gateway <pi|hermes> [--attach]   start the client session (--attach after)
-  oh gateway <pi|hermes> --restart    restart the session
-  oh gateway <pi|hermes> --stop       stop the session
-  oh gateway status                   show both sessions
+  ${bin} gateway <pi|hermes> [--attach]   start the client session (--attach after)
+  ${bin} gateway <pi|hermes> --restart    restart the session
+  ${bin} gateway <pi|hermes> --stop       stop the session
+  ${bin} gateway status                   show both sessions
 
 Only a LEADING --help/-h is intercepted here; everything else passes through
 verbatim to the vendored .oh/scripts/gateway.sh with OH_PROJECT_ROOT set to
@@ -278,11 +327,11 @@ the equipped project root. Exits with the script's exit code.
 `);
 }
 
-function printIntegrationHelp(name: string, integration: Integration): void {
-  process.stdout.write(`oh config ${name} — ${integration.description}
+function printIntegrationHelp(name: string, integration: Integration, bin: string): void {
+  process.stdout.write(`${bin} config ${name} — ${integration.description}
 
 Usage:
-  oh config ${name}
+  ${bin} config ${name}
 
 This launches an interactive wizard. It takes no flags.
 `);
@@ -293,16 +342,16 @@ export type ParseResult<T> =
   | { ok: true; args: T }
   | { ok: false; error: string; showHelp?: boolean };
 
-export function printToolHelp(): void {
-  process.stdout.write(`oh tool — Install and inspect sandbox tooling
+export function printToolHelp(bin: string = LEGACY_PRODUCT.bin): void {
+  process.stdout.write(`${bin} tool — Install and inspect sandbox tooling
 
-Tooling that is not an agent CLI (see \`oh harness\`) — a headless browser, a
+Tooling that is not an agent CLI (see \`${bin} harness\`) — a headless browser, a
 tunnel client, the GitHub CLI, an isolation runtime's own binary.
 
 Usage:
-  oh tool list                      List known tools and their state
-  oh tool status [name]             Show installed state and version
-  oh tool install <name>            Install a tool into the sandbox
+  ${bin} tool list                      List known tools and their state
+  ${bin} tool status [name]             Show installed state and version
+  ${bin} tool install <name>            Install a tool into the sandbox
 
 Most tools are baked into the image and are report-only; \`install\` works on:
 ${installableToolIds().map((t) => `  ${t}`).join("\n")}
@@ -321,7 +370,7 @@ ${toolIds().map((t) => `  ${t}`).join("\n")}
 `);
 }
 
-export function printComposeVerbHelp(verb: ComposeVerb): void {
+export function printComposeVerbHelp(verb: ComposeVerb, bin: string = LEGACY_PRODUCT.bin): void {
   const what: Record<ComposeVerb, string> = {
     stop: "Stop the sandbox, preserving volumes for a later restart",
     restart: "Restart the sandbox service",
@@ -329,29 +378,29 @@ export function printComposeVerbHelp(verb: ComposeVerb): void {
     ps: "Show sandbox service status",
     destroy: "Remove the sandbox and wipe its named volumes",
   };
-  process.stdout.write(`oh ${verb} — ${what[verb]}
+  process.stdout.write(`${bin} ${verb} — ${what[verb]}
 
 Usage:
-  oh ${verb} [name] [-- <extra docker compose args>]
+  ${bin} ${verb} [name] [-- <extra docker compose args>]
 
 Runs .oh/scripts/docker-compose.sh inside the sandbox entry, the single
-implementation. \`oh\` is the only lifecycle door. [name] is a sandbox entry from
-\`oh sandbox list\`; with exactly one registered sandbox it can be omitted.
+implementation. \`${bin}\` is the only lifecycle door. [name] is a sandbox entry from
+\`${bin} sandbox list\`; with exactly one registered sandbox it can be omitted.
 
 See ${sourceDocsUrl("docs/lifecycle-commands.md")} for every verb.
 `);
 }
 
-export function printDestroyHelp(): void {
-  process.stdout.write(`oh destroy — Remove the sandbox and wipe its named volumes
+export function printDestroyHelp(bin: string = LEGACY_PRODUCT.bin): void {
+  process.stdout.write(`${bin} destroy — Remove the sandbox and wipe its named volumes
 
 Usage:
-  oh destroy [name] [--yes]
+  ${bin} destroy [name] [--yes]
 
 Runs .oh/scripts/docker-compose.sh with \`down -v\`. This is the one destructive
 lifecycle verb: \`-v\` deletes the named
 volumes, and those volumes hold every agent CLI login, the gh CLI token, and
-the SSH keys. Use \`oh stop\` when you only want the containers gone.
+the SSH keys. Use \`${bin} stop\` when you only want the containers gone.
 
 Before removing anything it names the volumes it will delete and asks you to
 type the sandbox name. A blank line, or any other answer, aborts and changes
@@ -359,24 +408,24 @@ nothing. Once \`down -v\` succeeds the registry entry is removed too.
 
 Flags:
   --yes   Skip the prompt. Required when stdin is not a terminal — without a
-          terminal and without --yes, \`oh destroy\` refuses rather than guess.
+          terminal and without --yes, \`${bin} destroy\` refuses rather than guess.
 
 See ${sourceDocsUrl("docs/lifecycle-commands.md")} for the full mapping.
 `);
 }
 
-export function printComposeHelp(): void {
-  process.stdout.write(`oh compose — Inspect the resolved docker compose setup
+export function printComposeHelp(bin: string = LEGACY_PRODUCT.bin): void {
+  process.stdout.write(`${bin} compose — Inspect the resolved docker compose setup
 
 Usage:
-  oh compose config [-- <extra docker compose args>]
+  ${bin} compose config [-- <extra docker compose args>]
 
 Subcommands:
   config   Print the compose configuration .oh/scripts/docker-compose.sh
            resolves from .devcontainer/.env and .oh/config.json
 
-Namespaced under \`oh compose\` because \`oh config <integration>\` already means
-"run an integration wizard", and \`oh config show/set\` reads and writes oh.json.
+Namespaced under \`${bin} compose\` because \`${bin} config <integration>\` already means
+"run an integration wizard", and \`${bin} config show/set\` reads and writes oh.json.
 
 See ${sourceDocsUrl("docs/lifecycle-commands.md")} for every verb.
 `);
@@ -422,8 +471,8 @@ export interface ConfigArgs {
   sandbox?: string;
 }
 
-export function parseConfigArgs(input: string[]): ParseResult<ConfigArgs> {
-  const scoped = extractSandboxFlag("oh config", input);
+export function parseConfigArgs(input: string[], bin: string = LEGACY_PRODUCT.bin): ParseResult<ConfigArgs> {
+  const scoped = extractSandboxFlag(`${bin} config`, input);
   if (!scoped.ok) return scoped;
   const rest = scoped.args.rest;
   const args: ConfigArgs = {
@@ -443,7 +492,7 @@ export function parseConfigArgs(input: string[]): ParseResult<ConfigArgs> {
     if (tail.length > 0) {
       return {
         ok: false,
-        error: `oh config ${head}: unexpected argument "${tail[0]}". This wizard takes no flags.`,
+        error: `${bin} config ${head}: unexpected argument "${tail[0]}". This wizard takes no flags.`,
       };
     }
     return { ok: true, args: { ...args, integration: head } };
@@ -454,7 +503,7 @@ export function parseConfigArgs(input: string[]): ParseResult<ConfigArgs> {
 
   if (verb === "show" || verb === "repo") {
     if (tail.length > 0) {
-      return { ok: false, error: `oh config ${verb}: unexpected argument "${tail[0]}"` };
+      return { ok: false, error: `${bin} config ${verb}: unexpected argument "${tail[0]}"` };
     }
     return { ok: true, args: { ...args, verb } };
   }
@@ -463,14 +512,14 @@ export function parseConfigArgs(input: string[]): ParseResult<ConfigArgs> {
   if (key === undefined || value === undefined) {
     return {
       ok: false,
-      error: "oh config set: a field and a value are required, e.g. `oh config set access.sshPort 2222`",
+      error: `${bin} config set: a field and a value are required, e.g. \`${bin} config set access.sshPort 2222\``,
       showHelp: true,
     };
   }
   if (extra.length > 0) {
     return {
       ok: false,
-      error: `oh config set: unexpected argument "${extra[0]}" — quote a value that contains spaces`,
+      error: `${bin} config set: unexpected argument "${extra[0]}" — quote a value that contains spaces`,
     };
   }
   return { ok: true, args: { ...args, verb, key, value } };
@@ -487,8 +536,8 @@ export interface SecretArgs {
   sandbox?: string;
 }
 
-export function parseSecretArgs(input: string[]): ParseResult<SecretArgs> {
-  const scoped = extractSandboxFlag("oh secret", input);
+export function parseSecretArgs(input: string[], bin: string = LEGACY_PRODUCT.bin): ParseResult<SecretArgs> {
+  const scoped = extractSandboxFlag(`${bin} secret`, input);
   if (!scoped.ok) return scoped;
   const rest = scoped.args.rest;
   const args: SecretArgs = {
@@ -503,7 +552,7 @@ export function parseSecretArgs(input: string[]): ParseResult<SecretArgs> {
   if (!(SECRET_VERBS as readonly string[]).includes(head)) {
     return {
       ok: false,
-      error: `oh secret: unknown subcommand "${head}" — expected set or list`,
+      error: `${bin} secret: unknown subcommand "${head}" — expected set or list`,
       showHelp: true,
     };
   }
@@ -513,20 +562,20 @@ export function parseSecretArgs(input: string[]): ParseResult<SecretArgs> {
 
   if (verb === "list") {
     if (tail.length > 0) {
-      return { ok: false, error: `oh secret list: unexpected argument "${tail[0]}"` };
+      return { ok: false, error: `${bin} secret list: unexpected argument "${tail[0]}"` };
     }
     return { ok: true, args: { ...args, verb } };
   }
 
   const [key, ...extra] = tail;
   if (key === undefined) {
-    return { ok: false, error: "oh secret set: a key is required", showHelp: true };
+    return { ok: false, error: `${bin} secret set: a key is required`, showHelp: true };
   }
   if (extra.length > 0) {
     return {
       ok: false,
       error:
-        "oh secret set: takes only a key — the value is prompted for, never passed on the command line where your shell history would keep it",
+        `${bin} secret set: takes only a key — the value is prompted for, never passed on the command line where your shell history would keep it`,
     };
   }
   return { ok: true, args: { ...args, verb, key } };
@@ -538,7 +587,7 @@ export interface DestroyArgs {
   name?: string;
 }
 
-export function parseDestroyArgs(rest: string[]): ParseResult<DestroyArgs> {
+export function parseDestroyArgs(rest: string[], bin: string = LEGACY_PRODUCT.bin): ParseResult<DestroyArgs> {
   const args: DestroyArgs = { help: false, yes: false };
   if (isHelpFlag(rest[0])) return { ok: true, args: { ...args, help: true } };
   for (const token of rest) {
@@ -547,12 +596,12 @@ export function parseDestroyArgs(rest: string[]): ParseResult<DestroyArgs> {
     } else if (token.startsWith("-")) {
       return {
         ok: false,
-        error: `oh destroy: unknown flag "${token}" — accepts a sandbox name and --yes`,
+        error: `${bin} destroy: unknown flag "${token}" — accepts a sandbox name and --yes`,
       };
     } else if (args.name === undefined) {
       args.name = token;
     } else {
-      return { ok: false, error: `oh destroy: unexpected argument "${token}"` };
+      return { ok: false, error: `${bin} destroy: unexpected argument "${token}"` };
     }
   }
   return { ok: true, args };
@@ -564,7 +613,7 @@ export interface ComposeArgs {
   passthrough: string[];
 }
 
-export function parseComposeArgs(rest: string[]): ParseResult<ComposeArgs> {
+export function parseComposeArgs(rest: string[], bin: string = LEGACY_PRODUCT.bin): ParseResult<ComposeArgs> {
   const args: ComposeArgs = { help: false, passthrough: [] };
   if (rest.length === 0 || isHelpFlag(rest[0])) {
     return { ok: true, args: { ...args, help: true } };
@@ -572,7 +621,7 @@ export function parseComposeArgs(rest: string[]): ParseResult<ComposeArgs> {
   if (rest[0] !== "config") {
     return {
       ok: false,
-      error: `oh compose: unknown subcommand "${rest[0]}"`,
+      error: `${bin} compose: unknown subcommand "${rest[0]}"`,
       showHelp: true,
     };
   }
@@ -583,7 +632,7 @@ export function parseComposeArgs(rest: string[]): ParseResult<ComposeArgs> {
   if (sep === -1 && tail.length > 0) {
     return {
       ok: false,
-      error: `oh compose config: unexpected argument "${tail[0]}" — pass extra docker compose args after \`--\``,
+      error: `${bin} compose config: unexpected argument "${tail[0]}" — pass extra docker compose args after \`--\``,
     };
   }
   if (sep !== -1) args.passthrough = tail.slice(sep + 1);
@@ -599,14 +648,23 @@ export interface UpdateArgs {
   dryRun: boolean;
 }
 
-export function parseUpdateArgs(rest: string[]): ParseResult<UpdateArgs> {
+const PAYLOAD_UPDATE_FLAGS = ["--from", "--from-remote", "--ref", "--force"];
+
+export function parseUpdateArgs(rest: string[], bin: string = LEGACY_PRODUCT.bin): ParseResult<UpdateArgs> {
   const args: UpdateArgs = { help: false, fromRemote: false, force: false, dryRun: false };
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i];
+    if (bin === AGRO_PRODUCT.bin && PAYLOAD_UPDATE_FLAGS.includes(arg)) {
+      return {
+        ok: false,
+        error: `${bin} update: ${arg} belongs to the legacy project-payload command; run \`oh update ${arg}\` during the compatibility window — ${bin} update upgrades only the installed CLI`,
+        showHelp: true,
+      };
+    }
     if (arg === "--from") {
       const value = rest[i + 1];
       if (value === undefined) {
-        return { ok: false, error: "oh update: --from requires a directory" };
+        return { ok: false, error: `${bin} update: --from requires a directory` };
       }
       args.fromDir = value;
       i++;
@@ -619,7 +677,7 @@ export function parseUpdateArgs(rest: string[]): ParseResult<UpdateArgs> {
     if (arg === "--ref") {
       const value = rest[i + 1];
       if (value === undefined) {
-        return { ok: false, error: "oh update: --ref requires a ref argument (branch or tag)" };
+        return { ok: false, error: `${bin} update: --ref requires a ref argument (branch or tag)` };
       }
       args.ref = value;
       i++;
@@ -637,16 +695,16 @@ export function parseUpdateArgs(rest: string[]): ParseResult<UpdateArgs> {
       args.help = true;
       return { ok: true, args };
     }
-    return { ok: false, error: `oh update: unexpected argument "${arg}"`, showHelp: true };
+    return { ok: false, error: `${bin} update: unexpected argument "${arg}"`, showHelp: true };
   }
   if (args.fromRemote && args.fromDir !== undefined) {
     return {
       ok: false,
-      error: "oh update: --from-remote conflicts with --from — pass exactly one payload source",
+      error: `${bin} update: --from-remote conflicts with --from — pass exactly one payload source`,
     };
   }
   if (args.ref !== undefined && !args.fromRemote) {
-    return { ok: false, error: "oh update: --ref requires --from-remote" };
+    return { ok: false, error: `${bin} update: --ref requires --from-remote` };
   }
   return { ok: true, args };
 }
@@ -670,7 +728,7 @@ const SANDBOX_VALUE_FLAGS: Record<string, "name" | "repo"> = {
   "--repo": "repo",
 };
 
-export function parseSandboxArgs(rest: string[]): ParseResult<SandboxArgs> {
+export function parseSandboxArgs(rest: string[], bin: string = LEGACY_PRODUCT.bin): ParseResult<SandboxArgs> {
   const args: SandboxArgs = {
     help: false,
     yes: false,
@@ -687,7 +745,7 @@ export function parseSandboxArgs(rest: string[]): ParseResult<SandboxArgs> {
   if (head !== "install" && head !== "list") {
     return {
       ok: false,
-      error: `oh sandbox: unknown subcommand "${head}" — expected install or list`,
+      error: `${bin} sandbox: unknown subcommand "${head}" — expected install or list`,
       showHelp: true,
     };
   }
@@ -701,7 +759,7 @@ export function parseSandboxArgs(rest: string[]): ParseResult<SandboxArgs> {
     if (valueFlag !== undefined) {
       const value = tail[i + 1];
       if (value === undefined) {
-        return { ok: false, error: `oh sandbox ${head}: ${token} requires a value` };
+        return { ok: false, error: `${bin} sandbox ${head}: ${token} requires a value` };
       }
       args[valueFlag] = value;
       i++;
@@ -716,14 +774,14 @@ export function parseSandboxArgs(rest: string[]): ParseResult<SandboxArgs> {
     } else if (token.startsWith("--image=")) {
       const ref = token.slice("--image=".length);
       if (ref === "") {
-        return { ok: false, error: "oh sandbox: --image=<ref> requires a non-empty image ref" };
+        return { ok: false, error: `${bin} sandbox: --image=<ref> requires a non-empty image ref` };
       }
       args.image = true;
       args.imageRef = ref;
     } else if (token === "--json") {
       args.json = true;
     } else if (token.startsWith("-")) {
-      return { ok: false, error: `oh sandbox ${head}: unknown flag "${token}"` };
+      return { ok: false, error: `${bin} sandbox ${head}: unknown flag "${token}"` };
     } else {
       positionals.push(token);
     }
@@ -731,7 +789,7 @@ export function parseSandboxArgs(rest: string[]): ParseResult<SandboxArgs> {
 
   if (head === "list") {
     if (positionals.length > 0) {
-      return { ok: false, error: `oh sandbox list: unexpected argument "${positionals[0]}"` };
+      return { ok: false, error: `${bin} sandbox list: unexpected argument "${positionals[0]}"` };
     }
     return { ok: true, args };
   }
@@ -739,12 +797,12 @@ export function parseSandboxArgs(rest: string[]): ParseResult<SandboxArgs> {
   if (positionals.length === 0) {
     return {
       ok: false,
-      error: "oh sandbox install: a runtime is required, e.g. `oh sandbox install docker`",
+      error: `${bin} sandbox install: a runtime is required, e.g. \`${bin} sandbox install docker\``,
       showHelp: true,
     };
   }
   if (positionals.length > 1) {
-    return { ok: false, error: `oh sandbox install: unexpected argument "${positionals[1]}"` };
+    return { ok: false, error: `${bin} sandbox install: unexpected argument "${positionals[1]}"` };
   }
   args.runtime = positionals[0];
   return { ok: true, args };
@@ -755,15 +813,15 @@ export interface ShellArgs {
   name?: string;
 }
 
-export function parseShellArgs(rest: string[]): ParseResult<ShellArgs> {
+export function parseShellArgs(rest: string[], bin: string = LEGACY_PRODUCT.bin): ParseResult<ShellArgs> {
   const args: ShellArgs = { help: false };
   if (isHelpFlag(rest[0])) return { ok: true, args: { help: true } };
   for (const token of rest) {
     if (token.startsWith("-")) {
-      return { ok: false, error: `oh shell: unknown flag "${token}"` };
+      return { ok: false, error: `${bin} shell: unknown flag "${token}"` };
     }
     if (args.name !== undefined) {
-      return { ok: false, error: `oh shell: unexpected argument "${token}"` };
+      return { ok: false, error: `${bin} shell: unexpected argument "${token}"` };
     }
     args.name = token;
   }
@@ -777,7 +835,7 @@ export interface HarnessArgs {
   json: boolean;
 }
 
-export function parseHarnessArgs(rest: string[]): ParseResult<HarnessArgs> {
+export function parseHarnessArgs(rest: string[], bin: string = LEGACY_PRODUCT.bin): ParseResult<HarnessArgs> {
   const args: HarnessArgs = {
     help: false,
     json: false,
@@ -791,7 +849,7 @@ export function parseHarnessArgs(rest: string[]): ParseResult<HarnessArgs> {
     if (token === "--json") {
       args.json = true;
     } else if (token.startsWith("-")) {
-      return { ok: false, error: `oh harness: unknown flag "${token}"` };
+      return { ok: false, error: `${bin} harness: unknown flag "${token}"` };
     } else {
       positionals.push(token);
     }
@@ -801,18 +859,18 @@ export function parseHarnessArgs(rest: string[]): ParseResult<HarnessArgs> {
   if (sub !== "list" && sub !== "install" && sub !== "status") {
     return {
       ok: false,
-      error: `oh harness: unknown subcommand "${sub}" — expected list, install, or status`,
+      error: `${bin} harness: unknown subcommand "${sub}" — expected list, install, or status`,
       showHelp: true,
     };
   }
   if (extra.length > 0) {
-    return { ok: false, error: `oh harness: unexpected argument "${extra[0]}"` };
+    return { ok: false, error: `${bin} harness: unexpected argument "${extra[0]}"` };
   }
   if (sub === "install" && name === undefined) {
-    return { ok: false, error: "oh harness install: a harness name is required", showHelp: true };
+    return { ok: false, error: `${bin} harness install: a harness name is required`, showHelp: true };
   }
   if (sub === "list" && name !== undefined) {
-    return { ok: false, error: `oh harness list: unexpected argument "${name}"` };
+    return { ok: false, error: `${bin} harness list: unexpected argument "${name}"` };
   }
   args.subcommand = sub;
   if (name !== undefined) args.name = name;
@@ -827,7 +885,7 @@ interface ToolArgs {
   name?: string;
 }
 
-export function parseToolArgs(rest: string[]): ParseResult<ToolArgs> {
+export function parseToolArgs(rest: string[], bin: string = LEGACY_PRODUCT.bin): ParseResult<ToolArgs> {
   const args: ToolArgs = { help: false, yes: false, json: false };
   if (rest.length === 0 || isHelpFlag(rest[0])) {
     return { ok: true, args: { ...args, help: true } };
@@ -838,7 +896,7 @@ export function parseToolArgs(rest: string[]): ParseResult<ToolArgs> {
     if (token === "--yes" || token === "-y") args.yes = true;
     else if (token === "--json") args.json = true;
     else if (token.startsWith("-")) {
-      return { ok: false, error: `oh tool: unknown flag "${token}"` };
+      return { ok: false, error: `${bin} tool: unknown flag "${token}"` };
     } else positionals.push(token);
   }
 
@@ -846,18 +904,18 @@ export function parseToolArgs(rest: string[]): ParseResult<ToolArgs> {
   if (sub !== "list" && sub !== "install" && sub !== "status") {
     return {
       ok: false,
-      error: `oh tool: unknown subcommand "${sub}" — expected list, install, or status`,
+      error: `${bin} tool: unknown subcommand "${sub}" — expected list, install, or status`,
       showHelp: true,
     };
   }
   if (extra.length > 0) {
-    return { ok: false, error: `oh tool: unexpected argument "${extra[0]}"` };
+    return { ok: false, error: `${bin} tool: unexpected argument "${extra[0]}"` };
   }
   if (sub === "install" && name === undefined) {
-    return { ok: false, error: "oh tool install: a tool name is required", showHelp: true };
+    return { ok: false, error: `${bin} tool install: a tool name is required`, showHelp: true };
   }
   if (sub === "list" && name !== undefined) {
-    return { ok: false, error: `oh tool list: unexpected argument "${name}"` };
+    return { ok: false, error: `${bin} tool list: unexpected argument "${name}"` };
   }
   args.subcommand = sub;
   if (name !== undefined) args.name = name;
@@ -898,6 +956,7 @@ export type UpdateSource =
 export function resolveUpdateSource(
   args: Pick<UpdateArgs, "fromDir" | "fromRemote" | "ref">,
   bundled: BundledPayloadPaths,
+  bin: string = LEGACY_PRODUCT.bin,
 ): UpdateSource {
   const exists = bundled.exists ?? existsSync;
 
@@ -913,7 +972,7 @@ export function resolveUpdateSource(
   return {
     kind: "remote",
     ref: args.ref,
-    notice: `oh update: no bundled payload found — fetching ${DEFAULT_REPO_URL} (${args.ref ?? "default branch"})\n`,
+    notice: `${bin} update: no bundled payload found — fetching ${DEFAULT_REPO_URL} (${args.ref ?? "default branch"})\n`,
   };
 }
 
@@ -958,10 +1017,12 @@ export async function runWithRemoteSource(
 }
 
 async function main(argv: string[]): Promise<number> {
+  const product = resolveProduct(process.argv[1]);
+  const bin = product.bin;
   const [first, second] = argv;
 
   if (!first || isHelpFlag(first)) {
-    printOhHelp();
+    printOhHelp(product);
     return 0;
   }
   if (isVersionFlag(first)) {
@@ -970,15 +1031,15 @@ async function main(argv: string[]): Promise<number> {
   }
 
   if (first === "config") {
-    const parsed = parseConfigArgs(argv.slice(1));
+    const parsed = parseConfigArgs(argv.slice(1), bin);
     if (!parsed.ok) {
       process.stderr.write(`${parsed.error}\n`);
-      if (parsed.showHelp) printConfigHelp();
+      if (parsed.showHelp) printConfigHelp(bin);
       return 1;
     }
     const a = parsed.args;
     if (a.help) {
-      printConfigHelp();
+      printConfigHelp(bin);
       return second === undefined ? 1 : 0;
     }
 
@@ -996,27 +1057,27 @@ async function main(argv: string[]): Promise<number> {
     const name = a.integration as string;
     const integration = INTEGRATIONS[name];
     if (!integration) {
-      process.stderr.write(`oh config: unknown integration "${name}"\n\n`);
-      printConfigHelp();
+      process.stderr.write(`${bin} config: unknown integration "${name}"\n\n`);
+      printConfigHelp(bin);
       return 1;
     }
     if (a.integrationHelp) {
-      printIntegrationHelp(name, integration);
+      printIntegrationHelp(name, integration, bin);
       return 0;
     }
     return await integration.runner();
   }
 
   if (first === "secret") {
-    const parsed = parseSecretArgs(argv.slice(1));
+    const parsed = parseSecretArgs(argv.slice(1), bin);
     if (!parsed.ok) {
       process.stderr.write(`${parsed.error}\n`);
-      if (parsed.showHelp) printSecretHelp();
+      if (parsed.showHelp) printSecretHelp(bin);
       return 1;
     }
     const a = parsed.args;
     if (a.help) {
-      printSecretHelp();
+      printSecretHelp(bin);
       return 0;
     }
     const io: SecretIO = {
@@ -1029,14 +1090,14 @@ async function main(argv: string[]): Promise<number> {
   }
 
   if (first === "update") {
-    const parsed = parseUpdateArgs(argv.slice(1));
+    const parsed = parseUpdateArgs(argv.slice(1), bin);
     if (!parsed.ok) {
       process.stderr.write(`${parsed.error}\n`);
-      if (parsed.showHelp) printUpdateHelp();
+      if (parsed.showHelp) printUpdateHelp(bin);
       return 1;
     }
     if (parsed.args.help) {
-      printUpdateHelp();
+      printUpdateHelp(bin);
       return 0;
     }
 
@@ -1045,8 +1106,11 @@ async function main(argv: string[]): Promise<number> {
       stdout: (s: string) => process.stdout.write(s),
       stderr: (s: string) => process.stderr.write(s),
     };
+    if (product.name === "agro") {
+      return await runSelfUpgrade({ dryRun, argv1: process.argv[1] }, defaultDeps(VERSION), io);
+    }
     const targetDir = process.cwd();
-    const source = resolveUpdateSource(parsed.args, { sourceOhDir: DEFAULT_SOURCE_OH_DIR });
+    const source = resolveUpdateSource(parsed.args, { sourceOhDir: DEFAULT_SOURCE_OH_DIR }, bin);
 
     if (source.kind === "local") {
       return await runUpdate({ targetDir, fromDir: source.fromDir, force, dryRun }, io);
@@ -1058,15 +1122,15 @@ async function main(argv: string[]): Promise<number> {
   }
 
   if (first === "sandbox") {
-    const parsed = parseSandboxArgs(argv.slice(1));
+    const parsed = parseSandboxArgs(argv.slice(1), bin);
     if (!parsed.ok) {
       process.stderr.write(`${parsed.error}\n`);
-      if (parsed.showHelp) printSandboxHelp();
+      if (parsed.showHelp) printSandboxHelp(bin);
       return 1;
     }
     const a = parsed.args;
     if (a.help) {
-      printSandboxHelp();
+      printSandboxHelp(bin);
       return a.subcommand === undefined ? 1 : 0;
     }
     const io: SandboxIO = lifecycleIo();
@@ -1087,13 +1151,13 @@ async function main(argv: string[]): Promise<number> {
   }
 
   if (first === "shell") {
-    const parsed = parseShellArgs(argv.slice(1));
+    const parsed = parseShellArgs(argv.slice(1), bin);
     if (!parsed.ok) {
       process.stderr.write(`${parsed.error}\n`);
       return 1;
     }
     if (parsed.args.help) {
-      printShellHelp();
+      printShellHelp(bin);
       return 0;
     }
     return runShell(
@@ -1103,13 +1167,13 @@ async function main(argv: string[]): Promise<number> {
   }
 
   if (first === "destroy") {
-    const parsed = parseDestroyArgs(argv.slice(1));
+    const parsed = parseDestroyArgs(argv.slice(1), bin);
     if (!parsed.ok) {
       process.stderr.write(`${parsed.error}\n`);
       return 1;
     }
     if (parsed.args.help) {
-      printDestroyHelp();
+      printDestroyHelp(bin);
       return 0;
     }
     return await runDestroy(
@@ -1122,14 +1186,14 @@ async function main(argv: string[]): Promise<number> {
   }
 
   if (first === "compose") {
-    const parsed = parseComposeArgs(argv.slice(1));
+    const parsed = parseComposeArgs(argv.slice(1), bin);
     if (!parsed.ok) {
       process.stderr.write(`${parsed.error}\n`);
-      if (parsed.showHelp) printComposeHelp();
+      if (parsed.showHelp) printComposeHelp(bin);
       return 1;
     }
     if (parsed.args.help) {
-      printComposeHelp();
+      printComposeHelp(bin);
       return 0;
     }
     return runComposeConfig({}, parsed.args.passthrough);
@@ -1139,19 +1203,19 @@ async function main(argv: string[]): Promise<number> {
     const verb = first as ComposeVerb;
     const rest = argv.slice(1);
     if (isHelpFlag(rest[0])) {
-      printComposeVerbHelp(verb);
+      printComposeVerbHelp(verb, bin);
       return 0;
     }
     const sep = rest.indexOf("--");
     const head = sep === -1 ? rest : rest.slice(0, sep);
     const extra = sep === -1 ? [] : rest.slice(sep + 1);
     if (head.length > 0 && head[0].startsWith("-")) {
-      process.stderr.write(`oh ${verb}: unknown flag "${head[0]}"\n`);
+      process.stderr.write(`${bin} ${verb}: unknown flag "${head[0]}"\n`);
       return 1;
     }
     if (head.length > 1) {
       process.stderr.write(
-        `oh ${verb}: unexpected argument "${head[1]}" — pass extra docker compose args after \`--\`\n`,
+        `${bin} ${verb}: unexpected argument "${head[1]}" — pass extra docker compose args after \`--\`\n`,
       );
       return 1;
     }
@@ -1159,14 +1223,14 @@ async function main(argv: string[]): Promise<number> {
   }
 
   if (first === "harness") {
-    const parsed = parseHarnessArgs(argv.slice(1));
+    const parsed = parseHarnessArgs(argv.slice(1), bin);
     if (!parsed.ok) {
       process.stderr.write(`${parsed.error}\n`);
-      if (parsed.showHelp) printHarnessHelp();
+      if (parsed.showHelp) printHarnessHelp(bin);
       return 1;
     }
     if (parsed.args.help) {
-      printHarnessHelp();
+      printHarnessHelp(bin);
       return 0;
     }
     const a = parsed.args;
@@ -1184,14 +1248,14 @@ async function main(argv: string[]): Promise<number> {
   }
 
   if (first === "tool") {
-    const parsed = parseToolArgs(argv.slice(1));
+    const parsed = parseToolArgs(argv.slice(1), bin);
     if (!parsed.ok) {
       process.stderr.write(`${parsed.error}\n`);
-      if (parsed.showHelp) printToolHelp();
+      if (parsed.showHelp) printToolHelp(bin);
       return 1;
     }
     if (parsed.args.help) {
-      printToolHelp();
+      printToolHelp(bin);
       return 0;
     }
     const a = parsed.args;
@@ -1222,14 +1286,14 @@ async function main(argv: string[]): Promise<number> {
       return 1;
     }
     if (parsed.args.help) {
-      printGatewayHelp();
+      printGatewayHelp(bin);
       return 0;
     }
     return runGateway(parsed.args.passthrough, {});
   }
 
-  process.stderr.write(`oh: unknown command "${first}"\n\n`);
-  printOhHelp();
+  process.stderr.write(`${bin}: unknown command "${first}"\n\n`);
+  printOhHelp(product);
   return 1;
 }
 
@@ -1244,7 +1308,7 @@ main(process.argv.slice(2)).then(
   (code) => process.exit(code),
   (err) => {
     const msg = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`oh: ${msg}\n`);
+    process.stderr.write(`${resolveProduct(process.argv[1]).bin}: ${msg}\n`);
     process.exit(2);
   },
 );

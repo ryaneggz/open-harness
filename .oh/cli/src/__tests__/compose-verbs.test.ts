@@ -157,7 +157,7 @@ describe("oh is the only front door", () => {
 
   it("documents every compose verb in the lifecycle reference", () => {
     const map = read("docs/lifecycle-commands.md");
-    for (const verb of composeVerbs()) expect(map, verb).toContain(`\`oh ${verb}`);
+    for (const verb of composeVerbs()) expect(map, verb).toContain(`\`agro ${verb}`);
   });
 
   it("names no `make` lifecycle command in the lifecycle reference", () => {
