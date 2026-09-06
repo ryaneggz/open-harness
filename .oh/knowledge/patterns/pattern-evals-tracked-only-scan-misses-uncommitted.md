@@ -27,7 +27,7 @@ tree — is the first place the new file is checked.
 
 ## Detail
 **Symptom.** `compat-inventory.test.ts` passed locally, then CI run
-`34049065199` failed on `uninventoried: OH_X (docs/agro-compatibility.md)`: the
+`34049065199` failed on `uninventoried: OH_<X> (docs/agro-compatibility.md)`: the
 doc had been written and committed after the local test run and used a literal
 placeholder that matched the identifier pattern.
 
@@ -40,5 +40,5 @@ part of the tree the test looked at.
 **Workaround.** Enumerate the working tree, not the index:
 `git ls-files -z --cached --others --exclude-standard`, de-duplicated. The scan
 then fails on an untracked file the moment it is written, which is what a
-fault-injection check needs anyway (`printf 'x=$OH_FAULT\n' > tmp.sh` must turn
+fault-injection check needs anyway (`printf 'x=$OH_<FAULT>\n' > tmp.sh` must turn
 the probe red without a `git add`).
