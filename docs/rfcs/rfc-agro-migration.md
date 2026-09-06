@@ -38,3 +38,11 @@ Each phase stops at its exit gate; a later phase cannot repair a missing gate.
 See [`docs/agro-compatibility.md`](../agro-compatibility.md) for the resolver,
 precedence, migration engine, and inventory that Phase 0 delivers, and for the
 legacy references intentionally left for later phases.
+
+## Phase 1 contract
+
+See [`docs/agro-compatibility.md` § Phase 1 — entry points and artifacts](../agro-compatibility.md#phase-1--entry-points-and-artifacts)
+for the `agro`/`oh` executable-name identity, the `@mifune/agro` package and
+`@mifune/openharness` shim, `agro update` versus `oh update`, the artifact-only
+`get-agro.sh` and its `AGRO_*` aliases, the dual-published release artifacts, and
+the defaults Phase 1 leaves unchanged.
