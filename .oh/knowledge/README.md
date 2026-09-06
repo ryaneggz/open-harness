@@ -54,6 +54,7 @@ Schema, frontmatter spec, provenance kinds, and every authoring rule:
 
 | Slug | Title | Tags | Updated |
 | --- | --- | --- | --- |
+| plan-vs-built-reconciliation | Plan-vs-Built Reconciliation | [spec-execute, evidence, merge-gate, comprehension, audit, task-folder, review] | 2026-09-06 |
 | pattern-scripts-sibling-dependency-standalone-copies | A script that gains a sourced sibling breaks every test and probe that copies it alone | [scripts, compose, testing, probes, bundling, registry, boot] | 2026-09-06 |
 | pattern-evals-tracked-only-scan-misses-uncommitted | A repository scan over git ls-files passes on uncommitted files and fails once they are committed | [evals, testing, git, inventory, ci, false-pass] | 2026-09-06 |
 | pattern-evals-environment-parity-false-delta | An eval run from a shell with a different PATH reports environment gaps as probe regressions | [evals, probes, environment, path, python, false-regression, worktree] | 2026-09-06 |
@@ -70,7 +71,6 @@ Schema, frontmatter spec, provenance kinds, and every authoring rule:
 | pattern-evals-prose-literal-pinning | Contract probes that pin multi-word prose break on reflow, not on drift | [evals, probes, contract-text, grep, false-failure, documentation] | 2026-09-02 |
 | pattern-audit-driver-tool-allowlist | A non-interactive audit driver without a tool allowlist reports every gate as unobtainable | [audit, spec, claude-p, permissions, allowlist, false-failure, verification-environment] | 2026-09-02 |
 | wikiskill-experience-compilation | WikiSkill: Compiling Agent Experience into Persistent Knowledge (arXiv 2608.27454) | [skill-evolution, persistent-knowledge, continual-learning, harness-evolution, self-improvement, wiki, ablation, skill-transfer] | 2026-09-01 |
-| plan-vs-built-reconciliation | Plan-vs-Built Reconciliation | [spec-execute, evidence, merge-gate, comprehension, audit, task-folder, review] | 2026-09-01 |
 | pattern-wiki-ungated-check-drift | Report-only checks nothing gates on stop being run | [wiki, lint, evals, probes, report-only, drift, gating] | 2026-09-01 |
 | pattern-wiki-external-model-over-mapping | Mapping an external model onto the harness reimports a tier it deleted | [wiki, ingest, architecture, external-sources, scope-creep, design-review] | 2026-09-01 |
 | pattern-evals-pipefail-early-exit | A short-circuiting reader turns a successful match into a failed pipeline | [evals, probes, bash, pipefail, sigpipe, false-failure, shell] | 2026-09-01 |
