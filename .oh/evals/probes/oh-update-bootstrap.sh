@@ -2,7 +2,7 @@
 # tier: A
 # source: issue #950 US-003 / D5 — the scaffolding init verb is retired; `oh update` is the bootstrap that equips a checkout
 # desc: `oh update --from <checkout>` equips an empty directory with .oh/ and crons/ only — it prompts zero
-#       times, writes no oh.json, .env, .env.example, AGENTS.md, .gitignore, .devcontainer/ or provider
+#       times, writes no oh.json, .env, .example.env, AGENTS.md, .gitignore, .devcontainer/ or provider
 #       directory, and a second run reports the payload already up to date
 set -euo pipefail
 
@@ -53,7 +53,7 @@ else
   [[ -d "$work/crons" ]] || fails+=("oh update did not create crons/ — the payload ships the schedule directory")
   [[ -f "$work/.oh/manifest.json" ]] || fails+=("oh update wrote no .oh/manifest.json — the payload marker is missing")
 
-  for unwanted in oh.json .env .env.example AGENTS.md CLAUDE.md .gitignore .devcontainer .claude .pi .codex .hermes; do
+  for unwanted in oh.json .env .example.env AGENTS.md CLAUDE.md .gitignore .devcontainer .claude .pi .codex .hermes; do
     [[ -e "$work/$unwanted" ]] \
       && fails+=("oh update wrote $unwanted — the bootstrap ships only .oh/ and crons/; the operator owns every other root file")
   done

@@ -14,7 +14,7 @@ on:
       - ".oh/scripts/sandbox-boot-smoke.sh"
       - ".oh/scripts/harness-config.sh"
       - "oh.json"
-      - ".env.example"
+      - ".example.env"
       - ".dockerignore"
       - ".oh/scripts/verify-sandbox-image.sh"
       - ".github/workflows/sandbox-boot-guard.yml"
@@ -27,7 +27,7 @@ on:
       - ".oh/scripts/sandbox-boot-smoke.sh"
       - ".oh/scripts/harness-config.sh"
       - "oh.json"
-      - ".env.example"
+      - ".example.env"
       - ".dockerignore"
       - ".oh/scripts/verify-sandbox-image.sh"
       - ".github/workflows/sandbox-boot-guard.yml"
@@ -94,7 +94,7 @@ jobs:
       # can run a synchronous `pnpm install` during boot when the root dependency
       # tree is missing or its manifest marker is stale — a cold install can
       # overrun the healthcheck's ~690s unhealthy deadline and fail the boot with
-      # "missing required tmux session: cron-system". Seeding node_modules here
+      # "systemd unit not active: openharness-cron.service". Seeding node_modules here
       # moves that slow/variable install OUT of the healthcheck-timed window; the
       # step below also sets build.skipPnpmInstall in oh.json so the pre-seeded CI
       # path remains an explicit boot-window escape hatch even before a marker

@@ -120,7 +120,7 @@ The installer:
 1. Verifies Docker and git are present, and installs Node ≥ 20 and the `oh` CLI when they are missing.
 2. Clones the repo into `~/.openharness` (or pulls latest if the directory already exists).
 3. Prompts for sandbox name, timezone, and git identity, then writes the non-secrets to the tracked `oh.json`.
-4. Creates the gitignored, mode-`0600` root `.env` from the tracked `.env.example` when missing (all keys commented — inert until you edit), and links `.devcontainer/.env` to it so VS Code "Reopen in Container" reads the same file. Non-secret settings stay in the tracked `oh.json`.
+4. Creates the gitignored, mode-`0600` root `.env` from the tracked `.example.env` when missing (all keys commented — inert until you edit), and links `.devcontainer/.env` to it so VS Code "Reopen in Container" reads the same file. Non-secret settings stay in the tracked `oh.json`.
 5. Provisions the sandbox (`oh sandbox install docker --repo <clone>`).
 6. Prints the next-step `oh` commands (open a shell, stop, tear down).
 
@@ -174,7 +174,7 @@ cd openharness
 oh sandbox install docker --repo "$PWD" --name openharness
 ```
 
-The wizard asks for the sandbox name, timezone, git identity, SSH (and its host port), and the host Docker socket, then writes `~/.oh/sandboxes/openharness/oh.json`. `--yes` keeps every default and asks nothing. Edit one field later with `oh config set --sandbox openharness <field> <value>`, and set a secret with `oh secret set --sandbox openharness <KEY>`. See [Configuration](./configuration.md) for the field reference, and the comments in `.env.example` for every allow-listed secret.
+The wizard asks for the sandbox name, timezone, git identity, SSH (and its host port), and the host Docker socket, then writes `~/.oh/sandboxes/openharness/oh.json`. `--yes` keeps every default and asks nothing. Edit one field later with `oh config set --sandbox openharness <field> <value>`, and set a secret with `oh secret set --sandbox openharness <KEY>`. See [Configuration](./configuration.md) for the field reference, and the comments in `.example.env` for every allow-listed secret.
 
 ### 3. What the sandbox runs
 
@@ -189,7 +189,7 @@ docker ps --filter "name=openharness" --format "{{.Names}} {{.Status}}"
 docker inspect --format '{{json .State.Health}}' openharness
 ```
 
-A healthy sandbox reports the tmux-managed runtime sessions (`cron-watchdog` and `cron-system`) as available; optional Slack and Hermes dashboard sessions are checked only when configured. To debug a failure from inside the container, run `bash /home/sandbox/harness/.oh/scripts/sandbox-healthcheck.sh` for the exact missing session. For a temporary local escape hatch, add a Compose override with `services.sandbox.healthcheck.disable: true`; do not commit that override unless you are deliberately changing the harness health policy.
+A healthy sandbox reports the systemd units `openharness-bootstrap.service` and `openharness-cron.service` as active; optional Slack and Hermes dashboard tmux sessions are checked only when configured. To debug a failure from inside the container, run `bash /home/sandbox/harness/.oh/scripts/sandbox-healthcheck.sh` for the exact unit or session at fault. For a temporary local escape hatch, add a Compose override with `services.sandbox.healthcheck.disable: true`; do not commit that override unless you are deliberately changing the harness health policy.
 
 ### 4. Open a shell
 
@@ -213,7 +213,7 @@ npx @mifune/openharness sandbox install docker
 
 The published package is the same single self-contained bundle: it carries the compose files and the wrapper a sandbox needs, and `oh update` carries the `.oh/` payload (falling back to an on-demand fetch, no repo clone). npm does **not** install Node; Node ≥ 20 must already be on your PATH (that is exactly what `get-oh.sh` bootstraps below).
 
-**No npm, or no Node yet?** Bootstrap with `get-oh.sh` instead. It installs the single self-contained `oh` binary to `~/.local/bin/oh` — **no repo clone**, and it does not touch an existing `~/.openharness` sandbox. It prefers a prebuilt bundle (`oh.mifune.dev/oh.js`) and falls back to building from source in a temp dir. If Node.js ≥ 20 is missing, it offers to install nvm + Node 22 and sources it so `oh` works in the same shell.
+**No npm, or no Node yet?** Bootstrap with `get-oh.sh` instead. It installs the single self-contained `oh` binary to `~/.local/bin/oh` — **no repo clone**, and it does not touch an existing `~/.openharness` sandbox. If Node.js ≥ 20 is missing, it offers to install nvm + Node 22 and sources it so `oh` works in the same shell.
 
 For a review-first install, download and inspect the script before you run it.
 The review-first alternative appears below.
@@ -239,8 +239,6 @@ bash get-oh.sh
 ```
 
 Environment overrides: `OH_BIN_DIR=<dir>` (install location, default `~/.local/bin`), `OH_JS_URL=<url>` (prebuilt bundle URL), `OH_GITHUB_REPO=<org>/<fork>` / `OH_GITHUB_REF=<ref>` (source for the build fallback), `OH_NVM_VERSION=<tag>` (nvm version for the Node install), `--yes`/`--no` (auto-accept/decline the Node-install prompt).
-
-**From an existing checkout (no bootstrap script):** `cd .oh/cli && npm install && npm run build`, then put `dist/oh.js` on your PATH as `oh`.
 
 Then, in any project:
 
@@ -275,7 +273,7 @@ Once installed, proceed to the [Quickstart](./quickstart.md) to authenticate ins
 
 The sandbox image ships a complete development environment. The required host dependencies are Docker with the Compose plugin, Git, and Node.js ≥ 20 (see [Prerequisites](#prerequisites)).
 
-Project-local Pi packages are loaded from `.pi/settings.json`; the defaults include `@tintinweb/pi-subagents`, `@tintinweb/pi-tasks`, `@narumitw/pi-goal`, `@narumitw/pi-plan-mode`, `@narumitw/pi-codex-usage@0.6.2` for `/codex-status` plus fixed statusline usage timers, `@tifan/pi-recap` for `/recap` plus automatic idle/resume session summaries, `@trevonistrevon/pi-loop` for Monitor/Loop tools, `@guwidoe/pi-prompt-suggester` for next-prompt suggestions, and `pi-dynamic-workflows` for workflow-script fan-out through isolated Pi subagents.
+Project-local Pi packages are loaded from `.pi/settings.json`; the defaults include `@tintinweb/pi-subagents`, `@tintinweb/pi-tasks`, `@narumitw/pi-goal`, `@narumitw/pi-codex-usage@0.6.2` for `/codex-status` plus fixed statusline usage timers, `@tifan/pi-recap` for `/recap` plus automatic idle/resume session summaries, `@trevonistrevon/pi-loop` for Monitor/Loop tools, `@guwidoe/pi-prompt-suggester` for next-prompt suggestions, and `pi-dynamic-workflows` for workflow-script fan-out through isolated Pi subagents.
 
 ### Base image
 
@@ -310,6 +308,7 @@ system path is unwritable from a running sandbox. Consequences worth knowing:
 | Pi | `pi` | `@earendil-works/pi-coding-agent` — local-first coding agent (was `@mariozechner/pi-coding-agent`, now deprecated) | `oh harness install pi` |
 | OpenCode | `opencode` | `opencode-ai` — terminal coding agent with OpenAI OAuth support | `oh harness install opencode` |
 | Hermes | `hermes` | Nous Research's self-improving agent CLI | `oh harness install hermes` |
+| [Muse Code](harnesses/muse-code.md) | `muse` | Meta's native terminal coding agent | `oh harness install muse-code` |
 | Grok Build | `grok` | xAI's proprietary Grok Build CLI (`@xai-official/grok@0.2.39`, Node >=20) | `oh harness install grok-build` |
 | T3 Code | `npx t3` | Browser UI over Claude/Codex/OpenCode | on demand, no install |
 

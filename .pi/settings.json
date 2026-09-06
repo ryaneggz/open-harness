@@ -1,8 +1,9 @@
 {
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.6-sol",
-  "defaultThinkingLevel": "medium",
+  "defaultModel": "gpt-6-astra",
+  "defaultThinkingLevel": "high",
   "enabledModels": [
+    "openai-codex/gpt-6-astra",
     "openai-codex/gpt-5.6-sol",
     "openai-codex/gpt-5.6-terra",
     "openai-codex/gpt-5.6-luna"
@@ -24,7 +25,6 @@
     "npm:@tintinweb/pi-subagents@0.12.0",
     "npm:@tintinweb/pi-tasks@0.7.0",
     "npm:@narumitw/pi-goal@0.4.2",
-    "npm:@narumitw/pi-plan-mode@0.4.2",
     "npm:@narumitw/pi-codex-usage@0.6.2",
     "npm:@tifan/pi-recap@0.4.2",
     "npm:@trevonistrevon/pi-loop@0.5.5",

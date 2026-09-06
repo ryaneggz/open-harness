@@ -466,14 +466,13 @@ describe("compose helper wiring", () => {
     expect(text).toContain("oh config set");
     expect(text).not.toContain("_yaml_set");
     expect(text).not.toContain("_cfg_set");
-    expect(text).not.toContain("example.env");
 
     expect(text).toContain('ENV_FILE="$REPO_DIR/.env"');
-    expect(text).toContain('cp "$REPO_DIR/.env.example" "$ENV_FILE"');
+    expect(text).toContain('cp "$REPO_DIR/.example.env" "$ENV_FILE"');
     expect(text).toContain('ln -s ../.env "$DEVCONTAINER_ENV_LINK"');
     expect(text).toContain('chmod 600 "$ENV_FILE"');
 
-    expect(text.indexOf("Created .env from .env.example")).toBeLessThan(
+    expect(text.indexOf("Created .env from .example.env")).toBeLessThan(
       text.indexOf("_config_set name"),
     );
 

@@ -136,9 +136,9 @@ The shared skills and hooks are vendored directly under `.oh/` (`.oh/skills`, `.
   overlays, `entrypoint.sh`, and the two client scripts (`client-slack-supervise.sh` /
   `seed-msg-bridge.sh`). Everything the sandbox boots from lives here, in the one
   conventional location — no split, no compat shim.
-- `oh.json` and `.env.example` — the two authored configuration surfaces, and
+- `oh.json` and `.example.env` — the two authored configuration surfaces, and
   both live at the repository *root*, not here. Tracked `oh.json` holds every
-  non-secret setting; tracked `.env.example` documents the secrets-only,
+  non-secret setting; tracked `.example.env` documents the secrets-only,
   gitignored root `.env`, to which `.devcontainer/.env` is a symlink. The CI
   path filters and the `harness-ci-core-paths` / `sandbox-boot-guard-ci` probes
   pin both. See [`docs/configuration.md`](../docs/configuration.md).

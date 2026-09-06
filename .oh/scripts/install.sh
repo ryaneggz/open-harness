@@ -321,12 +321,12 @@ mkdir -p "$REPO_DIR/.devcontainer"
 
 ENV_FILE="$REPO_DIR/.env"
 if [ ! -f "$ENV_FILE" ]; then
-  if [ -f "$REPO_DIR/.env.example" ]; then
-    cp "$REPO_DIR/.env.example" "$ENV_FILE"
-    ok "Created .env from .env.example — every key commented out, so it is inert until you fill one in"
+  if [ -f "$REPO_DIR/.example.env" ]; then
+    cp "$REPO_DIR/.example.env" "$ENV_FILE"
+    ok "Created .env from .example.env — every key commented out, so it is inert until you fill one in"
   else
     : > "$ENV_FILE"
-    warn ".env.example missing — sandbox will boot without any secrets."
+    warn ".example.env missing — sandbox will boot without any secrets."
   fi
   __FIRST_INSTALL=1
 else
@@ -446,7 +446,7 @@ printf "  ───────────────────────�
 printf "       ${CYAN}oh.json${NC}      — the tracked home for every NON-secret setting. Your\n"
 printf "                      installer answers were written here with 'oh config set'.\n"
 printf "                      Field reference: docs/configuration.md.\n"
-printf "       ${CYAN}.env${NC}         — gitignored and 0600, seeded from the tracked .env.example,\n"
+printf "       ${CYAN}.env${NC}         — gitignored and 0600, seeded from the tracked .example.env,\n"
 printf "                      which documents every allow-listed secret. Secrets only;\n"
 printf "                      .devcontainer/.env symlinks to it so VS Code \"Reopen in\n"
 printf "                      Container\" reads the same file.\n"

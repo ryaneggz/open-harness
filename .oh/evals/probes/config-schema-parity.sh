@@ -6,7 +6,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 
-SECRETS_EXAMPLE="$ROOT/.env.example"
+SECRETS_EXAMPLE="$ROOT/.example.env"
 CONFIG_DOC="$ROOT/docs/configuration.md"
 SECRETS_SRC="$ROOT/.oh/cli/src/lib/secrets.ts"
 RENDER_SRC="$ROOT/.oh/cli/src/lib/config-render.ts"
@@ -62,8 +62,8 @@ done
 
 missing_secret="$(comm -23 <(echo "$secrets") <(echo "$example_keys") | join_list)"
 extra_secret="$(comm -13 <(echo "$secrets") <(echo "$example_keys") | join_list)"
-[[ -z "$missing_secret" ]] || fails+=("allow-listed in secrets.ts but undocumented in .env.example: $missing_secret")
-[[ -z "$extra_secret" ]] || fails+=("documented in .env.example but not an allow-listed secret — a non-secret must live in oh.json: $extra_secret")
+[[ -z "$missing_secret" ]] || fails+=("allow-listed in secrets.ts but undocumented in .example.env: $missing_secret")
+[[ -z "$extra_secret" ]] || fails+=("documented in .example.env but not an allow-listed secret — a non-secret must live in oh.json: $extra_secret")
 
 leaked="$(comm -12 <(echo "$secrets") <(echo "$fields") | join_list)"
 [[ -z "$leaked" ]] || fails+=("secret documented as a tracked oh.json field in docs/configuration.md: $leaked")
@@ -88,7 +88,7 @@ done < <(rendered_vars)
 
 for var in "${RETIRED[@]}"; do
   grep -qxF "$var" <<<"$fields" && fails+=("retired variable $var reintroduced as an oh.json field")
-  grep -qxF "$var" <<<"$example_keys" && fails+=("retired variable $var reintroduced in .env.example")
+  grep -qxF "$var" <<<"$example_keys" && fails+=("retired variable $var reintroduced in .example.env")
 done
 
 if (( ${#fails[@]} > 0 )); then
@@ -97,5 +97,5 @@ if (( ${#fails[@]} > 0 )); then
   exit 1
 fi
 
-echo "PASS: config schema parity — .env.example matches the secrets.ts allow-list, docs/configuration.md documents every rendered oh.json field, and every compose-interpolated var lands in exactly one surface" >&2
+echo "PASS: config schema parity — .example.env matches the secrets.ts allow-list, docs/configuration.md documents every rendered oh.json field, and every compose-interpolated var lands in exactly one surface" >&2
 exit 0

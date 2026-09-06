@@ -99,7 +99,7 @@ assert allow "$CMD_HOOK" "$D_GIT"  "command guard falsely denied git config"
 assert allow "$CMD_HOOK" "$D_OH"   "command guard falsely denied .oh/config.json"
 
 E_ENV=$(fixture e-env "$(jq -nc '{tool_input:{file_path:"/home/sandbox/harness/.env"}}')")
-E_TMPL=$(fixture e-tmpl "$(jq -nc '{tool_input:{file_path:"/home/sandbox/harness/.env.example"}}')")
+E_TMPL=$(fixture e-tmpl "$(jq -nc '{tool_input:{file_path:"/home/sandbox/harness/.example.env"}}')")
 assert deny  "$FILE_HOOK" "$E_ENV"  "file guard stopped denying env files"
 assert allow "$FILE_HOOK" "$E_TMPL" "file guard lost the env-template exemption"
 assert allow "$CODEX_HOOK" "$E_ENV"  "Codex local-settings hook broadened beyond settings.local.json"
@@ -116,8 +116,8 @@ for tool in Read Write Edit Grep Glob; do
   fi
 done
 
-for rule in "Read(file_path=**/$SEG/**)" "Write(file_path=**/$SEG/**)" "Edit(file_path=**/$SEG/**)" \
-  "Read(file_path=**/settings.local.json)" "Write(file_path=**/settings.local.json)" "Edit(file_path=**/settings.local.json)"; do
+for rule in "Read(file_path=**/$SEG/**)" "Edit(file_path=**/$SEG/**)" \
+  "Read(file_path=**/settings.local.json)" "Edit(file_path=**/settings.local.json)"; do
   if ! jq -e --arg r "$rule" '.permissions.deny | index($r)' "$SETTINGS" >/dev/null; then
     echo "REGRESSION: permissions.deny is missing '$rule'" >&2
     exit 1

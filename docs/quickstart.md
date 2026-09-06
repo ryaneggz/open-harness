@@ -81,16 +81,7 @@ are yours to author. With `--repo` and `image.mode` set to `build`, the sandbox
 builds from that checkout's `.devcontainer/Dockerfile` instead of pulling
 (~10 min cold, ~30s warm).
 
-<details><summary>Other install methods (from source · one-line harness installer · fork)</summary>
-
-**From source.** Build the CLI out of a checkout — the audit-first path:
-
-```bash
-git clone https://github.com/mifunedev/openharness.git ~/.openharness
-cd ~/.openharness/.oh/cli && npm install && npm run build   # put dist/oh.js on PATH as `oh`
-cd ~/.openharness
-oh sandbox install docker --repo "$PWD" --name openharness
-```
+<details><summary>One-line harness installer and forks</summary>
 
 **One-line installer for this harness.** Gets `oh`, clones this repo to
 `~/.openharness`, configures it, and provisions — in one shot:
@@ -158,7 +149,7 @@ No agent CLI and no tool is baked into the image, and nothing installs one at
 boot. Install what you need through the one door:
 
 ```bash
-oh harness install claude-code   # or codex, pi, opencode, hermes, grok-build
+oh harness install claude-code   # or codex, pi, opencode, hermes, grok-build, muse-code
 oh tool install cloudflared      # or herdr, agent-browser, tailscale
 ```
 
@@ -182,6 +173,7 @@ harness before use.
 - **[OpenCode](./harnesses/opencode.md)**: `oh harness install opencode`, then run `opencode auth login`
 - **[Pi](./harnesses/pi.md)**: configure provider keys via environment variables
 - **[Hermes](./harnesses/hermes.md)**: `oh harness install hermes`, then run `hermes setup`
+- **[Muse Code](./harnesses/muse-code.md)**: `oh harness install muse-code`, verify `muse --version`, then run `muse login`
 - **[Grok Build](./harnesses/grok-build.md)**: `oh harness install grok-build`, verify `grok --version`, then run `grok login --device-auth` (headless/remote) or `grok login`
 - **[T3 Code](./harnesses/t3code.md)**: authenticate one of Claude / Codex / OpenCode, then `/t3` or `npx t3` (browser UI on port 3773)
 
@@ -203,7 +195,7 @@ gh auth login && gh auth setup-git
 
 Configuration lives in **two** files, split by kind. `oh.json` holds every
 non-secret setting. A gitignored, mode-`0600` `.env` holds nothing but secrets;
-the tracked `.env.example` documents every allow-listed secret key, commented
+the tracked `.example.env` documents every allow-listed secret key, commented
 out, so a fresh copy changes nothing.
 
 Each sandbox keeps its own pair inside its registry entry at
