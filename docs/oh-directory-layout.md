@@ -47,7 +47,7 @@ per sandbox:
 | `oh.json` | file | The sandbox's own settings — `name`, `runtime`, `repo`, `timezone`, `git.*`, `access.*`, `image.*`, `storage.homePath`, `composeOverrides`. **The one file an operator edits.** | `oh sandbox install docker`, `oh config --sandbox <name>`, and every lifecycle verb. |
 | `.env` | file | The sandbox's secrets, gitignored-equivalent and mode `0600`. | `oh secret set --sandbox <name>`. |
 | `.devcontainer/` | dir | The compose base plus the ssh and docker-sock overlays. **Generated** — re-materialised from the CLI's bundled copies on every lifecycle call. | `.oh/scripts/docker-compose.sh` inside the entry. |
-| `.oh/scripts/` | dir | `docker-compose.sh` and `check-host-port.sh`. **Generated**, same rule. | The lifecycle verbs. |
+| `.oh/scripts/` | dir | `docker-compose.sh`, `check-host-port.sh`, and `compat.sh` (the boot-safe dual-generation resolver the wrapper sources). **Generated**, same rule. | The lifecycle verbs. |
 
 An entry has the exact shape the compose wrapper already expects of a project
 root, which is why a registry entry needs no special case in the wrapper.

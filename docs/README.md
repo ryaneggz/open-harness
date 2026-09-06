@@ -38,6 +38,7 @@ Open Harness vendors the shared skills/hooks primitive pack directly into the `.
 - [Creating a sandbox: `oh sandbox install docker`](deployment-prebuilt-image.md)
 - [Connecting to the sandbox](connecting.md)
 - [Contributing](contributing.md)
+- [AGRO compatibility contract](agro-compatibility.md)
 
 ## Harnesses
 
