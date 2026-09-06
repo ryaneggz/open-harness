@@ -115,7 +115,7 @@ describe("listEntries", () => {
 });
 
 describe("materialize", () => {
-  it("writes exactly the five bundled files, executable where they are scripts", () => {
+  it("writes exactly the six bundled files, executable where they are scripts", () => {
     registry();
     const root = addEntry("box");
     materialize(root);
@@ -125,6 +125,7 @@ describe("materialize", () => {
       ".devcontainer/docker-compose.ssh.yml",
       ".devcontainer/docker-compose.yml",
       ".oh/scripts/check-host-port.sh",
+      ".oh/scripts/compat.sh",
       ".oh/scripts/docker-compose.sh",
       "oh.json",
     ]);
@@ -226,5 +227,24 @@ describe("resolveSandboxRoot", () => {
     expect(() => resolveSandboxRoot({ cwd: tmpdir() })).toThrow(
       /no sandbox is registered .* `oh sandbox install docker`/,
     );
+  });
+});
+
+describe("ohHome — dual-generation registry home", () => {
+  it("prefers AGRO_HOME over OH_HOME", () => {
+    const agro = mkdtempSync(join(tmpdir(), "oh-registry-agro-"));
+    const legacy = mkdtempSync(join(tmpdir(), "oh-registry-legacy-"));
+    cleanups.push(agro, legacy);
+    vi.stubEnv("AGRO_HOME", agro);
+    vi.stubEnv("OH_HOME", legacy);
+    expect(registryRoot()).toBe(join(agro, "sandboxes"));
+  });
+
+  it("still honors OH_HOME alone", () => {
+    const legacy = mkdtempSync(join(tmpdir(), "oh-registry-legacy-"));
+    cleanups.push(legacy);
+    vi.stubEnv("AGRO_HOME", "");
+    vi.stubEnv("OH_HOME", legacy);
+    expect(registryRoot()).toBe(join(legacy, "sandboxes"));
   });
 });

@@ -18,6 +18,7 @@ import {
 import { renderComposeEnv } from "../lib/config-render.js";
 import { getOhConfigValue, ohConfigPath, readOhConfig } from "../lib/oh-config.js";
 import { resolveProjectRoot } from "../lib/project.js";
+import { aliasedEnvValue } from "../lib/compat.js";
 import { materialize, registryRoot, resolveSandboxRoot } from "../lib/registry.js";
 import { setEnvValue } from "../lib/env-file.js";
 import * as prompt from "../lib/prompt.js";
@@ -150,7 +151,7 @@ async function maybePromptDockerSocket(root: string, io: LifecycleIO): Promise<v
 }
 
 export function configuredImage(root: string): string | undefined {
-  return fromProcessEnv("OH_SANDBOX_IMAGE") ?? configuredString(root, "image.ref");
+  return aliasedEnvValue(process.env, "SANDBOX_IMAGE") ?? configuredString(root, "image.ref");
 }
 
 export async function runSandbox(opts: SandboxOptions, io: LifecycleIO): Promise<number> {

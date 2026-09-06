@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# shellcheck source=../.oh/scripts/compat.sh
+. "${OH_COMPAT_SH:-/opt/oh-assets/.oh/scripts/compat.sh}"
+
 uid_reconcile_step() {
   local description="$1"
   shift
@@ -91,8 +94,8 @@ seed_home() {
 # >>> seed_workspace_volume >>>
 seed_workspace_volume() {
   local dest="$1"
-  local marker="$dest/.oh/.image-seeded"
-  local src="${OH_IMAGE_SEED_SRC:-/opt/oh-seed}"
+  local src control marker
+  src="$(compat_seed_src)"
   OH_IMAGE_SEEDED_THIS_BOOT=0
   if [ -n "$src" ] && [ -d "$src/.claude" ]; then
     local _rel
@@ -103,13 +106,20 @@ seed_workspace_volume() {
       fi
     done
   fi
-  if [ -f "$marker" ]; then
+  if ! control="$(compat_control_dir "$dest")"; then
+    echo "[entrypoint] WARNING: $dest holds both .oh/ and .agro/ with different content — not seeding; resolve the conflict" >&2
     return 0
   fi
-  if [ -n "$src" ] && [ -d "$src" ] && [ ! -d "$dest/.oh" ]; then
-    cp -a "$src/." "$dest/" 2>/dev/null || true
+  control="${control#*	}"
+  if [ -n "$control" ] && [ -f "$control/.image-seeded" ]; then
+    return 0
   fi
-  if [ -d "$dest/.oh" ]; then
+  if [ -n "$src" ] && [ -d "$src" ] && [ -z "$control" ]; then
+    cp -a "$src/." "$dest/" 2>/dev/null || true
+    control="$(compat_selected_path compat_control_dir "$dest" 2>/dev/null)" || control=""
+  fi
+  if [ -n "$control" ]; then
+    marker="$control/.image-seeded"
     : > "$marker" 2>/dev/null || true
     OH_IMAGE_SEEDED_THIS_BOOT=1
   fi
@@ -170,10 +180,10 @@ if mountpoint -q "$HARNESS_DIR" 2>/dev/null && [ -d "$HARNESS_DIR/.oh" ]; then
     fi
   fi
 else
-  echo "[entrypoint] no checkout bind at $HARNESS_DIR — seeding from ${OH_IMAGE_SEED_SRC:-/opt/oh-seed}"
+  echo "[entrypoint] no checkout bind at $HARNESS_DIR — seeding from $(compat_seed_src)"
   seed_workspace_volume "$OH_PROJECT_ROOT"
   if [ "${OH_IMAGE_SEEDED_THIS_BOOT:-0}" = "1" ]; then
-    echo "[entrypoint] seeded control plane into $OH_PROJECT_ROOT from ${OH_IMAGE_SEED_SRC:-/opt/oh-seed}"
+    echo "[entrypoint] seeded control plane into $OH_PROJECT_ROOT from $(compat_seed_src)"
     chown -R "$(id -u sandbox):$(id -g sandbox)" "$OH_PROJECT_ROOT" 2>/dev/null || true
   else
     chown "$(id -u sandbox):$(id -g sandbox)" "$OH_PROJECT_ROOT" 2>/dev/null || true

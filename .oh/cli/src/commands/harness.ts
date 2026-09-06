@@ -2,6 +2,7 @@ import {
   ExecutionSpawnError,
   resolveExecutionTarget,
 } from "../lib/execution/index.js";
+import { aliasedEnvValue } from "../lib/compat.js";
 import { sourceDocsUrl } from "../lib/docs.js";
 import { runningInsideSandbox } from "../lib/execution/detect.js";
 import { spawnRunner, type LifecycleRunner } from "../lib/execution/runner.js";
@@ -193,9 +194,10 @@ export async function runHarnessInstall(
 ): Promise<number> {
   const run = opts.run ?? spawnRunner;
   const env = opts.env ?? process.env;
+  const projectRoot = aliasedEnvValue(env, "PROJECT_ROOT");
   const root = resolveProjectRoot(
-    name === "hermes" && runningInsideSandbox(env) && env.OH_PROJECT_ROOT
-      ? env.OH_PROJECT_ROOT
+    name === "hermes" && runningInsideSandbox(env) && projectRoot !== undefined
+      ? projectRoot
       : opts.cwd,
   );
 

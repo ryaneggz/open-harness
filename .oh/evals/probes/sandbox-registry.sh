@@ -2,8 +2,8 @@
 # tier: A
 # source: issue #950 US-005 / D10 — `oh sandbox install` owns sandbox creation from a
 #         user-level registry, and the CLI carries the compose payload it materialises
-# desc: the six texts the built CLI materialises into a registry entry are byte-identical to
-#       the tracked .devcontainer/docker-compose*.yml and .oh/scripts/{docker-compose,check-host-port}.sh
+# desc: the seven texts the built CLI materialises into a registry entry are byte-identical to
+#       the tracked .devcontainer/docker-compose*.yml and .oh/scripts/{docker-compose,check-host-port,compat}.sh
 #       (image-only base without repo, flavor-A base with repo), lifecycle.ts and sandbox.ts
 #       build no `docker` argv of their own, `oh sandbox install microsandbox` refuses with the
 #       RFC pointer and the `oh tool install microsandbox` hint, and `--print-argv` writes no entry
@@ -85,6 +85,9 @@ check_same ".oh/scripts/docker-compose.sh" \
 check_same ".oh/scripts/check-host-port.sh" \
   "$entry_plain/.oh/scripts/check-host-port.sh" \
   "$ROOT/.oh/scripts/check-host-port.sh"
+check_same ".oh/scripts/compat.sh" \
+  "$entry_plain/.oh/scripts/compat.sh" \
+  "$ROOT/.oh/scripts/compat.sh"
 
 home_repo="$work/home-repo"
 entry_repo="$(materialize_entry "$home_repo" "probe-registry-repo" "$ROOT")"
@@ -139,5 +142,5 @@ if ((${#fails[@]})); then
   exit 1
 fi
 
-echo "PASS: the CLI materialises the six bundled texts byte-identically to the tracked compose files and wrapper scripts (image-only without --repo, flavor A with it), lifecycle.ts and sandbox.ts build no docker argv, microsandbox refuses with the RFC pointer and the tool route, and --print-argv registers nothing" >&2
+echo "PASS: the CLI materialises the seven bundled texts byte-identically to the tracked compose files and wrapper scripts (image-only without --repo, flavor A with it), lifecycle.ts and sandbox.ts build no docker argv, microsandbox refuses with the RFC pointer and the tool route, and --print-argv registers nothing" >&2
 exit 0

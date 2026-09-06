@@ -7,7 +7,7 @@
 #   detects the flavor from `mountpoint -q "$HARNESS_DIR"` AND `-d
 #   "$HARNESS_DIR/.oh"` rather than a compose flag, seeds in the else branch, and defines seed_workspace_volume/.image-seeded
 #   with that marker gitignored; a behavioral sim (fenced function extracted in
-#   isolation, no full entrypoint source) proves fresh-seed, idempotent-reseed,
+#   isolation with compat.sh, no full entrypoint source) proves fresh-seed, idempotent-reseed,
 #   and no-clobber-of-existing-.oh/ behavior; docker-compose.image-only.yml mounts
 #   the single home volume, parameterizes image:, sets pull_policy:, and has
 #   neither build: nor a `..:` bind mount; the primary docker-compose.yml still
@@ -64,6 +64,8 @@ awk '
 if [[ ! -s "$seed_fn_file" ]] || ! grep -Fq 'seed_workspace_volume()' "$seed_fn_file"; then
   fails+=("seed_workspace_volume fence markers missing — cannot run behavioral sim")
 else
+  # shellcheck disable=SC1090
+  source "$ROOT/.oh/scripts/compat.sh"
   # shellcheck disable=SC1090
   source "$seed_fn_file"
   if ! declare -F seed_workspace_volume >/dev/null 2>&1; then

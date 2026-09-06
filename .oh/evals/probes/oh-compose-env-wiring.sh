@@ -6,6 +6,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 WRAPPER="$ROOT/.oh/scripts/docker-compose.sh"
+COMPAT="$ROOT/.oh/scripts/compat.sh"
 LIFECYCLE="$ROOT/.oh/cli/src/commands/lifecycle.ts"
 RENDER_SRC="$ROOT/.oh/cli/src/lib/config-render.ts"
 DIST="$ROOT/.oh/cli/dist/oh.js"
@@ -24,6 +25,7 @@ make_repo() {
   local dir="$1"
   mkdir -p "$dir/.devcontainer" "$dir/.oh/scripts"
   cp "$WRAPPER" "$dir/.oh/scripts/docker-compose.sh"
+  cp "$COMPAT" "$dir/.oh/scripts/compat.sh"
   printf 'services: {}\n' > "$dir/.devcontainer/docker-compose.yml"
   printf '{ "version": 1, "name": "probe" }\n' > "$dir/oh.json"
   printf 'GH_TOKEN=probe\n' > "$dir/$DOTENV_NAME"

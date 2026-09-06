@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tier: A
 # source: PR #887 (config split across two authored surfaces — a tracked oh.json and a secrets-only root dotenv — with nothing left under $HOME)
-# desc: the two authored config surfaces stay honest — tracked oh.json holds no allow-listed secret, the root dotenv is gitignored/0600 and holds nothing but allow-listed secrets, .devcontainer/.env is a symlink to ../.env, no live file still depends on the retired .devcontainer/.example.env, and no CLI source but the sandbox registry (which owns ${OH_HOME:-~/.oh}) resolves config out of $HOME
+# desc: the two authored config surfaces stay honest — tracked oh.json holds no allow-listed secret, the root dotenv is gitignored/0600 and holds nothing but allow-listed secrets, .devcontainer/.env is a symlink to ../.env, no live file still depends on the retired .devcontainer/.example.env, and no CLI source but the sandbox registry and its compat resolver (which own ${AGRO_HOME:-${OH_HOME:-~/.oh}}) resolves config out of $HOME
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -92,14 +92,21 @@ while read -r hit; do
   [[ -n "$hit" ]] || continue
   home_config+=("$hit")
 done < <(grep -rlE 'XDG_CONFIG_HOME|OH_CONFIG_DIR|OH_CLOUD_CONFIG|homedir\(\)' "$CLI_SRC" 2>/dev/null \
-  | sed "s#^$ROOT/##" | grep -vx '.oh/cli/src/lib/registry.ts' | sort || true)
+  | sed "s#^$ROOT/##" | grep -vx -e '.oh/cli/src/lib/registry.ts' -e '.oh/cli/src/lib/compat.ts' | sort || true)
 (( ${#home_config[@]} == 0 )) \
   || fails+=("CLI sources still resolve config out of \$HOME (XDG_CONFIG_HOME/OH_CONFIG_DIR/OH_CLOUD_CONFIG/homedir()) — every authored setting lives at the repository root or in the sandbox registry: ${home_config[*]}")
 
 REGISTRY_SRC="$CLI_SRC/lib/registry.ts"
+COMPAT_SRC="$CLI_SRC/lib/compat.ts"
 if [[ -f "$REGISTRY_SRC" ]]; then
-  grep -Fq 'process.env.OH_HOME' "$REGISTRY_SRC" \
-    || fails+=("lib/registry.ts reads \$HOME without honouring OH_HOME — the one user-level surface must stay relocatable")
+  if grep -Fq 'process.env.OH_HOME' "$REGISTRY_SRC"; then
+    :
+  elif [[ -f "$COMPAT_SRC" ]] && grep -Fq 'resolveUserStateHome(process.env)' "$REGISTRY_SRC" \
+       && grep -Fq 'aliasedEnvValue(env, "HOME"' "$COMPAT_SRC"; then
+    :
+  else
+    fails+=("lib/registry.ts reads \$HOME without honouring OH_HOME (directly or through compat.ts's HOME alias) — the one user-level surface must stay relocatable")
+  fi
 fi
 
 if (( ${#fails[@]} > 0 )); then
