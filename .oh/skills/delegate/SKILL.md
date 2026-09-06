@@ -272,15 +272,8 @@ Launch N `Agent` tool calls **in a single message** for parallel execution. Each
 - Instruction: report what was done, what files changed, whether acceptance criteria are met
 
 Worker configuration:
-- **Model**: pass the requested model from the dispatch record unchanged. Pass no
-  `model` argument only when the record says `inherit`. Never pass an excluded model.
-- **Reasoning**: apply the recorded effort level only where the native surface exposes
-  a per-worker control; never pass `max`. When no control exists, the worker runs at
-  the inherited session effort and the record says so. When the operator marks a
-  control required and the surface lacks it, mark the task `BLOCKED` and do not spawn
-  it.
-- **Observation**: after the dispatch, record the observed model and reasoning
-  setting with their provenance; write `unknown` when the surface reports nothing.
+- **Model and reasoning**: apply the dispatch record per `## Worker model and reasoning
+  policy`; record observed settings and provenance after dispatch.
 - **run_in_background**: true (for waves with 2+ tasks)
 - **subagent_type**: use a **provider-native built-in** type only. This repository defines no project agents, so no `subagent_type` resolves to a repository file. For a worker that must `Write`/`Edit`, use `general-purpose` (or `claude`); for a read-only sweep whose verbose output should stay out of this context, use a read-only built-in such as `Explore`. Verify a type is offered by the running provider before naming it — an unrecognized `subagent_type` either errors or silently degrades. Never name a type on the assumption that a repository agent definition backs it.
 
@@ -398,10 +391,7 @@ worker reports it, and do not record the request as confirmed.
 | Max concurrent agents per wave | 5 (split larger waves) |
 | Failure handling | Mark dependent tasks BLOCKED, continue independent ones; the named repair worker repairs |
 | Context passing | Prior wave summaries, not full output |
-| Implementation ownership | The advisor decides and accepts; bounded workers perform every tracked implementation edit; coupled work stays with one continuing worker |
-| Model selection | Explicit operator selections and exclusions are binding. Unspecified settings come from task complexity, risk, and the authorized budget, with the reason recorded before dispatch. An unsupported required control blocks the worker and its dependents; never substitute, lower, change parent settings, or call a nested inference CLI. |
-| Reasoning selection | The advisor judges the effort level per task and records it before dispatch; apply it only where the native surface supports a per-worker control; never `max`. Escalate only on evidence of uncertainty or repeated failure. |
-| Settings evidence | Record requested and observed settings separately with provenance; `unknown` stays `unknown`. |
+| Model, reasoning, and settings evidence | See `## Worker model and reasoning policy` |
 
 ### Key Resources
 

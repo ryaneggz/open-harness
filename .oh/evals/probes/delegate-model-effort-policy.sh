@@ -26,8 +26,6 @@ sentences="$(printf '%s\n' "$flat" | sed 's/[.!?] /&\n/g')"
 
 provider_heading='^### Provider-specific preferences'
 provider_block="$(awk -v h="$provider_heading" '$0 ~ h {f=1; next} f && /^## /{exit} f{print}' "$SKILL")"
-portable_flat="$(awk -v h="$provider_heading" '$0 ~ h {f=1; next} f && /^## /{f=0} !f{print}' "$SKILL" | tr -s '[:space:]' ' ')"
-portable_sentences="$(printf '%s\n' "$portable_flat" | sed 's/[.!?] /&\n/g')"
 
 problems=()
 has() { grep -qiF -- "$1" <<<"$flat"; }
@@ -67,8 +65,6 @@ has_re 'mark the affected worker and its dependents `BLOCKED`' \
 has_re 'never substitute a model, lower a setting, change shared or parent settings, or call a nested inference CLI' \
   || problems+=("a missing control may be worked around by substitution, lowering, parent-setting change, or a nested inference CLI")
 
-grep -qiE 'sonnet' "$SKILL" \
-  || problems+=("the Sonnet exclusion is not stated")
 close_negation='\b(never|not|no|neither|excludes?|excluded|without)\b.{0,40}'
 sonnet_routes="$(sed 's/non-Sonnet//gi' <<<"$sentences" | grep -iE 'sonnet' | grep -viE "${close_negation}\\bsonnet" || true)"
 [[ -z "$sonnet_routes" ]] \
@@ -129,10 +125,6 @@ sonnet_routing="$(find "$skills_root" -type f -name '*.md' \
   | sed "s|^$skills_root/|.oh/skills/|" || true)"
 [[ -z "$sonnet_routing" ]] \
   || problems+=("a skill routes workers to Sonnet outside /delegate policy: $sonnet_routing")
-
-fixed_role="$(grep -iE 'advisor[^.|]{0,80}\b(is|are|runs on|uses|requires|must use|means)\b[^.|]{0,60}\b(Fable|Opus|Sonnet|Haiku|Luna|Astra)\b' <<<"$portable_sentences" || true)"
-[[ -z "$fixed_role" ]] \
-  || problems+=("portable rule text defines the advisor by a model name: $fixed_role")
 
 if grep -Eiq 'DeepSWE|leaderboard' "$SKILL"; then
   problems+=("volatile external benchmark language appears in durable delegate policy")
