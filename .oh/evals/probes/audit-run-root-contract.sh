@@ -125,7 +125,22 @@ ui "$head" 0 ''
 gated 'ui evidence without criteria' AUDIT-FAIL 'gate4: FAIL (no criteria verified)'
 ui 0000000000000000000000000000000000000000 0 "$(printf "$criterion" PASS)"
 gated 'stale ui evidence' AUDIT-FAIL 'gate4: FAIL (no ui evidence for HEAD'
-rm "$task/ui-evidence.json" "$task/simplicity-review.json"
+rm "$task/ui-evidence.json"
+printf '{"userStories":[{"id":"US-1","passes":true}]}\n' >"$task/prd.json"
+review "$head" "$(printf "$finding" resolved)"
+git -C "$tmp" add .oh/tasks/fixture; git -C "$tmp" commit -qm records
+gated 'content-head records' AUDIT-PASS 'gate5: review commit '"$head"' is the content head; only task records changed since'
+grep -q "^gate2: eval-result commit $head is the content head; only task records changed since" <<<"$impl_out" || fail 'eval-result at the content head was not reused'
+grep -q "^gate2: reused eval-result.json for HEAD $(git -C "$tmp" rev-parse HEAD)" <<<"$impl_out" || fail 'content-head reuse did not report the HEAD it covered'
+printf 'a\n' >"$tmp/keep.sh"; git -C "$tmp" add keep.sh; git -C "$tmp" commit -qm code
+printf '{"commit":"%s","runnerExit":0}\n' "$(git -C "$tmp" rev-parse HEAD)" >"$task/eval-result.json"
+gated 'code changed past review' AUDIT-FAIL 'gate5: FAIL (no simplicity review for HEAD'
+grep -q "^gate2: eval-result commit $(git -C "$tmp" rev-parse HEAD) equals HEAD" <<<"$impl_out" || fail 'eval-result equal to HEAD did not report the equals case'
+review 4b825dc642cb6eb9a060e54bf8d69288fbee4904 "$(printf "$finding" resolved)"
+gated 'review commit not an ancestor' AUDIT-FAIL 'gate5: FAIL (no simplicity review for HEAD'
+review "$(git -C "$tmp" rev-parse HEAD)" "$(printf "$finding" resolved)"
+gated 'review at HEAD' AUDIT-PASS 'gate5: review commit '"$(git -C "$tmp" rev-parse HEAD)"' equals HEAD'
+rm "$task/simplicity-review.json"
 bash "$RUN" pr 7 --base stack-parent -- "$tmp/complete-driver" >/dev/null
 bash "$RUN" prs --mine -- "$tmp/complete-driver" >/dev/null
 bash "$RUN" full --repo owner/name -- "$tmp/complete-driver" >/dev/null

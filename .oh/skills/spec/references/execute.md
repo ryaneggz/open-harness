@@ -373,7 +373,10 @@ bounded worker with no edits in the code under review. Each finding cites `file:
 the concrete simpler alternative, states the lines it removes, and marks whether
 it blocks. The owner writes the findings to
 `.oh/tasks/<slug>/simplicity-review.json` for `HEAD` and adds the file with
-`git add -f`. The record is owner-written execution state, like `progress.txt`;
+`git add -f`. The commit that adds the record moves `HEAD`, so the driver accepts
+a record whose `commit` is the content head: an ancestor of `HEAD` after which
+only `.oh/tasks/` files or `.oh/evals/RESULTS.md` changed. The record is
+owner-written execution state, like `progress.txt`;
 a worker never writes it:
 
 ```bash

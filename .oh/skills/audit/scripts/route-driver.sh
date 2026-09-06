@@ -42,12 +42,22 @@ gate1(){
   ((rc == 0)) || fail 'gate1: FAIL'
   printf 'gate1: PASS\n'
 }
+record_for_head(){
+  local label=$1 record=$2 head=$3 commit changed
+  [[ -f $record && ! -L $record ]] || return 1
+  commit=$(jq -r '.commit // empty' "$record" 2>/dev/null) || return 1
+  if [[ $commit == "$head" ]]; then printf '%s %s equals HEAD\n' "$label" "$commit"; return 0; fi
+  [[ $commit =~ ^[0-9a-f]{40}$ ]] && git -C "$AUDIT_ROOT" merge-base --is-ancestor "$commit" "$head" 2>/dev/null || return 1
+  changed=$(git -C "$AUDIT_ROOT" diff --name-only "$commit" "$head")
+  [[ -n $changed ]] && ! grep -qvE '^(\.oh/tasks/|\.oh/evals/RESULTS\.md$)' <<<"$changed" || return 1
+  printf '%s %s is the content head; only task records changed since\n' "$label" "$commit"
+}
 gate2(){
   local slug=$1 result="$AUDIT_ROOT/.oh/tasks/$1/eval-result.json" head rc=0
   head=$(git -C "$AUDIT_ROOT" rev-parse HEAD)
-  if [[ -f $result && ! -L $result && $(jq -r '.commit // empty' "$result") == "$head" ]]; then
+  if record_for_head 'gate2: eval-result commit' "$result" "$head"; then
     rc=$(jq -r '.runnerExit' "$result")
-    printf 'gate2: reused eval-result.json for %s (runnerExit=%s)\n' "$head" "$rc"
+    printf 'gate2: reused eval-result.json for HEAD %s (runnerExit=%s)\n' "$head" "$rc"
   else
     bash "$AUDIT_ROOT/.oh/skills/eval/run.sh" || rc=$?
     printf 'gate2: ran eval suite for %s (exit=%s)\n' "$head" "$rc"
@@ -84,11 +94,6 @@ gate3(){
   if [[ -n $pr ]]; then gate3_pr; else gate3_branch; fi
   printf 'gate3: PASS\n'
 }
-record_for_head(){
-  local record=$1 head=$2
-  [[ -f $record && ! -L $record ]] || return 1
-  [[ $(jq -r '.commit // empty' "$record" 2>/dev/null) == "$head" ]]
-}
 gate4(){
   local slug=$1 record="$AUDIT_ROOT/.oh/tasks/$1/ui-evidence.json" head rc=0 n failed
   "$gates" browser-required "$slug" || rc=$?
@@ -98,7 +103,7 @@ gate4(){
     *) fail "gate4: FAIL (browser-required exited $rc)";;
   esac
   head=$(git -C "$AUDIT_ROOT" rev-parse HEAD)
-  record_for_head "$record" "$head" || fail "gate4: FAIL (no ui evidence for HEAD $head)"
+  record_for_head 'gate4: ui evidence commit' "$record" "$head" || fail "gate4: FAIL (no ui evidence for HEAD $head)"
   jq -e '.schemaVersion==1 and (.reviewer|type)=="string" and (.reviewer|length>0)
     and (.preflight.runId|type)=="string" and (.preflight.runId|test("^audit-[0-9]{8}T[0-9]{6}Z-[A-Za-z0-9._-]+$"))
     and (.preflight.exit|type)=="number" and (.criteria|type)=="array"
@@ -124,7 +129,7 @@ gate5(){
     printf 'gate5: SIMPLICITY-RESIDUAL disclosed\n'
   fi
   head=$(git -C "$AUDIT_ROOT" rev-parse HEAD)
-  record_for_head "$review" "$head" && jq -e '.schemaVersion==1 and (.reviewer|type)=="string" and (.reviewer|length>0)
+  record_for_head 'gate5: review commit' "$review" "$head" && jq -e '.schemaVersion==1 and (.reviewer|type)=="string" and (.reviewer|length>0)
     and (.findings|type)=="array"
     and all(.findings[]; type=="object" and (.file|type)=="string" and (.line|type)=="number"
       and (.simplerAlternative|type)=="string" and (.simplerAlternative|length>0) and (.removesLines|type)=="number"

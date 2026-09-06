@@ -190,14 +190,21 @@ reason:
 
 | Condition | Report line |
 |---|---|
-| Record missing, symlinked, unreadable, or `commit` ≠ `git rev-parse HEAD` | `gate4: FAIL (no ui evidence for HEAD <sha>)` |
+| Record missing, symlinked, unreadable, or `commit` neither `HEAD` nor the content head | `gate4: FAIL (no ui evidence for HEAD <sha>)` |
 | Record does not match schema version 1 | `gate4: FAIL (malformed ui-evidence.json)` |
 | `preflight.exit` ≠ 0 | `gate4: FAIL (browser-preflight run <runId> exited <n>)` |
 | `criteria` is empty | `gate4: FAIL (no criteria verified)` |
 | Any criterion has `result: FAIL` | one `gate4: FAIL criterion <story> <criterion> — <note>` line per failure, then `gate4: FAIL (<n> criteria FAIL)` |
 | Otherwise | `gate4: PASS (<n> criteria verified by <reviewer> at <commit>)` |
 
-A stale record is not a pass: the moment the branch moves, the owner must re-verify
+**The content-head rule.** The driver accepts a record whose `commit` equals `HEAD`.
+The driver also accepts a record whose `commit` is an ancestor of `HEAD` when every
+path in `git diff --name-only <commit> HEAD` starts with `.oh/tasks/` or is
+`.oh/evals/RESULTS.md`. The driver prints which case applied:
+`gate4: ui evidence commit <sha> equals HEAD` or
+`gate4: ui evidence commit <sha> is the content head; only task records changed since`.
+The same rule keys the `eval-result.json` reuse in gate 2 and the review in gate 5.
+A stale record is not a pass: the moment code moves, the owner must re-verify
 and rewrite the record for the new `HEAD`. The driver enforces the record; the
 reviewer and the owner judge what the screenshots show.
 
@@ -271,7 +278,7 @@ order and fails closed:
 1. Print `gate5: metrics <json>` from `slop-metrics <base>`. When `tool` starts with
    `lizard` and `tsOverCcn` is non-empty, print `gate5: SIMPLICITY-RESIDUAL disclosed`.
 2. Read `simplicity-review.json`. When the file is missing, symlinked, malformed, or its
-   `commit` ≠ `git rev-parse HEAD`, report
+   `commit` is neither `HEAD` nor the content head (see the content-head rule in gate 4), report
    `gate5: FAIL (no simplicity review for HEAD <sha>)` and publish `AUDIT-FAIL`. A stale
    or absent review is not a pass.
 3. Read `simplify-rounds.json` when present. A file whose `rounds` is not a number
