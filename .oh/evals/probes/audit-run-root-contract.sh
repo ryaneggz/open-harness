@@ -62,7 +62,7 @@ cat >"$tmp/bin/gh" <<'GH'
 #!/usr/bin/env bash
 case "$1 $2" in
   'repo view') printf 'owner/name\n';;
-  'run list') printf '[]\n';;
+  'run list') printf '%s\n' "${GH_RUNS:-[]}";;
   *) exit 9;;
 esac
 GH
@@ -72,14 +72,6 @@ set +e; impl_out=$(PATH="$tmp/bin:$PATH" bash "$RUN" implementation fixture -- "
 grep -q '^gate1: PASS' <<<"$impl_out" && grep -q '^gate2: reused eval-result.json' <<<"$impl_out" || fail 'gates 1-2 did not pass on the green fixture'
 grep -q '^gate3: FAIL (no green CI run for HEAD)' <<<"$impl_out" || fail 'gate3 did not fail closed without a green CI run'
 grep -q 'state=complete verdict=AUDIT-FAIL' <<<"$impl_out" || fail 'gate3 failure did not publish AUDIT-FAIL evidence'
-cat >"$tmp/bin/gh" <<'GH'
-#!/usr/bin/env bash
-case "$1 $2" in
-  'repo view') printf 'owner/name\n';;
-  'run list') printf '[{"headSha":"%s","status":"completed","conclusion":"success"}]\n' "$(git rev-parse HEAD)";;
-  *) exit 9;;
-esac
-GH
 git -C "$tmp" branch development
 head=$(git -C "$tmp" rev-parse HEAD)
 task="$tmp/.oh/tasks/fixture"
@@ -88,7 +80,8 @@ finding='{"file":"keep.sh","line":3,"simplerAlternative":"delete the wrapper","r
 ui(){ printf '{"schemaVersion":1,"commit":"%s","verifiedAt":"2026-01-01T00:00:00Z","preflight":{"runId":"audit-20260101T000000Z-fixture","exit":%s},"reviewer":"fixture-reviewer","criteria":[%s]}\n' "$1" "$2" "$3" >"$task/ui-evidence.json"; }
 criterion='{"story":"US-1","criterion":"Verify in browser","result":"%s","screenshotSha256":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","note":"observed"}'
 gated(){
-  set +e; impl_out=$(PATH="$tmp/bin:$PATH" bash "$RUN" implementation fixture -- "$DRIVER" 2>&1); impl_rc=$?; set -e
+  GH_RUNS=$(printf '[{"headSha":"%s","status":"completed","conclusion":"success"}]' "$(git -C "$tmp" rev-parse HEAD)")
+  set +e; impl_out=$(GH_RUNS="$GH_RUNS" PATH="$tmp/bin:$PATH" bash "$RUN" implementation fixture -- "$DRIVER" 2>&1); impl_rc=$?; set -e
   [[ $impl_rc -eq 0 ]] || fail "$1: scripted run was not complete"
   grep -q "state=complete verdict=$2" <<<"$impl_out" || fail "$1: expected $2"
   grep -q "^$3" <<<"$impl_out" || fail "$1: report lacks '$3'"

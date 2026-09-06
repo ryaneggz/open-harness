@@ -10,6 +10,7 @@ forwarded=$(jq -cn --args '$ARGS.positional' -- "$@")
 [[ $forwarded == "$AUDIT_TARGET_ARGS_JSON" ]] || { echo 'audit-route-driver: forwarded argument mismatch' >&2; exit 64; }
 scripts="$AUDIT_ROOT/.oh/skills/audit/scripts"
 gates="$scripts/implementation-gates.sh"
+head=$(git -C "$AUDIT_ROOT" rev-parse HEAD)
 pr='' repo='' base='' branch=''
 
 publish(){
@@ -53,8 +54,7 @@ record_for_head(){
   printf '%s %s is the content head; only task records changed since\n' "$label" "$commit"
 }
 gate2(){
-  local slug=$1 result="$AUDIT_ROOT/.oh/tasks/$1/eval-result.json" head rc=0
-  head=$(git -C "$AUDIT_ROOT" rev-parse HEAD)
+  local slug=$1 result="$AUDIT_ROOT/.oh/tasks/$1/eval-result.json" rc=0
   if record_for_head 'gate2: eval-result commit' "$result" "$head"; then
     rc=$(jq -r '.runnerExit' "$result")
     printf 'gate2: reused eval-result.json for HEAD %s (runnerExit=%s)\n' "$head" "$rc"
@@ -79,9 +79,8 @@ gate3_pr(){
   fail "gate3: FAIL ($reason)"
 }
 gate3_branch(){
-  local head runs rc=0
+  local runs rc=0
   branch=${branch:-$(git -C "$AUDIT_ROOT" rev-parse --abbrev-ref HEAD)}
-  head=$(git -C "$AUDIT_ROOT" rev-parse HEAD)
   runs=$(cd "$AUDIT_ROOT" && gh run list --repo "$repo" --branch "$branch" --json headSha,status,conclusion --limit 30) || rc=$?
   ((rc == 0)) || fail "gate3: FAIL (gh run list exited $rc)"
   printf 'gate3: ci runs for %s@%s: %s\n' "$branch" "$head" "$runs"
@@ -95,14 +94,13 @@ gate3(){
   printf 'gate3: PASS\n'
 }
 gate4(){
-  local slug=$1 record="$AUDIT_ROOT/.oh/tasks/$1/ui-evidence.json" head rc=0 n failed
+  local slug=$1 record="$AUDIT_ROOT/.oh/tasks/$1/ui-evidence.json" rc=0 n failed
   "$gates" browser-required "$slug" || rc=$?
   case $rc in
     0) ;;
     1) printf 'gate4: not applicable\n'; return 0;;
     *) fail "gate4: FAIL (browser-required exited $rc)";;
   esac
-  head=$(git -C "$AUDIT_ROOT" rev-parse HEAD)
   record_for_head 'gate4: ui evidence commit' "$record" "$head" || fail "gate4: FAIL (no ui evidence for HEAD $head)"
   jq -e '.schemaVersion==1 and (.reviewer|type)=="string" and (.reviewer|length>0)
     and (.preflight.runId|type)=="string" and (.preflight.runId|test("^audit-[0-9]{8}T[0-9]{6}Z-[A-Za-z0-9._-]+$"))
@@ -120,7 +118,7 @@ gate4(){
   printf 'gate4: PASS (%s criteria verified by %s at %s)\n' "$n" "$(jq -r .reviewer "$record")" "$head"
 }
 gate5(){
-  local slug=$1 task="$AUDIT_ROOT/.oh/tasks/$1" review rounds metrics head rc=0 open total terminated=false rounds_n=0
+  local slug=$1 task="$AUDIT_ROOT/.oh/tasks/$1" review rounds metrics rc=0 open total terminated=false rounds_n=0
   review="$task/simplicity-review.json"; rounds="$task/simplify-rounds.json"
   metrics=$("$gates" slop-metrics "${base:-development}") || rc=$?
   ((rc == 0)) || fail "gate5: FAIL (slop-metrics exited $rc)"
@@ -128,7 +126,6 @@ gate5(){
   if jq -e '(.tool|startswith("lizard")) and (.tsOverCcn|length>0)' <<<"$metrics" >/dev/null; then
     printf 'gate5: SIMPLICITY-RESIDUAL disclosed\n'
   fi
-  head=$(git -C "$AUDIT_ROOT" rev-parse HEAD)
   record_for_head 'gate5: review commit' "$review" "$head" && jq -e '.schemaVersion==1 and (.reviewer|type)=="string" and (.reviewer|length>0)
     and (.findings|type)=="array"
     and all(.findings[]; type=="object" and (.file|type)=="string" and (.line|type)=="number"
@@ -165,8 +162,7 @@ pr_route(){
   local number=$1 json rc=0 verdict; shift
   read_options "$@"
   resolve_repo || { printf 'repository could not be resolved\n'; publish PR-AUDIT-UNKNOWN; }
-  json=$("$scripts/pr-acquire.sh" pr --repo "$repo" --pr "$number" --base "${base:-development}" \
-    | "$scripts/pr-classify.sh") || rc=$?
+  json=$("$gates" classify-pr "$repo" "$number" "${base:-development}") || rc=$?
   [[ -z $json ]] || printf '%s\n' "$json"
   ((rc == 0)) || { printf 'acquisition or classification exited %s\n' "$rc"; publish PR-AUDIT-UNKNOWN; }
   verdict=$(jq -r 'if .evidenceComplete==true and .promotable==true then "PR-AUDIT-PROMOTABLE"

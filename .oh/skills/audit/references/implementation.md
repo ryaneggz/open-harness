@@ -267,9 +267,7 @@ the implementer of the code under review never writes it:
 `.oh/tasks/<slug>/simplify-rounds.json` with the fields `rounds`, `netAdded`,
 `lastCommit`, and `nonReducing`. The owner sets `nonReducing: true` when a round's
 `netAdded` did not strictly fall below the previous round's. The loop **terminates**
-when `rounds >= 3` or when `nonReducing` is `true`. The helper's `simplicity-round`
-mode prints `rounds=<n> cap=3 escalate=<bool> prevNetAdded=<n|none>` from the same
-file for a reader who wants the summary. The loop ends when the diff cannot shrink further,
+when `rounds >= 3` or when `nonReducing` is `true`. The loop ends when the diff cannot shrink further,
 not on taste, so it terminates by construction.
 
 **What the scripted driver enforces.** `scripts/route-driver.sh` runs these steps in

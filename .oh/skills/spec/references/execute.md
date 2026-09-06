@@ -371,24 +371,9 @@ produces the review before the audit. After implementation, the owner dispatches
 a fresh read-only reviewer for simplicity findings at `HEAD`. The reviewer is a
 bounded worker with no edits in the code under review. Each finding cites `file:line`, names
 the concrete simpler alternative, states the lines it removes, and marks whether
-it blocks. The owner writes the findings to
-`.oh/tasks/<slug>/simplicity-review.json` for `HEAD` and adds the file with
-`git add -f`. The commit that adds the record moves `HEAD`, so the driver accepts
-a record whose `commit` is the content head: an ancestor of `HEAD` after which
-only `.oh/tasks/` files or `.oh/evals/RESULTS.md` changed. The record is
-owner-written execution state, like `progress.txt`;
-a worker never writes it:
-
-```bash
-REVIEW=".oh/tasks/<slug>/simplicity-review.json"
-cat > "$REVIEW" <<JSON
-{ "schemaVersion": 1, "commit": "$(git rev-parse HEAD)", "reviewer": "<worker id>",
-  "reviewedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "findings": [ { "file": "<path>", "line": <n>, "simplerAlternative": "<concrete>",
-                  "removesLines": <n>, "blocking": true, "status": "open", "resolvedIn": null } ] }
-JSON
-git add -f "$REVIEW"
-```
+it blocks. The owner writes the findings to `.oh/tasks/<slug>/simplicity-review.json`
+in the schema and content-head rule that `.oh/skills/audit/references/implementation.md`
+gate 5 defines, then adds the file with `git add -f`.
 
 On an `AUDIT-FAIL (gate 5)` the owner routes each blocking finding to the
 bounded worker that owns the file — the owner does not argue with the finding —
@@ -799,11 +784,6 @@ work, but it never authorizes `gh pr ready`. Never auto-merge.
   background shell, no runner selection, no fallback runner. The agent already
   running `/spec execute` is the implementation owner, and `/spec` never creates
   the agent that executes it.
-- **Write tracked implementation edits in the owner's session.** Those edits
-  belong to bounded `/delegate` workers. The one exception is an operator
-  exception recorded in `progress.txt` before the edit.
-- **Transfer ownership on its own.** The task continues in the same session
-  unless the operator requests another one.
 - **Merge.** The terminal state is a **ready** PR. Merge is the human's gate;
   reset/clean is the runner's job after merge.
 - **Select work.** Selection is the human's; `execute` builds the one folder it
