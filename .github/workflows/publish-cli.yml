@@ -51,7 +51,7 @@ jobs:
         run: |
           V=$(node -p "require('./.oh/cli/package.json').version")
           echo "version=$V" >> "$GITHUB_OUTPUT"
-          if npm view "@mifune/agro@$V" version >/dev/null 2>&1; then
+          if npm view "@mifune/agro@$V" version --prefer-online >/dev/null 2>&1; then
             echo "@mifune/agro@$V already published — skipping"
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
@@ -90,7 +90,7 @@ jobs:
             echo "@mifune/openharness@$LEGACY_V pins @mifune/agro@$PIN — both must equal @mifune/agro@$V" >&2
             exit 1
           fi
-          if npm view "@mifune/openharness@$V" version >/dev/null 2>&1; then
+          if npm view "@mifune/openharness@$V" version --prefer-online >/dev/null 2>&1; then
             echo "@mifune/openharness@$V already published — skipping"
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
@@ -102,17 +102,7 @@ jobs:
         if: steps.legacy_guard.outputs.skip == 'false'
         env:
           V: ${{ steps.guard.outputs.version }}
-        run: |
-          for attempt in $(seq 1 10); do
-            if npm view "@mifune/agro@$V" version >/dev/null 2>&1; then
-              echo "@mifune/agro@$V resolves on the registry (attempt $attempt)"
-              exit 0
-            fi
-            echo "@mifune/agro@$V not yet resolvable (attempt $attempt/10); retrying in 15s"
-            sleep 15
-          done
-          echo "@mifune/agro@$V never resolved on the registry — cannot publish the dependent @mifune/openharness shim" >&2
-          exit 1
+        run: .oh/scripts/npm-wait-version.sh "@mifune/agro" "$V"
 
       - name: Publish @mifune/openharness to npm
         if: steps.legacy_guard.outputs.skip == 'false'
@@ -127,4 +117,12 @@ jobs:
         env:
           V: ${{ steps.guard.outputs.version }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm deprecate "@mifune/openharness@$V" "@mifune/openharness is the compatibility entry point for AGRO; install @mifune/agro (agro) — oh keeps working through the compatibility window"
+        run: |
+          .oh/scripts/npm-wait-version.sh "@mifune/openharness" "$V"
+          npm deprecate "@mifune/openharness@$V" "@mifune/openharness is the compatibility entry point for AGRO; install @mifune/agro (agro) — oh keeps working through the compatibility window"
+          DEPRECATED=$(npm view "@mifune/openharness@$V" deprecated --prefer-online --cache "$(mktemp -d)")
+          if [ -z "$DEPRECATED" ]; then
+            echo "@mifune/openharness@$V carries no deprecation notice after npm deprecate" >&2
+            exit 1
+          fi
+          echo "@mifune/openharness@$V is deprecated: $DEPRECATED"
