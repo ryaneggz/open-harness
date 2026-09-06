@@ -46,7 +46,7 @@ trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/.devcontainer"
 cp -R "$ROOT/.devcontainer/." "$work/.devcontainer/"
 mkdir -p "$work/.oh/scripts"
-cp "$WRAPPER" "$work/.oh/scripts/"
+cp "$WRAPPER" "$ROOT/.oh/scripts/compat.sh" "$work/.oh/scripts/"
 [[ -f "$ROOT/.oh/scripts/check-host-port.sh" ]] && cp "$ROOT/.oh/scripts/check-host-port.sh" "$work/.oh/scripts/"
 rm -f "$work/.oh/config.json"
 

@@ -54,6 +54,9 @@ Schema, frontmatter spec, provenance kinds, and every authoring rule:
 
 | Slug | Title | Tags | Updated |
 | --- | --- | --- | --- |
+| pattern-scripts-sibling-dependency-standalone-copies | A script that gains a sourced sibling breaks every test and probe that copies it alone | [scripts, compose, testing, probes, bundling, registry, boot] | 2026-09-06 |
+| pattern-evals-tracked-only-scan-misses-uncommitted | A repository scan over git ls-files passes on uncommitted files and fails once they are committed | [evals, testing, git, inventory, ci, false-pass] | 2026-09-06 |
+| pattern-evals-environment-parity-false-delta | An eval run from a shell with a different PATH reports environment gaps as probe regressions | [evals, probes, environment, path, python, false-regression, worktree] | 2026-09-06 |
 | oh-cli-portable-lifecycle | oh CLI Portable Lifecycle | [cli, oh, lifecycle, standalone, registry, sandbox, remote-fetch, execution-target, update] | 2026-09-06 |
 | compose-env-boundary | Compose Environment Boundary | [compose, devcontainer, oh-json, cli, entrypoint, boundary, installs, sandbox, registry] | 2026-09-06 |
 | pattern-evals-unexercised-oracle | A probe that has never failed has an unverified oracle | [evals, probes, oracles, skipped, fault-injection, continual-learning] | 2026-09-05 |
