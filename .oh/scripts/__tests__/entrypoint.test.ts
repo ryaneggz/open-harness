@@ -78,6 +78,20 @@ describe("devcontainer entrypoint home mount ownership", () => {
     expect(reconBranch).not.toContain("usermod -u \"$HOST_UID\" sandbox 2>/dev/null");
   });
 
+  it("aligns the sandbox user with the docker socket GID without swallowing failures", () => {
+    const text = entrypoint();
+    const start = text.indexOf("SOCK=/var/run/docker.sock");
+    const block = text.slice(start, text.indexOf("\nfi\n", start));
+
+    expect(start).toBeGreaterThan(text.indexOf("uid_reconcile_step() {"));
+    expect(block).toContain('if getent group "$SOCK_GID" >/dev/null 2>&1; then');
+    expect(block).toContain('usermod -aG "$SOCK_GROUP" sandbox');
+    expect(block).toContain('groupmod -g "$SOCK_GID" docker');
+    expect(block).toContain("uid_reconcile_step");
+    expect(block).not.toContain("2>/dev/null ||");
+    expect(block).not.toContain("|| true");
+  });
+
   it("prints UID sync success only after reconciliation commands report success", () => {
     const text = entrypoint();
     const block = text.slice(
