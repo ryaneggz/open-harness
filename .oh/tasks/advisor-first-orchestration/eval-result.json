@@ -1,8 +1,8 @@
 {
-  "commit": "8cd488e58b2640bbb830fb50e812abbb6b0b7923",
+  "commit": "cd986dbc31206cbb2224fb6dc47aca2b1d7bb1b4",
   "runnerExit": 0,
-  "ranAt": "2026-09-06T19:09:29Z",
+  "ranAt": "2026-09-06T20:08:29Z",
   "newRegressions": [],
   "preExistingReds": ["oh-config-surfaces", "skills-vendored", "curl-bash-safe-alternatives"],
-  "note": "Suite on 8cd488e5 (content head after the T1/T2 review repairs): 143 probes, runner exit 0, no green->red delta. All three reds reproduce on base 9261d512 in this environment. CI on 72548bc4 additionally flagged docs-20260901-followup-artifact-cited on evidence.md wording; reworded, probe PASS locally on this head."
+  "note": "Suite on cd986dbc (final content head: policy, probes, docs, knowledge, scripted audit driver): 143 probes, no green->red delta. All three reds reproduce on base 9261d512 in this environment."
 }

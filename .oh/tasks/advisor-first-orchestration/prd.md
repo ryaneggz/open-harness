@@ -161,7 +161,7 @@ Bindings resolved during W0 preflight are recorded in `delegate-graph.json`, not
 
 - **Source plan**: `/home/sandbox/harness/.oh/plans/advisor-first-orchestration/plan.md`
 - **Intent preserved**: YES
-- **Material deviations**: `none`
+- **Material deviations**: one, operator-approved during execution on 2026-09-06: the nested-agent audit route driver (`claude -p` behind `AUDIT_AGENT_COMMAND_JSON`) is retired and replaced by a scripted driver inside this PR (issue #993). Trigger: the driver was refused by a provider spend limit while the session and its workers kept running; its model is unrecorded and unbound by the operator's constraints; the gates it re-derives are deterministic. Owner: bounded worker T6.
 - **Constraints discovered during grounding**:
   - The planning base `9a479575` moved to `9261d512` on `origin/development`. The intersection with grounded paths is `docs/rfcs/README.md` and `CHANGELOG.md` (T3's files); no skill, template, or named probe changed.
   - `.oh/skills/plan/SKILL.md` is untracked at the root. The scaffold commit adds the unmodified local baseline to this branch so T1's diff shows only its reconciliation edits. `.claude/skills` is a directory symlink to `.oh/skills`, so no provider link is needed for the new skill.

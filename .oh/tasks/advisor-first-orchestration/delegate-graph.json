@@ -31,7 +31,8 @@
     "operatorDecisions": {
       "recordedAt": "2026-09-06",
       "lBinding": "Operator authorized: dispatch L assignments with model: opus; reasoning recorded as unknown (provider default); thinking-off is NOT claimed",
-      "d10": "Operator declined a paid comparison; evidence.md states no efficiency claim and records this disposition"
+      "d10": "Operator declined a paid comparison; evidence.md states no efficiency claim and records this disposition",
+      "driverRetirement": "Operator on 2026-09-06: retire the claude -p audit route driver and unblock #991 with a scripted driver inside this PR (issue #993); recorded as an approved material scope addition"
     },
     "reviewFinding": "T5 (Explore) self-reported claude-opus-5[1m] while requested inherit=Fable; per-type model definitions override inheritance; unknown stays unknown for T1/T2"
   },
@@ -178,7 +179,7 @@
       ],
       "nativeWorkerId": "ae3c3d039bfa430c9",
       "status": "completed",
-      "summary": "four docs aligned; one repair (changelog section, active voice) routed back and fixed; continuing worker assigned the plan-vs-built-reconciliation knowledge page (UPDATED) and one changelog-length repair (9fcc945d -> 14127d7c); compiled two retro patterns; assigned the CB-001 capability-task note",
+      "summary": "four docs aligned; one repair (changelog section, active voice) routed back and fixed; continuing worker assigned the plan-vs-built-reconciliation knowledge page (UPDATED) and one changelog-length repair (9fcc945d -> 14127d7c); compiled two retro patterns; assigned the CB-001 capability-task note; assigned the two knowledge pages the scripted driver invalidates",
       "artifacts": [
         "e7a75a69",
         "28223d75",
@@ -186,7 +187,9 @@
         "9fcc945d -> 14127d7c (changelog length)",
         "109a2c13 -> ceced13c (knowledge page UPDATED, index regenerated)",
         "c9ac6e1f -> f30900a4 (two pattern pages + index)",
-        "5df91bd8 -> CB-001 note"
+        "5df91bd8 -> CB-001 note",
+        "8a3a6d85 -> e9ff1e16 (#993 changelog)",
+        "e857c14a -> cd986dbc (allowlist pattern deprecated, audit-architecture reverified)"
       ],
       "usage": "~128k subagent tokens cumulative (harness report)"
     },
@@ -274,6 +277,59 @@
         "fresh review on e67e5481 by a40cad69363480924"
       ],
       "usage": "~154k subagent tokens, 41 tool uses (harness report)"
+    },
+    {
+      "id": "T6",
+      "title": "Scripted audit route driver replaces the nested-agent driver (#993)",
+      "dependsOn": [
+        "T1",
+        "T2",
+        "T3"
+      ],
+      "wave": 5,
+      "complexity": "H — audit lifecycle boundary, evidence contract, and probe fixture correctness",
+      "requestedModel": "fable (passed explicitly after the Explore observation)",
+      "selectionReason": "Operator-authorized scope addition on 2026-09-06; boundary/shell correctness is high-uncertainty; Sonnet excluded; explicit model because inheritance is unverified",
+      "observedSettings": {
+        "model": "claude-fable-5-1 (worker self-report)",
+        "reasoning": "unknown — provider default"
+      },
+      "files": [
+        ".oh/skills/audit/scripts/route-driver.sh",
+        ".oh/skills/audit/SKILL.md",
+        ".oh/skills/audit/references/implementation.md",
+        ".oh/skills/audit/references/pr.md",
+        ".oh/evals/probes/audit-run-root-contract.sh"
+      ],
+      "excludes": [
+        "audit-run.sh",
+        "audit-evidence.sh",
+        "implementation-gates.sh",
+        "pr-acquire.sh",
+        "pr-classify.sh",
+        "all other probes",
+        "docs/**",
+        "CHANGELOG.md",
+        ".oh/tasks/**"
+      ],
+      "executionDirectory": "/home/sandbox/harness/.worktrees/feat/988-t6-driver @7c3a7c2f",
+      "workerType": "general-purpose",
+      "continuation": "SendMessage",
+      "acceptance": "audit-run-root-contract.sh and every audit-* probe exit 0; a real audit-run of this task publishes correlated evidence with an AUDIT-PASS/FAIL verdict and no nested agent; no AUDIT_AGENT_COMMAND_JSON remains",
+      "dodIds": [
+        "D6",
+        "D8",
+        "D9",
+        "D11"
+      ],
+      "nativeWorkerId": "abf13eff75737c430",
+      "status": "completed",
+      "summary": "scripted route-driver.sh; 8 audit-* probes 0; real end-to-end run published correlated evidence with no nested agent",
+      "artifacts": [
+        "df7576c6 -> 5deb1d54",
+        "scratchpad/t6-real-run.log (run-id audit-20260906T200226Z-1598585, verdict AUDIT-FAIL at gate3: mergeability UNKNOWN on the draft)"
+      ],
+      "usage": "~123k subagent tokens, 38 tool uses (harness report)"
     }
   ]
 }

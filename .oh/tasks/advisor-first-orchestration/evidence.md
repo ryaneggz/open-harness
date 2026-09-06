@@ -55,6 +55,7 @@ Requested versus observed, from `delegate-graph.json`:
 | T4 checks (L) | Opus, thinking disabled | no per-worker thinking control exists | `claude-opus-5[1m]`; reasoning unknown | worker self-report |
 | T5 review (H) | inherit (Fable), read-only | `Explore` built-in did not inherit | `claude-opus-5[1m]`; reasoning unknown | worker self-report |
 | T5 fresh review (H) | `fable` set explicitly, read-only | `Explore` built-in with `model` set | `claude-fable-5-1`; reasoning unknown | worker self-report |
+| T6 scripted driver (H) | `fable` set explicitly | `general-purpose` with `model` set | `claude-fable-5-1`; reasoning unknown | worker self-report |
 
 Capability gate: the Agent tool schema visible to this session carries `model` with aliases `sonnet`, `opus`, `haiku`, `fable` and no `thinking` or `effort` parameter. The Claude Code documentation read on 2026-09-06 (`code.claude.com/docs/en/tools-reference.md`, `sub-agents.md`, `model-config.md`) lists no per-subagent thinking or effort control. "Opus with thinking disabled" therefore could not be confirmed; T3 and T4 were BLOCKED before dispatch and the operator was asked. The operator authorized "Opus, reasoning unobserved". Sonnet was never passed. `max` was never passed. Luna/Max and Astra/high: no native surface in this session exposes those models; recorded as a capability gap, no invented parameter passed.
 
@@ -80,7 +81,7 @@ plan-orchestration-contract rc=0
 
 Fault injection: T2 demonstrated 33 cases (REGRESSION then restored PASS) in `scratchpad/t2-fault-injection.log`; T4 independently re-ran 11 named cases (missing delegation, Sonnet substitution, off-to-low, `thinking: max`, stale acceptance, overlapping writers, forced handoff, hard-coded advisor identity, concurrent ownership, incomplete brief, forced handoff in plan) in `scratchpad/t4-checks.log`, all caught. Every probe's `# desc:` states it inspects instruction text and does not verify runtime model selection.
 
-Full suite on `8cd488e5`, the content head after the review repairs (recorded in `eval-result.json`):
+Full suite on `cd986dbc`, the final content head including the scripted audit driver (recorded in `eval-result.json`; an earlier run on `8cd488e5` gave the same result):
 
 ```
 ran 143 probe(s); runner exit 0; PERSISTENT RED (3) — not gating, no green->red delta
@@ -107,8 +108,10 @@ NOT-APPLICABLE (15 pattern pages — provenance immutable)
 | Page | State | Action |
 |---|---|---|
 | `plan-vs-built-reconciliation` | UPDATED | 12 `execute.md` citations remapped, summary reworded to the advisor-first owner, `updated: 2026-09-06`, `verified_at: 14127d7c…` (commit `ceced13c`, by T3) |
+| `audit-architecture` | REVERIFIED | declares `audit/SKILL.md`, changed by the driver retirement; every cited line still resolves, no claim about the agent driver; `verified_at: 5deb1d54…` (by T3) |
+| `pattern-audit-driver-tool-allowlist` | UPDATED (`confidence: deprecated`) | describes the retired nested-agent driver; retirement paragraph added, historical body and pinned sources kept (by T3) |
 | all other `source/` pages | NOT-AFFECTED (no declared source in the changed set) | none |
-| all `patterns/` pages | NOT-AFFECTED (immutable provenance) | none |
+| all other `patterns/` pages | NOT-AFFECTED (immutable provenance) | none |
 | new advisor-first page | NOT CREATED | the canonical skills and ADR #989 are the source; a page now would be a second description with no consumer |
 
 `bash .oh/evals/probes/wiki-readme-index.sh` → PASS after the index regeneration.
@@ -157,6 +160,28 @@ T4 section E: `git revert --no-edit` of the seven policy/probe/docs commits toge
 - **Public docs** (`mifunedev/openharness-web`) may still describe the old direct-implementation default. This PR does not audit or change that repository, and no external issue exists for it; the D11 public-guidance review stays open for the operator.
 - **Other declared sources of `plan-vs-built-reconciliation`** (`reviewer-evidence-doc.md`, `spec-ready-finalization.sh`) were not in this diff and were not re-cited; the page's prior `verified_at` commit is not in this repository's history, so their freshness relative to that page was not re-established here.
 - **STE findings on untouched lines** in the edited skill files (150 pre-existing on `execute.md` and siblings) remain.
+
+### Scope addition: the nested-agent audit driver is retired (#993)
+
+Operator decision on 2026-09-06, recorded in `prd.md` Plan Reconciliation as an approved material deviation. Trigger: `/audit implementation` attempt 1 (`audit-20260906T191412Z-1541169`) failed before any gate ran because its `claude -p` driver hit the provider spend limit while the interactive session and its workers kept running; that driver's model was unrecorded and unbound by the operator's constraints, and every gate it re-derived is deterministic.
+
+Built by bounded worker T6 (`5deb1d54`): `route-driver.sh` now runs gate 1 (`implementation-gates.sh gate1`), gate 2 (reuse `eval-result.json` when its commit is HEAD, else run the suite), gate 3 (`classify-pr`, or a green CI run for HEAD when there is no PR), gate 4 (fails closed when UI verification applies), gate 5 (metrics and disclosure only), prints `AUDIT-EVIDENCE: <token>`, and publishes the schema-v1 evidence itself. The `pr` target maps the classifier to `PR-AUDIT-PROMOTABLE / BLOCKED / UNKNOWN`. Report-only targets exit 64: the active session reads those routes directly. `audit-run-root-contract.sh` now exercises the scripted driver (unsupported target, gate-1 failure fixture, gate-3 no-CI fixture with a stub `gh`) instead of a fake agent.
+
+```
+$ for p in $(ls .oh/evals/probes | grep -E '^audit'); do bash .oh/evals/probes/$p >/dev/null 2>&1; printf '%s %s\n' "$p" "$?"; done
+audit-dispatcher-contract.sh 0
+audit-implementation-behavior.sh 0
+audit-pr-acquire.sh 0
+audit-pr-classifier.sh 0
+audit-run-root-contract.sh 0
+audit-shellcheck-coverage.sh 0
+audit-slop-gate.sh 0
+audit-stale-references.sh 0
+$ grep -c AUDIT_AGENT_COMMAND_JSON .oh/skills/audit/scripts/route-driver.sh
+0
+```
+
+T6's real run of the new driver against this task (worktree head `7c3a7c2f`, run `audit-20260906T200226Z-1598585`): gate 1 PASS (7/7), gate 2 PASS (suite run, exit 0), gate 3 FAIL because GitHub reported the draft PR's `mergeable`/`mergeStateStatus` as `UNKNOWN` (`evidenceComplete: false`); verdict `AUDIT-FAIL` published with `state=complete`. The verdict was accepted as data, not tuned away. Knowledge impact of this addition: `pattern-audit-driver-tool-allowlist` (describes the retired driver) and `audit-architecture` (declares `audit/SKILL.md`) are resolved by T3; states are recorded in the knowledge table above once applied.
 
 ### Retro, compile, and benchmark (tail steps 8–9)
 
