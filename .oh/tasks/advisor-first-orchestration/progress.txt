@@ -1,0 +1,3 @@
+# progress
+
+2026-09-06T18:15:37Z plan: base 9261d5127102b112ee1f0c7f6b74fbb1c619fc9e; source plan /home/sandbox/harness/.oh/plans/advisor-first-orchestration/plan.md; queries "delegate advisor orchestration spec"; read pattern-evals-probe-brief-under-enumeration, pattern-wiki-external-model-over-mapping, plan-vs-built-reconciliation; issues #988 (tracking) #989 (ADR); 7 stories; Intent preserved: YES; plan skill baseline copied from untracked root file
