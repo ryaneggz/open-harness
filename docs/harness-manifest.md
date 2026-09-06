@@ -8,7 +8,7 @@ shape, and does not treat it as a registry-backed schema or conformance target.
 The real runtime configuration surfaces today are the tracked
 [`oh.json`](../oh.json) at the repository root, which holds every non-secret
 setting, and the gitignored root `.env`, which holds only secrets and is
-documented by the tracked [`.env.example`](../.env.example). Both are read by
+documented by the tracked [`.example.env`](../.example.env). Both are read by
 [`docker-compose.sh`](../.oh/scripts/docker-compose.sh); the field reference is
 [Configuration](configuration.md). The example below is only a pointer map over the existing `.oh/`
 control-plane surfaces described in the [`.oh/` directory layout](oh-directory-layout.md).

@@ -8,6 +8,10 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 
 ## [Unreleased]
 
+### Changed
+
+- Rename the tracked secrets template `.env.example` to `.example.env`, so the `**/.env*` ignore rule no longer needs an exception. Copy `.example.env` to `.env`. ([#979](https://github.com/mifunedev/openharness/issues/979))
+
 ### Fixed
 
 - Align the `sandbox` user with the Docker socket GID by joining the group that already owns it, instead of silently failing when `groupmod` cannot renumber `docker`. ([#975](https://github.com/mifunedev/openharness/issues/975))
