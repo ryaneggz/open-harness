@@ -16,7 +16,7 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 
 ### Changed
 
-- Make advisor-first execution the default across `AGENTS.md`, `/spec`, `/delegate`, and `/plan`: the active session advises, assigns tracked edits to bounded workers, and accepts. ([#988](https://github.com/mifunedev/openharness/issues/988), [#989](https://github.com/mifunedev/openharness/issues/989))
+- Make advisor-first execution the default: the active session advises, assigns tracked edits to bounded workers, and accepts. ([#988](https://github.com/mifunedev/openharness/issues/988), [#989](https://github.com/mifunedev/openharness/issues/989))
 - Honor an explicit operator model selection after a native capability check, and block on an unsupported required control instead of substituting one. ([#988](https://github.com/mifunedev/openharness/issues/988))
 
 ## [0.8.0] - 2026-09-06
