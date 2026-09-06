@@ -1,11 +1,12 @@
 import { build } from "esbuild";
-import { readFileSync, chmodSync, existsSync } from "node:fs";
+import { readFileSync, chmodSync, copyFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf8"));
-const outfile = resolve(__dirname, "dist/oh.js");
+const outfile = resolve(__dirname, "dist/agro.js");
+const legacyOutfile = resolve(__dirname, "dist/oh.js");
 const assetRoot = process.env.OH_ASSET_ROOT ?? resolve(__dirname, "../..");
 
 const ohAssetPlugin = {
@@ -42,3 +43,5 @@ await build({
 });
 
 chmodSync(outfile, 0o755);
+copyFileSync(outfile, legacyOutfile);
+chmodSync(legacyOutfile, 0o755);

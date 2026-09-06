@@ -75,6 +75,14 @@ else
   fail "pnpm is $pnpm_version, expected exactly $EXPECTED_PNPM"
 fi
 
+agro_version=$(run 'agro --version' 2>/dev/null || true)
+oh_version=$(run 'oh --version' 2>/dev/null || true)
+if [ -n "$agro_version" ] && [ "$agro_version" = "$oh_version" ]; then
+  ok "agro and oh report the same CLI version ($agro_version)"
+else
+  fail "agro --version ('$agro_version') and oh --version ('$oh_version') must be the same non-empty version"
+fi
+
 # Under emulation `docker run` prefixes its output with a platform-mismatch
 # warning on stderr. Drop it so the reported line is the tool's own version,
 # not the runner's complaint about the architecture.
