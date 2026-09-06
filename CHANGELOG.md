@@ -8,20 +8,25 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 
 ## [Unreleased]
 
-## [0.9.0] - 2026-09-06
-
 ### Added
 
 - Add the `advisor-execution-contract` and `plan-orchestration-contract` probes. ([#988](https://github.com/mifunedev/openharness/issues/988))
 - Add the /plan skill to the tracked tree (.oh/skills/plan/SKILL.md) with required bounded-assignment fields. ([#988](https://github.com/mifunedev/openharness/issues/988))
-- Resolve `.agro/`, `agro.json`, `AGRO_*`, and `~/.agro` beside their legacy names through one fail-closed compatibility contract with a migration engine; defaults are unchanged. ([#940](https://github.com/mifunedev/openharness/issues/940))
-- Add the `agro` CLI as `@mifune/agro` with `agro update` self-upgrade, the artifact-only `get-agro.sh` installer, and `ghcr.io/mifunedev/agro` images; `oh` stays the compatibility alias. ([#941](https://github.com/mifunedev/openharness/issues/941))
 
 ### Changed
 
 - Replace the nested-agent `/audit` route driver with a scripted driver that runs the deterministic gates itself and publishes correlated evidence; no `claude -p` is launched. ([#993](https://github.com/mifunedev/openharness/issues/993))
 - Make advisor-first execution the default: the active session advises, assigns tracked edits to bounded workers, and accepts. ([#988](https://github.com/mifunedev/openharness/issues/988), [#989](https://github.com/mifunedev/openharness/issues/989))
 - Honor an explicit operator model selection after a native capability check, and block on an unsupported required control instead of substituting one. ([#988](https://github.com/mifunedev/openharness/issues/988))
+
+## [0.9.0] - 2026-09-06
+
+### Added
+
+- Resolve `.agro/`, `agro.json`, `AGRO_*`, and `~/.agro` beside their legacy names through one fail-closed compatibility contract with a migration engine; defaults are unchanged. ([#940](https://github.com/mifunedev/openharness/issues/940))
+- Add the `agro` CLI as `@mifune/agro` with `agro update` self-upgrade, the artifact-only `get-agro.sh` installer, and `ghcr.io/mifunedev/agro` images; `oh` stays the compatibility alias. ([#941](https://github.com/mifunedev/openharness/issues/941))
+
+### Changed
 
 ## [0.8.0] - 2026-09-06
 
@@ -274,7 +279,6 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 - `oh init`'s wizard writes **one** file. It used to split non-secret answers to `harness.yaml` and secrets to `.env`; both now land in `.env` in a single write, through the same line editor, so the operator's answers appear as uncommented lines inside the documented template.
 - CI path filters and their probes move from `harness.yaml.example` to `.devcontainer/.example.env` (`ci-harness.yml`, `sandbox-boot-guard.yml`, `harness-ci-core-paths.sh`, `sandbox-boot-guard-ci.sh`). `oh-init-headless-config.sh` retargets to the `.example.env` template and additionally asserts `--yes` writes no `.env` at all.
 - `.gitignore` keeps `/harness.yaml` and `.devcontainer/.harness.yaml.env` for one more release so a stale local artifact from a pre-0.4.0 checkout is never committed, and adds `/harness.yaml.migrated`.
-
 
 ## [0.3.0] - 2026-08-25
 
