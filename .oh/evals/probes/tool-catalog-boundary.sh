@@ -85,7 +85,7 @@ CLI="$ROOT/.oh/cli/src/cli.ts"
 if [[ -f "$CLI" ]]; then
   grep -qF 'first === "tool"' "$CLI" \
     || missing+=("cli.ts: no dispatch for `oh tool`")
-  grep -qF 'oh tool <args...>' "$CLI" \
+  grep -qE '(oh|\$\{bin\}) tool <args\.\.\.>' "$CLI" \
     || missing+=("cli.ts: `oh tool` missing from the top-level usage block")
 fi
 

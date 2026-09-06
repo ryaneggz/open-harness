@@ -13,16 +13,16 @@
   <img src=".github/assets/mifune-banner.jpg" alt="Open Harness" width="100%">
 </p>
 
-**Open Harness provides the sandbox; you choose the harness.** It's a Docker-based workspace, agent-tended over time: one `oh sandbox install docker` boots a long-lived container where the coding agent of your choice — Claude Code, Codex, Pi, Hermes, Grok, and more, each installed with one `oh harness install` command — works on its own branch and identity. Because it's just Docker, it runs **identically on your laptop or a remote VM** — and remote is the default: deployed on a VM, Open Harness becomes a **lights-out software factory**, where the agent works unattended, on a schedule and reachable over Slack, fanning out across isolated **git worktrees** — parallel branches, delegated sub-agents, even other cloned repos — while you're away and your laptop stays clean.
+**Open Harness provides the sandbox; you choose the harness.** It's a Docker-based workspace, agent-tended over time: one `agro sandbox install docker` boots a long-lived container where the coding agent of your choice — Claude Code, Codex, Pi, Hermes, Grok, and more, each installed with one `agro harness install` command — works on its own branch and identity. Because it's just Docker, it runs **identically on your laptop or a remote VM** — and remote is the default: deployed on a VM, Open Harness becomes a **lights-out software factory**, where the agent works unattended, on a schedule and reachable over Slack, fanning out across isolated **git worktrees** — parallel branches, delegated sub-agents, even other cloned repos — while you're away and your laptop stays clean.
 
 - **One project, one sandbox.** A single container scoped to a single repo. The agent owns its branch and its workspace; you keep your laptop clean.
 - **Parallel by design.** The worktrees skill fans one sandbox into isolated git worktrees — parallel branches, delegated sub-agents, even other cloned repos.
 - **Remote-first, lights-out.** Runs the same on your laptop or a cloud VM; on a VM it's an unattended software factory — agents build on a schedule, reachable over Slack.
 - **Agents that work while you sleep.** A tiny croner runtime reads `crons/*.md` markdown and wakes the agent on a schedule.
-- **Host dependencies: Docker, Git, and Node.js ≥ 20.** No Python, no pnpm, no agent CLIs, no toolchain rot on your laptop — Node runs the `oh` CLI and nothing else. (`get-oh.sh` installs Node for you if you don't have it — see [Prerequisites](docs/installation.md#prerequisites).) The same `oh` verbs work on the host and inside the sandbox — see [lifecycle commands](docs/lifecycle-commands.md).
+- **Host dependencies: Docker, Git, and Node.js ≥ 20.** No Python, no pnpm, no agent CLIs, no toolchain rot on your laptop — Node runs the `agro` CLI and nothing else. (`get-agro.sh` installs Node for you if you don't have it — see [Prerequisites](docs/installation.md#prerequisites).) The same `agro` verbs work on the host and inside the sandbox — see [lifecycle commands](docs/lifecycle-commands.md).
 - **Composable infra.** Cherry-pick Cloudflare tunnels, SSH, Caddy gateway, or pack-supplied services via Compose overlays.
 - **Slack-ready.** The `pi-messenger-bridge` package bridges Slack (and other messengers) to a Pi agent — see [docs/integrations/slack.md](docs/integrations/slack.md).
-- **Herdr-first interactive work.** Nothing installs at boot: every harness and tool arrives through `oh harness install <id>` or `oh tool install <id>`. After entering the sandbox, install and run [Herdr](docs/integrations/herdr.md) first; keep setup, agents, tests, and servers organized in its persistent panes. Headless Slack and cron infrastructure remain independent.
+- **Herdr-first interactive work.** Nothing installs at boot: every harness and tool arrives through `agro harness install <id>` or `agro tool install <id>`. After entering the sandbox, install and run [Herdr](docs/integrations/herdr.md) first; keep setup, agents, tests, and servers organized in its persistent panes. Headless Slack and cron infrastructure remain independent.
 
 ---
 
@@ -31,44 +31,50 @@
 
 ## 📦 Install
 
-Open Harness runs one project in one Docker sandbox, and **`oh` is the only front
-door**. Host prerequisites: Docker (with the Compose plugin), Git, and Node.js ≥ 20.
+Open Harness runs one project in one Docker sandbox, and **`agro` is the only
+front door**. Host prerequisites: Docker (with the Compose plugin), Git, and
+Node.js ≥ 20.
 
-### 1. Get `oh`
+### 1. Get `agro`
 
 **npm** — you already have Node ≥ 20:
 
 ```bash
-npm install -g @mifune/openharness   # puts `oh` on your PATH
+npm install -g @mifune/agro   # puts `agro` on your PATH
 ```
 
-**curl** — no Node yet; the bootstrap offers to install nvm + Node 22 for you:
+**curl** — no Node yet; the bootstrap downloads the prebuilt `agro` artifact from
+the latest GitHub release (nothing is cloned or built on your host) and offers to
+install nvm + Node 22 for you:
 
 ```bash
-curl -fsSL https://oh.mifune.dev/get-oh.sh | bash
+curl -fsSL https://github.com/mifunedev/openharness/releases/latest/download/get-agro.sh | bash
 ```
 
 Review-first (download, read, then run — no extra dependency):
 
 ```bash
-curl -fsSL -o get-oh.sh https://oh.mifune.dev/get-oh.sh
-# Review get-oh.sh in your editor or pager before running it.
-bash get-oh.sh
+curl -fsSL -o get-agro.sh https://github.com/mifunedev/openharness/releases/latest/download/get-agro.sh
+# Review get-agro.sh in your editor or pager before running it.
+bash get-agro.sh
 ```
 
-It installs the self-contained `oh` binary to `~/.local/bin/oh` — no repo clone.
-Use `source <(curl -fsSL https://oh.mifune.dev/get-oh.sh)` to put `oh` on the
-*current* shell's PATH, or `export PATH="$HOME/.local/bin:$PATH"` after the
-piped form. Override the location with `OH_BIN_DIR`.
+It installs to `~/.local/bin/agro`; `AGRO_BIN_DIR` overrides the location, and
+`export PATH="$HOME/.local/bin:$PATH"` puts it on an already-open shell's PATH.
+`agro update` upgrades it later. `oh` remains the compatibility alias for the
+same executable — `npm install -g @mifune/openharness` or the `get-oh.sh`
+bootstrap — and every `agro` verb below also works as `oh <verb>`; see
+[AGRO compatibility](docs/agro-compatibility.md) and
+[Installation](docs/installation.md#compatibility-entry-point-oh).
 
 ### 2. Create the sandbox
 
-`oh sandbox install docker` runs from **any** directory — it needs no project
+`agro sandbox install docker` runs from **any** directory — it needs no project
 checkout:
 
 ```bash
-oh sandbox install docker   # wizard: name, timezone, git identity, SSH, Docker socket
-oh shell <name>             # attach as the sandbox user
+agro sandbox install docker   # wizard: name, timezone, git identity, SSH, Docker socket
+agro shell <name>             # attach as the sandbox user
 ```
 
 The wizard's answers land in a registry entry at
@@ -81,19 +87,19 @@ sandbox runs the published image and seeds its workspace from it.
 bind-mounted at `/home/sandbox/harness`:
 
 ```bash
-oh sandbox install docker --repo ~/my-project --name my-project
+agro sandbox install docker --repo ~/my-project --name my-project
 ```
 
 Equip that checkout with the control plane first — `cd ~/my-project && oh
 update` writes `.oh/` and `crons/` and **nothing else**: no `AGENTS.md`, no
 provider configuration, no `.gitignore` line beyond the `.env` line
-`oh secret set` adds. Those files stay yours.
+`agro secret set` adds. Those files stay yours.
 
 Then, inside the sandbox, install and open the persistent interactive workspace
 first — a fresh sandbox has no `herdr`, because nothing installs at boot:
 
 ```bash
-oh tool install herdr
+agro tool install herdr
 herdr
 ```
 
@@ -110,7 +116,7 @@ setup.
 
 ### 3. Full setup (optional) — private repo, remotes, agent auth
 
-Run these **inside the initial Herdr pane** (`oh shell <name>`, then `oh tool install herdr`, then `herdr`). Per-step depth + troubleshooting:
+Run these **inside the initial Herdr pane** (`agro shell <name>`, then `agro tool install herdr`, then `herdr`). Per-step depth + troubleshooting:
 [quickstart → End-to-end setup walkthrough](docs/quickstart.md#end-to-end-setup-walkthrough).
 
 ```bash
@@ -118,11 +124,11 @@ Run these **inside the initial Herdr pane** (`oh shell <name>`, then `oh tool in
 # (SSH remotes use the key directly, so `gh auth setup-git` isn't needed):
 gh auth login
 
-# Create your own PRIVATE repo and point origin at it. `oh config repo` runs the
+# Create your own PRIVATE repo and point origin at it. `agro config repo` runs the
 # four commands below for you (it asks first, and defaults to no):
-oh config repo
+agro config repo
 
-# The manual equivalent, if `gh` is not installed — `oh config repo` keeps the
+# The manual equivalent, if `gh` is not installed — `agro config repo` keeps the
 # upstream you cloned from as the `openharness` remote instead of `upstream`:
 gh repo create <your-user>/openharness --private
 git remote set-url origin git@github.com:<your-user>/openharness.git
@@ -132,11 +138,11 @@ git push -u origin HEAD
 # Authenticate the agents you'll use. Simplest cross-provider path: launch the agent,
 # run /login, and pick DEVICE MODE (a code + URL that works headless/remote). The
 # one-liners below are equivalents where a provider exposes them:
-# Each CLI arrives only through `oh harness install <id>` — nothing installs at boot.
-oh harness install claude-code && claude auth login   # Claude Code (or /login in-session)
-oh harness install codex && codex login --device-auth # Codex (device mode; or /login in-session)
-oh harness install pi && pi                           # Pi (first run walks provider auth)
-oh harness install hermes && hermes setup             # Hermes
+# Each CLI arrives only through `agro harness install <id>` — nothing installs at boot.
+agro harness install claude-code && claude auth login   # Claude Code (or /login in-session)
+agro harness install codex && codex login --device-auth # Codex (device mode; or /login in-session)
+agro harness install pi && pi                           # Pi (first run walks provider auth)
+agro harness install hermes && hermes setup             # Hermes
 
 # Configure Slack, then run + verify the gateways (sandbox-only):
 #   config: docs/integrations/slack.md  ·  docs/harnesses/hermes.md
@@ -147,7 +153,7 @@ tmux attach -r -t client-slack-pi   # read-only view; detach with Ctrl-b d
 
 ### VS Code (secondary path)
 
-Provision with `oh sandbox install docker`, then attach with **Dev Containers:
+Provision with `agro sandbox install docker`, then attach with **Dev Containers:
 Attach to Running Container** against your sandbox. That is the supported editor
 path.
 
@@ -175,20 +181,20 @@ Provider surfaces are symlinks into `.oh/`: `.pi/skills`, `.claude/skills`, and 
 ## 🚀 Use it
 
 ```bash
-oh sandbox list       # every sandbox: name, runtime, status, repo
-oh shell <name>       # enter the isolated sandbox
-oh tool install herdr # nothing installs at boot; install the workspace first
+agro sandbox list       # every sandbox: name, runtime, status, repo
+agro shell <name>       # enter the isolated sandbox
+agro tool install herdr # nothing installs at boot; install the workspace first
 herdr                 # open the primary interactive workspace
 # install an agent CLI the same way, then launch it from a Herdr pane:
-#   oh harness install claude-code  → claude    # Claude Code
-#   oh harness install codex        → codex     # OpenAI Codex CLI
-#   oh harness install pi           → pi        # Pi Coding Agent
-#   oh harness install opencode     → opencode  # OpenCode
-#   oh harness install hermes       → hermes    # Nous Research Hermes
-#   oh harness install grok-build   → grok      # xAI Grok Build
-oh stop <name>    # stop the sandbox, keeping volumes
-oh destroy <name> # stop the sandbox, wipe its volumes, drop the registry entry
-oh --help         # every verb
+#   agro harness install claude-code  → claude    # Claude Code
+#   agro harness install codex        → codex     # OpenAI Codex CLI
+#   agro harness install pi           → pi        # Pi Coding Agent
+#   agro harness install opencode     → opencode  # OpenCode
+#   agro harness install hermes       → hermes    # Nous Research Hermes
+#   agro harness install grok-build   → grok      # xAI Grok Build
+agro stop <name>    # stop the sandbox, keeping volumes
+agro destroy <name> # stop the sandbox, wipe its volumes, drop the registry entry
+agro --help         # every verb
 ```
 
 ## 🧪 Testing
@@ -201,26 +207,26 @@ Prefer VS Code or remote SSH? Use the Dev Containers extension's "Attach to Runn
 
 Configuration is split by kind across two files. `oh.json` holds every
 non-secret setting — sandbox identity, git identity, the SSH and Docker-socket
-toggles. It holds no install field: `oh harness install <id>` and `oh tool
+toggles. It holds no install field: `agro harness install <id>` and `agro tool
 install <id>` are the only door. A gitignored, mode-`0600` `.env` holds nothing
 but secrets (`GH_TOKEN`, `SANDBOX_PASSWORD`, `PI_SLACK_APP_TOKEN`,
 `PI_SLACK_BOT_TOKEN`, …); the tracked `.example.env` documents every
 allow-listed key. A sandbox keeps its pair inside its registry entry —
-`oh config set --sandbox <name> <field> <value>` and `oh secret set --sandbox
+`agro config set --sandbox <name> <field> <value>` and `agro secret set --sandbox
 <name> <KEY>` write there; without the flag both write the project root. Apply a
-change with `oh stop <name> && oh sandbox install docker --name <name>`.
+change with `agro stop <name> && agro sandbox install docker --name <name>`.
 Full field reference: [Configuration](docs/configuration.md).
 
 Secrets are read on **every** path, including VS Code "Reopen in Container" —
 that path loads `.devcontainer/docker-compose.yml` directly and compose
 auto-loads the dotenv beside it, which is a symlink to the root one. Compose
 *overlays* are the exception: that path applies none, which is why
-`oh sandbox install docker` provisions and VS Code only attaches. A
+`agro sandbox install docker` provisions and VS Code only attaches. A
 `harness.yaml` layer used to sit in front of these files and was invisible on
 exactly that path; it was removed in 0.4.0, and a leftover one is migrated
 automatically on the next lifecycle command. Compose overlay *paths* live in
 `composeOverrides[]` in `oh.json`. See
-[the `oh sandbox install docker` guide](docs/deployment-prebuilt-image.md) for
+[the `agro sandbox install docker` guide](docs/deployment-prebuilt-image.md) for
 the image-mode recipe.
 
 ## ✨ What you get
@@ -234,7 +240,7 @@ the image-mode recipe.
 | **One project, one sandbox** | A single container scoped to a single repo and branch |
 | **Worktrees** | One sandbox → many isolated git worktrees: parallel branches, delegated sub-agents, satellite project clones under `projects/` |
 | **Crons** | Markdown-defined schedules in `crons/*.md` driven by the in-container croner runtime |
-| **Multi-agent** | Claude, Codex, Pi, Hermes, Grok — each via `oh harness install <id>`; Slack bridging via [pi-messenger-bridge](docs/integrations/slack.md) |
+| **Multi-agent** | Claude, Codex, Pi, Hermes, Grok — each via `agro harness install <id>`; Slack bridging via [pi-messenger-bridge](docs/integrations/slack.md) |
 
 ## 📚 Where to go next
 
@@ -247,7 +253,7 @@ the image-mode recipe.
 ## 🧹 Cleanup
 
 ```bash
-oh destroy <name>
+agro destroy <name>
 ```
 
 ## 🤝 Contributing & community

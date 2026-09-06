@@ -2,9 +2,9 @@
 title: "Fresh-Machine Setup Flow"
 slug: fresh-machine-setup
 kind: repo
-tags: [setup, onboarding, installation, registry, gateway, ssh, github, slack]
+tags: [setup, onboarding, installation, agro, registry, gateway, ssh, github, slack]
 created: 2026-07-02
-updated: 2026-09-05
+updated: 2026-09-06
 sources:
   - docs/quickstart.md
   - docs/installation.md
@@ -19,7 +19,8 @@ sources:
   - .oh/scripts/link-providers.sh
   - .oh/scripts/hermes-install-smoke.sh
   - .oh/scripts/gateway.sh
-verified_at: 69b7f8fd3812673d31b31c86260c1d779c792179
+  - .oh/scripts/get-agro.sh
+verified_at: 16a399226e2d918fa63597dc00b8ccaa81c18bd9
 related: [sandbox-dependency-installs, oh-cli-portable-lifecycle]
 confidence: provisional
 ---
@@ -28,7 +29,8 @@ confidence: provisional
 
 ## Relevant Source Files
 - `docs/quickstart.md` — the **canonical human walkthrough** (14 ordered steps, commands inlined). This entry is a synthesis + doc-handoff map only; keep it in sync with quickstart's step list.
-- `docs/installation.md` — host prerequisites, the `oh` install paths, and the clone-and-own private-origin + upstream pattern.
+- `docs/installation.md` — host prerequisites, the `agro` install paths, the `oh` compatibility entry point, and the clone-and-own private-origin + upstream pattern.
+- `.oh/scripts/get-agro.sh` — artifact-only installer: the `agro.js` release asset, `AGRO_<NAME>` with `OH_<NAME>` fallback, no clone or build.
 - `docs/deployment-prebuilt-image.md` — the `oh sandbox install docker` page: image-only by default, `--repo` to bind a checkout.
 - `docs/integrations/github.md` — SSH auth (interactive + entrypoint auto-keygen).
 - `docs/integrations/debugmcp.md` — DebugMCP extension runbook.
@@ -40,22 +42,32 @@ confidence: provisional
 ## Summary
 Validated 2026-07-01 on a bare OVHcloud host and re-validated 2026-09-03 against a registry
 child sandbox: the path from a fresh Linux machine to an authenticated multi-agent Open
-Harness sandbox is 14 ordered steps. Steps 1–4 run on the **host** (install deps, optionally
-clone, `oh sandbox install docker`, `oh shell <name>`); steps 5–14 run **inside the
+Harness sandbox is 14 ordered steps. Steps 1–4 run on the **host** (install deps and `agro`,
+clone, `agro sandbox install docker --repo`, `agro shell <name>`); steps 5–14 run **inside the
 sandbox** (install Herdr and each harness through the CLI, GitHub SSH auth, private origin +
 upstream, per-harness auth, Slack, gateway run/verify). Each fact has one canonical doc home,
-and `quickstart.md` is the single self-sufficient human walkthrough.
+and `quickstart.md` is the single self-sufficient human walkthrough. The docs write `agro`;
+`oh` is the compatibility alias for the same executable (#941).
 
 ## Detail
-Host prerequisites are Docker (+ Compose), Git, and **Node.js >= 20** — `oh` is the only
-lifecycle door and needs Node to run (issue #881 retired the Makefile; `get-oh.sh`
-installs Node when it is missing). Since #950 no checkout is required to create a sandbox:
-`oh sandbox install docker` runs from any directory, asks name, timezone, git identity,
+Host prerequisites are Docker (+ Compose), Git, and **Node.js >= 20** — `agro` is the only
+lifecycle door and needs Node to run (issue #881 retired the Makefile). Install it with
+`npm install -g @mifune/agro`, or bootstrap with `get-agro.sh`: it downloads the prebuilt
+`agro.js` asset of the latest GitHub Release of `AGRO_GITHUB_REPO` (default
+`mifunedev/openharness`, so a fork can host its own) into `~/.local/bin/agro` (`AGRO_BIN_DIR`),
+checks the shebang, offers nvm + Node 22 when Node is missing, and never clones or builds — no
+ref override exists because nothing is checked out. Each `AGRO_<NAME>` falls back to
+`OH_<NAME>`; a warning names both keys when they differ (`agro_env`). `get-oh.sh` stays the compatibility bootstrap
+for `oh`, with its source-build fallback; `@mifune/openharness` installs the delegating `oh`
+shim. `agro update` upgrades the executable later ([[oh-cli-portable-lifecycle]]). Since #950
+no checkout is required to create a sandbox: `agro sandbox install docker` runs from any
+directory, asks name, timezone, git identity,
 SSH (with port), and Docker socket (or takes every default with `--yes`; the default name
 is `oh-sbx-<n>`), writes the entry under `${OH_HOME:-~/.oh}/sandboxes/<name>/`, and boots
 the published image. A project checkout is an optional `--repo <dir>` bind mount; a
 checkout is equipped with the `.oh/` control plane by `oh update` (`--from <dir>` or
-`--from-remote`), which writes nothing else. Non-secret configuration lives in the entry's
+`--from-remote`) during the compatibility window, which writes nothing else. Non-secret
+configuration lives in the entry's
 `oh.json`, edited with `oh config set --sandbox <name>`; secrets go through
 `oh secret set --sandbox <name>` into the entry's gitignored dotenv. The CLI writes no
 `AGENTS.md`, provider config, or scaffold; the operator owns those files. Nothing installs at
@@ -110,9 +122,9 @@ previous live-auth claims.
 ```mermaid
 flowchart TD
   subgraph Host
-    S1[1 install docker/git/node + oh] --> S2[2 optional: clone + oh update]
-    S2 --> S3[3 oh sandbox install docker — wizard writes the registry entry]
-    S3 --> S4[4 oh shell name]
+    S1[1 install docker/git/node + agro] --> S2[2 optional: clone + oh update]
+    S2 --> S3[3 agro sandbox install docker --repo — wizard writes the registry entry]
+    S3 --> S4[4 agro shell name]
   end
   subgraph Sandbox
     S4 --> S5[5 oh tool install herdr, then herdr]
@@ -125,7 +137,7 @@ flowchart TD
     S12 --> S13[13 configure Slack]
     S13 --> S14[14 run + verify gateways read-only]
   end
-  S1 -.-> D1[installation.md prerequisites]
+  S1 -.-> D1[installation.md prerequisites + get-agro.sh]
   S3 -.-> D2[deployment-prebuilt-image.md + configuration.md]
   S6 -.-> D3[integrations/github.md]
   S7 -.-> D4[installation.md clone-and-own]

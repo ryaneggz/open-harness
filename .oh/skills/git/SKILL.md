@@ -230,9 +230,12 @@ and eval probes to pass before it mutates a tag, GitHub Release, or package.
 Do **not** manually pre-create a release tag or `release/<version>` branch.
 
 Versioning is SemVer: `MAJOR.MINOR.PATCH`, tagged `vMAJOR.MINOR.PATCH`. Root
-`package.json` holds the version. No other file records it. The workflow reads
-that file and never derives a version from the clock, so cutting a release is a
-deliberate bump, not a side effect of pushing.
+`package.json` holds the release version. The workflow reads that file and never
+derives a version from the clock, so cutting a release is a deliberate bump, not
+a side effect of pushing. A cut bumps four sites to the same value: root
+`package.json`; `.oh/cli/package.json` with its `package-lock.json`;
+`.oh/cli/legacy/package.json` `version`; and the exact `@mifune/agro` pin in
+`.oh/cli/legacy/package.json`. `version-parity.sh` fails the build on drift.
 
 Creating `refs/tags/v<version>` is the atomic reservation. A retry reads the same
 version from the same commit, so it reuses a same-SHA draft, and a retry of an
@@ -245,15 +248,29 @@ jobs all skip. The run stays **green**. To publish again, bump the version.
 
 The `v` prefix appears only in the git tag and the GitHub Release name. The step
 output, the GHCR image tags, and the concurrency group all stay bare
-(`ghcr.io/mifunedev/openharness:0.1.0`).
+(`ghcr.io/mifunedev/openharness:0.1.0`, `ghcr.io/mifunedev/agro:0.1.0`).
+
+One release publishes both generations from one build: the npm packages
+`@mifune/agro` (`agro`) and the `@mifune/openharness` shim (`oh`, deprecated
+toward `@mifune/agro` on publication); the GHCR tags
+`ghcr.io/mifunedev/openharness:<version>`, `:sha-<sha>`,
+`ghcr.io/mifunedev/agro:<version>`, `:sha-<sha>`, verified to share one digest,
+plus `latest` on both repositories; and the release assets `agro.js`, `oh.js`,
+`get-agro.sh`, `get-oh.sh`. Publishing `@mifune/agro` needs npm rights for that
+name, and the GHCR package `mifunedev/agro` must be made public after its first
+push; neither is verifiable here. The compatibility SLA clock starts at the first
+public AGRO release.
 
 The artifact sequence is:
 
 ```
 main|master push → validate + boot-lint + eval → read version from package.json
                  → reserve v<version> tag + draft
-                 → build + smoke → push <version> + sha-<full-SHA> GHCR tags
-                 → canonical latest-by-digest → publish/no-op CLI
+                 → build once + boot smoke + agro/oh version smoke
+                 → push openharness + agro <version> and sha-<full-SHA> GHCR tags
+                 → verify one digest → canonical latest-by-digest on both
+                 → publish/no-op @mifune/agro, then the @mifune/openharness shim
+                 → attach agro.js, oh.js, get-agro.sh, get-oh.sh
                  → publish GitHub Release
 ```
 

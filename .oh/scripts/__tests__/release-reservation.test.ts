@@ -361,6 +361,56 @@ describe("release workflow contract", () => {
     expect(publishDraft).toBeGreaterThan(freshGithubCheck);
   });
 
+  it("builds the agro and openharness tags once, pushes all four, and verifies one digest", () => {
+    const build = source.indexOf("Build immutable Docker image tags");
+    const bootSmoke = source.indexOf("Smoke-test Docker image before publish");
+    const agroSmoke = source.indexOf("Smoke-test agro as a first-class entry point");
+    const immutablePush = source.indexOf("Push immutable SemVer and sha-full-SHA tags");
+    const aliasVerify = source.indexOf("Verify the agro and openharness version tags share one digest");
+    const latestPromote = source.indexOf("Promote latest from the canonical branch by digest");
+
+    expect(source.match(/docker buildx build --load/g)?.length).toBe(1);
+    expect(source).toContain('AGRO_VERSION_IMAGE="ghcr.io/mifunedev/agro:${RELEASE_VERSION}"');
+    expect(source).toContain('AGRO_SHA_IMAGE="ghcr.io/mifunedev/agro:sha-${RELEASE_SHA}"');
+    expect(source).toMatch(
+      /-t "\$VERSION_IMAGE" -t "\$SHA_IMAGE" \\\n\s+-t "\$AGRO_VERSION_IMAGE" -t "\$AGRO_SHA_IMAGE" -t "\$SMOKE_IMAGE" \./,
+    );
+    expect(source).toContain('docker push "ghcr.io/mifunedev/openharness:${RELEASE_VERSION}"');
+    expect(source).toContain('docker push "ghcr.io/mifunedev/openharness:sha-${RELEASE_SHA}"');
+    expect(source).toContain('docker push "ghcr.io/mifunedev/agro:${RELEASE_VERSION}"');
+    expect(source).toContain('docker push "ghcr.io/mifunedev/agro:sha-${RELEASE_SHA}"');
+    expect(source.match(/docker push "/g)?.length).toBe(4);
+    expect(source).toMatch(
+      /\.oh\/scripts\/verify-release-aliases\.sh check \\\n\s+"ghcr\.io\/mifunedev\/openharness:\$\{RELEASE_VERSION\}" \\\n\s+"ghcr\.io\/mifunedev\/agro:\$\{RELEASE_VERSION\}"/,
+    );
+    expect(source).toContain("-lc 'agro --version'");
+    expect(source).toContain("-lc 'oh --version'");
+    expect(source).toContain('[ "$agro_version" != "$oh_version" ]');
+    expect(source).toContain('[ "$agro_version" != "$RELEASE_VERSION" ]');
+    expect(build).toBeGreaterThan(0);
+    expect(bootSmoke).toBeGreaterThan(build);
+    expect(agroSmoke).toBeGreaterThan(bootSmoke);
+    expect(immutablePush).toBeGreaterThan(agroSmoke);
+    expect(aliasVerify).toBeGreaterThan(immutablePush);
+    expect(latestPromote).toBeGreaterThan(aliasVerify);
+  });
+
+  it("attaches the CLI bundles and installers before the release is undrafted", () => {
+    const build = source.indexOf("Build the CLI bundles at the released commit");
+    const upload = source.indexOf("Upload the CLI bundles and installers as release assets");
+    const publishDraft = source.indexOf("Publish the draft after image and CLI publication");
+
+    expect(source).toContain("npm --prefix .oh/cli ci --ignore-scripts");
+    expect(source).toContain("npm --prefix .oh/cli run build");
+    expect(source).toMatch(
+      /gh release upload "v\$\{RELEASE_VERSION\}" --clobber \\\n\s+\.oh\/cli\/dist\/agro\.js \\\n\s+\.oh\/cli\/dist\/oh\.js \\\n\s+\.oh\/scripts\/get-agro\.sh \\\n\s+\.oh\/scripts\/get-oh\.sh/,
+    );
+    expect(source).toMatch(/finalize:\n[\s\S]*?GH_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/);
+    expect(build).toBeGreaterThan(source.indexOf("  finalize:\n"));
+    expect(upload).toBeGreaterThan(build);
+    expect(publishDraft).toBeGreaterThan(upload);
+  });
+
   it("serializes only same-version image publication and gates finalization on CLI success", () => {
     expect(source).not.toMatch(/^concurrency:/m);
     expect(source).toMatch(
@@ -386,5 +436,31 @@ describe("CLI publication workflow contract", () => {
     expect(source).toContain("ref: ${{ inputs.ref }}");
     expect(source).not.toMatch(/push:\n\s+tags:/);
     expect(source).toContain("npm publish --access public --provenance");
+  });
+
+  it("publishes @mifune/agro, then the guarded @mifune/openharness shim, then deprecates the shim", () => {
+    const agroGuard = source.indexOf('npm view "@mifune/agro@$V" version');
+    const agroPublish = source.indexOf("Publish @mifune/agro to npm");
+    const legacyGuard = source.indexOf('npm view "@mifune/openharness@$V" version');
+    const waitForAgro = source.indexOf("Wait for @mifune/agro to resolve on the registry");
+    const legacyPublish = source.indexOf("Publish @mifune/openharness to npm");
+    const deprecate = source.indexOf('npm deprecate "@mifune/openharness@$V"');
+
+    expect(agroGuard).toBeGreaterThan(0);
+    expect(agroPublish).toBeGreaterThan(agroGuard);
+    expect(legacyGuard).toBeGreaterThan(agroPublish);
+    expect(waitForAgro).toBeGreaterThan(legacyGuard);
+    expect(legacyPublish).toBeGreaterThan(waitForAgro);
+    expect(deprecate).toBeGreaterThan(legacyPublish);
+    expect(source.match(/npm publish --access public --provenance/g)?.length).toBe(2);
+    expect(source).toMatch(/working-directory: \.oh\/cli\n[\s\S]*?working-directory: \.oh\/cli\/legacy\n/);
+    expect(source).toContain(
+      'npm deprecate "@mifune/openharness@$V" "@mifune/openharness is the compatibility entry point for AGRO; install @mifune/agro (agro) — oh keeps working through the compatibility window"',
+    );
+    expect(source).toMatch(/Deprecate @mifune\/openharness[\s\S]*?if: steps\.legacy_guard\.outputs\.skip == 'false'/);
+    expect(source).toContain("id-token: write");
+    expect(source.match(/NODE_AUTH_TOKEN: \$\{\{ secrets\.NPM_TOKEN \}\}/g)?.length).toBe(3);
+    expect(source.match(/npm ci/g)?.length).toBe(1);
+    expect(source.indexOf("npm ci --ignore-scripts")).toBeLessThan(agroPublish);
   });
 });

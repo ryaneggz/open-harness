@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # tier: A
-# source: npm publish path for the standalone `oh` CLI (@mifune/openharness) — alternative to get-oh.sh
+# source: npm publish path for the standalone `agro` CLI (@mifune/agro; issue #941 Phase 1) — alternative to get-agro.sh
 # desc: STATIC guard — `.oh/cli/package.json` is publishable to npm: NOT private, publishConfig.access
-#       "public", ships only the built `dist/` bundle, bin `oh` -> ./dist/oh.js, name @mifune/openharness,
+#       "public", ships only the built `dist/` bundle, bin `agro` -> ./dist/agro.js and no `oh` bin (the
+#       legacy `oh` bin belongs to the .oh/cli/legacy shim, see agro-legacy-shim.sh), name @mifune/agro,
 #       engines.node declared, a README + LICENSE ship for the npm page, and publish-cli.yml carries the
-#       publish-npm job (npm publish, run from .oh/cli). Complements get-oh-bootstrap.sh.
+#       publish-npm job (npm publish, run from .oh/cli). Complements get-agro-bootstrap.sh.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -25,8 +26,8 @@ if jq -e '.private == true' "$PKG" >/dev/null; then
   exit 1
 fi
 
-if ! jq -e '.name == "@mifune/openharness"' "$PKG" >/dev/null; then
-  echo 'REGRESSION .oh/cli/package.json name is not @mifune/openharness' >&2
+if ! jq -e '.name == "@mifune/agro"' "$PKG" >/dev/null; then
+  echo 'REGRESSION .oh/cli/package.json name is not @mifune/agro' >&2
   exit 1
 fi
 
@@ -40,8 +41,13 @@ if ! jq -e '.files | index("dist")' "$PKG" >/dev/null; then
   exit 1
 fi
 
-if ! jq -e '.bin.oh == "./dist/oh.js"' "$PKG" >/dev/null; then
-  echo 'REGRESSION .oh/cli/package.json bin.oh is not ./dist/oh.js' >&2
+if ! jq -e '.bin.agro == "./dist/agro.js"' "$PKG" >/dev/null; then
+  echo 'REGRESSION .oh/cli/package.json bin.agro is not ./dist/agro.js' >&2
+  exit 1
+fi
+
+if jq -e '.bin | has("oh")' "$PKG" >/dev/null; then
+  echo 'REGRESSION .oh/cli/package.json declares an oh bin — that executable belongs to the @mifune/openharness shim (.oh/cli/legacy), so both packages can coexist' >&2
   exit 1
 fi
 
@@ -72,5 +78,5 @@ fi
 grep -q 'npm .*publish' "$WF" \
   || { echo "REGRESSION $(basename "$WF") publish-npm job no longer runs npm publish" >&2; exit 1; }
 
-echo 'PASS @mifune/openharness is npm-publishable (public, dist-only, bin oh, README+LICENSE) + publish-npm wired'
+echo 'PASS @mifune/agro is npm-publishable (public, dist-only, bin agro only, README+LICENSE) + publish-npm wired'
 exit 0

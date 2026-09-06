@@ -1,7 +1,7 @@
 {
-  "name": "@mifune/openharness",
-  "version": "0.8.0",
-  "description": "Open Harness CLI — scaffold sandboxes and manage OpenHarness Cloud nodes.",
+  "name": "@mifune/agro",
+  "version": "0.9.0",
+  "description": "AGRO CLI — create sandboxes for coding agents and manage OpenHarness Cloud nodes.",
   "license": "Apache-2.0",
   "homepage": "https://github.com/mifunedev/openharness#readme",
   "repository": {
@@ -17,7 +17,7 @@
   },
   "type": "module",
   "bin": {
-    "oh": "./dist/oh.js"
+    "agro": "./dist/agro.js"
   },
   "files": [
     "dist",

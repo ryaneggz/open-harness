@@ -63,7 +63,7 @@ Open Harness vendors the shared skills/hooks primitive pack directly into the `.
 
 ## Reference
 
-- [Lifecycle commands — the `oh` verb reference](lifecycle-commands.md)
+- [Lifecycle commands — the `agro` verb reference (`oh` is the alias)](lifecycle-commands.md)
 - [Configuration — `oh.json` fields and the secrets split](configuration.md)
 - [Security considerations](security-considerations.md)
 - [Open-core boundary](open-core.md)

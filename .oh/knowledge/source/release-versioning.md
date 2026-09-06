@@ -2,17 +2,23 @@
 title: "Release Versioning"
 slug: release-versioning
 kind: repo
-tags: [release, versioning, semver, calver, github-actions, ghcr, tags, workflow, package-json]
+tags: [release, versioning, semver, calver, github-actions, ghcr, tags, workflow, package-json, agro, npm]
 created: 2026-08-23
-updated: 2026-08-23
+updated: 2026-09-06
 sources:
   - raw/2026-08-23-release-versioning.md
   - package.json
   - .github/workflows/release.yml
+  - .github/workflows/publish-cli.yml
   - .oh/scripts/release-reservation.mjs
   - .oh/scripts/reserve-github-release.mjs
   - .oh/scripts/promote-release-latest.sh
-verified_at: 60f8c12d414b86389123c77229e15886df858208
+  - .oh/scripts/verify-release-aliases.sh
+  - .oh/cli/package.json
+  - .oh/cli/legacy/package.json
+  - .oh/evals/probes/version-parity.sh
+  - .oh/skills/release/SKILL.md
+verified_at: 16a399226e2d918fa63597dc00b8ccaa81c18bd9
 related: [oh-cli-portable-lifecycle]
 confidence: confirmed
 ---
@@ -20,37 +26,48 @@ confidence: confirmed
 # Release Versioning
 
 ## Relevant Source Files
-- `package.json:3` — the single source of truth for the release version.
-- `.github/workflows/release.yml:120` — the `reserve` job: reads the version, then reserves the tag.
-- `.oh/scripts/release-reservation.mjs:20` — `SEMVER_PATTERN`; the pure state machine, no I/O and no clock.
-- `.oh/scripts/reserve-github-release.mjs:15` — `releaseTagName`, the only site that adds the `v` prefix.
-- `.oh/scripts/promote-release-latest.sh:85` — SemVer validation before digest-based `latest` promotion.
+- `package.json:3` — `version`, the source of truth.
+- `.github/workflows/release.yml` — `reserve` → `publish-image` → `publish-cli` → `finalize`.
+- `.github/workflows/publish-cli.yml` — npm: `@mifune/agro`, then the `@mifune/openharness` shim.
+- `.oh/scripts/release-reservation.mjs` — `parseSemVer`, `reserveReleaseVersion`; pure, no I/O, no clock.
+- `.oh/scripts/reserve-github-release.mjs` — `releaseTagName` (the only `v` site), `attemptCreate`.
+- `.oh/scripts/verify-release-aliases.sh` — `check`: two tags share one manifest digest.
+- `.oh/scripts/promote-release-latest.sh` — canonical-branch check; digest-equal `latest` promotion.
+- `.oh/cli/package.json`, `.oh/cli/legacy/package.json` — the CLI and shim versions.
+- `.oh/evals/probes/version-parity.sh` — the four version sites agree.
+- `.oh/skills/release/SKILL.md` — operator procedure and unverifiable prerequisites.
 
 ## Summary
-Open Harness versions releases with **SemVer** (`MAJOR.MINOR.PATCH`). Root `package.json` holds the version. An operator cuts a release with a deliberate bump, not as a side effect of pushing. The workflow publishes the version that file names, and publishes nothing when the version is unchanged. Creating `refs/tags/v<version>` is the **atomic reservation** — the act that claims the version. The `v` prefix reaches the git tag and the GitHub Release name only. The step output, the GHCR image tags, and the concurrency group all stay bare.
+Releases use **SemVer** (`MAJOR.MINOR.PATCH`). Root `package.json` holds the version, a release is a deliberate bump, and an unchanged version gives a green no-op. Creating `refs/tags/v<version>` is the **atomic reservation**; the `v` reaches the git tag and Release name only, while step outputs, GHCR tags, and concurrency groups stay bare. Since #941 one build feeds two names: the image ships as `openharness` and `agro`, npm gets `@mifune/agro` plus a delegating `@mifune/openharness` shim, and the Release carries four assets.
 
-Before `v0.1.0` the scheme was UTC CalVer: `YYYY.M.D`, then `-1` and `-2` on same-day collisions, derived from `github.event.repository.pushed_at`. No file held the version. The 42 CalVer tags from that era stay as history, and no process rewrites them. `v0.0.0` is a hand-cut annotated tag that marks the end of that era. The tag carries no GitHub Release and no GHCR image, so it never enters the workflow path.
+Before `v0.1.0` the scheme was UTC CalVer (`YYYY.M.D`, `-N` on collisions). Those tags stay as history; `v0.0.0` is a hand-cut annotated tag closing that era, outside every workflow path.
 
 ## Detail
 
-**Trigger.** Only a push to `main` or `master` releases (`release.yml:5-9`). The workflow declares no `push: tags:` trigger — a tag cannot start a release, because the workflow *creates* the tag. `validate`, `boot-lint`, and `eval-probes` must all pass before `reserve` runs (`release.yml:122`). An unvalidated commit therefore mutates no tag, no release, and no package.
+**Trigger.** Only a push to `main` or `master` releases (`release.yml:5-9`); the workflow *creates* the tag, so no tag trigger exists. `validate`, `boot-lint`, and `eval-probes` gate `reserve` (`release.yml:122`), which reads `require('./package.json').version` from the checked-out commit, so every retry resolves the same version.
 
-**Version resolution.** `reserve` runs `node -p "require('./package.json').version"` on the checked-out commit (`release.yml:141-146`). A committed file replaces a clock reading, so every retry of the same commit resolves the same version. The old scheme bought that same property with an immutable push timestamp.
-
-**Reservation.** `reserveGitHubRelease` calls `attemptCreate` exactly once (`release-reservation.mjs:37`). It POSTs `refs/tags/v<version>` to `/git/refs` (`reserve-github-release.mjs:205-208`); `201` reserves the version, `422` means the ref exists. On `422` the bridge peels the tag and compares its commit to the release SHA. Four outcomes result:
+**Reservation.** `reserveReleaseVersion` calls `attemptCreate` once (`release-reservation.mjs:31`); it POSTs `refs/tags/v<version>` to `/git/refs` (`reserve-github-release.mjs`). `201` reserves; on `422` the bridge compares the peeled tag commit to the release SHA:
 
 | Situation | `reservationKind` | `publishedNoop` | Downstream |
 | --- | --- | --- | --- |
-| version bumped, tag absent | `created` | `false` | build, GHCR, CLI, publish |
+| version bumped, tag absent | `created` | `false` | full pipeline |
 | same SHA, draft exists | `reused-draft` | `false` | resumes |
 | same SHA, already published | `published-no-op` | `true` | all skipped |
 | tag on a **different** SHA | `already-released` | `true` | all skipped, run stays green |
 
-The last row is where SemVer diverges from CalVer. CalVer advanced a `-N` suffix on a foreign collision. Under SemVer the version is a deliberate input, so the state machine reports that the version already shipped (`release-reservation.mjs:55-59`). That result sets `publishedNoop`, which the pre-existing guards on `publish-image`, `publish-cli`, and `finalize` already read. **An unbumped push to `main` is therefore a clean, green no-op**, not a failure.
+Under SemVer the version is an input, so `foreign-collision` maps to `already-released` (`release-reservation.mjs:47-48`) and the `publishedNoop` guards on `publish-image`, `publish-cli`, and `finalize` skip: **an unbumped push to `main` is a clean no-op**. `releaseTagName` (`reserve-github-release.mjs:10`) is the one function that adds the `v`.
 
-**Prefix boundary.** `releaseTagName` is the one function that adds the `v` (`reserve-github-release.mjs:15-17`), so the create path and the recovery path cannot drift. The workflow pushes `openharness:<version>` and `openharness:sha-<SHA>` to GHCR, both bare (`release.yml:217-218`), and names the GitHub Release `v${releaseVersion}` (`release.yml:304`).
+**One build, four image tags.** `publish-image` runs one `docker buildx build --load` tagged `ghcr.io/mifunedev/openharness:<version>`, `:sha-<sha>`, `ghcr.io/mifunedev/agro:<version>`, `:sha-<sha>`, plus a local smoke tag (`release.yml`, "Build immutable Docker image tags"). Two gates sit between build and push: the boot smoke, and a step that fails unless `agro --version` and `oh --version` inside the image both equal `RELEASE_VERSION`. After the four pushes, `verify-release-aliases.sh check` exits 1 unless the two `:<version>` manifest digests match. `promote-release-latest.sh promote` re-reads the canonical branch (`main` else `master`), exits 0 without promoting when the release SHA is not its head, otherwise reads the `:<version>` digest of each `IMAGE_REPOSITORIES` entry (`openharness agro` by default), refuses if any differs from the first, and creates `latest` from the pinned digest on every repository.
 
-**Caveat.** A bare `2026.8.7` is well-formed SemVer, so `parseSemVer` accepts it. `parseSemVer` cannot tell a date from a version. The *source of truth* prevents a CalVer release, not the pattern. `parseSemVer` does reject the CalVer forms that are not valid SemVer: the `-N` same-day suffix (a prerelease identifier) and zero-padded dates.
+**Two npm packages, one order.** `publish-cli.yml` receives the reserved SHA; an existing `@mifune/agro@<v>` is a successful no-op, otherwise it builds `.oh/cli` and publishes `@mifune/agro` with provenance. `legacy_guard` then requires `.oh/cli/legacy/package.json` `version` **and** its `@mifune/agro` dependency to equal that version, waits up to 10 × 15 s for `@mifune/agro@<v>` to resolve, publishes `@mifune/openharness` from `.oh/cli/legacy`, and `npm deprecate`s that version toward `@mifune/agro`.
+
+**Finalize.** The job rebuilds the bundles at the released commit, then uploads `agro.js`, `oh.js`, `get-agro.sh`, and `get-oh.sh` (`gh release upload --clobber`) **before** the undraft, so `releases/latest/download/<asset>` resolves once the release is public — `get-agro.sh` and `agro update` fetch there ([[oh-cli-portable-lifecycle]]). Notes come from the `## [<version>] - <date>` CHANGELOG block; `promote-release-latest.sh check` decides `make_latest` from a fresh remote read.
+
+**Four version sites.** A cut bumps root `package.json`, `.oh/cli/package.json` (with its lockfile), the shim `version`, and the shim's exact `@mifune/agro` pin; `version-parity.sh` is REGRESSION when any drifts or the CHANGELOG lacks a dated heading. The CLI no longer versions independently (`0.8.0` at this pin).
+
+**Operator prerequisites** (`release/SKILL.md`): the npm token can publish `@mifune/agro`; the GHCR package `mifunedev/agro` is made public after its first push, because a new package is private by default and `agro sandbox install docker` cannot pull it until then.
+
+**Caveat.** `parseSemVer` accepts a bare `2026.8.7`; the source of truth, not the pattern, prevents a CalVer release.
 
 ## System Relationships
 
@@ -62,16 +79,19 @@ flowchart TD
     RESERVE -->|201| DRAFT["create draft Release"]
     RESERVE -->|422, same SHA| RECOVER["reuse draft / no-op"]
     RESERVE -->|422, foreign SHA| SKIP["already-released<br/>publishedNoop=true"]
-    DRAFT --> IMAGE["build + smoke → GHCR :&lt;version&gt; :sha-&lt;SHA&gt;"]
+    DRAFT --> IMAGE["one build → openharness + agro<br/>:&lt;version&gt; :sha-&lt;SHA&gt;"]
     RECOVER --> IMAGE
-    IMAGE --> LATEST["promote latest by digest"]
-    LATEST --> CLI["publish CLI"]
-    CLI --> FINAL["publish Release v&lt;version&gt;"]
+    IMAGE --> SMOKE["boot smoke + agro/oh --version == version"]
+    SMOKE --> PUSHIMG["push 4 tags → verify-release-aliases"]
+    PUSHIMG --> LATEST["promote latest by digest on both repos"]
+    LATEST --> NPM["@mifune/agro → wait → @mifune/openharness shim → deprecate"]
+    NPM --> ASSETS["upload agro.js oh.js get-agro.sh get-oh.sh"]
+    ASSETS --> FINAL["publish Release v&lt;version&gt;"]
     SKIP -.->|all jobs skip, run green| DONE["no publication"]
 ```
 
-Ownership: `package.json` owns the number. `release.yml` owns the pipeline. `release-reservation.mjs` owns the decision and holds no I/O, so it stays testable. `reserve-github-release.mjs` owns every GitHub call and the prefix. `promote-release-latest.sh` owns the canonical `main`-else-`master` check and the `latest` digest. The CLI package (`.oh/cli/package.json`) versions independently on npm and is not this version — see [[oh-cli-portable-lifecycle]].
+Ownership: `package.json` owns the number; `version-parity.sh` pins the other sites to it. `release.yml` owns the pipeline, `publish-cli.yml` the npm order, `release-reservation.mjs` the decision (no I/O), `reserve-github-release.mjs` every GitHub call and the prefix, `verify-release-aliases.sh` alias equality, `promote-release-latest.sh` the canonical-branch check and `latest`.
 
 ## See Also
-- [[oh-cli-portable-lifecycle]]
+- [[oh-cli-portable-lifecycle]] — the `agro`/`oh` product split; `agro update` consumes the release assets.
 - [[audit-architecture]]

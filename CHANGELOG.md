@@ -8,11 +8,14 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-06
+
 ### Added
 
 - Add the `advisor-execution-contract` and `plan-orchestration-contract` probes. ([#988](https://github.com/mifunedev/openharness/issues/988))
 - Add the /plan skill to the tracked tree (.oh/skills/plan/SKILL.md) with required bounded-assignment fields. ([#988](https://github.com/mifunedev/openharness/issues/988))
 - Resolve `.agro/`, `agro.json`, `AGRO_*`, and `~/.agro` beside their legacy names through one fail-closed compatibility contract with a migration engine; defaults are unchanged. ([#940](https://github.com/mifunedev/openharness/issues/940))
+- Add the `agro` CLI as `@mifune/agro` with `agro update` self-upgrade, the artifact-only `get-agro.sh` installer, and `ghcr.io/mifunedev/agro` images; `oh` stays the compatibility alias. ([#941](https://github.com/mifunedev/openharness/issues/941))
 
 ### Changed
 
