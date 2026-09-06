@@ -42,7 +42,7 @@ Two harness-specific notes:
 
 - **The host Docker socket is off by default.** Mounting
   `/var/run/docker.sock` into the sandbox is effectively host root, so it is
-  opt-in: the wizard asks, and `access.dockerSocket` in the entry's `oh.json`
+  opt-in: the wizard asks, and `access.dockerSocket` in the entry's `agro.json`
   records the answer. See
   [security considerations](../security-considerations.md).
 - **The container is the unit of disposal.** `oh destroy <name>` removes the

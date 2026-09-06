@@ -4,38 +4,38 @@ Open Harness has two authored configuration surfaces, split by kind:
 
 | File | Tracked | Holds |
 | --- | --- | --- |
-| `oh.json` | yes | every non-secret setting |
+| `agro.json` | yes | every non-secret setting |
 | `.env` | no — gitignored, mode `0600` | secrets only |
 
-A secret must never reach `oh.json`, because `oh.json` is tracked. A non-secret
+A secret must never reach `agro.json`, because `agro.json` is tracked. A non-secret
 must never reach `.env`. The split is enforced in code:
-`.oh/cli/src/lib/secrets.ts` owns the secret allow-list,
-`.oh/cli/src/lib/oh-config.ts` owns the `oh.json` schema and validator, and
-`.oh/cli/src/lib/config-render.ts` refuses to render an allow-listed secret into
+`.agro/cli/src/lib/secrets.ts` owns the secret allow-list,
+`.agro/cli/src/lib/oh-config.ts` owns the `agro.json` schema and validator, and
+`.agro/cli/src/lib/config-render.ts` refuses to render an allow-listed secret into
 the compose environment.
 
-## The two `oh.json` files
+## The two `agro.json` files
 
 The same schema has two homes, and the flag you pass picks one:
 
 | Home | Path | Written by | Holds |
 | --- | --- | --- | --- |
 | **Registry entry** | `${OH_HOME:-~/.oh}/sandboxes/<name>/oh.json` | `oh sandbox install docker`, then `oh config set --sandbox <name>` | the sandbox: `name`, `runtime`, `repo`, `timezone`, `git.*`, `access.*`, `image.*`, `storage.homePath`, `composeOverrides` |
-| **Project** | `<repo>/oh.json` | you, and `oh config set` with no flag | the settings a checkout wants to carry in git |
+| **Project** | `<repo>/agro.json` | you, and `oh config set` with no flag | the settings a checkout wants to carry in git |
 
 `oh sandbox install docker` writes the registry entry and, beside it, the
 compose files and the compose wrapper. Those are **generated**: the CLI
-re-materialises them on every lifecycle call, so edit only `oh.json` there.
+re-materialises them on every lifecycle call, so edit only `agro.json` there.
 A registry entry keeps its own gitignored `.env`, written with
 `oh secret set <KEY> --sandbox <name>`.
 
-The project `oh.json` is the seed, not the sandbox. `oh sandbox install docker
+The project `agro.json` is the seed, not the sandbox. `oh sandbox install docker
 --repo <dir>` reads it once to pre-fill the wizard; after that the entry is
 authoritative. Nothing else about a checkout is written by the CLI — no
 `AGENTS.md`, no provider configuration, no `.gitignore` line other than the
 `.env` line `oh secret set` adds inside a git checkout.
 
-`oh config show` prints the resolved `oh.json` and `oh config set <field>
+`oh config show` prints the resolved `agro.json` and `oh config set <field>
 <value>` edits one dotted field in it; `oh secret set <KEY>` prompts for a
 credential with the input hidden and writes it to `.env`, and `oh secret list`
 shows which keys hold a value with the values redacted. Both accept
@@ -44,20 +44,20 @@ shows which keys hold a value with the values redacted. Both accept
 key, each pointing at the other command. Apply a change with
 `oh stop <name> && oh sandbox install docker --name <name>`.
 
-## How `oh.json` reaches the sandbox
+## How `agro.json` reaches the sandbox
 
 There are two routes, and which one a field takes follows one rule:
 
 > A value reaches the sandbox through Compose only if a process **outside** the
 > sandbox — or the entrypoint **before** the control plane is readable — must act
-> on it. Everything else is read from `oh.json` through the `oh` CLI.
+> on it. Everything else is read from `agro.json` through the `oh` CLI.
 
-**Through Compose.** `.oh/cli/src/lib/config-render.ts` renders those fields into
-`KEY=value` lines and `.oh/scripts/docker-compose.sh` passes them to Compose with
+**Through Compose.** `.agro/cli/src/lib/config-render.ts` renders those fields into
+`KEY=value` lines and `.agro/scripts/docker-compose.sh` passes them to Compose with
 `--env-file`. Each also has a default baked into
 `.devcontainer/docker-compose.yml`, so an omitted field is not "unset" — it takes
 that default. A variable already exported in the shell that runs `oh` beats the
-value in `oh.json`.
+value in `agro.json`.
 
 **Through the CLI.** Everything else is read inside the container at the moment
 it is needed — `.devcontainer/entrypoint.sh` calls `oh config show`. Adding a
@@ -90,7 +90,7 @@ or consumed by the CLI itself.
 
 ### Harness and tool installs
 
-`oh.json` holds no install field. A harness or tool enters the sandbox only when
+`agro.json` holds no install field. A harness or tool enters the sandbox only when
 you run `oh harness install <id>` or `oh tool install <id>`. Nothing installs at
 boot. The install lands in `~/.local` inside the persistent home volume, and
 `oh destroy` removes it. See
@@ -164,7 +164,7 @@ tracked place.
 
 ## Secrets
 
-The allow-list in `.oh/cli/src/lib/secrets.ts` is the complete set of keys the
+The allow-list in `.agro/cli/src/lib/secrets.ts` is the complete set of keys the
 root `.env` may hold. Each is documented, commented out, in the tracked
 `.example.env`:
 
@@ -185,11 +185,11 @@ not harness configuration at all, so they appear in neither surface:
 - `OH_CLOUD_API_URL` and `OH_CLOUD_PROVISION_KEY` — non-persistent `oh cloud`
   overrides for the persisted `cloud.apiUrl` field and the
   `OH_CLOUD_PROVISION_KEY` secret. `OH_PROVISION_KEY` and `PROVISION_KEY` are
-  accepted as legacy spellings. See `.oh/cli/README.md`.
+  accepted as legacy spellings. See `.agro/cli/README.md`.
 
 ## Retired keys
 
 The directory layout is fixed convention and is no longer configurable.
 `WORKTREES_DIR`, `PROJECTS_DIR`, and `CRONS_DIR` were removed;
 `config-render.ts` refuses to render them. See
-[`.oh/` directory layout](oh-directory-layout.md).
+[`.agro/` directory layout](oh-directory-layout.md).

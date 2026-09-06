@@ -1,0 +1,2 @@
+2026-09-06T20:33:43Z wave1 start: T1 pending -> running (worker spawned; owner verifies and commits)
+2026-09-06T20:53:20Z T1 completed (owner verified: tests, typecheck, link check, diff --check, symlinks); wave1 end

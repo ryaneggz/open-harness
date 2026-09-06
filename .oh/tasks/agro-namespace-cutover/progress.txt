@@ -1,3 +1,0 @@
-# progress
-
-2026-09-06T20:24:54Z plan: base 9d2fb009; queries "sandbox registry seed compose migration onboarding docs"; two read-only inventory workers; seven stories; blocked on operator coordination for the physical rename (12 live worktrees, 1 stash).

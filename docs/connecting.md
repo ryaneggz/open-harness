@@ -27,7 +27,7 @@ You land inside the container as the `sandbox` user. A fresh sandbox has no `her
 
 > **Attach, do not "Reopen in Container".** *Dev Containers: Reopen in Container*
 > reads `.devcontainer/devcontainer.json`, which names `docker-compose.yml` alone,
-> so it bypasses `.oh/scripts/docker-compose.sh` and applies **no compose overlays** —
+> so it bypasses `.agro/scripts/docker-compose.sh` and applies **no compose overlays** —
 > no SSH, no host Docker socket, no Hermes dashboard, nothing from
 > `composeOverrides[]`. Provision with `oh sandbox install docker`, then attach. Details:
 > [lifecycle commands](lifecycle-commands.md#vs-code-reopen-in-container-applies-no-overlays).
@@ -86,7 +86,7 @@ If you need a port reachable beyond your laptop — for example, to share a prev
 
 **1. Compose overlay binding `0.0.0.0`**
 
-Add a custom compose file that binds the port on all interfaces and merge it in via `composeOverrides[]` in `.oh/config.json` (gitignored):
+Add a custom compose file that binds the port on all interfaces and merge it in via `composeOverrides[]` in `.agro/config.json` (gitignored):
 
 ```yaml
 # docker-compose.my-expose.yml
@@ -285,7 +285,7 @@ All long-running processes inside the sandbox run in named tmux sessions. The na
 | `agent-` | `agent-watcher`, `agent-batch`, `agent-t3code`, `agent-tailscaled` | Headless / long-running agent processes (interactive CLIs are foreground, not tmux) |
 | `app-` | `app-api` | Dev servers |
 
-For the full convention see [`.oh/skills/t3/references/sandbox-processes.md`](https://github.com/mifunedev/openharness/blob/development/.oh/skills/t3/references/sandbox-processes.md).
+For the full convention see [`.agro/skills/t3/references/sandbox-processes.md`](https://github.com/mifunedev/openharness/blob/development/.agro/skills/t3/references/sandbox-processes.md).
 
 ## End-to-end recipe
 

@@ -45,7 +45,7 @@ oh restart    # restart the service
 oh --help     # list every verb
 ```
 
-A first-run helper is available at `.oh/scripts/install.sh` — it prompts for the non-secret values written to `oh.json` and the secrets written to the gitignored root `.env` (GitHub token autodetect, idempotent re-runs) before it calls `oh sandbox install docker`.
+A first-run helper is available at `.agro/scripts/install.sh` — it prompts for the non-secret values written to `agro.json` and the secrets written to the gitignored root `.env` (GitHub token autodetect, idempotent re-runs) before it calls `oh sandbox install docker`.
 
 ### Onboard inside the sandbox
 
@@ -88,7 +88,7 @@ The rendered docs site is maintained in [`mifunedev/openharness-web`](https://gi
 Slack (and other messengers) bridge to a Pi agent via the
 [`pi-messenger-bridge`](https://github.com/tintinweb/pi-messenger-bridge) npm package. The
 harness installs it into a gitignored `.pi/bridge/` directory and loads it via `--extension`
-only in the dedicated `client-slack-pi` tmux session (managed by `.oh/scripts/gateway.sh`) —
+only in the dedicated `client-slack-pi` tmux session (managed by `.agro/scripts/gateway.sh`) —
 you don't run `pi install` yourself. Full setup (tokens, trust, the sibling Hermes gateway)
 lives in [Slack integration](./integrations/slack.md).
 

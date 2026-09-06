@@ -12,7 +12,7 @@ Open Harness is the harness; the **agent** is your call. To go beyond the catalo
 
 `oh harness install <id>` is the only door. It probes the running sandbox,
 installs the CLI into `~/.local` in the persistent home volume, and reports. It
-reads and writes no `oh.json` field. It never rebuilds or restarts the sandbox.
+reads and writes no `agro.json` field. It never rebuilds or restarts the sandbox.
 
 ```bash
 oh harness list                 # what exists, and what is installed
@@ -90,7 +90,7 @@ Two optional surfaces cover most day-to-day use:
 - **Pi+Slack** — chat with the agent from Slack instead of the terminal.
 - **T3 Code** — browser UI on port `3773` driving Claude / Codex / OpenCode.
 
-Each runs in its own named tmux session per [`.oh/skills/t3/references/sandbox-processes.md`](https://github.com/mifunedev/openharness/blob/development/.oh/skills/t3/references/sandbox-processes.md). For the two browser surfaces, open them in **VS Code's Simple Browser** (`Ctrl+Shift+P` → `Simple Browser: Show`; `Cmd+Shift+P` on macOS) so the live UI sits in a tab next to the code you're editing.
+Each runs in its own named tmux session per [`.agro/skills/t3/references/sandbox-processes.md`](https://github.com/mifunedev/openharness/blob/development/.agro/skills/t3/references/sandbox-processes.md). For the two browser surfaces, open them in **VS Code's Simple Browser** (`Ctrl+Shift+P` → `Simple Browser: Show`; `Cmd+Shift+P` on macOS) so the live UI sits in a tab next to the code you're editing.
 
 ### Pi+Slack
 

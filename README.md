@@ -91,7 +91,7 @@ agro sandbox install docker --repo ~/my-project --name my-project
 ```
 
 Equip that checkout with the control plane first — `cd ~/my-project && oh
-update` writes `.oh/` and `crons/` and **nothing else**: no `AGENTS.md`, no
+update` writes `.agro/` and `crons/` and **nothing else**: no `AGENTS.md`, no
 provider configuration, no `.gitignore` line beyond the `.env` line
 `agro secret set` adds. Those files stay yours.
 
@@ -159,11 +159,11 @@ path.
 
 **Do not provision with "Reopen in Container".** That path reads
 `.devcontainer/devcontainer.json`, which lists `docker-compose.yml` alone, so it
-bypasses `.oh/scripts/docker-compose.sh` and **no overlay applies** — no SSH
+bypasses `.agro/scripts/docker-compose.sh` and **no overlay applies** — no SSH
 (`access.ssh`), no host Docker socket (`access.dockerSocket`), no Hermes
 dashboard (`hermesDashboard.enabled`), and nothing from `composeOverrides[]`.
 Secrets still load, because compose auto-loads the `.devcontainer/.env` symlink
-beside the compose file; non-secret `oh.json` settings fall back to the compose
+beside the compose file; non-secret `agro.json` settings fall back to the compose
 defaults. Details: [lifecycle commands](docs/lifecycle-commands.md#vs-code-reopen-in-container-applies-no-overlays).
 
 > **Optional — DebugMCP.** Once attached from VS Code, you can install the
@@ -174,9 +174,9 @@ defaults. Details: [lifecycle commands](docs/lifecycle-commands.md#vs-code-reope
 
 ## 🧩 How the primitive pack ships
 
-Open Harness vendors the shared skills/hooks primitive pack directly into the `.oh/` control plane: `.oh/skills/`, `.oh/hooks/`, and `.oh/skills.lock` are tracked as ordinary files in this repo. Skills are the reusable-behavior primitive; the harness ships no repository-authored agent definitions, and provider-native sub-agents remain available as a bounded execution primitive through `/delegate`. `oh update` lays them down, so a fresh checkout has the skills immediately — no submodule, no recursive clone, no network step.
+Open Harness vendors the shared skills/hooks primitive pack directly into the `.agro/` control plane: `.agro/skills/`, `.agro/hooks/`, and `.agro/skills.lock` are tracked as ordinary files in this repo. Skills are the reusable-behavior primitive; the harness ships no repository-authored agent definitions, and provider-native sub-agents remain available as a bounded execution primitive through `/delegate`. `oh update` lays them down, so a fresh checkout has the skills immediately — no submodule, no recursive clone, no network step.
 
-Provider surfaces are symlinks into `.oh/`: `.pi/skills`, `.claude/skills`, and `.codex/skills` point at `.oh/skills`; `.claude/hooks` → `.oh/hooks`. `.pi/` itself remains the Pi provider surface in v1.
+Provider surfaces are symlinks into `.agro/`: `.pi/skills`, `.claude/skills`, and `.codex/skills` point at `.agro/skills`; `.claude/hooks` → `.agro/hooks`. `.pi/` itself remains the Pi provider surface in v1.
 
 ## 🚀 Use it
 
@@ -205,7 +205,7 @@ Prefer VS Code or remote SSH? Use the Dev Containers extension's "Attach to Runn
 
 ## ⚙️ Configure (optional)
 
-Configuration is split by kind across two files. `oh.json` holds every
+Configuration is split by kind across two files. `agro.json` holds every
 non-secret setting — sandbox identity, git identity, the SSH and Docker-socket
 toggles. It holds no install field: `agro harness install <id>` and `agro tool
 install <id>` are the only door. A gitignored, mode-`0600` `.env` holds nothing
@@ -225,7 +225,7 @@ auto-loads the dotenv beside it, which is a symlink to the root one. Compose
 `harness.yaml` layer used to sit in front of these files and was invisible on
 exactly that path; it was removed in 0.4.0, and a leftover one is migrated
 automatically on the next lifecycle command. Compose overlay *paths* live in
-`composeOverrides[]` in `oh.json`. See
+`composeOverrides[]` in `agro.json`. See
 [the `agro sandbox install docker` guide](docs/deployment-prebuilt-image.md) for
 the image-mode recipe.
 

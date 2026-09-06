@@ -57,7 +57,7 @@ replace. Details: [Installation → Package and PATH rules](./installation.md#pa
 `oh` keeps working for the whole compatibility window and runs the same bundle.
 From npm it is the deprecated shim `@mifune/openharness`
 (`npm install -g @mifune/openharness`, or `npx @mifune/openharness --help`);
-`oh update` remains the command that vendors `.oh/` + `crons/` into a checkout.
+`oh update` remains the command that vendors `.agro/` + `crons/` into a checkout.
 The curl bootstrap is `get-oh.sh`:
 
 ```bash
@@ -81,7 +81,7 @@ whether to mount the host Docker socket. `--yes` keeps every default and asks
 nothing. The answers land in a registry entry at
 `~/.oh/sandboxes/<name>/oh.json`, together with the compose files and the
 wrapper script the CLI regenerates on every lifecycle call — edit only
-`oh.json` there.
+`agro.json` there.
 
 Without `--repo` the sandbox runs the published image
 (`ghcr.io/mifunedev/openharness:latest`) and seeds its workspace from the
@@ -99,11 +99,11 @@ is bind-mounted at `/home/sandbox/harness`:
 
 ```bash
 cd <your-project>
-oh update                                     # vendor .oh/ + crons/ into this checkout
+oh update                                     # vendor .agro/ + crons/ into this checkout
 agro sandbox install docker --repo "$PWD" --name <your-project>
 ```
 
-`oh update` writes `.oh/` and `crons/` and **nothing else** — no `oh.json`, no
+`oh update` writes `.agro/` and `crons/` and **nothing else** — no `agro.json`, no
 `.env`, no `AGENTS.md`, no provider configuration, and no `.gitignore` line
 beyond the `.env` line `agro secret set` adds inside a git checkout. Those files
 are yours to author. With `--repo` and `image.mode` set to `build`, the sandbox
@@ -120,7 +120,7 @@ curl -fsSL https://oh.mifune.dev/install.sh | bash
 ```
 
 Review-first: `curl -fsSL -o openharness-install.sh https://oh.mifune.dev/install.sh`,
-read it, then `bash openharness-install.sh`. Run `bash .oh/scripts/install.sh`
+read it, then `bash openharness-install.sh`. Run `bash .agro/scripts/install.sh`
 from inside an existing clone and it detects the local repo. Set
 `OH_GITHUB_REPO=<your-org>/<your-fork>` to install a fork — every override is in
 [Installation](./installation.md).
@@ -222,7 +222,7 @@ gh auth login && gh auth setup-git
 
 ## Configuration
 
-Configuration lives in **two** files, split by kind. `oh.json` holds every
+Configuration lives in **two** files, split by kind. `agro.json` holds every
 non-secret setting. A gitignored, mode-`0600` `.env` holds nothing but secrets;
 the tracked `.example.env` documents every allow-listed secret key, commented
 out, so a fresh copy changes nothing.
@@ -233,7 +233,7 @@ Each sandbox keeps its own pair inside its registry entry at
 `--sandbox` both act on the project root instead. In an equipped checkout,
 `.devcontainer/.env` is a symlink to that root `.env`.
 
-Both work on **every** path. `oh ...` renders `oh.json` and passes it plus the
+Both work on **every** path. `oh ...` renders `agro.json` and passes it plus the
 secrets file to compose with `--env-file`; the VS Code "Reopen in Container"
 path loads `.devcontainer/docker-compose.yml` directly, and compose auto-loads
 the `.devcontainer/.env` symlink sitting beside it — so secrets arrive, every
@@ -246,7 +246,7 @@ removed; any leftover `harness.yaml` is migrated automatically on the next
 lifecycle command.)
 
 ```json
-// oh.json — non-secret settings (example)
+// agro.json — non-secret settings (example)
 {
   "name": "openharness",
   "timezone": "UTC",
@@ -254,7 +254,7 @@ lifecycle command.)
 }
 ```
 
-`oh.json` also carries `repo` and `runtime` for a registry entry, plus the SSH,
+`agro.json` also carries `repo` and `runtime` for a registry entry, plus the SSH,
 Docker-socket, Hermes-dashboard, cron, build, and image settings. See
 [Configuration](./configuration.md) for the full field reference, and
 `agro config set <field> <value>` to edit one field.
@@ -270,7 +270,7 @@ entry:
 | `PI_SLACK_APP_TOKEN` | Slack Socket Mode app token (`xapp-`) |
 | `PI_SLACK_BOT_TOKEN` | Slack bot token (`xoxb-`) |
 
-**Non-secret settings** — `oh.json` fields:
+**Non-secret settings** — `agro.json` fields:
 
 | Field | Purpose |
 |-----|---------|
@@ -279,7 +279,7 @@ entry:
 | `git.userName` | Commit author name (spaces OK) |
 | `git.userEmail` | Commit author email |
 
-`oh.json` carries no install field. Install a harness or a tool with
+`agro.json` carries no install field. Install a harness or a tool with
 `agro harness install <id>` or `agro tool install <id>` instead.
 
 Set one field with `agro config set <field> <value>` and one secret with
@@ -287,7 +287,7 @@ Set one field with `agro config set <field> <value>` and one secret with
 `agro stop <name> && agro sandbox install docker --name <name>`.
 
 For additional services (databases, tunnels, reverse proxies), add overlay
-paths to `composeOverrides[]` in `oh.json` (last wins).
+paths to `composeOverrides[]` in `agro.json` (last wins).
 
 ## End-to-end setup walkthrough
 

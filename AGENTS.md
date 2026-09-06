@@ -17,7 +17,7 @@ work after the operator disconnects.
 
 Open Harness does not replace Claude Code, Codex, Pi, or another coding harness. It
 surrounds each harness with two layers: `.devcontainer/` defines the isolated
-runtime, and `.oh/` provides the portable control plane for identity, schedules,
+runtime, and `.agro/` provides the portable control plane for identity, schedules,
 task procedures, and checks. Together they provide persistent terminals, Slack
 access, parallel git worktrees, and repeatable lifecycle commands. The operator
 chooses the coding harness. Open Harness gives each agent session a stable place to
@@ -36,9 +36,9 @@ change agent-owned files after initial scaffolding.
 ### 2. Coding-harness choice does not change the workspace
 
 Claude Code, Codex, Pi, and other coding harnesses use the same project state and
-shared primitives. Canonical skills, task procedures, and hooks live under `.oh/`.
+shared primitives. Canonical skills, task procedures, and hooks live under `.agro/`.
 Compatibility directories expose those primitives through symlinks. Change the
-canonical `.oh/` source. Do not patch a generated mirror.
+canonical `.agro/` source. Do not patch a generated mirror.
 
 ### 3. Remote and unattended operation are normal
 
@@ -84,7 +84,7 @@ cross the sandbox boundary or make persistent work depend on an attached termina
 - **host** means the laptop or VM that runs Docker and the root lifecycle commands.
 - **sandbox** means the project container defined by `.devcontainer/` and the
   persistent agent environment inside it.
-- **control plane** means only the portable `.oh/` machinery that manages lifecycle,
+- **control plane** means only the portable `.agro/` machinery that manages lifecycle,
   agent identity, schedules, task procedures, and checks.
 - **coding harness** means Claude Code, Codex, Pi, or another agent interface running
   in the sandbox.
@@ -104,7 +104,7 @@ cross the sandbox boundary or make persistent work depend on an attached termina
 - **Do not write application code at the root.** That bypasses the ownership and
   environment boundary. Assign the work to the application agent in the sandbox.
 - **Do not patch a provider mirror.** The next provider-link operation can erase the
-  change. Edit the canonical `.oh/` primitive, then run the link check.
+  change. Edit the canonical `.agro/` primitive, then run the link check.
 - **Do not run a persistent process in an attached shell.** A disconnect kills or
   hides it. Use Herdr for interactive work and named tmux for headless services.
 - **Do not let parallel agents share one checkout.** Branch switches and uncommitted
@@ -122,7 +122,7 @@ silently skip a surface.
 
 - **Host and sandbox:** Where must each command and file change occur?
 - **Lifecycle door:** Does every affected `oh` verb stay aligned?
-- **Canonical and provider surfaces:** Is the change in `.oh/`, and do symlinks still
+- **Canonical and provider surfaces:** Is the change in `.agro/`, and do symlinks still
   resolve?
 - **Root and scaffold:** Does the change affect this orchestrator, initialized
   projects, or both?
@@ -139,7 +139,7 @@ silently skip a surface.
 ## How to work in this repository
 
 This file is the only always-on context. A nested `AGENTS.md` exists only in
-`.worktrees/`, `projects/`, `crons/`, and `.oh/logs/`, whose contents are
+`.worktrees/`, `projects/`, `crons/`, and `.agro/logs/`, whose contents are
 produced apart from it. Every other directory uses a `README.md`.
 
 Use the lifecycle in this order:
@@ -153,13 +153,13 @@ Use the lifecycle in this order:
 Run `oh destroy <name>` only for operator-authorized teardown.
 
 `oh` is the only lifecycle door, on the host and in the sandbox, and it calls
-`.oh/scripts/docker-compose.sh`. Host prerequisites are Docker, Git, and Node 20 or
+`.agro/scripts/docker-compose.sh`. Host prerequisites are Docker, Git, and Node 20 or
 newer. The verb reference is
 [`docs/lifecycle-commands.md`](docs/lifecycle-commands.md).
 
 ## How the system fits together
 
-The host calls `oh`, which reaches `.oh/scripts/docker-compose.sh` and starts the
+The host calls `oh`, which reaches `.agro/scripts/docker-compose.sh` and starts the
 project sandbox from `.devcontainer/`. Inside the sandbox, Herdr holds interactive
 work while named tmux sessions hold unattended infrastructure.
 Application agents work on their branches or isolated worktrees. Task-specific
@@ -169,12 +169,12 @@ probes verify the control plane against real repository state.
 The repository has one sandbox definition and four control-plane areas:
 
 - `.devcontainer/` defines the sandbox image, Compose configuration, and entrypoint.
-  This directory stays outside the `.oh/` control plane.
-- `.oh/scripts/`, `.oh/install/`, and `.oh/cli/` implement lifecycle and runtime
+  This directory stays outside the `.agro/` control plane.
+- `.agro/scripts/`, `.agro/install/`, and `.agro/cli/` implement lifecycle and runtime
   behavior.
-- `.oh/skills/` and `.oh/hooks/` hold portable primitives; skills encode roles.
-- `.oh/tasks/` holds task-specific plans, graphs, progress, and evidence.
-- `.oh/evals/` holds regression probes and capability benchmarks.
+- `.agro/skills/` and `.agro/hooks/` hold portable primitives; skills encode roles.
+- `.agro/tasks/` holds task-specific plans, graphs, progress, and evidence.
+- `.agro/evals/` holds regression probes and capability benchmarks.
 
 Read the nearest directory `README.md` before changing unfamiliar machinery.
 

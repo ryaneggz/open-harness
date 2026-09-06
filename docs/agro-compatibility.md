@@ -27,10 +27,10 @@ through:
 | Image seed | `/opt/oh-seed` | `/opt/agro-seed` | `resolveSeedSource`, `compat_seed_src` |
 | First-boot marker | `.oh/.image-seeded` | `.agro/.image-seeded` | `compat_marker_file` |
 
-The TypeScript module is `.oh/cli/src/lib/compat.ts`. The shell adapter is
-`.oh/scripts/compat.sh`; it needs only bash and coreutils, so the entrypoint can
+The TypeScript module is `.agro/cli/src/lib/compat.ts`. The shell adapter is
+`.agro/scripts/compat.sh`; it needs only bash and coreutils, so the entrypoint can
 use it before Node or the control plane exists. Both consume the same vectors in
-`.oh/cli/src/lib/__tests__/fixtures/compat-vectors.json`, and a test runs every
+`.agro/cli/src/lib/__tests__/fixtures/compat-vectors.json`, and a test runs every
 vector through each implementation.
 
 ## Precedence and conflicts
@@ -72,7 +72,7 @@ seeds a workspace whose two control directories diverge.
 
 ## Migration engine
 
-`.oh/cli/src/lib/migrate.ts` implements the engine that Phase 2 exposes as
+`.agro/cli/src/lib/migrate.ts` implements the engine that Phase 2 exposes as
 `agro migrate`. Phase 0 ships no command.
 
 - `planMigration(spec)` inspects the tree and returns a JSON-serializable plan
@@ -98,7 +98,7 @@ seeds a workspace whose two control directories diverge.
 
 ## Legacy contract inventory
 
-`.oh/compat-inventory.json` classifies every `OH_*` identifier in tracked files
+`.agro/compat-inventory.json` classifies every `OH_*` identifier in tracked files
 and every persisted legacy path as one of `migrate-later`, `alias-sla`,
 `retained-generic`, or `obsolete`, with the owning phase. The test
 `compat-inventory.test.ts` and the probe `agro-compat-inventory.sh` fail when an
@@ -113,7 +113,7 @@ legacy ones. It changes no persisted default.
 
 ### Product identity by executable name
 
-There is one bundle. `.oh/cli/dist/agro.js` and `.oh/cli/dist/oh.js` are
+There is one bundle. `.agro/cli/dist/agro.js` and `.agro/cli/dist/oh.js` are
 byte-identical (`bundle-identity.test.ts`). The CLI derives its product identity
 from the basename of the invoked executable (`process.argv[1]`, symlinks not
 resolved, Windows extensions stripped): run as `agro`, it says `agro` in help,
@@ -122,9 +122,9 @@ line that names `agro` as the canonical CLI. There is no build-time fork.
 
 ### Packages
 
-- `@mifune/agro` (`.oh/cli/`) is the canonical npm package and ships only the
+- `@mifune/agro` (`.agro/cli/`) is the canonical npm package and ships only the
   `agro` executable.
-- `@mifune/openharness` (`.oh/cli/legacy/`) is a delegation shim. It ships only
+- `@mifune/openharness` (`.agro/cli/legacy/`) is a delegation shim. It ships only
   the `oh` executable, contains no CLI code, and pins the exact `@mifune/agro`
   version it delegates to, so `oh --version` and `agro --version` from one
   release agree. It is deprecated on npm immediately after each publication and
@@ -150,7 +150,7 @@ verb reference is [lifecycle commands](lifecycle-commands.md).
 
 ### `get-agro.sh`
 
-`.oh/scripts/get-agro.sh` is the artifact-only installer. It downloads the
+`.agro/scripts/get-agro.sh` is the artifact-only installer. It downloads the
 published `agro.js` release asset into `AGRO_BIN_DIR/agro` (default
 `~/.local/bin`), offers nvm + Node 22 when Node ≥ 20 is missing, and never
 clones, builds, or needs a source checkout. Controls: `AGRO_BIN_DIR`,
@@ -203,17 +203,17 @@ is Phase 2 and is not yet available.
 
 ```bash
 pnpm test
-npm --prefix .oh/cli run typecheck
-pnpm vitest run .oh/cli/src/__tests__/bundle-identity.test.ts \
-  .oh/cli/src/lib/__tests__/product.test.ts \
-  .oh/cli/src/__tests__/self-upgrade.test.ts \
-  .oh/scripts/__tests__/get-agro.test.ts \
-  .oh/scripts/__tests__/verify-release-aliases.test.ts
-bash .oh/evals/probes/agro-compat-inventory.sh
-bash .oh/evals/probes/get-agro-bootstrap.sh
-bash .oh/evals/probes/agro-legacy-shim.sh
-bash .oh/evals/probes/oh-npm-package.sh
-bash .oh/evals/probes/version-parity.sh
-bash .oh/evals/probes/sandbox-registry.sh
-bash .oh/evals/probes/oh-image-only-deploy.sh
+npm --prefix .agro/cli run typecheck
+pnpm vitest run .agro/cli/src/__tests__/bundle-identity.test.ts \
+  .agro/cli/src/lib/__tests__/product.test.ts \
+  .agro/cli/src/__tests__/self-upgrade.test.ts \
+  .agro/scripts/__tests__/get-agro.test.ts \
+  .agro/scripts/__tests__/verify-release-aliases.test.ts
+bash .agro/evals/probes/agro-compat-inventory.sh
+bash .agro/evals/probes/get-agro-bootstrap.sh
+bash .agro/evals/probes/agro-legacy-shim.sh
+bash .agro/evals/probes/oh-npm-package.sh
+bash .agro/evals/probes/version-parity.sh
+bash .agro/evals/probes/sandbox-registry.sh
+bash .agro/evals/probes/oh-image-only-deploy.sh
 ```

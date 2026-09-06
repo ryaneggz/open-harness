@@ -11,7 +11,7 @@ Type=simple
 User=sandbox
 WorkingDirectory=/home/sandbox/harness
 Environment=HOME=/home/sandbox
-ExecStart=/usr/local/bin/node --experimental-strip-types /home/sandbox/harness/.oh/scripts/cron-runtime.ts
+ExecStart=/usr/local/bin/node --experimental-strip-types /home/sandbox/harness/.agro/scripts/cron-runtime.ts
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=5

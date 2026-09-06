@@ -73,7 +73,7 @@ sysbox slice). The open decision, and the axes taxonomy behind it, live in
 #731 forks the `ExecutionTarget` seam.
 
 So the entry records only what it was actually provisioned on: `runtime:
-"docker"` in its `oh.json`. Nothing chooses a deeper tier for you.
+"docker"` in its `agro.json`. Nothing chooses a deeper tier for you.
 
 ## What this does not do
 

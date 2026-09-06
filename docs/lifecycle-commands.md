@@ -15,14 +15,14 @@ meaning depends on the name is `update` — see
 [`agro update`](#upgrading-the-cli-agro-update) and
 [`oh update`](#equipping-a-checkout-oh-update) below.
 
-Every compose verb runs `.oh/scripts/docker-compose.sh`, which owns overlay
+Every compose verb runs `.agro/scripts/docker-compose.sh`, which owns overlay
 resolution, project naming, and env plumbing. `agro` is the surface; the script
 is the mechanism.
 
 A sandbox is a **registry entry** under `${OH_HOME:-~/.oh}/sandboxes/<name>/`.
 `agro sandbox install docker` writes it, and every later verb finds it by name
 from any directory — no project checkout required. Details:
-[Configuration → the two `oh.json` files](configuration.md#the-two-ohjson-files).
+[Configuration → the two `agro.json` files](configuration.md#the-two-agrojson-files).
 
 Host prerequisites: **Docker** (with the Compose plugin), **Git**, and
 **Node.js ≥ 20**. Node runs `agro` itself; `get-agro.sh` installs it for you
@@ -43,11 +43,11 @@ sandbox.
 | `agro destroy [name] [--yes]` | `docker-compose.sh down -v`, then remove the registry entry — see below |
 | `agro compose config` | `docker-compose.sh config` — the resolved compose file |
 | `agro update [--dry-run]` | upgrade the installed `agro` executable through the mechanism that installed it — see below |
-| `oh update [--from <dir> \| --from-remote [--ref <ref>]] [--dry-run] [--force]` | equip an empty checkout with `.oh/` + `crons/`, and upgrade an equipped one (compatibility window) |
-| `agro config show [--sandbox <name>]` · `agro config set <field> <value> [--sandbox <name>]` | read and write `oh.json` |
+| `oh update [--from <dir> \| --from-remote [--ref <ref>]] [--dry-run] [--force]` | equip an empty checkout with `.agro/` + `crons/`, and upgrade an equipped one (compatibility window) |
+| `agro config show [--sandbox <name>]` · `agro config set <field> <value> [--sandbox <name>]` | read and write `agro.json` |
 | `agro config repo` · `agro config <integration>` | GitHub-remote and integration wizards |
 | `agro secret set <KEY> [--sandbox <name>]` · `agro secret list [--sandbox <name>]` | read and write the gitignored `.env` |
-| `agro gateway <pi\|hermes>` · `agro gateway status` | `.oh/scripts/gateway.sh` |
+| `agro gateway <pi\|hermes>` · `agro gateway status` | `.agro/scripts/gateway.sh` |
 | `agro harness` · `agro tool` | install and inspect harnesses and tooling |
 | `agro cloud` | manage OpenHarness Cloud nodes |
 | `agro --help` · `agro --version` | usage and version |
@@ -66,8 +66,8 @@ agro shell <name>                # attach as the sandbox user
 ```
 
 - The entry lands in `${OH_HOME:-~/.oh}/sandboxes/<name>/`, holding its own
-  `oh.json`, its `.env`, and the compose files plus the wrapper script the CLI
-  re-materialises on every lifecycle call. Edit `oh.json`; the rest is generated.
+  `agro.json`, its `.env`, and the compose files plus the wrapper script the CLI
+  re-materialises on every lifecycle call. Edit `agro.json`; the rest is generated.
 - The default name is `oh-sbx-<n>`, the lowest unused number. `--yes` prompts
   zero times and keeps every default.
 - Without `--repo` the sandbox runs the prebuilt image and the image's
@@ -95,7 +95,7 @@ agro shell <name>                # attach as the sandbox user
 ## Upgrading the CLI: `agro update`
 
 `agro update` upgrades exactly one thing: the `agro` executable that is running.
-It writes no project file — no `.oh/`, no `oh.json`, no `.env` — and it never
+It writes no project file — no `.agro/`, no `agro.json`, no `.env` — and it never
 asks for `sudo`. The upgrade follows whichever mechanism installed the
 executable:
 
@@ -118,13 +118,13 @@ and versions without changing anything.
 ## Equipping a checkout: `oh update`
 
 During the compatibility window, `oh update` is the command that vendors the
-`.oh/` control plane and `crons/` into the current directory. An empty directory
+`.agro/` control plane and `crons/` into the current directory. An empty directory
 is equipped from scratch; an equipped one is upgraded. Payload precedence:
 `--from <dir>`, then `--from-remote [--ref <ref>]`, then the CLI's own bundled
 payload, then a remote fetch announced on one line. `--dry-run` previews the
 changes; `--force` overrides the up-to-date and downgrade gate.
 
-It writes **nothing else** — no `oh.json`, no `.env`, no `AGENTS.md`, no
+It writes **nothing else** — no `agro.json`, no `.env`, no `AGENTS.md`, no
 `.gitignore` line, no `.devcontainer/`, no provider configuration. Those files
 are yours. It never prompts. It does not upgrade the CLI itself; that is
 `agro update`.
@@ -193,7 +193,7 @@ started is safe and is the recommended editor path — see
 **Provisioning** from VS Code is different. *Dev Containers: Reopen in
 Container* reads `.devcontainer/devcontainer.json`, whose `dockerComposeFile`
 lists `docker-compose.yml` and nothing else. It never runs
-`.oh/scripts/docker-compose.sh`, so **no overlay applies on that path**:
+`.agro/scripts/docker-compose.sh`, so **no overlay applies on that path**:
 
 - `access.ssh` → no `docker-compose.ssh.yml`, so no sshd and no published SSH port
 - `access.dockerSocket` → no `docker-compose.docker-sock.yml`, so no host Docker socket
@@ -201,7 +201,7 @@ lists `docker-compose.yml` and nothing else. It never runs
 
 Secrets still reach that container: compose auto-loads the `.devcontainer/.env`
 beside the compose file, and that file is a symlink to the root `.env`.
-Non-secret `oh.json` settings only reach compose when `oh` renders them, so on
+Non-secret `agro.json` settings only reach compose when `oh` renders them, so on
 this path each variable falls back to its default in
 `.devcontainer/docker-compose.yml`.
 

@@ -18,12 +18,12 @@ ghcr.io/mifunedev/openharness:<version>   # e.g. 0.1.0 — pin for reproducibili
 ```
 
 With no `--repo` there is **no checkout on the host at all**: the workspace and
-the `.oh/` control plane live in the sandbox's home volume, seeded once from the
+the `.agro/` control plane live in the sandbox's home volume, seeded once from the
 image's baked `/opt/oh-seed`. Nothing is cloned and nothing is built.
 
 Pass `--repo <dir>` and that checkout is bind-mounted at
 `/home/sandbox/harness` instead. The image then supplies only the **toolchain** —
-your live, git-versioned `.oh/` control plane (and the rest of your repo)
+your live, git-versioned `.agro/` control plane (and the rest of your repo)
 shadows the copy baked into the image. That is the key property: **the image
 version is a toolchain concern, not a correctness one**, which is why `latest` is
 a safe default. Building locally from
@@ -37,7 +37,7 @@ Docker CLI, bun, uv, pnpm — happens only in that case, and only when
 |---|---|
 | Docker (with Compose plugin) | pulling + running the image |
 | Node.js ≥ 20 | running the `oh` CLI |
-| A checkout equipped with `oh update` | only for `--repo`: the bind-mounted `.oh/` control plane |
+| A checkout equipped with `oh update` | only for `--repo`: the bind-mounted `.agro/` control plane |
 
 The image is public — no `docker login ghcr.io` is required to pull it. The
 release currently publishes for the architecture the CI runner builds on; if you
@@ -58,13 +58,13 @@ which the compose file interpolates at `image:`.
 
 `--no-build` on its own suppresses the build and reuses whatever image compose
 already resolves (a previously built `sandbox-<name>`, or an `image.ref` set in
-the entry's `oh.json`) without pinning one — an advanced escape hatch.
+the entry's `agro.json`) without pinning one — an advanced escape hatch.
 
 ### Which image ref wins (last wins)
 
 ```
 ghcr.io/mifunedev/openharness:latest      (built-in default)
-  └─ oh.json  image.ref=<ref>               (the entry's default — see docs/configuration.md)
+  └─ agro.json  image.ref=<ref>               (the entry's default — see docs/configuration.md)
        └─ oh sandbox install docker --image=<ref>   (per-invocation override)
 ```
 
@@ -94,11 +94,11 @@ With `image.ref` set, a bare `oh sandbox install docker --image` uses it; set
 
 ```bash
 cd <your-project>
-oh update                                     # vendor .oh/ + crons/ into this checkout
+oh update                                     # vendor .agro/ + crons/ into this checkout
 oh sandbox install docker --repo "$PWD" --name <your-project>
 ```
 
-`repo` is stored in the entry's `oh.json` and rendered into the compose
+`repo` is stored in the entry's `agro.json` and rendered into the compose
 environment as `OH_REPO_DIR`, which the base compose file reads as
 `${OH_REPO_DIR:-..}` for both the bind mount and the build context. It also lets
 a lifecycle verb resolve this sandbox whenever you stand inside that checkout, so
@@ -120,7 +120,7 @@ you can drive compose directly from an equipped checkout:
 
 ```bash
 OH_SANDBOX_IMAGE=ghcr.io/mifunedev/openharness:latest \
-  bash .oh/scripts/docker-compose.sh --repo-dir "$PWD" up -d --no-build
+  bash .agro/scripts/docker-compose.sh --repo-dir "$PWD" up -d --no-build
 ```
 
 `OH_SANDBOX_IMAGE` in the process environment takes precedence over the
@@ -186,7 +186,7 @@ or an absolute host path when `OH_HOME_MOUNT` is set.
 ### How the mode is detected
 
 Nothing declares the mode. `entrypoint.sh` asks whether
-`/home/sandbox/harness` is a bind mount **and** already holds a `.oh/` directory,
+`/home/sandbox/harness` is a bind mount **and** already holds a `.agro/` directory,
 and reads the answer from the kernel and the filesystem:
 
 - **checkout bind present** (`--repo`) — sync the sandbox UID/GID to the host
@@ -195,7 +195,7 @@ and reads the answer from the kernel and the filesystem:
   directory at the project root) — skip the UID/GID sync, since there is no host
   directory to read ownership from; `chown` the workspace to the sandbox user;
   and run the first-boot seed (below) before `link-providers`, the root
-  `pnpm install`, and cron tmux setup, so those steps see a populated `.oh/`.
+  `pnpm install`, and cron tmux setup, so those steps see a populated `.agro/`.
 
 The detected mode is logged on both paths, so a wrong detection is visible in
 `oh logs` rather than silent:
@@ -207,14 +207,14 @@ The detected mode is logged on both paths, so a wrong detection is visible in
 
 Three independent guards keep a misdetection from seeding over a real checkout:
 `mountpoint -q` is a kernel fact rather than a heuristic, `seed_workspace_volume`
-refuses when `.oh/` already exists, and `.oh/.image-seeded` is gitignored.
+refuses when `.agro/` already exists, and `.agro/.image-seeded` is gitignored.
 
 ### Seed-to-volume persistence
 
 On the **first boot** against an empty home mount, the entrypoint
 seeds the baked control plane — from the image's `/opt/oh-seed` — into the
-volume, then writes the marker `.oh/.image-seeded`. From that point on, the
-**volume is authoritative**: it is the operator-editable copy of `.oh/` (and
+volume, then writes the marker `.agro/.image-seeded`. From that point on, the
+**volume is authoritative**: it is the operator-editable copy of `.agro/` (and
 the rest of the repo), and edits made inside the running sandbox persist there
 across image pulls and container recreation, not in the image itself. Later
 boots see the marker and skip re-seeding, so a populated volume is never
@@ -270,13 +270,13 @@ sleep 8
 docker logs "$NAME" 2>&1 | tail -30
 docker exec "$NAME" bash -lc '
   ls -l /home/sandbox/harness/.claude/protected-paths.txt \
-  && bash /home/sandbox/harness/.oh/scripts/link-providers.sh --check \
+  && bash /home/sandbox/harness/.agro/scripts/link-providers.sh --check \
   && ls /home/sandbox/harness/.oh >/dev/null && echo SEED_OK'
 ```
 
 A healthy boot ends with `Providers OK: …` and `SEED_OK`, and the logs show
 **no** `protected-paths.txt is missing`. The home mount is now
-authoritative — later boots see the `.oh/.image-seeded` marker and skip
+authoritative — later boots see the `.agro/.image-seeded` marker and skip
 re-seeding, so your in-container edits persist.
 
 The boot installs no harness and no tool. The image contains none either, so the
@@ -331,10 +331,10 @@ this checklist by hand on a real host:
 - [ ] `docker pull ghcr.io/mifunedev/openharness:<tag built after the /opt/oh-seed change>`
 - [ ] `docker compose -f .devcontainer/docker-compose.image-only.yml up -d`
 - [ ] confirm **no build step ran** — the compose/Docker output shows a pull, not a build
-- [ ] confirm `.oh/` was seeded into the volume:
+- [ ] confirm `.agro/` was seeded into the volume:
       `docker compose -f .devcontainer/docker-compose.image-only.yml exec sandbox ls /home/sandbox/harness/.oh`
 - [ ] confirm an agent / the `oh` CLI is usable inside the container
-- [ ] edit a file under `.oh/` in the running container, then
+- [ ] edit a file under `.agro/` in the running container, then
       `docker compose -f .devcontainer/docker-compose.image-only.yml restart`,
       and confirm the edit is still there
 
@@ -345,4 +345,4 @@ pinned tag through the CLI.
 
 - [Installation](installation.md) — all install paths
 - [Security considerations](security-considerations.md) — the Docker-socket opt-in
-- [`.oh/` directory layout](oh-directory-layout.md)
+- [`.agro/` directory layout](oh-directory-layout.md)

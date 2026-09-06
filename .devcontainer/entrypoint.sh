@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-# shellcheck source=../.oh/scripts/compat.sh
-. "${OH_COMPAT_SH:-/opt/oh-assets/.oh/scripts/compat.sh}"
+# shellcheck source=../.agro/scripts/compat.sh
+. "${OH_COMPAT_SH:-/opt/agro-assets/.agro/scripts/compat.sh}"
 
 uid_reconcile_step() {
   local description="$1"
@@ -199,17 +199,17 @@ reconcile_shell_env_exports
 
 HARNESS="${HARNESS:-$OH_PROJECT_ROOT}"
 
-if [ -x "$HARNESS/.oh/scripts/link-providers.sh" ]; then
-  if ! gosu sandbox bash "$HARNESS/.oh/scripts/link-providers.sh" --init; then
-    echo "[entrypoint] failed to link provider skills; run: bash .oh/scripts/link-providers.sh --init"
+if [ -x "$HARNESS/.agro/scripts/link-providers.sh" ]; then
+  if ! gosu sandbox bash "$HARNESS/.agro/scripts/link-providers.sh" --init; then
+    echo "[entrypoint] failed to link provider skills; run: bash .agro/scripts/link-providers.sh --init"
     exit 1
   fi
 fi
 
 if [ "${OH_PROVISION_PYTHON:-true}" = "true" ] \
-   && [ -x "$HARNESS/.oh/scripts/provision-python.sh" ]; then
-  if ! bash "$HARNESS/.oh/scripts/provision-python.sh"; then
-    echo "[entrypoint] WARNING: Python provisioning did not complete; run: bash .oh/scripts/provision-python.sh" >&2
+   && [ -x "$HARNESS/.agro/scripts/provision-python.sh" ]; then
+  if ! bash "$HARNESS/.agro/scripts/provision-python.sh"; then
+    echo "[entrypoint] WARNING: Python provisioning did not complete; run: bash .agro/scripts/provision-python.sh" >&2
   fi
 fi
 
@@ -302,8 +302,8 @@ EOF
 fi
 
 BASHRC="/home/sandbox/.bashrc"
-if [ -f "$BASHRC" ] && ! grep -q 'source.*\.oh/install/banner.sh' "$BASHRC"; then
-  gosu sandbox bash -c "echo 'source ${OH_PROJECT_ROOT}/.oh/install/banner.sh 2>/dev/null' >> ~/.bashrc"
+if [ -f "$BASHRC" ] && ! grep -q 'source.*\.agro/install/banner.sh' "$BASHRC"; then
+  gosu sandbox bash -c "echo 'source ${OH_PROJECT_ROOT}/.agro/install/banner.sh 2>/dev/null' >> ~/.bashrc"
   echo "[entrypoint] attach banner wired into .bashrc"
 fi
 
@@ -509,14 +509,14 @@ WORKTREES_PATH="$HARNESS/.worktrees"
 PROJECTS_PATH="$HARNESS/projects"
 CRONS_PATH="$HARNESS/crons"
 mkdir -p "$WORKTREES_PATH" "$PROJECTS_PATH" "$CRONS_PATH"
-ln -sf "$HARNESS/.oh/scripts/gateway.sh" /usr/local/bin/gateway 2>/dev/null || true
+ln -sf "$HARNESS/.agro/scripts/gateway.sh" /usr/local/bin/gateway 2>/dev/null || true
 SLACK_ENV="$HARNESS/.devcontainer/.env"
 if [ -f "$SLACK_ENV" ] \
    && grep -qE '^PI_SLACK_APP_TOKEN=.' "$SLACK_ENV" \
    && grep -qE '^PI_SLACK_BOT_TOKEN=.' "$SLACK_ENV" \
    && command -v tmux &>/dev/null \
    && gosu sandbox bash -lc 'command -v pi' &>/dev/null; then
-  if gosu sandbox bash -lc "exec bash \"$HARNESS\"/.oh/scripts/gateway.sh pi"; then
+  if gosu sandbox bash -lc "exec bash \"$HARNESS\"/.agro/scripts/gateway.sh pi"; then
     echo "[entrypoint] client-slack-pi started via gateway.sh"
   else
     echo "[entrypoint] client-slack-pi failed to start via gateway.sh"
