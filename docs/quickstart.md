@@ -81,16 +81,7 @@ are yours to author. With `--repo` and `image.mode` set to `build`, the sandbox
 builds from that checkout's `.devcontainer/Dockerfile` instead of pulling
 (~10 min cold, ~30s warm).
 
-<details><summary>Other install methods (from source · one-line harness installer · fork)</summary>
-
-**From source.** Build the CLI out of a checkout — the audit-first path:
-
-```bash
-git clone https://github.com/mifunedev/openharness.git ~/.openharness
-cd ~/.openharness/.oh/cli && npm install && npm run build   # put dist/oh.js on PATH as `oh`
-cd ~/.openharness
-oh sandbox install docker --repo "$PWD" --name openharness
-```
+<details><summary>One-line harness installer and forks</summary>
 
 **One-line installer for this harness.** Gets `oh`, clones this repo to
 `~/.openharness`, configures it, and provisions — in one shot:

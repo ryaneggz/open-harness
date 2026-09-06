@@ -61,14 +61,6 @@ Use `source <(curl -fsSL https://oh.mifune.dev/get-oh.sh)` to put `oh` on the
 *current* shell's PATH, or `export PATH="$HOME/.local/bin:$PATH"` after the
 piped form. Override the location with `OH_BIN_DIR`.
 
-**From source** — build the CLI out of a checkout:
-
-```bash
-git clone https://github.com/mifunedev/openharness.git ~/.openharness
-cd ~/.openharness/.oh/cli && npm install && npm run build
-# put dist/oh.js on your PATH as `oh`
-```
-
 ### 2. Create the sandbox
 
 `oh sandbox install docker` runs from **any** directory — it needs no project
