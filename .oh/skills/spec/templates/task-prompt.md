@@ -5,8 +5,9 @@
 > running `/spec execute`. It is never written into `.oh/tasks/<slug>/`: a persisted copy
 > of a generated file drifts from the template it came from.
 
-You are the single implementation owner for the `<slug>` task. Read the approved plan in
-`.oh/tasks/<slug>/prd.md` and the ordered stories in `.oh/tasks/<slug>/prd.json`.
+You are the single implementation owner for the `<slug>` task, and you act as its advisor.
+Read the approved plan in `.oh/tasks/<slug>/prd.md` and the ordered stories in
+`.oh/tasks/<slug>/prd.json`.
 
 - Branch: `<branch>` — never push to `development` or `main`.
 - Issue: #<issue>.
@@ -19,24 +20,41 @@ You are the single implementation owner for the `<slug>` task. Read the approved
 You own this task from implementation through the final PR gate. Do not hand the task to a
 second implementation owner or a second supervisory session, and do not launch another
 coding-agent process — through tmux, Herdr, a background shell, or any other runner — to do
-this work. Ownership is a role, not a terminal topology. Use `/delegate` only for bounded,
-disjoint work that can run in parallel. Reconcile every worker result yourself, validate each
-story's acceptance criteria against the repository, and update `prd.json` and `progress.txt`.
+this work. Ownership is a role, not a terminal topology.
+
+You keep decisions and acceptance; bounded workers write. Use `/delegate` only for bounded,
+disjoint worker tasks; those workers perform every tracked implementation edit — code, tests,
+documentation, integration fixes, and repair — before you perform acceptance. A small story
+can use one worker. If you implement a tracked edit yourself, record the explicit operator
+exception in `progress.txt` before the edit. A worker never updates `prd.json` or
+`progress.txt`. Reconcile every worker result yourself, validate each story's acceptance
+criteria against the repository, and update `prd.json` and `progress.txt`.
+
+## Session continuity
+
+Continue in this session by default; the task needs no handoff. Transfer ownership only when
+the operator requests another session. Before an authorized transfer, stop dispatching work
+for this task. The receiving advisor reads `prd.md`, `prd.json`, `progress.txt`, and the
+current evidence, then acknowledges ownership before it dispatches a worker. Worker
+delegation never transfers task ownership.
 
 ## Re-ground before you implement
 
 `prd.md`'s `## Knowledge Context` names the planning base commit and the
 authoritative sources the plan was grounded against. Diff that base against
 current HEAD, re-read every listed source that moved, and reconcile before
-writing code. Knowledge pages are orientation; code and tests are implementation
+assigning work. Knowledge pages are orientation; code and tests are implementation
 truth and canonical docs/RFCs are intended-design truth. Do not load the pattern
 set — that is the planner's input.
 
 ## Implementation cycle
 
 1. Read the plan, story dependencies, current progress, and relevant repository instructions.
-2. Implement the next dependency-ready story, directly or with bounded `/delegate` workers.
-3. Run the required quality checks and fix failures before recording success.
+2. Assign the next dependency-ready story to a bounded `/delegate` worker with the complete
+   dispatch record that `.oh/skills/delegate/SKILL.md` requires. Keep coupled stories with
+   one continuing worker. Give parallel writers isolated worktrees.
+3. Run the required quality checks on the worker's result. Route a failure back to that
+   worker before you record success.
 4. Set that story's `passes` field to `true` only after validation. Add a dated progress entry
    with the files, commit, result, and learnings. Every implementation commit needs a mandatory
    `Submitted-by: <active submitter>` trailer.

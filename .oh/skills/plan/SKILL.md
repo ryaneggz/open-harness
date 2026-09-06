@@ -82,17 +82,32 @@ Read `.oh/skills/delegate/SKILL.md` before writing the orchestration strategy.
 The advisor behavior belongs to the active session; it creates no persistent identity or competing worker hierarchy.
 This section describes future execution, not permission to start implementation.
 
-1. Name one implementation owner for coupled changes.
+1. Name the active session as the one accountable owner; it decides, assigns, and accepts.
 2. Identify independent research that benefits from bounded read-only workers.
 3. Reconcile research in the active session before assigning writes.
-4. Sequence tasks by dependencies. Assign each task its files, execution context, output, and DoD identifiers.
-5. Use isolated worktrees for parallel writers. Keep overlapping file changes sequential.
+4. Write one bounded assignment for every tracked implementation edit. Keep coupled edits with one continuing worker.
+5. Sequence assignments by dependencies. Use isolated worktrees for parallel writers. Keep overlapping file changes sequential.
 6. Schedule independent read-only evidence review after implementation.
-7. Return failed criteria to the same implementation owner for repair and verification.
+7. Return a failed criterion to the bounded worker that owns the affected files, under the same advisor.
 8. Stop dependent work when a prerequisite fails. Escalate unresolved scope or safety decisions to the operator.
 
-Use `/delegate` for worker limits, model inheritance, thinking levels, and recursion policy; do not redefine those policies here.
-Choose no workers when a small task gains nothing from delegation. State the reason and retain a separate evidence-review pass.
+Give every bounded assignment these fields:
+
+- Stable task ID and dependency IDs.
+- Complexity, selection reason, exact requested model, and reasoning setting after native resolution.
+- Read scope, owned write paths, and explicit exclusions.
+- Execution directory, worktree isolation, native worker type, and supported continuation method.
+- Concrete deliverable and ready-to-send worker brief.
+- Verification commands or an exact review procedure, expected results, and evidence destinations.
+- Covered DoD IDs, the acceptance owner, and the failure/repair route.
+
+Cover every DoD criterion with at least one assignment plus an advisor-owned acceptance check.
+An assignment must not say only "implement the plan" or "satisfy all criteria"; it names its write paths and its DoD IDs.
+A read-only worker never owns edits.
+Use `/delegate` for worker limits, model policy, and recursion policy; do not redefine those policies here.
+A plan-only request can keep synthesis and draft writing with the active advisor; state why implementation delegation does not apply.
+Continue in the active session by default; the plan needs no handoff and no particular model.
+Provide a concise handoff prompt only when the operator requests transfer to another session. A plan without that prompt is complete.
 During approved execution, `/spec` owns the build and `/delegate` owns its execution records under `.oh/tasks/<slug>/`.
 The draft remains planning input, not a second completion-state database.
 
@@ -132,11 +147,19 @@ Status: DRAFT | BLOCKED
 | 1 | <Bounded change.> | <None or step IDs.> | <Host or sandbox; target repository.> | D1 |
 
 ## advisor orchestration strategy
-<One active owner; delegation choice and justification; evidence-review and repair sequence.>
+<One active owner who decides and accepts; the reason delegation applies or does not; evidence-review and repair sequence.>
+
+| Task | Complexity and selection reason | Requested model / reasoning | Dependencies | Read scope; owned write paths; exclusions | Execution directory; worktree; worker type; continuation | Deliverable | Verification and evidence destination | DoD IDs; acceptance owner; repair route |
+|---|---|---|---|---|---|---|---|---|
+| T1 | <Class and deciding factors.> | <Exact setting or `inherit`.> | <None or task IDs.> | <Paths.> | <Directory; isolation; built-in type; continuation method.> | <Artifact.> | <Command or procedure; expected result; destination.> | <IDs; advisor; worker that repairs.> |
+
+<Ready-to-send worker brief for each task.>
 
 | Wave | Work and owner | Dependencies | Output or handoff | DoD IDs |
 |---|---|---|---|---|
-| 1 | <Research or owner task.> | <None or prior wave.> | <Source-backed result.> | D1 |
+| 1 | <Research or worker task.> | <None or prior wave.> | <Source-backed result.> | D1 |
+
+<Optional handoff prompt, only when the operator requests transfer; its absence does not make the plan incomplete.>
 
 ## Affected surfaces
 <Mark each surface applied or not applicable, with a reason: host and sandbox;
@@ -157,6 +180,7 @@ parallel operation; public documentation; verification.>
 2. Confirm that both required sections contain task-specific content.
 3. Check every DoD identifier against the implementation and orchestration tables. Reject missing coverage or dangling identifiers.
 4. Confirm that each criterion has an observable pass condition, evidence, and an owner.
+5. Confirm that every bounded assignment carries all required fields and that no read-only worker owns edits.
 5. Run `bash .oh/skills/ste/scripts/ste-check.sh <plan-path>` from the harness repository. Use an absolute plan path for another repository.
 6. Fix checker findings and review meaning with `/ste`'s ten-question check.
 7. In Git, confirm that an ignore rule covers the saved file and that `git ls-files -- <plan-path>` returns no entries.
