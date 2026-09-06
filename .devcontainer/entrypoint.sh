@@ -1,12 +1,33 @@
 #!/usr/bin/env bash
 set -e
 
+uid_reconcile_step() {
+  local description="$1"
+  shift
+
+  if "$@"; then
+    return 0
+  fi
+
+  echo "[entrypoint] WARNING: failed to ${description}" >&2
+  return 1
+}
+
 SOCK=/var/run/docker.sock
 if [ -S "$SOCK" ]; then
-  HOST_GID=$(stat -c '%g' "$SOCK")
-  CUR_GID=$(getent group docker | cut -d: -f3)
-  if [ "$HOST_GID" != "$CUR_GID" ]; then
-    groupmod -g "$HOST_GID" docker 2>/dev/null || true
+  SOCK_GID=$(stat -c '%g' "$SOCK")
+  DOCKER_GID=$(getent group docker | cut -d: -f3)
+  if [ "$SOCK_GID" != "$DOCKER_GID" ]; then
+    if getent group "$SOCK_GID" >/dev/null 2>&1; then
+      SOCK_GROUP=$(getent group "$SOCK_GID" | cut -d: -f1)
+      if uid_reconcile_step "add sandbox to group $SOCK_GROUP that already owns GID $SOCK_GID" usermod -aG "$SOCK_GROUP" sandbox; then
+        echo "[entrypoint] sandbox joined $SOCK_GROUP (GID $SOCK_GID) for $SOCK"
+      fi
+    else
+      if uid_reconcile_step "set docker group GID to socket GID $SOCK_GID" groupmod -g "$SOCK_GID" docker; then
+        echo "[entrypoint] docker group GID $DOCKER_GID -> $SOCK_GID for $SOCK"
+      fi
+    fi
   fi
 fi
 
@@ -121,18 +142,6 @@ OH_PROJECT_ROOT="${OH_PROJECT_ROOT:-/home/sandbox/harness}"
 HARNESS="${HARNESS:-$OH_PROJECT_ROOT}"
 
 seed_home /home/sandbox || echo "[entrypoint] WARNING: home seed incomplete; some baked dotfiles may be missing" >&2
-
-uid_reconcile_step() {
-  local description="$1"
-  shift
-
-  if "$@"; then
-    return 0
-  fi
-
-  echo "[entrypoint] WARNING: failed to ${description}" >&2
-  return 1
-}
 
 HARNESS_DIR="$OH_PROJECT_ROOT"
 if mountpoint -q "$HARNESS_DIR" 2>/dev/null && [ -d "$HARNESS_DIR/.oh" ]; then
