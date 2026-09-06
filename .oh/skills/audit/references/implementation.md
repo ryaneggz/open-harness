@@ -42,7 +42,9 @@ naming the gate). Only when **all** applicable gates pass is the verdict
 
 Gate 1 has **two gating sub-checks**; either failing is an `AUDIT-FAIL`. Execute
 the production helper `"$AUDIT_ROOT/.oh/skills/audit/scripts/implementation-gates.sh" gate1 "$SLUG"`;
-the snippets below explain its behavior and are not a second implementation.
+the snippets below explain its behavior and are not a second implementation. The scripted
+driver (`scripts/route-driver.sh`) runs this helper first and reports `gate1: FAIL` on a
+non-zero exit.
 
 **(a) Task-graph conformance.** Every user story in the task graph must be marked
 complete. The implementation owner flips `passes: false → true` only after validating each story, so
@@ -107,7 +109,8 @@ fi
 # rc=1 → at least one new regression (FAIL gate2)
 ```
 
-The commit check is what keeps the reuse honest: the moment the branch moves, the
+The scripted driver runs exactly this reuse-or-run step and reports `gate2: FAIL` on a
+non-zero exit. The commit check is what keeps the reuse honest: the moment the branch moves, the
 record describes code that is no longer under test, and this gate runs the suite
 itself rather than inheriting a stale green. **Never** reuse a record whose `commit`
 you did not compare, and never treat a missing record as a pass.
@@ -133,6 +136,11 @@ clean.
   **not** a pass (no run ≠ green) — that is `AUDIT-FAIL` until a run is dispatched
   and lands green.
 
+The scripted driver runs the `classify-pr` helper when the caller passes `--pr`. Without
+`--pr` the driver queries `gh run list --branch <branch>` and passes only when every run
+for `HEAD` has status `completed` and conclusion `success`; no run for `HEAD` fails with
+`gate3: FAIL (no green CI run for HEAD)`.
+
 ### Gate 4 — UI verification (conditional)
 
 If the task graph contains any browser-verification criteria, the UI must be
@@ -157,6 +165,11 @@ render/behave as specified. Store screenshots under `$AUDIT_TMP_ROOT`, not in th
 repository. No clean screenshot/snapshot for an applicable story is `AUDIT-FAIL`.
 When no story declares browser verification, this gate is **not applicable** and
 must not invoke `agent-browser` at all.
+
+The scripted driver runs only `browser-required`. When it applies, the driver fails
+closed with `gate4: FAIL`: the owner runs `browser-preflight` and records the
+screenshots; the driver cannot certify UI verification. When the check does not apply,
+the driver reports `gate4: not applicable`.
 
 ### Gate 5 — Slop (less code, low complexity)
 
@@ -215,6 +228,12 @@ disclosed only — the same pre-existing/new distinction gate 2 makes.
 
 This route **reads** the round record. It never writes or increments it — the
 orchestrating caller owns that file, exactly as it owns `evidence.md`.
+
+In the scripted driver, gate 5 is metrics and disclosure only: it prints
+`gate5: metrics <json>`, `gate5: rounds <json>` when the round record exists, and
+`gate5: SIMPLICITY-RESIDUAL disclosed` when lizard reports a function over `ccnMax`. The
+driver never blocks on gate 5; the simplify loop in `/spec execute` owns the judgment and
+the round record.
 
 ---
 

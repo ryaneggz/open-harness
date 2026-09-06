@@ -4,7 +4,7 @@
 # desc: production lifecycle validates before state, preserves child identity, cleans temp, and reports one run record
 set -euo pipefail
 unset AUDIT_RUN_ID AUDIT_ROOT AUDIT_TMP_ROOT AUDIT_EVIDENCE_PATH \
-      AUDIT_ROUTE AUDIT_TARGET AUDIT_TARGET_ARGS_JSON AUDIT_AGENT_COMMAND_JSON
+      AUDIT_ROUTE AUDIT_TARGET AUDIT_TARGET_ARGS_JSON
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 tmp=$(mktemp -d); tmpdir=$(mktemp -d); trap 'rm -rf "$tmp" "$tmpdir"' EXIT
 mkdir -p "$tmp/.oh/skills/audit/references" "$tmp/.oh/scripts"
@@ -43,23 +43,35 @@ if bash "$RUN" implementation -- true >/dev/null 2>&1; then fail 'missing implem
 if bash "$RUN" pr 7 --repo bad -- true >/dev/null 2>&1; then fail 'invalid focused repo accepted'; fi
 if bash "$RUN" drift >/dev/null 2>&1; then fail 'missing route driver accepted'; fi
 if bash "$RUN" drift -- true >/dev/null 2>&1; then fail 'true callback certified completion'; fi
-cat >"$tmp/fake-agent" <<'AGENT'
+cp "$REPO/.oh/skills/audit/scripts/route-driver.sh" "$REPO/.oh/skills/audit/scripts/implementation-gates.sh" "$tmp/.oh/skills/audit/scripts/"
+DRIVER="$tmp/.oh/skills/audit/scripts/route-driver.sh"
+chmod +x "$DRIVER" "$tmp/.oh/skills/audit/scripts/implementation-gates.sh"
+grep -q AUDIT_AGENT_COMMAND_JSON "$DRIVER" && fail 'scripted route driver still references a nested agent command'
+set +e; drift_rec=$(bash "$RUN" drift -- "$DRIVER" 2>&1 >/dev/null); drift_rc=$?; set -e
+[[ $drift_rc -eq 64 ]] || fail 'scripted driver accepted a report-only route'
+grep -q 'state=failed verdict=none' <<<"$drift_rec" || fail 'report-only route published evidence or did not fail'
+mkdir -p "$tmp/.oh/tasks/fixture" "$tmp/bin"
+printf '{"userStories":[{"id":"US-1","passes":false}]}\n' >"$tmp/.oh/tasks/fixture/prd.json"
+set +e; impl_out=$(bash "$RUN" implementation fixture -- "$DRIVER" 2>&1); impl_rc=$?; set -e
+[[ $impl_rc -eq 0 ]] || fail 'scripted driver AUDIT-FAIL verdict was not a complete run'
+grep -q 'state=complete verdict=AUDIT-FAIL' <<<"$impl_out" || fail 'gate1 failure did not publish AUDIT-FAIL evidence'
+grep -q '^gate1: FAIL' <<<"$impl_out" || fail 'gate1 failure not reported'
+printf '{"userStories":[{"id":"US-1","passes":true}]}\n' >"$tmp/.oh/tasks/fixture/prd.json"
+printf '{"commit":"%s","runnerExit":0}\n' "$(git -C "$tmp" rev-parse HEAD)" >"$tmp/.oh/tasks/fixture/eval-result.json"
+cat >"$tmp/bin/gh" <<'GH'
 #!/usr/bin/env bash
-prompt=${!#}
-grep -q 'AUDIT_TARGET: drift' <<<"$prompt" || exit 9
-grep -q '# test route drift' <<<"$prompt" || exit 9
-# The agent receives every binding it needs as prompt TEXT. Inheriting the lifecycle
-# identity as environment is what made this very probe grade its caller instead of the
-# repo, twice (AUDIT_ROOT/AUDIT_RUN_ID, then AUDIT_SIGNALS_RESET). The driver must scrub
-# it; a leak here is a real defect, so fail loudly rather than tolerate it.
-leaked=$(printenv | grep -c '^AUDIT_' || true)
-[[ $leaked -eq 0 ]] || { printf 'agent inherited %s AUDIT_* variable(s)\n' "$leaked" >&2; exit 8; }
-printf 'route report\nAUDIT-EVIDENCE: DRIFT-OK\n'
-AGENT
-chmod +x "$tmp/fake-agent"
-AUDIT_AGENT_COMMAND_JSON="[\"$tmp/fake-agent\"]" \
-  bash "$RUN" drift -- "$REPO/.oh/skills/audit/scripts/route-driver.sh" >/dev/null \
-  || fail 'canonical production route driver did not publish correlated evidence (rc 8 = it leaked AUDIT_* into the agent)'
+case "$1 $2" in
+  'repo view') printf 'owner/name\n';;
+  'run list') printf '[]\n';;
+  *) exit 9;;
+esac
+GH
+chmod +x "$tmp/bin/gh"
+set +e; impl_out=$(PATH="$tmp/bin:$PATH" bash "$RUN" implementation fixture -- "$DRIVER" 2>&1); impl_rc=$?; set -e
+[[ $impl_rc -eq 0 ]] || fail 'scripted driver gate3 failure was not a complete run'
+grep -q '^gate1: PASS' <<<"$impl_out" && grep -q '^gate2: reused eval-result.json' <<<"$impl_out" || fail 'gates 1-2 did not pass on the green fixture'
+grep -q '^gate3: FAIL (no green CI run for HEAD)' <<<"$impl_out" || fail 'gate3 did not fail closed without a green CI run'
+grep -q 'state=complete verdict=AUDIT-FAIL' <<<"$impl_out" || fail 'gate3 failure did not publish AUDIT-FAIL evidence'
 bash "$RUN" pr 7 --base stack-parent -- "$tmp/complete-driver" >/dev/null
 bash "$RUN" prs --mine -- "$tmp/complete-driver" >/dev/null
 bash "$RUN" full --repo owner/name -- "$tmp/complete-driver" >/dev/null
