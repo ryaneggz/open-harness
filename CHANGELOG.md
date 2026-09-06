@@ -10,6 +10,7 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 
 ### Fixed
 
+- Drop five unenforceable `Write(...)`/`NotebookEdit(...)` deny rules from `.claude/settings.json`. File permission checks match only `Edit(path)` rules, which already cover every file-editing tool, so each removed rule produced a startup warning on every Claude Code session while adding no protection. The equivalent `Edit(file_path=...)` denies and `deny-secret-paths.sh` keep `.config/` and `settings.local.json` off-limits. ([#974](https://github.com/mifunedev/openharness/pull/974))
 - Keep Hermes runtime state in the workspace, reject ambiguous homes, and reconcile shared skills without replacing user paths. ([#969](https://github.com/mifunedev/openharness/issues/969))
 - Shorten spec and wiki skill descriptions to remove Pi skill-conflict warnings. ([#967](https://github.com/mifunedev/openharness/issues/967))
 
