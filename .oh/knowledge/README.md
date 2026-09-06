@@ -18,8 +18,6 @@ disagree, the source wins and the page is wrong.
 
 | Directory | Holds | Tracked | Read by a normal `/wiki query` |
 | --- | --- | --- | --- |
-| oh-cli-portable-lifecycle | oh CLI Portable Lifecycle | [cli, oh, lifecycle, standalone, registry, sandbox, remote-fetch, execution-target, update] | 2026-09-06 |
-| compose-env-boundary | Compose Environment Boundary | [compose, devcontainer, oh-json, cli, entrypoint, boundary, installs, sandbox, registry] | 2026-09-06 |
 | `source/` | Entity pages — `kind: repo` synthesis of this repository, `kind: external` synthesis of an outside source | yes | yes (default mode) |
 | `patterns/` | `kind: pattern` pages — failure modes and working strategies this harness observed in its own runs | yes | yes (`--patterns` mode only) |
 | `raw/` | Immutable external snapshots, `<yyyy-mm-dd>-<slug>.md`, cited by `kind: external` pages | yes | no |
@@ -56,6 +54,8 @@ Schema, frontmatter spec, provenance kinds, and every authoring rule:
 
 | Slug | Title | Tags | Updated |
 | --- | --- | --- | --- |
+| oh-cli-portable-lifecycle | oh CLI Portable Lifecycle | [cli, oh, lifecycle, standalone, registry, sandbox, remote-fetch, execution-target, update] | 2026-09-06 |
+| compose-env-boundary | Compose Environment Boundary | [compose, devcontainer, oh-json, cli, entrypoint, boundary, installs, sandbox, registry] | 2026-09-06 |
 | pattern-evals-unexercised-oracle | A probe that has never failed has an unverified oracle | [evals, probes, oracles, skipped, fault-injection, continual-learning] | 2026-09-05 |
 | fresh-machine-setup | Fresh-Machine Setup Flow | [setup, onboarding, installation, registry, gateway, ssh, github, slack] | 2026-09-05 |
 | pattern-spec-stubbed-runner-state-gap | Unit tests with a stubbed runner cannot see state a verb fails to persist | [spec, cli, testing, evidence, rehearsal, persistence] | 2026-09-03 |

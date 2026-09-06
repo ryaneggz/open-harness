@@ -29,9 +29,14 @@ function inventory(): Inventory {
 }
 
 function trackedFiles(): string[] {
-  return execFileSync("git", ["ls-files", "-z"], { cwd: REPO_ROOT, encoding: "utf8" })
-    .split("\0")
-    .filter((f) => f !== "" && !f.startsWith(".oh/tasks/") && f !== ".oh/compat-inventory.json");
+  const listed = execFileSync(
+    "git",
+    ["ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+    { cwd: REPO_ROOT, encoding: "utf8" },
+  );
+  return [...new Set(listed.split("\0"))].filter(
+    (f) => f !== "" && !f.startsWith(".oh/tasks/") && f !== ".oh/compat-inventory.json",
+  );
 }
 
 function identifiersInTree(): Map<string, Set<string>> {
@@ -68,7 +73,7 @@ describe("legacy contract inventory (.oh/compat-inventory.json)", () => {
     }
   });
 
-  it("classifies every OH_* identifier present in tracked files", () => {
+  it("classifies every OH_* identifier present in tracked or untracked non-ignored files", () => {
     const missing = [...found.keys()].filter((id) => !(id in doc.variables)).sort();
     expect(missing, `uninventoried: ${missing.map((m) => `${m} (${[...found.get(m)!][0]})`).join(", ")}`).toEqual([]);
   });
