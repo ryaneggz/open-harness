@@ -18,7 +18,7 @@ and ordinary survey mode must not load it.
 ```mermaid
 flowchart TD
     A["Resolve args: $ARGUMENTS"] --> B["Gather context snapshot"]
-    B --> C["Spawn 4 auditors IN ONE MESSAGE (parallel sonnet)"]
+    B --> C["Spawn 4 auditors IN ONE MESSAGE (parallel)"]
 
     C --> PM["PM Auditor<br>onboarding · skill consistency<br>issue templates · wiki/memory"]
     C --> IMP["Implementer Auditor<br>startup reliability · CI/CD<br>test coverage · package health"]
@@ -107,7 +107,7 @@ Assemble a **Context Snapshot** (compact markdown, ~300 words):
 
 ### 3. Spawn 4 auditors in ONE message (parallel)
 
-Launch 4 Agent tool calls **in a single message**. Each receives the Context Snapshot and its specific audit mandate below. All four are bounded provider-native workers driven by the prompts in this file — there is no repository agent definition behind any of them, so pass a provider built-in `subagent_type` and carry the perspective in the prompt. All use **sonnet** model and **Ultra compression** for their output (consumed by the synthesis step, not humans).
+Launch 4 Agent tool calls **in a single message**. Each receives the Context Snapshot and its specific audit mandate below. All four are bounded provider-native workers driven by the prompts in this file — there is no repository agent definition behind any of them, so pass a provider built-in `subagent_type` and carry the perspective in the prompt. Worker model and effort follow `.oh/skills/delegate/SKILL.md`: operator selections and exclusions bind, and the advisor selects and records unspecified settings per task. All use **Ultra compression** for their output (consumed by the synthesis step, not humans).
 
 ---
 

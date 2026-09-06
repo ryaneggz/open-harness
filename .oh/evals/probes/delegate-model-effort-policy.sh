@@ -5,8 +5,10 @@
 #       exclusions bind, unspecified settings are selected per task with a recorded reason, a
 #       native capability check precedes dispatch, requested and observed settings stay separate,
 #       an unsupported required control blocks instead of substituting, Sonnet is excluded, max is
-#       never passed, and provider preferences stay separate from the portable role. This probe
-#       greps instruction text; it does not verify an effective model or thinking setting.
+#       never passed, low-complexity Claude Code work names Opus with effort judged per task by
+#       the advisor, no other skill routes workers to Sonnet, and provider preferences stay
+#       separate from the portable role. This probe greps instruction text; it does not verify
+#       an effective model or effort setting.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -80,10 +82,21 @@ max_passes="$(grep -iE 'thinking:? *`?max`?|`max`' <<<"$sentences" | grep -vE "$
 [[ -z "$max_passes" ]] \
   || problems+=("max thinking appears outside a negation: $max_passes")
 
-fallback="$(grep -iE 'nearest (supported )?(thinking |reasoning )?level|fall(s|ing)? back to (the )?(nearest|next|lower|`?low`?|`?minimal`?|`?medium`?)|(round|map|lower)(s|ed)? (it |them )?(up |down )?to (the )?(nearest|`?low`?|`?minimal`?)|(thinking|reasoning)[- ]off[^.]*(becomes|means|equals|maps to|is treated as) `?low`?' <<<"$sentences" \
-  | grep -viE "${close_negation}\\b(fall|falls|falling|nearest|round|rounds|rounded|map|maps|mapped|lower|lowers|lowered|becomes|means|equals|treated)\\b" || true)"
-[[ -z "$fallback" ]] \
-  || problems+=("an unsupported reasoning setting is substituted with a nearby level: $fallback")
+model_subst="$(sed 's/non-Sonnet//gi' <<<"$sentences" \
+  | grep -iE '(substitut(e|es|ed|ing)|swap(s|ped)?|fall(s|ing)? back to|switch(es|ed)? to|route(s|d)?|reroute(s|d)?)[^.]{0,50}(sonnet|opus|haiku|fable|luna|astra|another model|a different model|other model)' \
+  | grep -vE "$negation" || true)"
+[[ -z "$model_subst" ]] \
+  || problems+=("a model is substituted or rerouted outside a negation: $model_subst")
+
+required_level_subst="$(grep -iE 'required' <<<"$sentences" \
+  | grep -iE 'nearest (supported )?(thinking |reasoning |effort )?level|fall(s|ing)? back to (the )?(nearest|next|lower|`?low`?|`?minimal`?|`?medium`?)|(round|map|lower)(s|ed)? (it |them )?(up |down )?to (the )?(nearest|`?low`?|`?minimal`?)' \
+  | grep -viE "${close_negation}\\b(fall|falls|falling|nearest|round|rounds|rounded|map|maps|mapped|lower|lowers|lowered)\\b" || true)"
+[[ -z "$required_level_subst" ]] \
+  || problems+=("a required reasoning control is silently substituted with a nearby level: $required_level_subst")
+
+thinking_off="$(grep -iE 'thinking[- ](disabled|off)|(disable|without) thinking' <<<"$sentences" || true)"
+[[ -z "$thinking_off" ]] \
+  || problems+=("obsolete thinking-disabled wording remains: $thinking_off")
 
 inherit_lowers="$(grep -iE '(inherit|lower|reduce|downgrade)[^.]{0,40}(instead of|rather than|when)[^.]{0,30}(block|blocked|blocking)' <<<"$sentences" | grep -vE "$negation" || true)"
 [[ -z "$inherit_lowers" ]] \
@@ -98,6 +111,24 @@ grep -qiF 'native verification' <<<"$provider_flat" \
   || problems+=("provider preferences do not require native verification")
 grep -qiF 'not the portable role definition' <<<"$provider_flat" \
   || problems+=("provider preferences are not separated from the portable role definition")
+grep -qiE 'low-complexity worker[^.]{0,40}opus|opus[^.]{0,40}low-complexity' <<<"$provider_flat" \
+  || problems+=("provider preferences do not name Opus for low-complexity work")
+grep -qiE 'effort[^.]{0,80}(per task|each task|each worker task|advisor judges|selected per task)|(per task|each task|each worker task|advisor judges|selected per task)[^.]{0,80}effort' <<<"$provider_flat" \
+  || problems+=("provider preferences do not make effort an advisor judgment per task")
+grep -qiE 'subagent definition[^.]{0,80}`effort:|`effort:[^.]{0,80}subagent definition' <<<"$provider_flat" \
+  || problems+=("provider preferences do not name subagent definition frontmatter effort as the native control")
+grep -qiE 'inherited session (effort|level)[^.]{0,60}(record|says so|unobserved)' <<<"$provider_flat" \
+  || problems+=("provider preferences do not disclose an inherited session effort when no per-worker control exists")
+
+skills_root="$ROOT/.oh/skills"
+route_ctx='(spawn|route|dispatch|run on|runs on|[^a-z]use|model:).{0,60}sonnet|sonnet.{0,60}(spawn|route|dispatch|run on|runs on|[^a-z]use|model:)|\(sonnet\)|parallel sonnet|\| *sonnet *\|'
+sonnet_routing="$(find "$skills_root" -type f -name '*.md' \
+    ! -path "$skills_root/delegate/SKILL.md" ! -path "$skills_root/claude-api/*" -print0 \
+  | sort -z | xargs -0 grep -inE -- "$route_ctx" 2>/dev/null \
+  | sed 's/non-sonnet//gi' | grep -viE "${close_negation}\\bsonnet" \
+  | sed "s|^$skills_root/|.oh/skills/|" || true)"
+[[ -z "$sonnet_routing" ]] \
+  || problems+=("a skill routes workers to Sonnet outside /delegate policy: $sonnet_routing")
 
 fixed_role="$(grep -iE 'advisor[^.|]{0,80}\b(is|are|runs on|uses|requires|must use|means)\b[^.|]{0,60}\b(Fable|Opus|Sonnet|Haiku|Luna|Astra)\b' <<<"$portable_sentences" || true)"
 [[ -z "$fixed_role" ]] \
@@ -113,5 +144,5 @@ if (( ${#problems[@]} > 0 )); then
   exit 1
 fi
 
-echo "PASS: /delegate binds operator selections, checks native capability before dispatch, keeps requested/observed evidence separate, blocks unsupported controls, excludes Sonnet, and never passes max (prose check only)" >&2
+echo "PASS: /delegate binds operator selections, checks native capability before dispatch, keeps requested/observed evidence separate, blocks unsupported required controls, names Opus with advisor-judged effort, excludes Sonnet across skills, and never passes max (prose check only)" >&2
 exit 0

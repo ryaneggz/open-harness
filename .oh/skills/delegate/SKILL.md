@@ -93,17 +93,28 @@ The preferences below are operator preferences, not the portable role definition
 Each one requires native verification before use.
 
 - The advisor session runs on Fable 5.1 with the operator-selected effort.
-- A low-complexity worker runs on Opus with thinking disabled.
+- A low-complexity worker runs on Opus.
+- The advisor judges the effort level for each worker task: `low` for mechanical work,
+  `medium` for standard work, `high` or `xhigh` for high-uncertainty work, never `max`.
+  Record the selected effort and its reason in the dispatch record before dispatch.
 - Never route work to Sonnet, as a primary, intermediate, or fallback tier.
 - Select the hardest worker per task from supported non-Sonnet models; record the
   selection reason.
 - On a native surface that exposes them, Luna at Max serves the least complex work and
   Astra at high serves the hardest work.
 
-The Agent tool on Claude Code currently exposes `model` and no per-worker thinking
-parameter. Pass a thinking level only where the native surface supports it, and never
-pass `max`. A preference that the native surface cannot express blocks the affected
-worker under rule 4 and authorizes no substitute.
+The per-call Agent tool on Claude Code exposes `model` and has no effort argument.
+The documented per-worker effort control is subagent definition frontmatter
+(`effort: low|medium|high|xhigh|max`; never pass `max`), hot-reloaded from a subagent
+definition at the scope the operator chooses. Apply the selected effort through that
+control when one exists, after native verification. When no per-worker control is
+available at dispatch time, the worker runs at the inherited session effort and the
+record says so: `observed effort: inherited session level, unobserved`. Confirm an
+effective effort only from the runtime's own display or the worker's self-report;
+never assume it from the request. Effort is an advisor judgment, so a missing effort
+control never blocks a worker and never justifies a model substitution. Rule 4 applies
+to the model, to explicit operator selections and exclusions, and to any control the
+operator marks required.
 
 ## Decision Flow
 
@@ -263,9 +274,11 @@ Launch N `Agent` tool calls **in a single message** for parallel execution. Each
 Worker configuration:
 - **Model**: pass the requested model from the dispatch record unchanged. Pass no
   `model` argument only when the record says `inherit`. Never pass an excluded model.
-- **Reasoning**: pass a thinking level only where the native surface exposes a
-  per-worker control and the record requests one; never pass `max`. When the record
-  requires a control the surface lacks, mark the task `BLOCKED` and do not spawn it.
+- **Reasoning**: apply the recorded effort level only where the native surface exposes
+  a per-worker control; never pass `max`. When no control exists, the worker runs at
+  the inherited session effort and the record says so. When the operator marks a
+  control required and the surface lacks it, mark the task `BLOCKED` and do not spawn
+  it.
 - **Observation**: after the dispatch, record the observed model and reasoning
   setting with their provenance; write `unknown` when the surface reports nothing.
 - **run_in_background**: true (for waves with 2+ tasks)
@@ -367,13 +380,14 @@ Output a structured summary:
 
 For a mechanical rename across three files under the Claude Code preferences, record
 `Complexity: mechanical (known transformation, decisive check, low blast radius)`,
-`Selection reason: operator low-complexity preference`, and
-`Requested model / reasoning: opus / thinking disabled`. The native capability check
-finds that the Agent tool exposes `model` and no thinking control, so the required
-thinking-off control is unavailable: record `Observed settings: thinking unknown
-(tool exposes no control)`, mark the task `BLOCKED`, and ask the operator for an
-authorized alternative. Do not dispatch with an inherited setting, and do not
-record the request as confirmed.
+`Selection reason: operator low-complexity preference; mechanical work takes low
+effort (advisor judgment)`, and
+`Requested model / reasoning: opus / effort low (advisor judgment)`. Dispatch with
+`model: opus`. Apply the effort through a subagent definition with `effort: low` when
+one exists at the operator-chosen scope; when none exists, record
+`Observed settings: effort inherited session level, unobserved (no per-worker
+control)`. Record the effort as observed only when the runtime displays it or the
+worker reports it, and do not record the request as confirmed.
 
 ## Reference
 
@@ -386,7 +400,7 @@ record the request as confirmed.
 | Context passing | Prior wave summaries, not full output |
 | Implementation ownership | The advisor decides and accepts; bounded workers perform every tracked implementation edit; coupled work stays with one continuing worker |
 | Model selection | Explicit operator selections and exclusions are binding. Unspecified settings come from task complexity, risk, and the authorized budget, with the reason recorded before dispatch. An unsupported required control blocks the worker and its dependents; never substitute, lower, change parent settings, or call a nested inference CLI. |
-| Reasoning selection | Pass a thinking level only where the native surface supports a per-worker control; never `max`. Escalate only on evidence of uncertainty or repeated failure. |
+| Reasoning selection | The advisor judges the effort level per task and records it before dispatch; apply it only where the native surface supports a per-worker control; never `max`. Escalate only on evidence of uncertainty or repeated failure. |
 | Settings evidence | Record requested and observed settings separately with provenance; `unknown` stays `unknown`. |
 
 ### Key Resources
