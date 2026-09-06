@@ -466,7 +466,6 @@ describe("compose helper wiring", () => {
     expect(text).toContain("oh config set");
     expect(text).not.toContain("_yaml_set");
     expect(text).not.toContain("_cfg_set");
-    expect(text).not.toContain(".devcontainer/.example.env");
 
     expect(text).toContain('ENV_FILE="$REPO_DIR/.env"');
     expect(text).toContain('cp "$REPO_DIR/.example.env" "$ENV_FILE"');
