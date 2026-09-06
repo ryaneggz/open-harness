@@ -120,7 +120,7 @@ The installer:
 1. Verifies Docker and git are present, and installs Node ≥ 20 and the `oh` CLI when they are missing.
 2. Clones the repo into `~/.openharness` (or pulls latest if the directory already exists).
 3. Prompts for sandbox name, timezone, and git identity, then writes the non-secrets to the tracked `oh.json`.
-4. Creates the gitignored, mode-`0600` root `.env` from the tracked `.env.example` when missing (all keys commented — inert until you edit), and links `.devcontainer/.env` to it so VS Code "Reopen in Container" reads the same file. Non-secret settings stay in the tracked `oh.json`.
+4. Creates the gitignored, mode-`0600` root `.env` from the tracked `.example.env` when missing (all keys commented — inert until you edit), and links `.devcontainer/.env` to it so VS Code "Reopen in Container" reads the same file. Non-secret settings stay in the tracked `oh.json`.
 5. Provisions the sandbox (`oh sandbox install docker --repo <clone>`).
 6. Prints the next-step `oh` commands (open a shell, stop, tear down).
 
@@ -174,7 +174,7 @@ cd openharness
 oh sandbox install docker --repo "$PWD" --name openharness
 ```
 
-The wizard asks for the sandbox name, timezone, git identity, SSH (and its host port), and the host Docker socket, then writes `~/.oh/sandboxes/openharness/oh.json`. `--yes` keeps every default and asks nothing. Edit one field later with `oh config set --sandbox openharness <field> <value>`, and set a secret with `oh secret set --sandbox openharness <KEY>`. See [Configuration](./configuration.md) for the field reference, and the comments in `.env.example` for every allow-listed secret.
+The wizard asks for the sandbox name, timezone, git identity, SSH (and its host port), and the host Docker socket, then writes `~/.oh/sandboxes/openharness/oh.json`. `--yes` keeps every default and asks nothing. Edit one field later with `oh config set --sandbox openharness <field> <value>`, and set a secret with `oh secret set --sandbox openharness <KEY>`. See [Configuration](./configuration.md) for the field reference, and the comments in `.example.env` for every allow-listed secret.
 
 ### 3. What the sandbox runs
 

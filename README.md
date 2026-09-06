@@ -212,7 +212,7 @@ non-secret setting — sandbox identity, git identity, the SSH and Docker-socket
 toggles. It holds no install field: `oh harness install <id>` and `oh tool
 install <id>` are the only door. A gitignored, mode-`0600` `.env` holds nothing
 but secrets (`GH_TOKEN`, `SANDBOX_PASSWORD`, `PI_SLACK_APP_TOKEN`,
-`PI_SLACK_BOT_TOKEN`, …); the tracked `.env.example` documents every
+`PI_SLACK_BOT_TOKEN`, …); the tracked `.example.env` documents every
 allow-listed key. A sandbox keeps its pair inside its registry entry —
 `oh config set --sandbox <name> <field> <value>` and `oh secret set --sandbox
 <name> <KEY>` write there; without the flag both write the project root. Apply a

@@ -204,7 +204,7 @@ gh auth login && gh auth setup-git
 
 Configuration lives in **two** files, split by kind. `oh.json` holds every
 non-secret setting. A gitignored, mode-`0600` `.env` holds nothing but secrets;
-the tracked `.env.example` documents every allow-listed secret key, commented
+the tracked `.example.env` documents every allow-listed secret key, commented
 out, so a fresh copy changes nothing.
 
 Each sandbox keeps its own pair inside its registry entry at

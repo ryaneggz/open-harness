@@ -166,7 +166,7 @@ tracked place.
 
 The allow-list in `.oh/cli/src/lib/secrets.ts` is the complete set of keys the
 root `.env` may hold. Each is documented, commented out, in the tracked
-`.env.example`:
+`.example.env`:
 
 `GH_TOKEN`, `SANDBOX_PASSWORD`, `XAI_API_KEY`, `META_API_KEY`, `PI_SLACK_APP_TOKEN`,
 `PI_SLACK_BOT_TOKEN`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`,
