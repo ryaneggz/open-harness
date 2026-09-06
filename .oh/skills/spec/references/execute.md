@@ -314,10 +314,11 @@ Then orchestrate the implementation, in this same session:
 1. Read the rendered task prompt, `prd.md` — including the `## Knowledge Context`
    sources step 0 re-read — and `prd.json`'s story graph.
 2. Assign each dependency-ready story to a bounded `/delegate` worker with the
-   complete dispatch record that `.oh/skills/delegate/SKILL.md` requires. Keep
-   coupled stories with one continuing worker; give parallel writers isolated
-   worktrees; serialize shared-file work. Use `/delegate` **only** for bounded,
-   disjoint worker tasks, and reconcile every worker result yourself. A
+   complete dispatch record that `.oh/skills/delegate/SKILL.md` requires.
+   Use `/delegate` **only** for bounded worker tasks: disjoint tasks run in
+   parallel in isolated worktrees, coupled work stays with one continuing
+   worker, and shared-file work runs serially. Those workers perform every
+   tracked implementation edit; reconcile every worker result yourself. A
    delegated worker **never becomes a second supervisor**, never owns the whole
    task, and never finalizes the PR. Write no tracked implementation edit
    yourself unless `progress.txt` already records the operator exception.

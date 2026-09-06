@@ -22,9 +22,10 @@ second implementation owner or a second supervisory session, and do not launch a
 coding-agent process — through tmux, Herdr, a background shell, or any other runner — to do
 this work. Ownership is a role, not a terminal topology.
 
-You keep decisions and acceptance; bounded workers write. Use `/delegate` only for bounded,
-disjoint worker tasks; those workers perform every tracked implementation edit — code, tests,
-documentation, integration fixes, and repair — before you perform acceptance. A small story
+You keep decisions and acceptance; bounded workers write. Use `/delegate` only for bounded
+worker tasks: disjoint tasks run in parallel in isolated worktrees, and coupled work stays
+with one continuing worker. Those workers perform every tracked implementation edit — code,
+tests, documentation, integration fixes, and repair — before you perform acceptance. A small story
 can use one worker. If you implement a tracked edit yourself, record the explicit operator
 exception in `progress.txt` before the edit. A worker never updates `prd.json` or
 `progress.txt`. Reconcile every worker result yourself, validate each story's acceptance
@@ -38,7 +39,7 @@ for this task. The receiving advisor reads `prd.md`, `prd.json`, `progress.txt`,
 current evidence, then acknowledges ownership before it dispatches a worker. Worker
 delegation never transfers task ownership.
 
-## Re-ground before you implement
+## Re-ground before you assign work
 
 `prd.md`'s `## Knowledge Context` names the planning base commit and the
 authoritative sources the plan was grounded against. Diff that base against
