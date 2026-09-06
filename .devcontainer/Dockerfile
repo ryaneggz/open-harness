@@ -124,6 +124,9 @@ RUN mkdir -p /.devcontainer && echo '{"workspaceFolder":"/home/sandbox/harness",
 
 LABEL devcontainer.metadata='[{"remoteUser":"sandbox","workspaceFolder":"/home/sandbox/harness"}]'
 LABEL org.opencontainers.image.licenses="Apache-2.0"
+LABEL org.opencontainers.image.source="https://github.com/mifunedev/openharness"
+LABEL org.opencontainers.image.title="agro"
+LABEL org.opencontainers.image.description="AGRO sandbox image (compatibility alias: openharness)"
 
 COPY --chown=sandbox:sandbox . /opt/oh-seed/
 
