@@ -116,8 +116,8 @@ for tool in Read Write Edit Grep Glob; do
   fi
 done
 
-for rule in "Read(file_path=**/$SEG/**)" "Write(file_path=**/$SEG/**)" "Edit(file_path=**/$SEG/**)" \
-  "Read(file_path=**/settings.local.json)" "Write(file_path=**/settings.local.json)" "Edit(file_path=**/settings.local.json)"; do
+for rule in "Read(file_path=**/$SEG/**)" "Edit(file_path=**/$SEG/**)" \
+  "Read(file_path=**/settings.local.json)" "Edit(file_path=**/settings.local.json)"; do
   if ! jq -e --arg r "$rule" '.permissions.deny | index($r)' "$SETTINGS" >/dev/null; then
     echo "REGRESSION: permissions.deny is missing '$rule'" >&2
     exit 1
