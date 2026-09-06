@@ -1,0 +1,3 @@
+# progress
+
+2026-09-06 plan: base 3f05b8824dd024b9b1a142a63a36f2440b86750e; queries: migration compatibility cli state env release (plan-recorded, re-read at base); read: compose-env-boundary, oh-cli-portable-lifecycle, fresh-machine-setup, pattern-spec-stubbed-runner-state-gap, pattern-cli-bundled-asset-relative-import; source plan .oh/plans/agro-compatibility-migration/plan.md (root, ignored); issue #940; 6 stories.
