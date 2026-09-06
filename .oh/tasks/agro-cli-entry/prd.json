@@ -18,8 +18,8 @@
         "Tests: `product.test.ts` (resolution table incl. `agro.js`, `oh`, `oh.js`, symlink names, undefined), a test that spawns `node dist/agro.js --help|--version` and `node dist/oh.js --help` after building and asserts the two banners and identical bytes of the two bundles; existing suites pass unchanged."
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "product.ts + legacy shim + dual bundle; 1110 tests green; probes oh-npm-package/agro-legacy-shim/version-parity PASS with 7 fault-injection regressions (d7dfd568)"
     },
     {
       "id": "US-002",
@@ -35,8 +35,8 @@
         "Typecheck and the full suite pass."
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "self-upgrade.ts + 49 tests; built agro.js rejects payload flags and refuses source install; 1168 tests green (c4787782)"
     },
     {
       "id": "US-003",
@@ -50,8 +50,8 @@
         "`get-oh.sh` is unchanged. New probe `.oh/evals/probes/get-agro-bootstrap.sh` pins executable bit, the default URL, the absence of `git clone`/`npm run build`/`build_from_source`, the `AGRO_JS_URL` and `OH_JS_URL` fallback, and fails under fault injection (verified in evidence)."
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "get-agro.sh + 20 tests + probe (3 fault-injection regressions); shellcheck clean (d7dfd568)"
     },
     {
       "id": "US-004",
@@ -66,8 +66,8 @@
         "`release-reservation.test.ts` pins the four push lines, the digest-equality step, the asset upload, and the deprecate call; `.oh/skills/release/SKILL.md` and `.oh/skills/git/SKILL.md` § Releases name the new artifacts and the four version sites a cut must bump (root, `.oh/cli`, `.oh/cli/legacy`, the exact pin)."
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "release.yml/publish-cli.yml dual publish, verify-release-aliases.sh, IMAGE_REPOSITORIES promotion, assets, deprecate; 42 release tests; yaml ok; hadolint clean (c4787782)"
     },
     {
       "id": "US-005",
@@ -79,8 +79,8 @@
         "`CHANGELOG.md` Unreleased entry (≤250 chars) links #941; `docs/rfcs/rfc-agro-migration.md` gains a Phase 1 contract pointer. No doc tells a user to create `.agro/`, `agro.json`, or `~/.agro`, and no doc mentions `agro migrate` or `agro project update` as available."
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "docs/installation, quickstart, README, lifecycle-commands, agro-compatibility Phase 1 section, inventory notes, changelog; docs tests 10/10, six probes PASS (17bc5379)"
     },
     {
       "id": "US-006",
@@ -92,8 +92,8 @@
         "`evidence.md` records commands, exit codes, probe fault-injection transitions, and the items that remain unverified (publication itself is operator-gated)."
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "release-versioning, oh-cli-portable-lifecycle, fresh-machine-setup UPDATED; compose-env-boundary REVERIFIED (verified_at 16a39922); two patterns compiled; index PASS; evidence.md written"
     }
   ]
 }
