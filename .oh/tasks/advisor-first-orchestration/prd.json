@@ -20,8 +20,8 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "T1 commits 50515549 + 17a510de (worker-authored, advisor-verified): AGENTS.md 9478 B; agents-identity-contract 0, context-tier-size-budget 0, roles-are-skills 0, delegate-worker-boundary 0, spec-single-owner 0, link-providers --check 0, git diff --check 0, typecheck 0; STE 0 findings on changed lines (150 pre-existing findings on untouched lines); delegate-model-effort-policy red by design until T2"
     },
     {
       "id": "US-002",
@@ -38,8 +38,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "T2 (inherit Fable; interrupted by provider 429 once, resumed same worker) commit ef81cf73, cherry-picked as 758457f2; six probes exit 0 on the integrated head (advisor re-ran); 33 fault cases REGRESSION->PASS in disposable clone (scratchpad/t2-fault-injection.log); suite: no new green->red, pre-existing reds oh-config-surfaces, skills-vendored, curl-bash ERROR (python3 absent) all present on base"
     },
     {
       "id": "US-003",
@@ -54,8 +54,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "T3 (model: opus, observed claude-opus-5[1m]) commits e7a75a69 + 28223d75, cherry-picked as aa001fa8 + 7ed847d3; advisor read full diff; roles-are-skills 0, agents-identity 0, diff --check 0; STE 0 findings on changed lines; typecheck 0 on 17a510de (no TS touched since)"
     },
     {
       "id": "US-004",
@@ -69,8 +69,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "delegate-graph.json preflight block: Agent tool exposes model {sonnet,opus,haiku,fable}, no thinking/effort control (schema + docs); opus thinking-off UNSUPPORTED -> T3/T4 blocked until operator authorized opus with reasoning unobserved (2026-09-06); Luna/Max Astra/high: no native surface, recorded as gap; Sonnet and max never passed; observed settings recorded as unknown where unobserved"
     },
     {
       "id": "US-005",
@@ -85,8 +85,8 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "T4 (opus, observed claude-opus-5[1m]) in disposable clone @14127d7c: 12 fixed checks exit 0 (suite runner 0, 143 probes); 11 fault cases REGRESSION->restored PASS; C1 defective patch rejected by jq+probe gate; real instance: T3 changelog entry 303 chars caught by changelog-entry-length, repaired 14127d7c; D1 transfer prompt 3 lines, names plan path, no brief text; D2 plan valid without handoff section; E1 revert of 7 commits clean, six probes PASS on rollback branch and on base 9261d512; transcript scratchpad/t4-checks.log; same-session dispatch exercised by this run (no handoff prompt used)"
     },
     {
       "id": "US-006",
@@ -99,8 +99,8 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "operator declined a paid comparison on 2026-09-06; evidence.md section 0 and 3 state no efficiency claim (claimed, unmeasured) and record the disposition; no token/cost/time saving asserted anywhere in the PR"
     },
     {
       "id": "US-007",

@@ -1,0 +1,269 @@
+{
+  "slug": "advisor-first-orchestration",
+  "integrationBranch": "feat/988-advisor-first-orchestration",
+  "integrationRoot": "/home/sandbox/harness/.worktrees/feat/988-advisor-first-orchestration",
+  "advisor": {
+    "harness": "Claude Code 2.1.260",
+    "requestedModel": "Fable 5.1 (operator selection)",
+    "observedModel": "claude-fable-5-1 (session model reported by the runtime system prompt)",
+    "effort": "operator-selected session effort, unchanged"
+  },
+  "preflight": {
+    "performedAt": "2026-09-06",
+    "agentToolSchema": {
+      "modelParameter": [
+        "sonnet",
+        "opus",
+        "haiku",
+        "fable"
+      ],
+      "thinkingParameter": "absent",
+      "effortParameter": "absent",
+      "provenance": "Agent tool JSON schema visible to this session; code.claude.com/docs/en/tools-reference.md and sub-agents.md (read 2026-09-06) list no per-subagent thinking or effort control"
+    },
+    "controls": {
+      "opusThinkingOff": "UNSUPPORTED — no per-worker thinking control exists in the Agent tool or subagent frontmatter; a worker started with model: opus runs with the provider default reasoning, which cannot be observed or set to off from this surface",
+      "sonnet": "EXCLUDED by operator; never passed",
+      "maxThinking": "not a parameter on this surface; never passed",
+      "lunaMaxAstraHigh": "NO NATIVE SURFACE in this session — Claude Code exposes only Claude model aliases; recorded as a capability gap, no invented parameter passed"
+    },
+    "consequence": "L assignments (T3, T4) BLOCKED pending an operator-authorized alternative; H assignments proceed on the inherited session model",
+    "operatorDecisions": {
+      "recordedAt": "2026-09-06",
+      "lBinding": "Operator authorized: dispatch L assignments with model: opus; reasoning recorded as unknown (provider default); thinking-off is NOT claimed",
+      "d10": "Operator declined a paid comparison; evidence.md states no efficiency claim and records this disposition"
+    }
+  },
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Policy: root-first advisor-first contract across AGENTS.md and canonical skills",
+      "dependsOn": [],
+      "wave": 1,
+      "complexity": "H — cross-skill ownership and portability have substantial uncertainty",
+      "requestedModel": "inherit session model (Fable 5.1); reasoning: session default (no per-worker control)",
+      "selectionReason": "Operator excludes Sonnet; the hardest Claude work binds per task; Fable 5.1 inherited because the task is cross-boundary policy reconciliation and no lower non-Sonnet binding has verified reasoning control",
+      "observedSettings": {
+        "model": "unknown — worker did not report; Agent call omitted model (inherit)",
+        "reasoning": "unknown"
+      },
+      "files": [
+        "AGENTS.md",
+        ".oh/skills/delegate/SKILL.md",
+        ".oh/skills/spec/SKILL.md",
+        ".oh/skills/spec/references/plan.md",
+        ".oh/skills/spec/references/execute.md",
+        ".oh/skills/spec/templates/task-prompt.md",
+        ".oh/skills/plan/SKILL.md"
+      ],
+      "excludes": [
+        ".oh/evals/**",
+        "docs/**",
+        "CHANGELOG.md",
+        ".oh/tasks/**",
+        "provider mirrors",
+        "/home/sandbox/harness root",
+        "/home/sandbox/harness/.worktrees/feat/940-agro-compat-foundation"
+      ],
+      "executionDirectory": "/home/sandbox/harness/.worktrees/feat/988-advisor-first-orchestration (sole writer in wave 1)",
+      "workerType": "general-purpose (write-capable provider built-in)",
+      "continuation": "SendMessage to the same worker id",
+      "acceptance": "advisor reads full diff; agents-identity-contract.sh and context-tier-size-budget.sh pass; roles-are-skills.sh passes; link-providers --check passes; every active direct-implementation and inheritance instruction replaced; commit on the branch with Submitted-by trailer",
+      "dodIds": [
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "D5",
+        "D7",
+        "D8",
+        "D12"
+      ],
+      "nativeWorkerId": "ab6c8b7cf21d96a65",
+      "status": "completed",
+      "summary": "commits 50515549 + 17a510de; advisor re-ran identity/budget(9478B)/roles/boundary/single-owner probes, link check, diff --check: all 0; delegate-model-effort-policy red as expected for T2; one repair (duplicate step number) routed back and fixed",
+      "artifacts": [
+        "50515549",
+        "17a510de"
+      ],
+      "usage": "~186k subagent tokens (harness report), 66 tool uses"
+    },
+    {
+      "id": "T2",
+      "title": "Test author: probes for the advisor-first contract",
+      "dependsOn": [
+        "T1"
+      ],
+      "wave": 2,
+      "complexity": "H — oracle design must distinguish real behavior from text presence",
+      "requestedModel": "inherit session model (Fable 5.1); reasoning: session default",
+      "selectionReason": "Sonnet excluded; adversarial oracle design is high-uncertainty; same reasoning as T1",
+      "observedSettings": {
+        "model": "unknown — worker did not report; Agent call omitted model (inherit); interruption error named claude-fable-5-1 as the model sent to the API",
+        "reasoning": "unknown"
+      },
+      "files": [
+        ".oh/evals/probes/delegate-model-effort-policy.sh",
+        ".oh/evals/probes/delegate-worker-boundary.sh",
+        ".oh/evals/probes/spec-single-owner.sh",
+        ".oh/evals/probes/roles-are-skills.sh",
+        ".oh/evals/probes/advisor-execution-contract.sh",
+        ".oh/evals/probes/plan-orchestration-contract.sh"
+      ],
+      "excludes": [
+        "all policy files",
+        "docs",
+        "other probes without advisor approval"
+      ],
+      "executionDirectory": "/home/sandbox/harness/.worktrees/feat/988-t2-probes @17a510de",
+      "workerType": "general-purpose",
+      "continuation": "SendMessage",
+      "acceptance": "each changed oracle shows REGRESSION under injection and PASS after restore; suite run has no new regression",
+      "dodIds": [
+        "D2",
+        "D3",
+        "D4",
+        "D5",
+        "D6",
+        "D7",
+        "D8",
+        "D9"
+      ],
+      "nativeWorkerId": "a9f9809900a5695c0",
+      "status": "completed",
+      "summary": "six probes rewritten/added; 33 injected faults caught; one interruption (429) and resume",
+      "artifacts": [
+        "ef81cf73",
+        "integration: 758457f2",
+        "scratchpad/t2-fault-injection.log"
+      ],
+      "usage": "~141k + prior partial (harness report)"
+    },
+    {
+      "id": "T3",
+      "title": "Docs: task guide, glossary, RFC index, CHANGELOG",
+      "dependsOn": [
+        "T1"
+      ],
+      "wave": 2,
+      "complexity": "L — mechanical alignment to an accepted contract",
+      "requestedModel": "opus (operator-authorized alternative after thinking-off control was found unsupported)",
+      "selectionReason": "Operator preference was Opus thinking-off; native preflight found no per-worker thinking control; operator authorized Opus with reasoning unobserved on 2026-09-06",
+      "observedSettings": {
+        "model": "claude-opus-5[1m] (worker self-report from its system context)",
+        "reasoning": "unknown — provider default; no per-worker control"
+      },
+      "files": [
+        ".oh/tasks/README.md",
+        "docs/glossary.md",
+        "docs/rfcs/README.md",
+        "CHANGELOG.md"
+      ],
+      "excludes": [
+        "external issues",
+        "skills",
+        "probes"
+      ],
+      "executionDirectory": "/home/sandbox/harness/.worktrees/feat/988-t3-docs @17a510de",
+      "workerType": "general-purpose",
+      "continuation": "SendMessage",
+      "acceptance": "STE and diff checks pass; ADR #989 linked; #929 row preserved; no routing tables",
+      "dodIds": [
+        "D2",
+        "D11",
+        "D12"
+      ],
+      "nativeWorkerId": "ae3c3d039bfa430c9",
+      "status": "completed",
+      "summary": "four docs aligned; one repair (changelog section, active voice) routed back and fixed; continuing worker assigned the plan-vs-built-reconciliation knowledge page (UPDATED) and one changelog-length repair (9fcc945d -> 14127d7c)",
+      "artifacts": [
+        "e7a75a69",
+        "28223d75",
+        "integration: aa001fa8, 7ed847d3",
+        "9fcc945d -> 14127d7c (changelog length)",
+        "109a2c13 -> ceced13c (knowledge page UPDATED, index regenerated)"
+      ],
+      "usage": "~128k subagent tokens cumulative (harness report)"
+    },
+    {
+      "id": "T4",
+      "title": "Check runner: fixed checks and fault injection in a disposable checkout",
+      "dependsOn": [
+        "T2",
+        "T3"
+      ],
+      "wave": 3,
+      "complexity": "L — execute fixed commands, capture outputs, no judgment",
+      "requestedModel": "opus (operator-authorized alternative after thinking-off control was found unsupported)",
+      "selectionReason": "Operator preference was Opus thinking-off; native preflight found no per-worker thinking control; operator authorized Opus with reasoning unobserved on 2026-09-06",
+      "observedSettings": {
+        "model": "claude-opus-5[1m] (worker self-report)",
+        "reasoning": "unknown — provider default"
+      },
+      "files": [],
+      "excludes": [
+        "integration worktree writes",
+        "root writes"
+      ],
+      "executionDirectory": "scratchpad/t4-disp (disposable --shared clone @14127d7c)",
+      "workerType": "general-purpose (commands only)",
+      "continuation": "SendMessage",
+      "acceptance": "exact commands, exit codes, tested commit, output paths",
+      "dodIds": [
+        "D1",
+        "D6",
+        "D7",
+        "D8",
+        "D9",
+        "D12"
+      ],
+      "nativeWorkerId": "a6d9c5f18f51b8dc8",
+      "status": "completed",
+      "summary": "sections A-E executed; two hook-blocked commands (branch -D, worktree remove --force) reported, not worked around",
+      "artifacts": [
+        "scratchpad/t4-checks.log"
+      ],
+      "usage": "~69k subagent tokens, 28 tool uses (harness report)"
+    },
+    {
+      "id": "T5",
+      "title": "Independent read-only review keyed to D1–D12",
+      "dependsOn": [
+        "T4"
+      ],
+      "wave": 4,
+      "complexity": "H — adversarial cross-file reasoning",
+      "requestedModel": "inherit session model (Fable 5.1); reasoning: session default",
+      "selectionReason": "Sonnet excluded; adversarial review needs the high-capability endpoint",
+      "observedSettings": {
+        "model": "unknown until dispatch",
+        "reasoning": "unknown"
+      },
+      "files": [],
+      "excludes": [
+        "all writes"
+      ],
+      "executionDirectory": "integration worktree, read-only",
+      "workerType": "Explore (read-only provider built-in)",
+      "continuation": "SendMessage",
+      "acceptance": "findings keyed to D1–D12 with exact paths; no edits",
+      "dodIds": [
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "D5",
+        "D6",
+        "D7",
+        "D8",
+        "D9",
+        "D10",
+        "D11",
+        "D12"
+      ],
+      "nativeWorkerId": null,
+      "status": "pending",
+      "summary": ""
+    }
+  ]
+}
