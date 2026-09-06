@@ -93,6 +93,35 @@ function sameBytes(a: string, b: string): boolean {
   return left.equals(right);
 }
 
+function octal(mode: number): string {
+  return (mode & 0o777).toString(8).padStart(3, "0");
+}
+
+function contentDifference(type: EntryType, legacy: string, agro: string, left: Stats, right: Stats): string | undefined {
+  switch (type) {
+    case "symlink":
+      return readlinkSync(legacy) !== readlinkSync(agro) ? "symlink target differs" : undefined;
+    case "file":
+      return left.size !== right.size || !sameBytes(legacy, agro) ? "content differs" : undefined;
+    case "other":
+      return "unsupported entry type";
+    default:
+      return undefined;
+  }
+}
+
+function entryDifferences(label: string, legacy: string, agro: string, left: Stats, right: Stats): string[] {
+  const type = entryType(left);
+  if (type !== entryType(right)) return [`${label}: type ${type} vs ${entryType(right)}`];
+  const differences: string[] = [];
+  if ((left.mode & 0o777) !== (right.mode & 0o777)) {
+    differences.push(`${label}: mode ${octal(left.mode)} vs ${octal(right.mode)}`);
+  }
+  const content = contentDifference(type, legacy, agro, left, right);
+  if (content !== undefined) differences.push(`${label}: ${content}`);
+  return differences;
+}
+
 export function compareTrees(legacy: string, agro: string, rel = ""): string[] {
   const label = rel === "" ? "." : rel;
   const left = lstatOrUndefined(legacy);
@@ -101,35 +130,8 @@ export function compareTrees(legacy: string, agro: string, rel = ""): string[] {
   if (left === undefined) return [`${label}: only in ${agro}`];
   if (right === undefined) return [`${label}: only in ${legacy}`];
 
-  const leftType = entryType(left);
-  const rightType = entryType(right);
-  if (leftType !== rightType) return [`${label}: type ${leftType} vs ${rightType}`];
-
-  const differences: string[] = [];
-  const leftMode = left.mode & 0o777;
-  const rightMode = right.mode & 0o777;
-  if (leftMode !== rightMode) {
-    differences.push(
-      `${label}: mode ${leftMode.toString(8).padStart(3, "0")} vs ${rightMode.toString(8).padStart(3, "0")}`,
-    );
-  }
-
-  if (leftType === "symlink") {
-    if (readlinkSync(legacy) !== readlinkSync(agro)) {
-      differences.push(`${label}: symlink target differs`);
-    }
-    return differences;
-  }
-  if (leftType === "file") {
-    if (left.size !== right.size || !sameBytes(legacy, agro)) {
-      differences.push(`${label}: content differs`);
-    }
-    return differences;
-  }
-  if (leftType === "other") {
-    differences.push(`${label}: unsupported entry type`);
-    return differences;
-  }
+  const differences = entryDifferences(label, legacy, agro, left, right);
+  if (!left.isDirectory() || !right.isDirectory()) return differences;
 
   const names = new Set<string>([...readdirSync(legacy), ...readdirSync(agro)]);
   for (const name of [...names].sort()) {

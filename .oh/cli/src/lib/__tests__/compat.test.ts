@@ -12,9 +12,8 @@ import {
   resolveControlDir,
   resolveSeedSource,
   resolveUserStateHome,
-  type PairResolution,
 } from "../compat.js";
-import { loadVectors, materializeFixture } from "./fixtures/compat-fixture.js";
+import { loadVectors, materializeFixture, type Vector } from "./fixtures/compat-fixture.js";
 
 const cleanups: string[] = [];
 afterEach(() => {
@@ -27,64 +26,70 @@ function fixture(spec: Parameters<typeof materializeFixture>[0]): string {
   return root;
 }
 
-const vectors = loadVectors();
+function expectedPath(root: string, rel: string | null | undefined): string | null {
+  return rel === null || rel === undefined ? null : join(root, rel);
+}
+
+type PairVector = Extract<Vector, { kind: "control-dir" | "config-file" }>;
+
+function expectConflict(run: () => unknown, fragments: string[]): void {
+  let caught: unknown;
+  try {
+    run();
+  } catch (error) {
+    caught = error;
+  }
+  expect(caught).toBeInstanceOf(CompatConflictError);
+  const conflict = caught as CompatConflictError;
+  for (const fragment of fragments) expect(conflict.differences.join("\n")).toContain(fragment);
+  expect(conflict.message).toContain("both exist and differ");
+}
+
+function runPairVector(vector: PairVector): void {
+  const root = fixture(vector.fixture);
+  const run = vector.kind === "control-dir" ? resolveControlDir : resolveConfigFile;
+  if (vector.expect.conflict) {
+    expectConflict(() => run(root), vector.expect.differences ?? []);
+    return;
+  }
+  const resolved = run(root);
+  expect(resolved.kind).toBe(vector.expect.kind);
+  expect(resolved.generation ?? null).toBe(vector.expect.generation ?? null);
+  expect(resolved.path ?? null).toBe(expectedPath(root, vector.expect.path));
+}
+
+function runEnvVector(vector: Extract<Vector, { kind: "env" }>): void {
+  const resolved = resolveAliasedEnv(vector.env, vector.suffix);
+  expect(resolved.value ?? null).toBe(vector.expect.value);
+  expect(resolved.source).toBe(vector.expect.source);
+  expect(resolved.conflict).toBe(vector.expect.conflict);
+  const warning = aliasConflictWarning(resolved);
+  if (!vector.expect.conflict) {
+    expect(warning).toBeUndefined();
+    return;
+  }
+  expect(warning).toContain(`AGRO_${vector.suffix}`);
+  expect(warning).toContain(`OH_${vector.suffix}`);
+  for (const value of Object.values(vector.env)) expect(warning).not.toContain(value);
+}
+
+function runSeedVector(vector: Extract<Vector, { kind: "seed" }>): void {
+  const prefix = fixture(vector.fixture);
+  const warnings: string[] = [];
+  const path = resolveSeedSource(vector.env, prefix, (m) => warnings.push(m));
+  const expected = vector.expect.path.startsWith("/opt/")
+    ? `${prefix}${vector.expect.path}`
+    : vector.expect.path;
+  expect(path).toBe(expected);
+  expect(warnings.length > 0).toBe(vector.expect.conflict === true);
+}
 
 describe("compat vectors (TypeScript)", () => {
-  for (const vector of vectors) {
+  for (const vector of loadVectors()) {
     it(vector.id, () => {
-      if (vector.kind === "control-dir" || vector.kind === "config-file") {
-        const root = fixture(vector.fixture);
-        const run = (): PairResolution =>
-          vector.kind === "control-dir" ? resolveControlDir(root) : resolveConfigFile(root);
-        if (vector.expect.conflict) {
-          let caught: unknown;
-          try {
-            run();
-          } catch (error) {
-            caught = error;
-          }
-          expect(caught).toBeInstanceOf(CompatConflictError);
-          const conflict = caught as CompatConflictError;
-          for (const fragment of vector.expect.differences ?? []) {
-            expect(conflict.differences.join("\n")).toContain(fragment);
-          }
-          expect(conflict.message).toContain("both exist and differ");
-          return;
-        }
-        const resolved = run();
-        expect(resolved.kind).toBe(vector.expect.kind);
-        expect(resolved.generation ?? null).toBe(vector.expect.generation ?? null);
-        expect(resolved.path ?? null).toBe(
-          vector.expect.path === null || vector.expect.path === undefined
-            ? null
-            : join(root, vector.expect.path),
-        );
-        return;
-      }
-      if (vector.kind === "env") {
-        const resolved = resolveAliasedEnv(vector.env, vector.suffix);
-        expect(resolved.value ?? null).toBe(vector.expect.value);
-        expect(resolved.source).toBe(vector.expect.source);
-        expect(resolved.conflict).toBe(vector.expect.conflict);
-        const warning = aliasConflictWarning(resolved);
-        if (vector.expect.conflict) {
-          expect(warning).toContain(`AGRO_${vector.suffix}`);
-          expect(warning).toContain(`OH_${vector.suffix}`);
-          for (const value of Object.values(vector.env)) expect(warning).not.toContain(value);
-        } else {
-          expect(warning).toBeUndefined();
-        }
-        return;
-      }
-      if (vector.kind !== "seed") throw new Error(`unknown vector kind for ${vector.id}`);
-      const prefix = fixture(vector.fixture);
-      const warnings: string[] = [];
-      const path = resolveSeedSource(vector.env, prefix, (m) => warnings.push(m));
-      const expected = vector.expect.path.startsWith("/opt/")
-        ? `${prefix}${vector.expect.path}`
-        : vector.expect.path;
-      expect(path).toBe(expected);
-      expect(warnings.length > 0).toBe(vector.expect.conflict === true);
+      if (vector.kind === "env") runEnvVector(vector);
+      else if (vector.kind === "seed") runSeedVector(vector);
+      else runPairVector(vector);
     });
   }
 });

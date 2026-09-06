@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import {
   loadVectors,
   materializeFixture,
+  type Vector,
 } from "../../cli/src/lib/__tests__/fixtures/compat-fixture.js";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
@@ -39,7 +40,55 @@ function sh(script: string, env: Record<string, string> = {}): ShellResult {
   return { status: result.status, stdout: result.stdout, stderr: result.stderr };
 }
 
-const vectors = loadVectors();
+function blankToNull(value: string | undefined): string | null {
+  return value === undefined || value === "" ? null : value;
+}
+
+function runPairVector(vector: Extract<Vector, { kind: "control-dir" | "config-file" }>): void {
+  const root = fixture(vector.fixture);
+  const fn = vector.kind === "control-dir" ? "compat_control_dir" : "compat_config_file";
+  const result = sh(`${fn} "${root}"`);
+  if (vector.expect.conflict) {
+    expect(result.status).toBe(3);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain("both exist and differ");
+    return;
+  }
+  expect(result.status).toBe(0);
+  expect(result.stderr).toBe("");
+  const [kind, path] = result.stdout.trimEnd().split("\t");
+  expect(kind).toBe(vector.expect.kind);
+  const expected = vector.expect.path === null || vector.expect.path === undefined
+    ? null
+    : join(root, vector.expect.path);
+  expect(blankToNull(path)).toBe(expected);
+}
+
+function runEnvVector(vector: Extract<Vector, { kind: "env" }>): void {
+  const result = sh(`compat_env ${vector.suffix}`, vector.env);
+  expect(result.status).toBe(0);
+  const [source, value] = result.stdout.trimEnd().split("\t");
+  expect(source).toBe(vector.expect.source);
+  expect(blankToNull(value)).toBe(vector.expect.value);
+  if (!vector.expect.conflict) {
+    expect(result.stderr).toBe("");
+    return;
+  }
+  expect(result.stderr).toContain(`AGRO_${vector.suffix}`);
+  expect(result.stderr).toContain(`OH_${vector.suffix}`);
+  for (const v of Object.values(vector.env)) expect(result.stderr).not.toContain(v);
+}
+
+function runSeedVector(vector: Extract<Vector, { kind: "seed" }>): void {
+  const prefix = fixture(vector.fixture);
+  const result = sh(`compat_seed_src "${prefix}"`, vector.env);
+  expect(result.status).toBe(0);
+  const expected = vector.expect.path.startsWith("/opt/")
+    ? `${prefix}${vector.expect.path}`
+    : vector.expect.path;
+  expect(result.stdout.trimEnd()).toBe(expected);
+  expect(result.stderr !== "").toBe(vector.expect.conflict === true);
+}
 
 describe("compat vectors (shell adapter)", () => {
   it("sourcing compat.sh has no side effects", () => {
@@ -49,53 +98,11 @@ describe("compat vectors (shell adapter)", () => {
     expect(result.stderr).toBe("");
   });
 
-  for (const vector of vectors) {
+  for (const vector of loadVectors()) {
     it(vector.id, () => {
-      if (vector.kind === "control-dir" || vector.kind === "config-file") {
-        const root = fixture(vector.fixture);
-        const fn = vector.kind === "control-dir" ? "compat_control_dir" : "compat_config_file";
-        const result = sh(`${fn} "${root}"`);
-        if (vector.expect.conflict) {
-          expect(result.status).toBe(3);
-          expect(result.stdout).toBe("");
-          expect(result.stderr).toContain("both exist and differ");
-          return;
-        }
-        expect(result.status).toBe(0);
-        expect(result.stderr).toBe("");
-        const [kind, path] = result.stdout.trimEnd().split("\t");
-        expect(kind).toBe(vector.expect.kind);
-        expect(path === undefined || path === "" ? null : path).toBe(
-          vector.expect.path === null || vector.expect.path === undefined
-            ? null
-            : join(root, vector.expect.path),
-        );
-        return;
-      }
-      if (vector.kind === "env") {
-        const result = sh(`compat_env ${vector.suffix}`, vector.env);
-        expect(result.status).toBe(0);
-        const [source, value] = result.stdout.trimEnd().split("\t");
-        expect(source).toBe(vector.expect.source);
-        expect(value === undefined || value === "" ? null : value).toBe(vector.expect.value);
-        if (vector.expect.conflict) {
-          expect(result.stderr).toContain(`AGRO_${vector.suffix}`);
-          expect(result.stderr).toContain(`OH_${vector.suffix}`);
-          for (const v of Object.values(vector.env)) expect(result.stderr).not.toContain(v);
-        } else {
-          expect(result.stderr).toBe("");
-        }
-        return;
-      }
-      if (vector.kind !== "seed") throw new Error(`unknown vector kind for ${vector.id}`);
-      const prefix = fixture(vector.fixture);
-      const result = sh(`compat_seed_src "${prefix}"`, vector.env);
-      expect(result.status).toBe(0);
-      const expected = vector.expect.path.startsWith("/opt/")
-        ? `${prefix}${vector.expect.path}`
-        : vector.expect.path;
-      expect(result.stdout.trimEnd()).toBe(expected);
-      expect(result.stderr !== "").toBe(vector.expect.conflict === true);
+      if (vector.kind === "env") runEnvVector(vector);
+      else if (vector.kind === "seed") runSeedVector(vector);
+      else runPairVector(vector);
     });
   }
 });

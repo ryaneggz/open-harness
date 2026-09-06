@@ -50,8 +50,8 @@ merges; the operator keeps exactly one copy or makes them identical.
 Environment variables:
 
 1. An explicit command flag wins.
-2. `AGRO_X` wins when it is set to a non-empty value.
-3. `OH_X` applies when `AGRO_X` is unset or empty.
+2. `AGRO_<NAME>` wins when it is set to a non-empty value.
+3. `OH_<NAME>` applies when `AGRO_<NAME>` is unset or empty.
 4. An empty value is treated as unset, matching every existing consumer.
 5. When both are set and differ, the resolver warns with the two key names and
    the selected key. It never prints a value.

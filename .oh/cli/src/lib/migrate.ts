@@ -148,6 +148,54 @@ function sameSnapshot(a: EntrySnapshot, b: EntrySnapshot | undefined): boolean {
   );
 }
 
+function planPair(root: string, pair: MigrationPair): PlanStep | MigrationConflict {
+  const legacy = assertInsideRoot(root, pair.legacy, "source");
+  const agro = assertInsideRoot(root, pair.agro, "destination");
+  const legacyPresent = presentAs(legacy, pair.kind);
+  const agroPresent = presentAs(agro, pair.kind);
+
+  if (!legacyPresent) {
+    return { kind: "noop", path: agro, reason: agroPresent ? "already migrated" : "absent in both generations" };
+  }
+  if (!agroPresent) {
+    if (lstatSync(agro, { throwIfNoEntry: false }) !== undefined) {
+      return { path: agro, reason: `destination exists but is not a ${pair.kind}` };
+    }
+    return {
+      kind: "rename",
+      from: legacy,
+      to: agro,
+      snapshot: snapshot(legacy)!,
+      createsParent: !existsSync(dirname(agro)),
+    };
+  }
+  const differences = compareTrees(legacy, agro);
+  if (differences.length > 0) {
+    return { path: agro, reason: "both generations exist and differ", differences };
+  }
+  const retired = `${legacy}${RETIRED_SUFFIX}`;
+  if (lstatSync(retired, { throwIfNoEntry: false }) !== undefined) {
+    return { path: retired, reason: "retired copy already exists" };
+  }
+  return { kind: "retire", from: legacy, to: retired, snapshot: snapshot(legacy)! };
+}
+
+function planRewrite(root: string, rewrite: RewriteSpec): PlanStep {
+  const path = assertInsideRoot(root, rewrite.path, "rewrite target");
+  const current = snapshot(path);
+  if (current === undefined || current.type !== "file") {
+    return { kind: "noop", path, reason: "rewrite target is not a regular file" };
+  }
+  const content = readFileSync(path, "utf8");
+  const changed = rewrite.replacements.some((r) => r.from !== "" && content.includes(r.from));
+  if (!changed) return { kind: "noop", path, reason: "rewrite already applied" };
+  return { kind: "rewrite", path, replacements: rewrite.replacements, snapshot: current };
+}
+
+function isStep(entry: PlanStep | MigrationConflict): entry is PlanStep {
+  return "kind" in entry;
+}
+
 export function planMigration(spec: MigrationSpec): MigrationPlan {
   const root = resolve(spec.root);
   if (!existsSync(root)) throw new Error(`migration root does not exist: ${root}`);
@@ -155,61 +203,11 @@ export function planMigration(spec: MigrationSpec): MigrationPlan {
   const conflicts: MigrationConflict[] = [];
 
   for (const pair of spec.pairs) {
-    const legacy = assertInsideRoot(root, pair.legacy, "source");
-    const agro = assertInsideRoot(root, pair.agro, "destination");
-    const legacyPresent = presentAs(legacy, pair.kind);
-    const agroPresent = presentAs(agro, pair.kind);
-
-    if (!legacyPresent && !agroPresent) {
-      steps.push({ kind: "noop", path: agro, reason: "absent in both generations" });
-      continue;
-    }
-    if (!legacyPresent && agroPresent) {
-      steps.push({ kind: "noop", path: agro, reason: "already migrated" });
-      continue;
-    }
-    if (legacyPresent && !agroPresent) {
-      if (existsSync(agro) || lstatSync(agro, { throwIfNoEntry: false }) !== undefined) {
-        conflicts.push({ path: agro, reason: `destination exists but is not a ${pair.kind}` });
-        continue;
-      }
-      steps.push({
-        kind: "rename",
-        from: legacy,
-        to: agro,
-        snapshot: snapshot(legacy)!,
-        createsParent: !existsSync(dirname(agro)),
-      });
-      continue;
-    }
-    const differences = compareTrees(legacy, agro);
-    if (differences.length > 0) {
-      conflicts.push({ path: agro, reason: "both generations exist and differ", differences });
-      continue;
-    }
-    const retired = `${legacy}${RETIRED_SUFFIX}`;
-    if (lstatSync(retired, { throwIfNoEntry: false }) !== undefined) {
-      conflicts.push({ path: retired, reason: "retired copy already exists" });
-      continue;
-    }
-    steps.push({ kind: "retire", from: legacy, to: retired, snapshot: snapshot(legacy)! });
+    const planned = planPair(root, pair);
+    if (isStep(planned)) steps.push(planned);
+    else conflicts.push(planned);
   }
-
-  for (const rewrite of spec.rewrites ?? []) {
-    const path = assertInsideRoot(root, rewrite.path, "rewrite target");
-    const current = snapshot(path);
-    if (current === undefined || current.type !== "file") {
-      steps.push({ kind: "noop", path, reason: "rewrite target is not a regular file" });
-      continue;
-    }
-    const content = readFileSync(path, "utf8");
-    const changed = rewrite.replacements.some((r) => r.from !== "" && content.includes(r.from));
-    if (!changed) {
-      steps.push({ kind: "noop", path, reason: "rewrite already applied" });
-      continue;
-    }
-    steps.push({ kind: "rewrite", path, replacements: rewrite.replacements, snapshot: current });
-  }
+  for (const rewrite of spec.rewrites ?? []) steps.push(planRewrite(root, rewrite));
 
   const mutating = steps.some((step) => step.kind !== "noop");
   const status: PlanStatus = conflicts.length > 0 ? "conflict" : mutating ? "ready" : "noop";
@@ -270,25 +268,66 @@ function applyRewrite(step: Extract<PlanStep, { kind: "rewrite" }>): void {
   renameSync(tmp, step.path);
 }
 
+function pendingResults(plan: MigrationPlan): StepResult[] {
+  return plan.steps.map((step) => ({ ...step, outcome: step.kind === "noop" ? "skipped" : "pending" }));
+}
+
+function refusal(plan: MigrationPlan): string | undefined {
+  if (plan.version !== MIGRATION_PLAN_VERSION) return `unsupported plan version ${plan.version}`;
+  if (plan.status === "conflict") {
+    return plan.conflicts.map((c) => `${c.path}: ${c.reason}`).join("; ");
+  }
+  return undefined;
+}
+
+function revalidatePlan(root: string, plan: MigrationPlan): string | undefined {
+  for (const step of plan.steps) {
+    const stale = revalidate(step);
+    if (stale !== undefined) return stale;
+    if (step.kind === "rename" || step.kind === "retire") {
+      assertInsideRoot(root, step.from, "source");
+      assertInsideRoot(root, step.to, "destination");
+    }
+  }
+  return undefined;
+}
+
+function applyStep(step: PlanStep): void {
+  if (step.kind === "noop") return;
+  if (step.kind === "rewrite") {
+    applyRewrite(step);
+    return;
+  }
+  if (step.kind === "rename" && step.createsParent) mkdirSync(dirname(step.to), { recursive: true });
+  renameSync(step.from, step.to);
+}
+
+function applySteps(root: string, plan: MigrationPlan): MigrationResult {
+  const results = pendingResults(plan);
+  for (let i = 0; i < plan.steps.length; i += 1) {
+    const step = plan.steps[i];
+    if (step.kind === "noop") continue;
+    try {
+      applyStep(step);
+      results[i] = { ...step, outcome: "done" };
+    } catch (error) {
+      results[i] = { ...step, outcome: "failed", error: error instanceof Error ? error.message : String(error) };
+      return {
+        status: "failed",
+        root,
+        reason: `step ${i + 1} failed; completed steps are recoverable by reversing them in order`,
+        steps: results,
+      };
+    }
+  }
+  return { status: "applied", root, steps: results };
+}
+
 export function applyMigration(plan: MigrationPlan): MigrationResult {
   const root = resolve(plan.root);
-  const pending = (): StepResult[] =>
-    plan.steps.map((step) => ({ ...step, outcome: step.kind === "noop" ? "skipped" : "pending" }));
-
-  if (plan.version !== MIGRATION_PLAN_VERSION) {
-    return { status: "refused", root, reason: `unsupported plan version ${plan.version}`, steps: pending() };
-  }
-  if (plan.status === "conflict") {
-    return {
-      status: "refused",
-      root,
-      reason: plan.conflicts.map((c) => `${c.path}: ${c.reason}`).join("; "),
-      steps: pending(),
-    };
-  }
-  if (plan.status === "noop") {
-    return { status: "noop", root, steps: pending() };
-  }
+  const refused = refusal(plan);
+  if (refused !== undefined) return { status: "refused", root, reason: refused, steps: pendingResults(plan) };
+  if (plan.status === "noop") return { status: "noop", root, steps: pendingResults(plan) };
 
   const release = acquireLock(root);
   if (release === undefined) {
@@ -296,51 +335,13 @@ export function applyMigration(plan: MigrationPlan): MigrationResult {
       status: "refused",
       root,
       reason: `another migration holds ${resolve(root, LOCK_FILE)}`,
-      steps: pending(),
+      steps: pendingResults(plan),
     };
   }
-
   try {
-    for (const step of plan.steps) {
-      const stale = revalidate(step);
-      if (stale !== undefined) {
-        return { status: "refused", root, reason: stale, steps: pending() };
-      }
-      if (step.kind !== "noop" && step.kind !== "rewrite") {
-        assertInsideRoot(root, step.from, "source");
-        assertInsideRoot(root, step.to, "destination");
-      }
-    }
-
-    const results = pending();
-    for (let i = 0; i < plan.steps.length; i += 1) {
-      const step = plan.steps[i];
-      if (step.kind === "noop") continue;
-      try {
-        if (step.kind === "rewrite") {
-          applyRewrite(step);
-        } else {
-          if (step.kind === "rename" && step.createsParent) {
-            mkdirSync(dirname(step.to), { recursive: true });
-          }
-          renameSync(step.from, step.to);
-        }
-        results[i] = { ...step, outcome: "done" };
-      } catch (error) {
-        results[i] = {
-          ...step,
-          outcome: "failed",
-          error: error instanceof Error ? error.message : String(error),
-        };
-        return {
-          status: "failed",
-          root,
-          reason: `step ${i + 1} failed; completed steps are recoverable by reversing them in order`,
-          steps: results,
-        };
-      }
-    }
-    return { status: "applied", root, steps: results };
+    const stale = revalidatePlan(root, plan);
+    if (stale !== undefined) return { status: "refused", root, reason: stale, steps: pendingResults(plan) };
+    return applySteps(root, plan);
   } finally {
     release();
   }
