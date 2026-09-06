@@ -156,9 +156,7 @@ published `agro.js` release asset into `AGRO_BIN_DIR/agro` (default
 clones, builds, or needs a source checkout. Controls: `AGRO_BIN_DIR`,
 `AGRO_JS_URL`, `AGRO_NVM_VERSION`, `AGRO_ASSUME_YES`, each falling back to the
 `OH_*` spelling with the Phase 0 precedence (AGRO wins a conflict; the warning
-names keys only). There is no `AGRO_GITHUB_REPO` or `AGRO_GITHUB_REF` because
-there is no source fallback to point at. `get-oh.sh` is unchanged, including its
-`OH_GITHUB_REPO`/`OH_GITHUB_REF` build fallback, through the SLA.
+names keys only). `AGRO_GITHUB_REPO` (fallback `OH_GITHUB_REPO`) names the `<owner>/<repo>` whose latest GitHub release hosts the artifacts, so a fork can serve its own `agro.js`; there is no `AGRO_GITHUB_REF` because the installer downloads a release artifact and never checks out source. `get-oh.sh` keeps its `OH_GITHUB_REPO`/`OH_GITHUB_REF` build fallback through the SLA.
 
 ### Release artifacts
 

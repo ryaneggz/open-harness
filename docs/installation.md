@@ -80,7 +80,7 @@ curl -fsSL -o get-oh.sh https://oh.mifune.dev/get-oh.sh
 bash get-oh.sh
 ```
 
-Environment overrides: `OH_BIN_DIR=<dir>` (install location, default `~/.local/bin`), `OH_JS_URL=<url>` (prebuilt bundle URL), `OH_GITHUB_REPO=<org>/<fork>` / `OH_GITHUB_REF=<ref>` (source for `get-oh.sh`'s build fallback; `get-agro.sh` has no such fallback), `OH_NVM_VERSION=<tag>` (nvm version for the Node install), `--yes`/`--no` (auto-accept/decline the Node-install prompt). `oh update` is the project-payload command, not a self-upgrade: to upgrade the `oh` shim, run `npm install -g @mifune/openharness` again or re-run `get-oh.sh`, or move to `@mifune/agro` and use `agro update`.
+Environment overrides: `OH_BIN_DIR=<dir>` (install location, default `~/.local/bin`), `OH_JS_URL=<url>` (prebuilt bundle URL), `OH_GITHUB_REPO=<org>/<fork>` / `OH_GITHUB_REF=<ref>` (source for `get-oh.sh`'s build fallback; `get-agro.sh` reads `AGRO_GITHUB_REPO`/`OH_GITHUB_REPO` only to pick the release that hosts its artifacts), `OH_NVM_VERSION=<tag>` (nvm version for the Node install), `--yes`/`--no` (auto-accept/decline the Node-install prompt). `oh update` is the project-payload command, not a self-upgrade: to upgrade the `oh` shim, run `npm install -g @mifune/openharness` again or re-run `get-oh.sh`, or move to `@mifune/agro` and use `agro update`.
 
 ## Self-hosting: I already have a clone
 

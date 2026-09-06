@@ -194,7 +194,6 @@ describe("get-agro.sh static contract", () => {
       "npm install",
       "npm run build",
       "build_from_source",
-      "GITHUB_REPO",
       "GITHUB_REF",
       "_OH_SOURCED",
     ]) {
@@ -205,11 +204,15 @@ describe("get-agro.sh static contract", () => {
   });
 
   it("pins the artifact URL, install path, and help contract", () => {
-    expect(source).toContain("https://github.com/mifunedev/openharness/releases/latest/download/agro.js");
     expect(source).toContain('install -m 0755 "$TMP/agro.js" "$AGRO_BIN_DIR/agro"');
     expect(source).toContain("# Added by AGRO get-agro.sh");
     const help = run(["--help"]);
     expect(help.status).toBe(0);
+    expect(help.stdout).toContain("https://github.com/mifunedev/openharness/releases/latest/download/agro.js");
+    expect(run(["--help"], { AGRO_GITHUB_REPO: "someone/fork" }).stdout).toContain(
+      "https://github.com/someone/fork/releases/latest/download/agro.js",
+    );
+    expect(run(["--help"], { AGRO_GITHUB_REPO: "not-a-slug" }).status).not.toBe(0);
     for (const item of ["AGRO_BIN_DIR", "AGRO_JS_URL", "AGRO_NVM_VERSION", "AGRO_ASSUME_YES", "OH_<NAME>", NPM_ALTERNATIVE]) {
       expect(help.stdout).toContain(item);
     }

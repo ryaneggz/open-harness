@@ -17,7 +17,7 @@ fi
 
 [ -x "$SCRIPT" ] || { echo 'REGRESSION .oh/scripts/get-agro.sh is not executable' >&2; exit 1; }
 
-grep -qF 'https://github.com/mifunedev/openharness/releases/latest/download/agro.js' "$SCRIPT" \
+bash "$SCRIPT" --help | grep -qF 'https://github.com/mifunedev/openharness/releases/latest/download/agro.js' \
   || { echo 'REGRESSION get-agro.sh lost the default release-asset agro.js URL' >&2; exit 1; }
 
 grep -qF 'install -m 0755 "$TMP/agro.js" "$AGRO_BIN_DIR/agro"' "$SCRIPT" \
@@ -38,7 +38,7 @@ grep -q 'nvm' "$SCRIPT" || { echo 'REGRESSION get-agro.sh no longer offers to in
 grep -qF '# Added by AGRO get-agro.sh' "$SCRIPT" || { echo 'REGRESSION get-agro.sh lost its profile PATH marker' >&2; exit 1; }
 grep -qF 'npm install -g @mifune/agro' "$SCRIPT" || { echo 'REGRESSION get-agro.sh no longer names the npm alternative on failure' >&2; exit 1; }
 
-for forbidden in 'git clone' 'npm run build' 'build_from_source' 'GITHUB_REPO' 'GITHUB_REF' '_OH_SOURCED'; do
+for forbidden in 'git clone' 'npm run build' 'build_from_source' 'GITHUB_REF' '_OH_SOURCED'; do
   grep -qF "$forbidden" "$SCRIPT" && { echo "REGRESSION get-agro.sh reintroduced a source-build path ($forbidden)" >&2; exit 1; }
 done
 grep -F 'npm install' "$SCRIPT" | grep -vqF 'npm install -g @mifune/agro' \

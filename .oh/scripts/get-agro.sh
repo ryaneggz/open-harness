@@ -28,6 +28,13 @@ agro_env() {
   printf 'none\t%s\n' "$2"
 }
 
+AGRO_GITHUB_REPO="$(agro_env GITHUB_REPO "" | cut -f2-)"
+AGRO_GITHUB_REPO="${AGRO_GITHUB_REPO:-mifunedev/openharness}"
+if [[ ! "$AGRO_GITHUB_REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+  die "AGRO_GITHUB_REPO must be <owner>/<repo>: got '$AGRO_GITHUB_REPO'"
+fi
+RELEASE_BASE="https://github.com/$AGRO_GITHUB_REPO/releases/latest/download"
+
 if [ "${1:-}" = "--resolve" ]; then
   [ $# -eq 3 ] || die "--resolve takes exactly <SUFFIX> <default>"
   agro_env "$2" "$3"
@@ -57,8 +64,8 @@ print_help() {
 AGRO — install the standalone 'agro' CLI
 
 Usage:
-  curl -fsSL https://github.com/mifunedev/openharness/releases/latest/download/get-agro.sh | bash
-  curl -fsSL -o get-agro.sh https://github.com/mifunedev/openharness/releases/latest/download/get-agro.sh
+  curl -fsSL $RELEASE_BASE/get-agro.sh | bash
+  curl -fsSL -o get-agro.sh $RELEASE_BASE/get-agro.sh
   # Review get-agro.sh in your editor or pager, then:
   bash get-agro.sh
 
@@ -77,7 +84,9 @@ Flags:
 Env vars:
   AGRO_BIN_DIR         Where to install 'agro' (default: ~/.local/bin)
   AGRO_JS_URL          Prebuilt artifact URL
-                       (default: https://github.com/mifunedev/openharness/releases/latest/download/agro.js)
+                       (default: $RELEASE_BASE/agro.js)
+  AGRO_GITHUB_REPO     <owner>/<repo> whose latest GitHub release hosts the artifacts
+                       (default: mifunedev/openharness)
   AGRO_NVM_VERSION     nvm version tag for the Node install (default: v0.40.3)
   AGRO_ASSUME_YES      Non-empty accepts prompts (same as --yes)
 
@@ -88,7 +97,7 @@ Alternative:
   npm install -g @mifune/agro
 
 Examples:
-  curl -fsSL https://github.com/mifunedev/openharness/releases/latest/download/get-agro.sh | bash -s -- --yes
+  curl -fsSL $RELEASE_BASE/get-agro.sh | bash -s -- --yes
   AGRO_BIN_DIR=/usr/local/bin bash get-agro.sh
 HELPEOF
 }
@@ -110,7 +119,7 @@ done
 [ "$ASSUME_YES" = true ] && [ "$ASSUME_NO" = true ] && die "--yes and --no are mutually exclusive."
 
 AGRO_BIN_DIR="$(agro_env BIN_DIR "$HOME/.local/bin" | cut -f2-)"
-AGRO_JS_URL="$(agro_env JS_URL "https://github.com/mifunedev/openharness/releases/latest/download/agro.js" | cut -f2-)"
+AGRO_JS_URL="$(agro_env JS_URL "$RELEASE_BASE/agro.js" | cut -f2-)"
 AGRO_NVM_VERSION="$(agro_env NVM_VERSION "v0.40.3" | cut -f2-)"
 
 node_major() { node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0; }
