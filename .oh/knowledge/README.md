@@ -57,7 +57,9 @@ Schema, frontmatter spec, provenance kinds, and every authoring rule:
 | release-versioning | Release Versioning | [release, versioning, semver, calver, github-actions, ghcr, tags, workflow, package-json, agro, npm] | 2026-09-06 |
 | pattern-scripts-sibling-dependency-standalone-copies | A script that gains a sourced sibling breaks every test and probe that copies it alone | [scripts, compose, testing, probes, bundling, registry, boot] | 2026-09-06 |
 | pattern-evals-tracked-only-scan-misses-uncommitted | A repository scan over git ls-files passes on uncommitted files and fails once they are committed | [evals, testing, git, inventory, ci, false-pass] | 2026-09-06 |
+| pattern-evals-product-name-literal-pinning | Probes and tests that pin the product name beside a verb break when the executable is renamed or templated | [evals, probes, cli, docs, rename, false-failure] | 2026-09-06 |
 | pattern-evals-environment-parity-false-delta | An eval run from a shell with a different PATH reports environment gaps as probe regressions | [evals, probes, environment, path, python, false-regression, worktree] | 2026-09-06 |
+| pattern-delegate-worker-terminated-before-report | A delegated worker that dies after implementing but before verifying leaves complete files with no evidence | [delegate, spec, workers, rate-limit, verification, evidence] | 2026-09-06 |
 | oh-cli-portable-lifecycle | oh CLI Portable Lifecycle | [cli, oh, agro, lifecycle, standalone, registry, sandbox, remote-fetch, execution-target, update, self-upgrade, npm] | 2026-09-06 |
 | fresh-machine-setup | Fresh-Machine Setup Flow | [setup, onboarding, installation, agro, registry, gateway, ssh, github, slack] | 2026-09-06 |
 | compose-env-boundary | Compose Environment Boundary | [compose, devcontainer, oh-json, cli, entrypoint, boundary, installs, sandbox, registry] | 2026-09-06 |

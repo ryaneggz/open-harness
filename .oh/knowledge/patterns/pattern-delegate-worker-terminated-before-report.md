@@ -6,8 +6,8 @@ tags: [delegate, spec, workers, rate-limit, verification, evidence]
 created: 2026-09-06
 updated: 2026-09-06
 sources:
-  - .oh/tasks/agro-cli-entry/progress.txt@e5736830
-  - .oh/tasks/agro-cli-entry/delegate-log.txt@e5736830
+  - .oh/tasks/agro-cli-entry/progress.txt@89e4a8ac
+  - .oh/tasks/agro-cli-entry/delegate-log.txt@89e4a8ac
   - .oh/cli/src/commands/self-upgrade.ts@e5736830
 confidence: provisional
 ---
@@ -15,8 +15,8 @@ confidence: provisional
 # A delegated worker that dies after implementing but before verifying leaves complete files with no evidence
 
 ## Relevant Source Files
-- `.oh/tasks/agro-cli-entry/delegate-log.txt@e5736830` — the T3 row: worker terminated by a provider rate limit after its implementation step, mid-verification.
-- `.oh/tasks/agro-cli-entry/progress.txt@e5736830` — the owner's entry recording that it completed the worker's verification itself.
+- `.oh/tasks/agro-cli-entry/delegate-log.txt@89e4a8ac` — the T3 row: worker terminated by a provider rate limit after its implementation step, mid-verification.
+- `.oh/tasks/agro-cli-entry/progress.txt@89e4a8ac` — the owner's entry recording that it completed the worker's verification itself.
 - `.oh/cli/src/commands/self-upgrade.ts@e5736830` — the worker's output as committed after owner verification.
 
 ## Summary

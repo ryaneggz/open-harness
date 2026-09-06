@@ -11,7 +11,7 @@ sources:
   - .oh/cli/src/__tests__/compose-verbs.test.ts@17bc5379
   - .oh/evals/probes/tool-catalog-boundary.sh@07e7399f
   - .oh/evals/probes/oh-lifecycle-surface.sh@16a39922
-  - .oh/tasks/agro-cli-entry/progress.txt@07e7399f
+  - .oh/tasks/agro-cli-entry/progress.txt@89e4a8ac
 confidence: provisional
 ---
 
