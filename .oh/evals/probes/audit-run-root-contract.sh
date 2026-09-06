@@ -133,6 +133,11 @@ review 4b825dc642cb6eb9a060e54bf8d69288fbee4904 "$(printf "$finding" resolved)"
 gated 'review commit not an ancestor' AUDIT-FAIL 'gate5: FAIL (no simplicity review for HEAD'
 review "$(git -C "$tmp" rev-parse HEAD)" "$(printf "$finding" resolved)"
 gated 'review at HEAD' AUDIT-PASS 'gate5: review commit '"$(git -C "$tmp" rev-parse HEAD)"' equals HEAD'
+parent=$(git -C "$tmp" rev-parse HEAD)
+printf '# tasks\n' >"$tmp/.oh/tasks/README.md"; git -C "$tmp" add .oh/tasks/README.md; git -C "$tmp" commit -qm readme
+printf '{"commit":"%s","runnerExit":0}\n' "$(git -C "$tmp" rev-parse HEAD)" >"$task/eval-result.json"
+review "$parent" "$(printf "$finding" resolved)"
+gated 'other task path changed past review' AUDIT-FAIL 'gate5: FAIL (no simplicity review for HEAD'
 rm "$task/simplicity-review.json"
 bash "$RUN" pr 7 --base stack-parent -- "$tmp/complete-driver" >/dev/null
 bash "$RUN" prs --mine -- "$tmp/complete-driver" >/dev/null

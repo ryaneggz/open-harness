@@ -198,9 +198,9 @@ reason:
 | Otherwise | `gate4: PASS (<n> criteria verified by <reviewer> at <commit>)` |
 
 **The content-head rule.** The driver accepts a record whose `commit` equals `HEAD`.
-The driver also accepts a record whose `commit` is an ancestor of `HEAD` when every
-path in `git diff --name-only <commit> HEAD` starts with `.oh/tasks/` or is
-`.oh/evals/RESULTS.md`. The driver prints which case applied:
+The driver also accepts a record whose `commit` is an ancestor of `HEAD` when only
+record files changed since. Record files are paths under the audited task folder
+`.oh/tasks/<slug>/` and `.oh/evals/RESULTS.md`. The driver prints which case applied:
 `gate4: ui evidence commit <sha> equals HEAD` or
 `gate4: ui evidence commit <sha> is the content head; only task records changed since`.
 The same rule keys the `eval-result.json` reuse in gate 2 and the review in gate 5.
