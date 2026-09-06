@@ -1,8 +1,8 @@
 {
-  "commit": "758457f2e305e0eba4d9136f4030acae72c45380",
-  "runnerExit": 1,
-  "ranAt": "2026-09-06T18:46:32Z",
+  "commit": "ceced13cc1267890d30fe09c6d06bffb2a304817",
+  "runnerExit": 0,
+  "ranAt": "2026-09-06T18:54:18Z",
   "newRegressions": [],
   "preExistingReds": ["oh-config-surfaces", "skills-vendored", "curl-bash-safe-alternatives"],
-  "note": "oh-config-surfaces and skills-vendored are REGRESSION on base 9261d512 in this environment; curl-bash-safe-alternatives ERRORs on base (python3 absent, rc 127). delegate-model-effort-policy was red on 17a510de by design and is green after ef81cf73."
+  "note": "All three reds reproduce on base 9261d512 in this environment (oh.json invalid JSON; provider-link/safety-net check; python3 absent -> ERROR 127). changelog-entry-length went red on 762c0ec3 from a T3 entry of 303 chars and is green again from 14127d7c. delegate-model-effort-policy was red on 17a510de by design and is green from 758457f2."
 }
