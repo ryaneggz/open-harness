@@ -2,8 +2,9 @@
 
 Spec task workdirs. Each `<slug>/` subfolder is one `/spec execute` task's
 three-file contract, created by `/spec plan` (the `/ralph` skill produces the
-`prd.json` inside it) and implemented by that task's single implementation owner —
-the agent that runs `/spec execute`. Ownership is a role, not a terminal session:
+`prd.json` inside it). The task's single implementation owner — the agent that runs
+`/spec execute` — acts as advisor: it assigns the tracked edits to bounded `/delegate`
+workers and accepts the result. Ownership is a role, not a terminal session:
 a task folder's identity and state never depend on a session, tab, or pane.
 
 A task directory typically contains:
@@ -15,6 +16,8 @@ A task directory typically contains:
 | `progress.txt`     | The implementation owner's running execution narrative and resume evidence — what was attempted, what landed, and where a resumed session picks up. Carries no completion sentinel |
 | `evidence.md`      | The implementation's answer back to the approved plan, written after implementation; required before the PR leaves draft |
 | `eval-result.json` | The commit-keyed probe-suite result for the task's HEAD, when a probe suite applies |
+| `delegate-graph.json` | The `/delegate` dispatch records — every worker's requested and observed settings, scope, and status. Owned by `/delegate`; add it with `git add -f` when the PR carries it |
+| `delegate-log.txt` | Append-only `/delegate` run log. Owned by `/delegate`; add it with `git add -f` when the PR carries it |
 | `critique.md`      | Optional critic notes from PRD review                    |
 
 ## Conventions

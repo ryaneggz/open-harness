@@ -10,7 +10,14 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 
 ### Added
 
+- Add the /plan skill to the tracked tree (.oh/skills/plan/SKILL.md) with required bounded-assignment fields. ([#988](https://github.com/mifunedev/openharness/issues/988))
 - Resolve `.agro/`, `agro.json`, `AGRO_*`, and `~/.agro` beside their legacy names through one fail-closed compatibility contract with a migration engine; defaults are unchanged. ([#940](https://github.com/mifunedev/openharness/issues/940))
+
+### Changed
+
+- Make advisor-first execution the default across `AGENTS.md`, `/spec`, `/delegate`, and `/plan`: the active session advises, assigns tracked edits to bounded workers, and accepts. ([#988](https://github.com/mifunedev/openharness/issues/988), [#989](https://github.com/mifunedev/openharness/issues/989))
+- Honor an explicit operator model selection after a native capability check, and block on an unsupported required control instead of substituting one. ([#988](https://github.com/mifunedev/openharness/issues/988))
+- Add the `advisor-execution-contract` and `plan-orchestration-contract` probes. ([#988](https://github.com/mifunedev/openharness/issues/988))
 
 ## [0.8.0] - 2026-09-06
 
