@@ -49,7 +49,7 @@ gate2(){
     rc=$(jq -r '.runnerExit' "$result")
     printf 'gate2: reused eval-result.json for %s (runnerExit=%s)\n' "$head" "$rc"
   else
-    AUDIT_RUN_ID="$AUDIT_RUN_ID" AUDIT_ROOT="$AUDIT_ROOT" bash "$AUDIT_ROOT/.oh/skills/eval/run.sh" || rc=$?
+    bash "$AUDIT_ROOT/.oh/skills/eval/run.sh" || rc=$?
     printf 'gate2: ran eval suite for %s (exit=%s)\n' "$head" "$rc"
   fi
   [[ $rc == 0 ]] || fail 'gate2: FAIL'
