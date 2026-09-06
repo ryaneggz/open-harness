@@ -16,6 +16,7 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 
 ### Changed
 
+- Replace the nested-agent `/audit` route driver with a scripted driver that runs the deterministic gates itself and publishes correlated evidence; no `claude -p` is launched. ([#993](https://github.com/mifunedev/openharness/issues/993))
 - Make advisor-first execution the default: the active session advises, assigns tracked edits to bounded workers, and accepts. ([#988](https://github.com/mifunedev/openharness/issues/988), [#989](https://github.com/mifunedev/openharness/issues/989))
 - Honor an explicit operator model selection after a native capability check, and block on an unsupported required control instead of substituting one. ([#988](https://github.com/mifunedev/openharness/issues/988))
 
