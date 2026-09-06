@@ -8,6 +8,8 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-06
+
 ### Added
 
 - Resolve `.agro/`, `agro.json`, `AGRO_*`, and `~/.agro` beside their legacy names through one fail-closed compatibility contract with a migration engine; defaults are unchanged. ([#940](https://github.com/mifunedev/openharness/issues/940))
