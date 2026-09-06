@@ -4,7 +4,7 @@ slug: compose-env-boundary
 kind: repo
 tags: [compose, devcontainer, oh-json, cli, entrypoint, boundary, installs, sandbox, registry]
 created: 2026-08-31
-updated: 2026-09-05
+updated: 2026-09-06
 sources:
   - .devcontainer/docker-compose.yml
   - .devcontainer/docker-compose.image-only.yml
@@ -18,7 +18,7 @@ sources:
   - .oh/evals/probes/compose-env-boundary.sh
   - .oh/evals/probes/harness-one-door.sh
   - .oh/evals/probes/sandbox-registry.sh
-verified_at: 27568a185eed75fe568a8fe3e0260f3b7e148bcb
+verified_at: 69b7f8fd3812673d31b31c86260c1d779c792179
 related: [sandbox-dependency-installs, oh-cli-portable-lifecycle]
 confidence: confirmed
 ---
@@ -28,9 +28,9 @@ confidence: confirmed
 ## Relevant Source Files
 - `.devcontainer/docker-compose.yml` — the checkout-binding compose file; its `environment:` block is the surface this page constrains, and its bind and build context read `${OH_REPO_DIR:-..}`.
 - `.devcontainer/docker-compose.image-only.yml` — the default base for a registry sandbox (no checkout); its `environment:` block is byte-identical to the other file's.
-- `.devcontainer/entrypoint.sh` — the `oh_config` / `oh_config_truthy` helpers that read oh.json at boot; installs nothing.
+- `.devcontainer/entrypoint.sh` — the `oh_config` / `oh_config_truthy` helpers that read oh.json at boot; installs nothing. Since #940 it sources `/opt/oh-assets/.oh/scripts/compat.sh` first, so the seed path recognizes `.oh/` or `.agro/`, either `.image-seeded` marker, and either seed directory before the control plane exists.
 - `.oh/cli/src/lib/config-render.ts` — renders the host-side subset into a temporary `compose.env`; refuses `RETIRED_KEYS`.
-- `.oh/cli/src/lib/registry.ts` — materialises both compose files, the overlays, and the wrapper into a registry entry, which is the root the wrapper runs from.
+- `.oh/cli/src/lib/registry.ts` — materialises both compose files, the overlays, the wrapper, and `compat.sh` into a registry entry, which is the root the wrapper runs from.
 - `.oh/cli/src/commands/harness.ts`, `.oh/cli/src/commands/tool.ts` — the only install door.
 - `.devcontainer/Dockerfile`, `.oh/scripts/link-providers.sh` — the Hermes image default and additive integration validation.
 - `.oh/evals/probes/compose-env-boundary.sh`, `.oh/evals/probes/harness-one-door.sh`, `.oh/evals/probes/sandbox-registry.sh` — the tier-A probes that enforce the rules, and pin the bundled compose texts to the tracked files.
@@ -45,7 +45,7 @@ Installs take neither route. Boot provisioning, the `install.*` keys, the persis
 
 Four compose `environment:` literals survive that no config read can supply: `SANDBOX_PASSWORD` (consumed by the entrypoint's own user setup), `CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS`, `CC_SAFETY_NET_STRICT` and `CC_SAFETY_NET_WORKTREE` (read by third-party binaries that know nothing of `oh.json`), plus the `GH_TOKEN` secret, which `config-render.ts` refuses to render.
 
-Four guards keep the boundary closed. `RETIRED_KEYS` throws if a `put()` for a retired variable is ever re-added (`.oh/cli/src/lib/config-render.ts`); the compose probe fails on any `INSTALL_*` key, on `OH_IMAGE_ONLY`, or on any `environment:` key outside the rendered set — across every `docker-compose*.yml` including overlays; and `harness-one-door.sh` fails on a `default` kind, a `harnessKey` / `toolKey`, a provisioner script, an `install` key in `oh-config.ts`, a boot-time provisioning gate, or an installable binary in the Dockerfile. `sandbox-registry.sh` compares the texts a materialised entry contains against the tracked compose files and scripts byte for byte and fails if a lifecycle verb spawns `docker` outside the wrapper. Overlay `ports:` and `volumes:` blocks are unrestricted; that payload is the part only Docker can act on.
+Four guards keep the boundary closed. `RETIRED_KEYS` throws if a `put()` for a retired variable is ever re-added (`.oh/cli/src/lib/config-render.ts`); the compose probe fails on any `INSTALL_*` key, on `OH_IMAGE_ONLY`, or on any `environment:` key outside the rendered set — across every `docker-compose*.yml` including overlays; and `harness-one-door.sh` fails on a `default` kind, a `harnessKey` / `toolKey`, a provisioner script, an `install` key in `oh-config.ts`, a boot-time provisioning gate, or an installable binary in the Dockerfile. `sandbox-registry.sh` compares the seven texts a materialised entry contains (compose files, wrapper, port check, `compat.sh`) against the tracked files byte for byte and fails if a lifecycle verb spawns `docker` outside the wrapper. Overlay `ports:` and `volumes:` blocks are unrestricted; that payload is the part only Docker can act on.
 
 Non-goals: the image-only base is the default for a registry sandbox, because `/opt/oh-seed` ships regardless; `INSTALL_PYTHON_KERNEL` and `provision-python.sh` remain, a Dockerfile↔entrypoint duplication rather than a compose one; `start_period: 600s` was sized for the retired provisioning window and is tracked for retuning on #948.
 

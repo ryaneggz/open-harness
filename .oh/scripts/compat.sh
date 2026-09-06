@@ -56,11 +56,19 @@ compat_tree_diff() {
   return "$rc"
 }
 
+compat_present() {
+  case "$1" in
+    dir) [ -d "$2" ] ;;
+    file) [ -f "$2" ] ;;
+    *) return 1 ;;
+  esac
+}
+
 compat_resolve_pair() {
-  local legacy="$1" agro="$2" test_flag="$3" differences
+  local legacy="$1" agro="$2" entry_kind="$3" differences
   local legacy_present=1 agro_present=1
-  [ "$test_flag" "$legacy" ] || legacy_present=0
-  [ "$test_flag" "$agro" ] || agro_present=0
+  compat_present "$entry_kind" "$legacy" || legacy_present=0
+  compat_present "$entry_kind" "$agro" || agro_present=0
   if [ "$legacy_present" = 0 ] && [ "$agro_present" = 0 ]; then
     printf 'absent\t\n'
     return 0
@@ -84,11 +92,11 @@ compat_resolve_pair() {
 }
 
 compat_control_dir() {
-  compat_resolve_pair "$1/$COMPAT_LEGACY_CONTROL_DIR" "$1/$COMPAT_AGRO_CONTROL_DIR" -d
+  compat_resolve_pair "$1/$COMPAT_LEGACY_CONTROL_DIR" "$1/$COMPAT_AGRO_CONTROL_DIR" dir
 }
 
 compat_config_file() {
-  compat_resolve_pair "$1/$COMPAT_LEGACY_CONFIG_FILE" "$1/$COMPAT_AGRO_CONFIG_FILE" -f
+  compat_resolve_pair "$1/$COMPAT_LEGACY_CONFIG_FILE" "$1/$COMPAT_AGRO_CONFIG_FILE" file
 }
 
 compat_selected_path() {
@@ -98,7 +106,7 @@ compat_selected_path() {
 }
 
 compat_env() {
-  local suffix="$1" agro_key="AGRO_$1" legacy_key="OH_$1" agro_value legacy_value
+  local agro_key="AGRO_$1" legacy_key="OH_$1" agro_value legacy_value
   agro_value="${!agro_key:-}"
   legacy_value="${!legacy_key:-}"
   if [ -n "$agro_value" ]; then

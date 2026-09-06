@@ -4,7 +4,7 @@ slug: oh-cli-portable-lifecycle
 kind: repo
 tags: [cli, oh, lifecycle, standalone, registry, sandbox, remote-fetch, execution-target, update]
 created: 2026-07-03
-updated: 2026-09-03
+updated: 2026-09-06
 sources:
   - .oh/cli/src/cli.ts
   - .oh/cli/src/commands/sandbox.ts
@@ -27,7 +27,7 @@ sources:
   - docs/lifecycle-commands.md
   - docs/oh-directory-layout.md
   - docs/rfcs/rfc-brain-hands-boundary.md
-verified_at: 55a0ba14cf78e0245dbfc262b2d2adad77236866
+verified_at: 69b7f8fd3812673d31b31c86260c1d779c792179
 related: [fresh-machine-setup, compose-env-boundary]
 confidence: provisional
 ---
@@ -36,24 +36,24 @@ confidence: provisional
 
 ## Relevant Source Files
 - `.oh/cli/src/lib/registry.ts` — the sandbox registry: `registryRoot()`, `entryRoot()`, `listEntries()`, `nextDefaultName()`, `materialize()`, `resolveSandboxRoot()`.
-- `.oh/cli/build.mjs` — the `oh-asset:` esbuild plugin that inlines the four compose files and two scripts from `OH_ASSET_ROOT` (default: the repository root) into `dist/oh.js`.
+- `.oh/cli/build.mjs` — the `oh-asset:` esbuild plugin that inlines the four compose files and three scripts from `OH_ASSET_ROOT` (default: the repository root) into `dist/oh.js`.
 - `.oh/cli/src/commands/sandbox.ts` — `oh sandbox install <runtime>` (wizard, entry write, materialise, provision) and `oh sandbox list`.
 - `.oh/cli/src/commands/lifecycle.ts` — `oh shell|stop|restart|logs|ps|destroy [name]`; thin wrappers over the `ExecutionTarget` contract and the materialised wrapper script.
 - `.oh/cli/src/lib/execution/target.ts`, `docker-compose-target.ts` — the provider-neutral contract and its one adapter, which owns the engine argv.
 - `.oh/cli/src/cli.ts` — arg parsing, `resolveUpdateSource` (payload precedence + auto-fallback), `runWithRemoteSource`, verb dispatch, `--sandbox` on `oh config` / `oh secret`.
 - `.oh/cli/src/commands/update.ts` — the `.oh/` + `crons/` bootstrap and upgrade.
 - `.oh/cli/src/lib/remote.ts` — `fetchRemoteSource`: shallow clone, `GIT_TERMINAL_PROMPT=0`, bounded timeout.
-- `.oh/cli/src/lib/project.ts` — equipped-root walk-up resolver, still used by the in-repo verbs.
-- `.oh/scripts/docker-compose.sh`, `gateway.sh` — the scripts the verbs delegate to.
+- `.oh/cli/src/lib/project.ts` — equipped-root walk-up resolver, still used by the in-repo verbs; since #940 it recognizes `.oh/` or `.agro/` through `resolveControlDir` (`.oh/cli/src/lib/compat.ts`) and fails closed when both exist and differ.
+- `.oh/scripts/docker-compose.sh`, `gateway.sh` — the scripts the verbs delegate to; the wrapper sources its sibling `compat.sh` to pick `agro.json` or `oh.json` and exits 2 when the sibling is missing or the two configs differ.
 - `.oh/evals/probes/sandbox-registry.sh` — the tier-A probe that pins the bundled texts to the tracked files and forbids engine argv outside the wrapper.
 
 ## Summary
 Issue #950 moved sandbox configuration out of the project checkout. `oh sandbox install docker` runs from any directory: a wizard writes a **registry entry** under `${OH_HOME:-~/.oh}/sandboxes/<name>/`, the CLI materialises the compose files and wrapper script it bundles into that entry, and the container starts. `oh shell <name>` and the other lifecycle verbs resolve a sandbox by name from anywhere; a project checkout is an optional `--repo` bind mount. `oh update` equips an empty checkout with the `.oh/` + `crons/` payload and is also the upgrade path; `oh init`, `oh runtime`, and `.oh/templates/` no longer exist. Issue #564's standalone-consumer goal survives with one fewer moving part: an installed `oh` binary now carries everything a sandbox needs.
 
 ## Detail
-**A registry entry is a root.** `registryRoot()` is `${OH_HOME}/sandboxes` with `OH_HOME` defaulting to `<homedir>/.oh` (`registry.ts:19-28`); names match `^[a-z0-9][a-z0-9-]*$` (`registry.ts:15`). Each entry holds the exact layout `.oh/scripts/docker-compose.sh` already expected of a repo: `oh.json`, an optional `.env` (secrets), `.devcontainer/docker-compose.yml` plus the ssh and docker-sock overlays, and `.oh/scripts/docker-compose.sh` + `check-host-port.sh`. `materialize()` rewrites those six files from the bundled texts on every lifecycle call, so the entry always matches the CLI version and the operator edits only `oh.json`. Without `repo` the base is the image-only compose file; with `repo` it is the checkout-binding file, whose bind and build context read `${OH_REPO_DIR:-..}` — the `..` default keeps CI and an in-checkout run byte-identical.
+**A registry entry is a root.** `registryRoot()` is `<home>/sandboxes` where the home comes from `resolveUserStateHome` in `compat.ts` (#940): `AGRO_HOME`, then `OH_HOME`, then `<homedir>/.oh` unless `<homedir>/.agro/sandboxes` is the sole registry or both registries are byte-identical, and a conflict when both exist and differ (`registry.ts`); names match `^[a-z0-9][a-z0-9-]*$` (`registry.ts:15`). Each entry holds the exact layout `.oh/scripts/docker-compose.sh` already expected of a repo: `oh.json`, an optional `.env` (secrets), `.devcontainer/docker-compose.yml` plus the ssh and docker-sock overlays, and `.oh/scripts/docker-compose.sh` + `check-host-port.sh` + `compat.sh`. `materialize()` rewrites those seven files from the bundled texts on every lifecycle call, so the entry always matches the CLI version and the operator edits only `oh.json`. Without `repo` the base is the image-only compose file; with `repo` it is the checkout-binding file, whose bind and build context read `${OH_REPO_DIR:-..}` — the `..` default keeps CI and an in-checkout run byte-identical.
 
-**Bundled assets.** `registry.ts` imports the six files through `oh-asset:<repo-relative path>` specifiers; `build.mjs` resolves them under `OH_ASSET_ROOT` (default: the repository root above `.oh/cli`) and inlines them as text, failing the build when one is missing. The sandbox image stages exactly those six files under `/opt/oh-assets` and builds with `OH_ASSET_ROOT=/opt/oh-assets` (`.devcontainer/Dockerfile`), because it copies only `.oh/cli/` into `/opt/oh`; every other build site runs inside a full checkout. `dist/oh.js` remains the only artifact. `sandbox-registry.sh` compares what a materialised entry contains against the tracked files byte for byte, so a change to a compose file without a rebuild is a REGRESSION, and it fails if `lifecycle.ts` or `sandbox.ts` ever spawns `docker` directly.
+**Bundled assets.** `registry.ts` imports the seven files through `oh-asset:<repo-relative path>` specifiers; `build.mjs` resolves them under `OH_ASSET_ROOT` (default: the repository root above `.oh/cli`) and inlines them as text, failing the build when one is missing. The sandbox image stages exactly those seven files under `/opt/oh-assets` and builds with `OH_ASSET_ROOT=/opt/oh-assets` (`.devcontainer/Dockerfile`), because it copies only `.oh/cli/` into `/opt/oh`; every other build site runs inside a full checkout. `dist/oh.js` remains the only artifact. `sandbox-registry.sh` compares what a materialised entry contains against the tracked files byte for byte, so a change to a compose file without a rebuild is a REGRESSION, and it fails if `lifecycle.ts` or `sandbox.ts` ever spawns `docker` directly.
 
 **`oh sandbox install <runtime>`** (`sandbox.ts:139`) accepts `docker`; `microsandbox` refuses with a pointer to `docs/rfcs/rfc-runtime-support.md` and to `oh tool install microsandbox` (the runtime catalog in `lib/runtimes/catalog.ts` now lists only those two). On a TTY without `--yes` the wizard asks name, timezone, git identity, SSH (with host port), and the Docker socket; `--yes` keeps every default (name `oh-sbx-<n>` for the lowest unused integer, `registry.ts:80`; host `TZ`; global git identity; SSH and socket off). With `--repo <dir>` the defaults seed from that checkout's `oh.json` and `repo` is written into the entry. `--image=<ref>` is persisted as `image.ref` so later verbs render the same image; `--print-argv` materialises into a temporary preview root and writes no entry (`sandbox.ts:192`). Success prints `next: oh shell <name>`. `oh sandbox list [--json]` shows name, runtime, status from `target.status()`, and repo. Bare `oh sandbox` prints help and exits 1; there is no implicit `up`.
 
