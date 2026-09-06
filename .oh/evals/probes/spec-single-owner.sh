@@ -65,6 +65,11 @@ in_prompt 'Transfer ownership only when the operator requests another session' |
 direct="$(grep -iE 'implements? (the )?(stories|story|it|them|the plan) (directly|yourself|itself)|(owner|advisor|session) (implements|writes|edits) (the )?(stories|code|implementation) (directly|itself)' <<<"$sentences" | grep -vE "$negation" || true)"
 [[ -z "$direct" ]] || missing+=("owner implements directly instead of assigning workers: $direct")
 
+permit_verb='(may|can|should|is allowed to|is permitted to|is free to) (write|edit|make|perform|implement|author)'
+permitted="$(grep -iE "\\b(owner|advisor|active session|parent)\\b.{0,40}\\b${permit_verb}\\b.{0,50}\\b(tracked|implementation|edits?|stories|story|code|patch)\\b" <<<"$sentences" \
+  | grep -viE "\\b(never|not|no|neither|without|unless)\\b.{0,30}\\b${permit_verb}\\b" || true)"
+[[ -z "$permitted" ]] || missing+=("the owner is permitted to write implementation edits without an operator exception: $permitted")
+
 forced="$(grep -iE '(hand ?off|handoff prompt|transfer)[^.]{0,60}\b(is )?(required|mandatory)\b|(must|always|should) (hand ?off|transfer|provide a hand ?off|include a hand ?off)|requires? (a )?(hand ?off|transfer)' <<<"$sentences" | grep -vE "$negation" || true)"
 [[ -z "$forced" ]] || missing+=("a handoff or transfer is made mandatory: $forced")
 

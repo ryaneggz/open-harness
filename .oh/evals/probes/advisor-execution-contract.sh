@@ -95,6 +95,11 @@ concurrent="$(grep -iE '(both|two|each|either|every) (advisors?|owners?|sessions
 direct="$(grep -iE 'implements? (the )?(stories|story|it|them|the plan) (directly|yourself|itself)|(owner|advisor|session) (implements|writes|edits) (the )?(stories|code|implementation) (directly|itself)' <<<"$sentences" | grep -vE "$negation" || true)"
 [[ -z "$direct" ]] || problems+=("the owner implements directly instead of assigning workers: $direct")
 
+permit_verb='(may|can|should|is allowed to|is permitted to|is free to) (write|edit|make|perform|implement|author)'
+permitted="$(grep -iE "\\b(owner|advisor|active session|parent)\\b.{0,40}\\b${permit_verb}\\b.{0,50}\\b(tracked|implementation|edits?|stories|story|code|patch)\\b" <<<"$sentences" \
+  | grep -viE "\\b(never|not|no|neither|without|unless)\\b.{0,30}\\b${permit_verb}\\b" || true)"
+[[ -z "$permitted" ]] || problems+=("the owner is permitted to write implementation edits without an operator exception: $permitted")
+
 stale="$(grep -iE '(completed status|completion summary|worker'"'"'?s? (summary|report|status)|status of `?completed`?)[^.]{0,60}\b(counts as|is|constitutes|serves as|satisfies|equals|means|proves)\b[^.]{0,40}(acceptance|accepted|verified|passing|passes)|(set|flip|mark)s?[^.]{0,40}`?passes`?[^.]{0,40}(when|after|once|because)[^.]{0,40}(worker|summary|status) (reports|says|claims|returns|completes)' <<<"$sentences" | grep -vE "$negation" || true)"
 [[ -z "$stale" ]] || problems+=("a worker's completed status or summary counts as acceptance: $stale")
 

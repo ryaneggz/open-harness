@@ -67,7 +67,8 @@ has_re 'never substitute a model, lower a setting, change shared or parent setti
 
 grep -qiE 'sonnet' "$SKILL" \
   || problems+=("the Sonnet exclusion is not stated")
-sonnet_routes="$(sed 's/non-Sonnet//gi' <<<"$sentences" | grep -iE 'sonnet' | grep -vE "$negation" || true)"
+close_negation='\b(never|not|no|neither|excludes?|excluded|without)\b.{0,40}'
+sonnet_routes="$(sed 's/non-Sonnet//gi' <<<"$sentences" | grep -iE 'sonnet' | grep -viE "${close_negation}\\bsonnet" || true)"
 [[ -z "$sonnet_routes" ]] \
   || problems+=("Sonnet appears outside a negation (a routing target, not an exclusion): $sonnet_routes")
 has_re 'never route work to sonnet' \
@@ -79,7 +80,8 @@ max_passes="$(grep -iE 'thinking:? *`?max`?|`max`' <<<"$sentences" | grep -vE "$
 [[ -z "$max_passes" ]] \
   || problems+=("max thinking appears outside a negation: $max_passes")
 
-fallback="$(grep -iE 'nearest (supported )?(thinking |reasoning )?level|fall(s|ing)? back to (the )?(nearest|next|lower|`?low`?|`?minimal`?|`?medium`?)|(round|map|lower)(s|ed)? (it |them )?(up |down )?to (the )?(nearest|`?low`?|`?minimal`?)|(thinking|reasoning)[- ]off[^.]*(becomes|means|equals|maps to|is treated as) `?low`?' <<<"$sentences" || true)"
+fallback="$(grep -iE 'nearest (supported )?(thinking |reasoning )?level|fall(s|ing)? back to (the )?(nearest|next|lower|`?low`?|`?minimal`?|`?medium`?)|(round|map|lower)(s|ed)? (it |them )?(up |down )?to (the )?(nearest|`?low`?|`?minimal`?)|(thinking|reasoning)[- ]off[^.]*(becomes|means|equals|maps to|is treated as) `?low`?' <<<"$sentences" \
+  | grep -viE "${close_negation}\\b(fall|falls|falling|nearest|round|rounds|rounded|map|maps|mapped|lower|lowers|lowered|becomes|means|equals|treated)\\b" || true)"
 [[ -z "$fallback" ]] \
   || problems+=("an unsupported reasoning setting is substituted with a nearby level: $fallback")
 
