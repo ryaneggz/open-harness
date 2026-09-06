@@ -148,6 +148,7 @@ T4 section E: `git revert --no-edit` of the seven policy/probe/docs commits toge
 - **Knowledge page rewrites route to a worker** (execute.md step 6) — the plan classifies documentation as tracked implementation edits; applied consistently.
 - **`.oh/skills/plan/SKILL.md` added to the tree.** The plan named it as T1's file but it was untracked at the root. The baseline copy went into the scaffold commit so T1's reconciliation diff stays reviewable.
 - **Base moved** from `9a479575` to `9261d512` between planning and execution; the intersection with grounded paths was `docs/rfcs/README.md` and `CHANGELOG.md`, both T3's files, re-read at the new base.
+- **Development merge.** `origin/development` released 0.9.0 mid-build; the advisor merged it into the branch and resolved two conflicts as integration rather than authorship: the knowledge index was regenerated with the `wiki-readme-index` oracle, and this branch's five CHANGELOG entries were moved back under `Unreleased` after the release cut relocated the header. No worker content changed.
 - **ADR text.** The ADR issue body opens with "Advisor-first execution"; T3 wrote "The advisor-first execution default:" in the index row to satisfy the lowercase-token rule the probes enforce under `.oh/skills/` (docs are not scanned, but the vocabulary rule was applied uniformly).
 
 ## 4. What remains unverified
@@ -160,6 +161,8 @@ T4 section E: `git revert --no-edit` of the seven policy/probe/docs commits toge
 - **Public docs** (`mifunedev/openharness-web`) may still describe the old direct-implementation default. This PR does not audit or change that repository, and no external issue exists for it; the D11 public-guidance review stays open for the operator.
 - **Other declared sources of `plan-vs-built-reconciliation`** (`reviewer-evidence-doc.md`, `spec-ready-finalization.sh`) were not in this diff and were not re-cited; the page's prior `verified_at` commit is not in this repository's history, so their freshness relative to that page was not re-established here.
 - **STE findings on untouched lines** in the edited skill files (150 pre-existing on `execute.md` and siblings) remain.
+- **Scripted driver `--base` skew.** Gate 5 resolves `--base` as a local ref; when the local `development` branch is stale the metrics include upstream commits (observed: 9210 vs 2142 net added). Gate 3 needs the plain base name for the PR check, so the two uses conflict; a later change should resolve gate 5 against the remote-tracking ref. Non-blocking by design.
+- **Reviewer's paraphrase-class evasions** of the new probes (`Do not hesitate to route … to Sonnet`, `the owner applies the tracked change directly`) still pass; the probes narrow the class, they do not close it.
 
 ### Scope addition: the nested-agent audit driver is retired (#993)
 
@@ -194,7 +197,7 @@ Benchmark: `.oh/evals/capability/RESULTS.md` suite score is `1.44` on this head 
 | Route | Run ID | Head | Native verdict | Note |
 |---|---|---|---|---|
 | `/audit implementation` (attempt 1) | `audit-20260906T191412Z-1541169` | `e67e5481` | none (state `failed`, exit 1) | The shipped agent driver (`claude -p`) was refused by the provider: monthly spend limit, session limit resets 16:10 MDT. No gate ran. Not a verdict about the code. |
-| `/audit implementation` (attempt 2) | pending | | | Rerun after the limit resets; the verdict and gate outputs are appended here before any undraft. |
-| `/audit pr` | pending | | | Runs after the implementation audit on the final pushed head. |
+| `/audit implementation` (attempt 2, scripted driver) | `audit-20260906T201643Z-1659991` | `188edfa5` | `AUDIT-PASS` (state `complete`, exit 0) | gate1 `task-graph: 7/7 stories pass`; gate2 ran the suite for `188edfa5…` (exit 0; persistent reds unchanged); gate3 `classify-pr` → `evidenceComplete: true, promotable: true, mergeable: MERGEABLE, mergeStateStatus: CLEAN, ci: PASS`; gate4 not applicable; gate5 metrics printed and `SIMPLICITY-RESIDUAL disclosed`. No nested agent ran. |
+| `/audit pr` (scripted driver) | see the PR body and `/tmp/spec-advisor-first-orchestration.state` | the final pushed head | `PR-AUDIT-PROMOTABLE` is required for the undraft | This row cannot carry the verdict for the head it describes: committing it would move the head past the classified commit and re-open the gate, so the run ID and verdict are recorded in the PR body's Evidence section instead. |
 
-Until both rows carry a verdict the PR stays draft as `DRAFT-BLOCKED(audit-implementation)`.
+Gate-5 disclosure. The driver computed `slop-metrics` against the ref named by `--base`, which is the PR base name `development`; in this worktree that resolves to the root checkout's stale local branch (`9a479575`), so the reported `netAdded: 9210` and the four `tsOverCcn` functions (`lifecycle.ts runSandbox CCN 32`, `oh-config.ts validateOhConfig CCN 21`, `coerceFieldValue CCN 13`, `registry.ts resolveSandboxRoot CCN 11`) belong to upstream CLI commits this PR merged in and never edited. Against the real base `origin/development` the metrics are `netAdded: 2142, netRemoved: 272, shBranchPoints: 139, tsOverCcn: [], tool: lizard n/a (no analysable files changed)` (`git diff --stat origin/development...HEAD`: 37 files, +2285/−413). The stale-local-branch skew is a limitation of the scripted driver's `--base` handling, recorded here and in section 4; it does not change the verdict because gate 5 discloses and does not block.
