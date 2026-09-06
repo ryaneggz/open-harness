@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # tier: A
-# source: conversation 2026-07-11 (delegate model inheritance and thinking policy)
-# desc: /delegate inherits the session model and passes bounded, complexity-adjusted Agent thinking without routine model routing
+# source: issue #988 / ADR #989 (advisor-first worker model and reasoning policy)
+# desc: prose check of /delegate's worker model and reasoning policy: operator selections and
+#       exclusions bind, unspecified settings are selected per task with a recorded reason, a
+#       native capability check precedes dispatch, requested and observed settings stay separate,
+#       an unsupported required control blocks instead of substituting, Sonnet is excluded, max is
+#       never passed, and provider preferences stay separate from the portable role. This probe
+#       greps instruction text; it does not verify an effective model or thinking setting.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -12,60 +17,99 @@ if [[ ! -f "$SKILL" ]]; then
   exit 2
 fi
 
+negation='\b([Nn]o|[Nn]ot|[Nn]ever|[Nn]either|[Nn]on|[Ee]xclud(e|ed|es))\b'
+
+flat="$(tr -s '[:space:]' ' ' <"$SKILL")"
+sentences="$(printf '%s\n' "$flat" | sed 's/[.!?] /&\n/g')"
+
+provider_heading='^### Provider-specific preferences'
+provider_block="$(awk -v h="$provider_heading" '$0 ~ h {f=1; next} f && /^## /{exit} f{print}' "$SKILL")"
+portable_flat="$(awk -v h="$provider_heading" '$0 ~ h {f=1; next} f && /^## /{f=0} !f{print}' "$SKILL" | tr -s '[:space:]' ' ')"
+portable_sentences="$(printf '%s\n' "$portable_flat" | sed 's/[.!?] /&\n/g')"
+
 problems=()
+has() { grep -qiF -- "$1" <<<"$flat"; }
+has_re() { grep -qiE -- "$1" <<<"$flat"; }
 
-if ! grep -Eiq 'omit(ted)? (the )?(Agent )?`?model`? (argument|parameter).*(inherit|parent|session)|inherit.*(parent|session).*(omit|omitted|unset).*(model|`model`)' "$SKILL"; then
-  problems+=("default policy does not inherit the parent/session model through an omitted Agent model argument")
-fi
+grep -q '^## Worker model and reasoning policy$' "$SKILL" \
+  || problems+=("no '## Worker model and reasoning policy' section")
 
-if ! grep -Eiq 'Agent( tool)?[^.]*`thinking` parameter|pass Agent `thinking`|call Agent with `thinking:' "$SKILL"; then
-  problems+=("policy does not explicitly use the Agent thinking parameter")
-fi
-if grep -Eiq '`effort` (argument|parameter)|`effort:|with `effort:|\*\*Effort\*\*' "$SKILL"; then
-  problems+=("policy still presents effort as an Agent parameter or task-schema field")
-fi
+has 'Explicit operator selections and exclusions are binding' \
+  || problems+=("operator selections and exclusions are not declared binding")
+has 'never dispatch to an excluded model' \
+  || problems+=("dispatch to an excluded model is not forbidden")
 
-if ! grep -Eiq 'simple.*mechanical.*`?low`?' "$SKILL"; then
-  problems+=("thinking matrix is missing simple/mechanical -> low")
-fi
-if ! grep -Eiq 'standard.*`?medium`?' "$SKILL"; then
-  problems+=("thinking matrix is missing standard -> medium")
-fi
-if ! grep -Eiq 'complex.*`?high`?' "$SKILL"; then
-  problems+=("thinking matrix is missing complex -> high")
-fi
-if ! grep -Eiq 'architecture.*(debugging|debug).*(substantial uncertainty|uncertainty.*substantial).*`?xhigh`?' "$SKILL"; then
-  problems+=("thinking matrix is missing architecture/debugging with substantial uncertainty -> xhigh")
-fi
-if ! grep -Eiq 'supported levels are.*`off`.*`minimal`.*`low`.*`medium`.*`high`.*`xhigh`' "$SKILL"; then
-  problems+=("policy does not list the Agent tool's supported thinking levels")
-fi
-if ! grep -Eiq 'never (pass|use|set).*`?max`?' "$SKILL"; then
-  problems+=("policy does not explicitly forbid max thinking")
-fi
-if ! grep -Eiq 'nearest supported (thinking )?level' "$SKILL" ||
-   ! grep -Eiq 'do not switch models|never a model switch|without changing models' "$SKILL"; then
-  problems+=("unsupported thinking does not fall back to the nearest supported level without switching model")
-fi
-if ! { grep -Eiq 'override.*model|model.*override' "$SKILL" && grep -Eiq 'record (that|the) reason|reason.*(task graph|written|documented)' "$SKILL"; }; then
-  problems+=("model overrides do not require a recorded explicit reason")
-fi
+has 'Select unspecified settings per task' \
+  || problems+=("unspecified settings are not selected per task")
+has 'Record the selection reason in the dispatch record before dispatch' \
+  || problems+=("the selection reason is not recorded before dispatch")
 
-for tier in luna terra sol haiku sonnet opus; do
-  if grep -Eiq "(^|[^[:alnum:]_-])${tier}([^[:alnum:]_-]|$)" "$SKILL"; then
-    problems+=("legacy routine model-routing tier remains: $tier")
-  fi
-done
+has 'native capability check' \
+  || problems+=("no native capability check rule")
+has_re 'before the first dispatch, confirm which model and reasoning controls' \
+  || problems+=("the capability check does not precede the first dispatch")
+
+has 'Record the requested settings and the observed settings separately' \
+  || problems+=("requested and observed settings are not recorded separately")
+has_re 'each with (its|their) provenance' \
+  || problems+=("observed settings carry no provenance")
+has 'An unknown value stays `unknown`' \
+  || problems+=("an unknown value does not stay unknown")
+has 'never record it as confirmed or zero' \
+  || problems+=("unknown values may be recorded as confirmed or zero")
+
+has 'An unsupported required control blocks' \
+  || problems+=("an unsupported required control does not block")
+has_re 'mark the affected worker and its dependents `BLOCKED`' \
+  || problems+=("blocking does not cover the worker and its dependents")
+has_re 'never substitute a model, lower a setting, change shared or parent settings, or call a nested inference CLI' \
+  || problems+=("a missing control may be worked around by substitution, lowering, parent-setting change, or a nested inference CLI")
+
+grep -qiE 'sonnet' "$SKILL" \
+  || problems+=("the Sonnet exclusion is not stated")
+sonnet_routes="$(sed 's/non-Sonnet//gi' <<<"$sentences" | grep -iE 'sonnet' | grep -vE "$negation" || true)"
+[[ -z "$sonnet_routes" ]] \
+  || problems+=("Sonnet appears outside a negation (a routing target, not an exclusion): $sonnet_routes")
+has_re 'never route work to sonnet' \
+  || problems+=("the Sonnet exclusion is not stated as 'never route work to Sonnet'")
+
+has_re 'never pass `max`' \
+  || problems+=("passing max is not forbidden")
+max_passes="$(grep -iE 'thinking:? *`?max`?|`max`' <<<"$sentences" | grep -vE "$negation" || true)"
+[[ -z "$max_passes" ]] \
+  || problems+=("max thinking appears outside a negation: $max_passes")
+
+fallback="$(grep -iE 'nearest (supported )?(thinking |reasoning )?level|fall(s|ing)? back to (the )?(nearest|next|lower|`?low`?|`?minimal`?|`?medium`?)|(round|map|lower)(s|ed)? (it |them )?(up |down )?to (the )?(nearest|`?low`?|`?minimal`?)|(thinking|reasoning)[- ]off[^.]*(becomes|means|equals|maps to|is treated as) `?low`?' <<<"$sentences" || true)"
+[[ -z "$fallback" ]] \
+  || problems+=("an unsupported reasoning setting is substituted with a nearby level: $fallback")
+
+inherit_lowers="$(grep -iE '(inherit|lower|reduce|downgrade)[^.]{0,40}(instead of|rather than|when)[^.]{0,30}(block|blocked|blocking)' <<<"$sentences" | grep -vE "$negation" || true)"
+[[ -z "$inherit_lowers" ]] \
+  || problems+=("a missing control is inherited or lowered instead of blocked: $inherit_lowers")
+
+[[ -n "${provider_block//[[:space:]]/}" ]] \
+  || problems+=("no '### Provider-specific preferences' subsection")
+provider_flat="$(tr -s '[:space:]' ' ' <<<"$provider_block")"
+grep -qiF 'operator preferences' <<<"$provider_flat" \
+  || problems+=("provider preferences are not named operator preferences")
+grep -qiF 'native verification' <<<"$provider_flat" \
+  || problems+=("provider preferences do not require native verification")
+grep -qiF 'not the portable role definition' <<<"$provider_flat" \
+  || problems+=("provider preferences are not separated from the portable role definition")
+
+fixed_role="$(grep -iE 'advisor[^.|]{0,80}\b(is|are|runs on|uses|requires|must use|means)\b[^.|]{0,60}\b(Fable|Opus|Sonnet|Haiku|Luna|Astra)\b' <<<"$portable_sentences" || true)"
+[[ -z "$fixed_role" ]] \
+  || problems+=("portable rule text defines the advisor by a model name: $fixed_role")
 
 if grep -Eiq 'DeepSWE|leaderboard' "$SKILL"; then
   problems+=("volatile external benchmark language appears in durable delegate policy")
 fi
 
 if (( ${#problems[@]} > 0 )); then
-  echo "REGRESSION: /delegate model/thinking policy contract is broken; issues:" >&2
+  echo "REGRESSION: /delegate worker model/reasoning policy contract is broken; issues:" >&2
   printf '  - %s\n' "${problems[@]}" >&2
   exit 1
 fi
 
-echo "PASS: /delegate inherits the session model and passes bounded, complexity-adjusted Agent thinking" >&2
+echo "PASS: /delegate binds operator selections, checks native capability before dispatch, keeps requested/observed evidence separate, blocks unsupported controls, excludes Sonnet, and never passes max (prose check only)" >&2
 exit 0
