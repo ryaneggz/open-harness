@@ -1,6 +1,6 @@
 # Evidence: advisor-first orchestration (#988, ADR #989)
 
-Branch `feat/988-advisor-first-orchestration`, PR #991. Content commits: policy `50515549`+`17a510de`+`ae296157`, docs `aa001fa8`+`7ed847d3`+`14127d7c`, probes `758457f2`+`8cd488e5`, knowledge `ceced13c`; eval records and this document follow them. The independent review (T5) of `72548bc4` returned five blocking findings; their dispositions are in section 3 and the repairs are the two commits `ae296157` (T1) and `8cd488e5` (T2). A fresh review (Explore built-in with `model: fable`, self-reported `claude-fable-5-1`) ran on the repaired head `e67e5481` and found no blocking defect; the audit routes then ran on the head recorded under "Audit correlation".
+Branch `feat/988-advisor-first-orchestration`, PR #991. Content commits: policy `50515549`+`17a510de`+`ae296157`, docs `aa001fa8`+`7ed847d3`+`14127d7c` plus the CB-001 note, probes `758457f2`+`8cd488e5`, knowledge `ceced13c` plus two pattern pages (`f30900a4`); eval records and this document follow them. The independent review (T5) of `72548bc4` returned five blocking findings; their dispositions are in section 3 and the repairs are the two commits `ae296157` (T1) and `8cd488e5` (T2). A fresh review (Explore built-in with `model: fable`, self-reported `claude-fable-5-1`) ran on the repaired head `e67e5481` and found no blocking defect; the audit routes then ran on the head recorded under "Audit correlation".
 Audit correlation: `AUDIT_RUN_ID` and native verdicts are appended in "Audit correlation" below after the audit routes run.
 
 ## 0. Why this is better than not doing it
@@ -157,6 +157,12 @@ T4 section E: `git revert --no-edit` of the seven policy/probe/docs commits toge
 - **Public docs** (`mifunedev/openharness-web`) may still describe the old direct-implementation default. This PR does not audit or change that repository, and no external issue exists for it; the D11 public-guidance review stays open for the operator.
 - **Other declared sources of `plan-vs-built-reconciliation`** (`reviewer-evidence-doc.md`, `spec-ready-finalization.sh`) were not in this diff and were not re-cited; the page's prior `verified_at` commit is not in this repository's history, so their freshness relative to that page was not re-established here.
 - **STE findings on untouched lines** in the edited skill files (150 pre-existing on `execute.md` and siblings) remain.
+
+### Retro, compile, and benchmark (tail steps 8–9)
+
+The task-scoped retro (report-only; verdicts recorded in `progress.txt`) produced six hypotheses. Two are supported at medium or high confidence and generalize; they were compiled into `kind: pattern` pages by the bounded docs worker: `pattern-delegate-builtin-type-carries-own-model` and `pattern-evals-negation-must-govern-token`. Four are report-only.
+
+Benchmark: `.oh/evals/capability/RESULTS.md` suite score is `1.44` on this head and `1.44` on `origin/development`; the ceiling held and the eval floor is green (runner exit 0). This run exercised the CB-001/CB-002 path under the new default, which is the capability the change states, so the verdict is BENEFICIAL as a justified hold. No ceiling movement and no efficiency benefit are claimed; no new capability score row was written because no rubric-graded run was performed.
 
 ## Audit correlation
 

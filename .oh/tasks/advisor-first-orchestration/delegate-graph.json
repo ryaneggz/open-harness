@@ -178,13 +178,15 @@
       ],
       "nativeWorkerId": "ae3c3d039bfa430c9",
       "status": "completed",
-      "summary": "four docs aligned; one repair (changelog section, active voice) routed back and fixed; continuing worker assigned the plan-vs-built-reconciliation knowledge page (UPDATED) and one changelog-length repair (9fcc945d -> 14127d7c)",
+      "summary": "four docs aligned; one repair (changelog section, active voice) routed back and fixed; continuing worker assigned the plan-vs-built-reconciliation knowledge page (UPDATED) and one changelog-length repair (9fcc945d -> 14127d7c); compiled two retro patterns; assigned the CB-001 capability-task note",
       "artifacts": [
         "e7a75a69",
         "28223d75",
         "integration: aa001fa8, 7ed847d3",
         "9fcc945d -> 14127d7c (changelog length)",
-        "109a2c13 -> ceced13c (knowledge page UPDATED, index regenerated)"
+        "109a2c13 -> ceced13c (knowledge page UPDATED, index regenerated)",
+        "c9ac6e1f -> f30900a4 (two pattern pages + index)",
+        "5df91bd8 -> CB-001 note"
       ],
       "usage": "~128k subagent tokens cumulative (harness report)"
     },

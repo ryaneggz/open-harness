@@ -10,3 +10,4 @@
 2026-09-06T18:56:36Z W4: head 72548bc4 pushed (CI pending, mergeable); T5 dispatched (Explore read-only, model omitted=inherit, ac70a18c7d509bfb8).
 2026-09-06T19:08:58Z W4 repairs: T1 ae296157 (disjoint wording, heading) and T2 1898f583 -> 8cd488e5 (probe blind spots) integrated; advisor re-ran 11 probes + link check + diff --check: all 0. Fresh T5 review to run with model: fable on the pushed head.
 2026-09-06T19:13:38Z W4 fresh review: T5 (Explore, model: fable, a40cad69363480924) on e67e5481 — BL-1..BL-5 CLOSED, 0 new blocking. Annotation: earlier "inherit Fable" wording for T1/T2 describes the request; observation is unknown.
+2026-09-06T19:20:27Z W5 tail: audit implementation attempt 1 blocked by provider limit (audit-20260906T191412Z-1541169, no gate ran); T3 compiled two retro patterns (c9ac6e1f -> f30900a4, all wiki-* probes 0); T3 assigned the CB-001 capability-task re-authoring note; rerun of the audit scheduled for the 16:11 MDT limit reset.
