@@ -1,6 +1,6 @@
 # Evidence: advisor-first orchestration (#988, ADR #989)
 
-Branch `feat/988-advisor-first-orchestration`, PR #991. Content commits: policy `50515549`+`17a510de`+`ae296157`, docs `aa001fa8`+`7ed847d3`+`14127d7c`, probes `758457f2`+`8cd488e5`, knowledge `ceced13c`; eval records and this document follow them. The independent review (T5) of `72548bc4` returned five blocking findings; their dispositions are in section 3 and the repairs are the two commits `ae296157` (T1) and `8cd488e5` (T2). A fresh review ran on the repaired head (see "Audit correlation").
+Branch `feat/988-advisor-first-orchestration`, PR #991. Content commits: policy `50515549`+`17a510de`+`ae296157`, docs `aa001fa8`+`7ed847d3`+`14127d7c`, probes `758457f2`+`8cd488e5`, knowledge `ceced13c`; eval records and this document follow them. The independent review (T5) of `72548bc4` returned five blocking findings; their dispositions are in section 3 and the repairs are the two commits `ae296157` (T1) and `8cd488e5` (T2). A fresh review (Explore built-in with `model: fable`, self-reported `claude-fable-5-1`) ran on the repaired head `e67e5481` and found no blocking defect; the audit routes then ran on the head recorded under "Audit correlation".
 Audit correlation: `AUDIT_RUN_ID` and native verdicts are appended in "Audit correlation" below after the audit routes run.
 
 ## 0. Why this is better than not doing it
@@ -54,7 +54,7 @@ Requested versus observed, from `delegate-graph.json`:
 | T3 docs (L) | Opus, thinking disabled | no per-worker thinking control exists | `claude-opus-5[1m]`; reasoning unknown | worker self-report |
 | T4 checks (L) | Opus, thinking disabled | no per-worker thinking control exists | `claude-opus-5[1m]`; reasoning unknown | worker self-report |
 | T5 review (H) | inherit (Fable), read-only | `Explore` built-in did not inherit | `claude-opus-5[1m]`; reasoning unknown | worker self-report |
-| T5 fresh review (H) | `fable` passed explicitly, read-only | `Explore` built-in with `model` set | see "Audit correlation" | worker self-report |
+| T5 fresh review (H) | `fable` set explicitly, read-only | `Explore` built-in with `model` set | `claude-fable-5-1`; reasoning unknown | worker self-report |
 
 Capability gate: the Agent tool schema visible to this session carries `model` with aliases `sonnet`, `opus`, `haiku`, `fable` and no `thinking` or `effort` parameter. The Claude Code documentation read on 2026-09-06 (`code.claude.com/docs/en/tools-reference.md`, `sub-agents.md`, `model-config.md`) lists no per-subagent thinking or effort control. "Opus with thinking disabled" therefore could not be confirmed; T3 and T4 were BLOCKED before dispatch and the operator was asked. The operator authorized "Opus, reasoning unobserved". Sonnet was never passed. `max` was never passed. Luna/Max and Astra/high: no native surface in this session exposes those models; recorded as a capability gap, no invented parameter passed.
 
@@ -123,7 +123,7 @@ T4 section E: `git revert --no-edit` of the seven policy/probe/docs commits toge
 |---|---|
 | BL-1 `execute.md` and the task prompt kept "only for bounded, disjoint worker tasks", readable as permission to keep coupled work in the owner | T1 repair `ae296157`: "disjoint" now describes one dispatch shape; coupled work names one continuing worker; pinned prefix intact; probes 0 |
 | BL-2 T5 ran on `claude-opus-5[1m]` while its record said inherit Fable | Records corrected (`delegate-graph.json`, matrix above); fresh review dispatched with `model: fable` explicitly; T1/T2 model stays unknown |
-| BL-3 eval result and check transcript keyed to older commits; audit pending | Suite re-run on the repaired head and recorded in `eval-result.json`; audit run on the pushed head, verdicts below |
+| BL-3 eval result and check transcript keyed to older commits; audit pending | Suite re-run on the repaired head and recorded in `eval-result.json`; the audit routes run on the pushed head and their run ID and verdicts are recorded under "Audit correlation" |
 | BL-4 advisor-committed `.oh/skills/plan/SKILL.md` baseline copy and `RESULTS.md` refreshes omitted from the ownership statement | Section 0 corrected; disclosed in `progress.txt`; no operator exception claimed |
 | BL-5 probes passed on `…Sonnet when no Opus…` and `The owner may write tracked implementation edits…` | T2 repair `8cd488e5`: negation must govern the Sonnet token; new permission scan; 7 injection cases in `t2-fault-injection.log` "repair round" |
 | NB-1 stale heading | T1 repair: "Re-ground before you assign work" |
@@ -160,4 +160,10 @@ T4 section E: `git revert --no-edit` of the seven policy/probe/docs commits toge
 
 ## Audit correlation
 
-Pending: filled after `/audit implementation` and `/audit pr` run against the pushed head.
+| Route | Run ID | Head | Native verdict | Note |
+|---|---|---|---|---|
+| `/audit implementation` (attempt 1) | `audit-20260906T191412Z-1541169` | `e67e5481` | none (state `failed`, exit 1) | The shipped agent driver (`claude -p`) was refused by the provider: monthly spend limit, session limit resets 16:10 MDT. No gate ran. Not a verdict about the code. |
+| `/audit implementation` (attempt 2) | pending | | | Rerun after the limit resets; the verdict and gate outputs are appended here before any undraft. |
+| `/audit pr` | pending | | | Runs after the implementation audit on the final pushed head. |
+
+Until both rows carry a verdict the PR stays draft as `DRAFT-BLOCKED(audit-implementation)`.

@@ -266,9 +266,10 @@
       ],
       "nativeWorkerId": "ac70a18c7d509bfb8",
       "status": "completed",
-      "summary": "",
+      "summary": "first pass (Explore, opus observed) on 72548bc4: 5 blocking + 10 non-blocking; fresh pass (Explore, model: fable, self-reported claude-fable-5-1, worker a40cad69363480924) on e67e5481: all 5 closed, 0 new blocking, 5 wording/log residuals",
       "artifacts": [
-        "review report in session transcript; 5 blocking + 10 non-blocking findings"
+        "review report in session transcript; 5 blocking + 10 non-blocking findings",
+        "fresh review on e67e5481 by a40cad69363480924"
       ],
       "usage": "~154k subagent tokens, 41 tool uses (harness report)"
     }

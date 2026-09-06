@@ -114,8 +114,8 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "T5 first pass 5 blocking -> repaired (ae296157, 8cd488e5) -> fresh pass on e67e5481 (fable): none blocking; knowledge union resolved (plan-vs-built-reconciliation UPDATED, index green); evidence.md committed with git add -f; audit implementation and audit pr verdicts are appended to evidence.md Audit correlation by the gate itself — if either fails this story returns to false"
     }
   ]
 }

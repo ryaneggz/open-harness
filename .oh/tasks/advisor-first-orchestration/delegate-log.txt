@@ -9,3 +9,4 @@
 2026-09-06T18:51:43Z W3: T3 knowledge page commit 109a2c13 integrated as ceced13c; wiki-readme-index PASS; advisor read the page diff (12 citations remapped, summary reworded, verified_at 14127d7c). Knowledge union: plan-vs-built-reconciliation UPDATED; all other pages FRESH/NOT-AFFECTED.
 2026-09-06T18:56:36Z W4: head 72548bc4 pushed (CI pending, mergeable); T5 dispatched (Explore read-only, model omitted=inherit, ac70a18c7d509bfb8).
 2026-09-06T19:08:58Z W4 repairs: T1 ae296157 (disjoint wording, heading) and T2 1898f583 -> 8cd488e5 (probe blind spots) integrated; advisor re-ran 11 probes + link check + diff --check: all 0. Fresh T5 review to run with model: fable on the pushed head.
+2026-09-06T19:13:38Z W4 fresh review: T5 (Explore, model: fable, a40cad69363480924) on e67e5481 — BL-1..BL-5 CLOSED, 0 new blocking. Annotation: earlier "inherit Fable" wording for T1/T2 describes the request; observation is unknown.
