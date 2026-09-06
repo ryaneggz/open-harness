@@ -217,3 +217,34 @@ describe("validateOhConfig", () => {
     expect(OH_CONFIG_FIELDS.some((f) => f.path.startsWith("install."))).toBe(false);
   });
 });
+
+describe("ohConfigPath — dual-generation config files", () => {
+  it("keeps oh.json as the path for a fresh root (legacy default unchanged)", () => {
+    const root = makeRoot();
+    expect(ohConfigPath(root)).toBe(join(root, "oh.json"));
+    writeOhConfig(root, defaultOhConfig("demo"));
+    expect(readFileSync(join(root, "oh.json"), "utf8")).toContain('"name": "demo"');
+  });
+
+  it("selects agro.json when it is the only config present", () => {
+    const root = makeRoot();
+    writeFileSync(join(root, "agro.json"), JSON.stringify({ version: 1, name: "agro-era" }));
+    expect(ohConfigPath(root)).toBe(join(root, "agro.json"));
+    expect(readOhConfig(ohConfigPath(root)).name).toBe("agro-era");
+  });
+
+  it("selects agro.json when both files are byte-identical", () => {
+    const root = makeRoot();
+    const body = JSON.stringify({ version: 1, name: "twin" });
+    writeFileSync(join(root, "oh.json"), body);
+    writeFileSync(join(root, "agro.json"), body);
+    expect(ohConfigPath(root)).toBe(join(root, "agro.json"));
+  });
+
+  it("fails closed when oh.json and agro.json differ", () => {
+    const root = makeRoot();
+    writeFileSync(join(root, "oh.json"), JSON.stringify({ version: 1, name: "one" }));
+    writeFileSync(join(root, "agro.json"), JSON.stringify({ version: 1, name: "two" }));
+    expect(() => ohConfigPath(root)).toThrow(/both exist and differ/);
+  });
+});

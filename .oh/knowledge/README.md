@@ -54,15 +54,18 @@ Schema, frontmatter spec, provenance kinds, and every authoring rule:
 
 | Slug | Title | Tags | Updated |
 | --- | --- | --- | --- |
+| pattern-scripts-sibling-dependency-standalone-copies | A script that gains a sourced sibling breaks every test and probe that copies it alone | [scripts, compose, testing, probes, bundling, registry, boot] | 2026-09-06 |
+| pattern-evals-tracked-only-scan-misses-uncommitted | A repository scan over git ls-files passes on uncommitted files and fails once they are committed | [evals, testing, git, inventory, ci, false-pass] | 2026-09-06 |
+| pattern-evals-environment-parity-false-delta | An eval run from a shell with a different PATH reports environment gaps as probe regressions | [evals, probes, environment, path, python, false-regression, worktree] | 2026-09-06 |
+| oh-cli-portable-lifecycle | oh CLI Portable Lifecycle | [cli, oh, lifecycle, standalone, registry, sandbox, remote-fetch, execution-target, update] | 2026-09-06 |
+| compose-env-boundary | Compose Environment Boundary | [compose, devcontainer, oh-json, cli, entrypoint, boundary, installs, sandbox, registry] | 2026-09-06 |
 | pattern-evals-unexercised-oracle | A probe that has never failed has an unverified oracle | [evals, probes, oracles, skipped, fault-injection, continual-learning] | 2026-09-05 |
 | fresh-machine-setup | Fresh-Machine Setup Flow | [setup, onboarding, installation, registry, gateway, ssh, github, slack] | 2026-09-05 |
-| compose-env-boundary | Compose Environment Boundary | [compose, devcontainer, oh-json, cli, entrypoint, boundary, installs, sandbox, registry] | 2026-09-05 |
 | pattern-spec-stubbed-runner-state-gap | Unit tests with a stubbed runner cannot see state a verb fails to persist | [spec, cli, testing, evidence, rehearsal, persistence] | 2026-09-03 |
 | pattern-spec-simplify-round-seeded-non-reducing | A simplify round seeded with the audit's own measurement is non-reducing by construction | [spec, audit, simplify, netAdded, bookkeeping, monotone-stop] | 2026-09-03 |
 | pattern-evals-probe-brief-under-enumeration | A probe brief derived from a name grep misses the probes that pin behaviour | [evals, probes, spec, delegate, blast-radius, briefing] | 2026-09-03 |
 | pattern-cli-bundled-asset-relative-import | Bundling repository files by relative import breaks the build site that stages the package alone | [cli, esbuild, dockerfile, ci, bundling, build-context] | 2026-09-03 |
 | pattern-audit-remote-head-verdict | The implementation audit's promotable gate classifies the pushed head, not the audited tree | [audit, spec, promotable, head-mismatch, ci, gh] | 2026-09-03 |
-| oh-cli-portable-lifecycle | oh CLI Portable Lifecycle | [cli, oh, lifecycle, standalone, registry, sandbox, remote-fetch, execution-target, update] | 2026-09-03 |
 | pattern-spec-self-staling-reuse-record | A commit-keyed reuse record goes stale the moment it is committed | [spec, evals, caching, provenance, freshness, build-cycle] | 2026-09-02 |
 | pattern-evals-prose-literal-pinning | Contract probes that pin multi-word prose break on reflow, not on drift | [evals, probes, contract-text, grep, false-failure, documentation] | 2026-09-02 |
 | pattern-audit-driver-tool-allowlist | A non-interactive audit driver without a tool allowlist reports every gate as unobtainable | [audit, spec, claude-p, permissions, allowlist, false-failure, verification-environment] | 2026-09-02 |

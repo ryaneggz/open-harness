@@ -9,7 +9,7 @@ sources:
   - .devcontainer/entrypoint.sh
   - .oh/scripts/__tests__/entrypoint-pnpm-install.test.ts
   - .oh/evals/probes/entrypoint-pnpm-manifest-fingerprint.sh
-verified_at: 8c89894512eb5e248e68e55323333e2cd35bc813
+verified_at: 69b7f8fd3812673d31b31c86260c1d779c792179
 related: [compose-env-boundary, recursive-language-models]
 confidence: confirmed
 ---

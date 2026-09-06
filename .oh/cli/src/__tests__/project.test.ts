@@ -64,3 +64,37 @@ describe("resolveProjectRoot", () => {
     expect(() => resolveProjectRoot(nested)).not.toThrow(/^oh:/);
   });
 });
+
+describe("resolveProjectRoot — dual-generation control directories", () => {
+  it("recognizes an .agro/-only root", () => {
+    const root = mkTmp();
+    mkdirSync(join(root, ".agro"));
+    const nested = join(root, "a", "b");
+    mkdirSync(nested, { recursive: true });
+    expect(resolveProjectRoot(nested)).toBe(root);
+  });
+
+  it("recognizes a root where .oh/ and .agro/ are byte-identical", () => {
+    const root = mkTmp();
+    mkdirSync(join(root, ".oh"));
+    mkdirSync(join(root, ".agro"));
+    writeFileSync(join(root, ".oh", "README.md"), "same\n");
+    writeFileSync(join(root, ".agro", "README.md"), "same\n");
+    expect(resolveProjectRoot(root)).toBe(root);
+  });
+
+  it("fails closed when .oh/ and .agro/ both exist and differ", () => {
+    const root = mkTmp();
+    mkdirSync(join(root, ".oh"));
+    mkdirSync(join(root, ".agro"));
+    writeFileSync(join(root, ".oh", "README.md"), "one\n");
+    writeFileSync(join(root, ".agro", "README.md"), "two\n");
+    expect(() => resolveProjectRoot(root)).toThrow(/both exist and differ/);
+  });
+
+  it("keeps the legacy default: a plain .oh/ root resolves exactly as before", () => {
+    const root = mkTmp();
+    mkdirSync(join(root, ".oh"));
+    expect(resolveProjectRoot(root)).toBe(root);
+  });
+});

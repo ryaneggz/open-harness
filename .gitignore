@@ -80,6 +80,7 @@ packages/*/node_modules/
 # is no checkout bind. It must never land in a real checkout, so it is ignored on
 # every branch.
 .oh/.image-seeded
+.agro/.image-seeded
 .oh/crons/
 
 # RETIRED COMPATIBILITY TOMBSTONE — .oh/memory/ was deleted as a concept; nothing

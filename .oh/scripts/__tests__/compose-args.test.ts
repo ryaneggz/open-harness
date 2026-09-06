@@ -20,6 +20,7 @@ import path from "node:path";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
 const SCRIPT = path.join(REPO_ROOT, ".oh", "scripts", "docker-compose.sh");
+const COMPAT = path.join(REPO_ROOT, ".oh", "scripts", "compat.sh");
 const INSTALL = path.join(REPO_ROOT, ".oh", "scripts", "install.sh");
 
 let tmp: string;
@@ -389,6 +390,7 @@ describe("execution target argv equivalence (issue #733)", () => {
     mkdirSync(path.join(tmp, ".oh", "scripts"), { recursive: true });
     const vendored = path.join(tmp, ".oh", "scripts", "docker-compose.sh");
     copyFileSync(SCRIPT, vendored);
+    copyFileSync(COMPAT, path.join(tmp, ".oh", "scripts", "compat.sh"));
     writeFileSync(path.join(tmp, ".devcontainer", ".env"), "SANDBOX_NAME=from-env\n");
 
     const calls: { cmd: string; args: string[] }[] = [];
@@ -491,5 +493,77 @@ describe("compose helper wiring", () => {
     expect(epilogue).toContain("oh destroy");
     expect(epilogue).toContain("oh gateway");
     expect(epilogue).toContain("oh --help");
+  });
+});
+
+describe("scripts/docker-compose.sh — dual-generation config discovery", () => {
+  const baseArgv = (): string[] => [
+    "docker",
+    "compose",
+    "-f",
+    path.join(tmp, ".devcontainer", "docker-compose.yml"),
+  ];
+
+  function printArgvRaw(args: string[]): { status: number | null; stdout: string; stderr: string } {
+    const result = spawnSync("bash", [SCRIPT, "--repo-dir", tmp, "--print-argv", ...args], {
+      encoding: "utf8",
+    });
+    return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+  }
+
+  it("reads composeOverrides from agro.json when it is the only config", () => {
+    writeFileSync(
+      path.join(tmp, "agro.json"),
+      JSON.stringify({ version: 1, composeOverrides: ["from-agro.yml"] }),
+    );
+    const result = printArgvRaw(["config"]);
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("non-secret config comes from agro.json");
+    expect(result.stdout.trimEnd().split("\n")).toEqual([
+      ...baseArgv(),
+      "-f",
+      path.join(tmp, "from-agro.yml"),
+      "config",
+    ]);
+  });
+
+  it("keeps oh.json behavior unchanged when only oh.json exists (legacy default)", () => {
+    writeFileSync(
+      path.join(tmp, "oh.json"),
+      JSON.stringify({ version: 1, composeOverrides: ["from-oh.yml"] }),
+    );
+    const result = printArgvRaw(["config"]);
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("non-secret config comes from oh.json");
+    expect(result.stdout.trimEnd().split("\n")).toEqual([
+      ...baseArgv(),
+      "-f",
+      path.join(tmp, "from-oh.yml"),
+      "config",
+    ]);
+  });
+
+  it("fails closed when oh.json and agro.json both exist and differ", () => {
+    writeFileSync(path.join(tmp, "oh.json"), JSON.stringify({ version: 1, name: "one" }));
+    writeFileSync(path.join(tmp, "agro.json"), JSON.stringify({ version: 1, name: "two" }));
+    const result = printArgvRaw(["config"]);
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain("both exist and differ");
+  });
+
+  it("refuses to run without its compat.sh sibling instead of guessing a generation", () => {
+    mkdirSync(path.join(tmp, "solo", ".oh", "scripts"), { recursive: true });
+    mkdirSync(path.join(tmp, "solo", ".devcontainer"), { recursive: true });
+    writeFileSync(path.join(tmp, "solo", ".devcontainer", "docker-compose.yml"), "services: {}\n");
+    const solo = path.join(tmp, "solo", ".oh", "scripts", "docker-compose.sh");
+    copyFileSync(SCRIPT, solo);
+    const result = spawnSync(
+      "bash",
+      [solo, "--repo-dir", path.join(tmp, "solo"), "--print-argv", "config"],
+      { encoding: "utf8" },
+    );
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("compat.sh is missing");
   });
 });

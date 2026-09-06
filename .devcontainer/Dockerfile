@@ -49,7 +49,7 @@ SHELL ["/bin/bash", "-c"]
 RUN npm install -g cc-safety-net@1.0.6
 
 COPY .devcontainer/docker-compose.yml .devcontainer/docker-compose.image-only.yml .devcontainer/docker-compose.ssh.yml .devcontainer/docker-compose.docker-sock.yml /opt/oh-assets/.devcontainer/
-COPY .oh/scripts/docker-compose.sh .oh/scripts/check-host-port.sh /opt/oh-assets/.oh/scripts/
+COPY .oh/scripts/docker-compose.sh .oh/scripts/check-host-port.sh .oh/scripts/compat.sh /opt/oh-assets/.oh/scripts/
 COPY .oh/cli/ /opt/oh/
 RUN cd /opt/oh && OH_ASSET_ROOT=/opt/oh-assets npm install --no-audit --no-fund && OH_ASSET_ROOT=/opt/oh-assets npm run build \
  && chmod +x /opt/oh/dist/oh.js \

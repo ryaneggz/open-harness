@@ -19,7 +19,7 @@ sources:
   - .oh/scripts/link-providers.sh
   - .oh/scripts/hermes-install-smoke.sh
   - .oh/scripts/gateway.sh
-verified_at: 27568a185eed75fe568a8fe3e0260f3b7e148bcb
+verified_at: 69b7f8fd3812673d31b31c86260c1d779c792179
 related: [sandbox-dependency-installs, oh-cli-portable-lifecycle]
 confidence: provisional
 ---

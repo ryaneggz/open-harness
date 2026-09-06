@@ -1,24 +1,22 @@
 import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
 import composeRepo from "oh-asset:.devcontainer/docker-compose.yml";
 import composeImageOnly from "oh-asset:.devcontainer/docker-compose.image-only.yml";
 import composeSsh from "oh-asset:.devcontainer/docker-compose.ssh.yml";
 import composeDockerSock from "oh-asset:.devcontainer/docker-compose.docker-sock.yml";
 import composeWrapper from "oh-asset:.oh/scripts/docker-compose.sh";
+import compatShell from "oh-asset:.oh/scripts/compat.sh";
 import checkHostPort from "oh-asset:.oh/scripts/check-host-port.sh";
 import { spawnRunner, type LifecycleRunner } from "./execution/runner.js";
 import { ohConfigPath, readOhConfig } from "./oh-config.js";
+import { resolveUserStateHome } from "./compat.js";
 
 export const SANDBOX_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 
 const DEFAULT_NAME_PREFIX = "oh-sbx-";
 
 export function ohHome(): string {
-  const configured = process.env.OH_HOME;
-  return configured !== undefined && configured !== ""
-    ? resolve(configured)
-    : join(homedir(), ".oh");
+  return resolveUserStateHome(process.env);
 }
 
 export function registryRoot(): string {
@@ -99,6 +97,7 @@ export function materialize(root: string, opts: MaterializeOptions = {}): void {
     { rel: ".devcontainer/docker-compose.ssh.yml", body: composeSsh, mode: 0o644 },
     { rel: ".devcontainer/docker-compose.docker-sock.yml", body: composeDockerSock, mode: 0o644 },
     { rel: ".oh/scripts/docker-compose.sh", body: composeWrapper, mode: 0o755 },
+    { rel: ".oh/scripts/compat.sh", body: compatShell, mode: 0o644 },
     { rel: ".oh/scripts/check-host-port.sh", body: checkHostPort, mode: 0o755 },
   ];
   for (const file of files) {

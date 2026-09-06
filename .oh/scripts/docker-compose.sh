@@ -54,6 +54,14 @@ done
 
 [ "$#" -gt 0 ] || { usage; exit 2; }
 
+COMPAT="$SCRIPT_DIR/compat.sh"
+if [ ! -f "$COMPAT" ]; then
+  printf 'error: %s is missing — the vendored .oh/scripts payload is incomplete; run `oh update`\n' "$COMPAT" >&2
+  exit 2
+fi
+# shellcheck source=compat.sh
+. "$COMPAT"
+
 MIGRATOR="$SCRIPT_DIR/migrate-harness-yaml.sh"
 if [ -f "$REPO_DIR/harness.yaml" ] && [ -f "$MIGRATOR" ]; then
   sh "$MIGRATOR" "$REPO_DIR" >&2 || true
@@ -110,9 +118,11 @@ if [ -n "$EXTRA_ENV_FILE" ] && [ ! -f "$EXTRA_ENV_FILE" ]; then
   exit 2
 fi
 
-if [ -z "$EXTRA_ENV_FILE" ] && [ -f "$REPO_DIR/oh.json" ]; then
-  printf 'note: non-secret config comes from oh.json via `oh`; this direct run uses only %s and the compose-file defaults\n' \
-    "${ENV_FILE#"$REPO_DIR"/}" >&2
+CONFIG_JSON="$(compat_selected_path compat_config_file "$REPO_DIR")" || exit 2
+
+if [ -z "$EXTRA_ENV_FILE" ] && [ -n "$CONFIG_JSON" ]; then
+  printf 'note: non-secret config comes from %s via `oh`; this direct run uses only %s and the compose-file defaults\n' \
+    "${CONFIG_JSON#"$REPO_DIR"/}" "${ENV_FILE#"$REPO_DIR"/}" >&2
 fi
 
 args=()
@@ -163,8 +173,7 @@ if truthy "$ssh_value"; then
   fi
 fi
 
-CONFIG_JSON="$REPO_DIR/oh.json"
-[ -f "$CONFIG_JSON" ] || CONFIG_JSON="$REPO_DIR/.oh/config.json"
+[ -n "$CONFIG_JSON" ] || CONFIG_JSON="$REPO_DIR/.oh/config.json"
 [ -f "$CONFIG_JSON" ] || CONFIG_JSON="$REPO_DIR/config.json"
 if command -v jq >/dev/null 2>&1 && [ -f "$CONFIG_JSON" ]; then
   while IFS= read -r override; do
