@@ -8,6 +8,10 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 
 ## [Unreleased]
 
+### Fixed
+
+- Release publishing waits for npm registry propagation with an uncached `npm view` before publishing the `@mifune/openharness` shim and fails when its deprecation notice is not applied. ([#994](https://github.com/mifunedev/openharness/issues/994))
+
 ### Added
 
 - Add the `advisor-execution-contract` and `plan-orchestration-contract` probes. ([#988](https://github.com/mifunedev/openharness/issues/988))

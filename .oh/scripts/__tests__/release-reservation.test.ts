@@ -458,6 +458,20 @@ describe("CLI publication workflow contract", () => {
       'npm deprecate "@mifune/openharness@$V" "@mifune/openharness is the compatibility entry point for AGRO; install @mifune/agro (agro) — oh keeps working through the compatibility window"',
     );
     expect(source).toMatch(/Deprecate @mifune\/openharness[\s\S]*?if: steps\.legacy_guard\.outputs\.skip == 'false'/);
+    expect(source).toMatch(
+      /Wait for @mifune\/agro to resolve on the registry\n\s+if: steps\.legacy_guard\.outputs\.skip == 'false'\n\s+env:\n\s+V: \$\{\{ steps\.guard\.outputs\.version \}\}\n\s+run: \.oh\/scripts\/npm-wait-version\.sh "@mifune\/agro" "\$V"\n/,
+    );
+    expect(source).toMatch(
+      /run: \|\n\s+\.oh\/scripts\/npm-wait-version\.sh "@mifune\/openharness" "\$V"\n\s+npm deprecate "@mifune\/openharness@\$V" "@mifune\/openharness is the compatibility entry point for AGRO; install @mifune\/agro \(agro\) — oh keeps working through the compatibility window"\n\s+DEPRECATED=\$\(npm view "@mifune\/openharness@\$V" deprecated --prefer-online --cache "\$\(mktemp -d\)"\)\n\s+if \[ -z "\$DEPRECATED" \]; then\n[\s\S]*?exit 1\n\s+fi\n/,
+    );
+    expect(source.match(/\.oh\/scripts\/npm-wait-version\.sh/g)?.length).toBe(2);
+    expect(source.indexOf('.oh/scripts/npm-wait-version.sh "@mifune/openharness" "$V"')).toBeGreaterThan(legacyPublish);
+    expect(source.indexOf('.oh/scripts/npm-wait-version.sh "@mifune/openharness" "$V"')).toBeLessThan(deprecate);
+    expect(source).toContain('npm view "@mifune/agro@$V" version --prefer-online >/dev/null');
+    expect(source).toContain('npm view "@mifune/openharness@$V" version --prefer-online >/dev/null');
+    expect(source).not.toContain("seq 1 10");
+    expect(source).not.toContain("sleep 15");
+    expect(source).not.toMatch(/Deprecate @mifune\/openharness[\s\S]*?working-directory:/);
     expect(source).toContain("id-token: write");
     expect(source.match(/NODE_AUTH_TOKEN: \$\{\{ secrets\.NPM_TOKEN \}\}/g)?.length).toBe(3);
     expect(source.match(/npm ci/g)?.length).toBe(1);
