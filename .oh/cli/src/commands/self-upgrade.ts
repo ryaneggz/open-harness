@@ -98,29 +98,33 @@ function isSourceCheckout(deps: SelfUpgradeDeps, target: string): boolean {
   );
 }
 
-export function classifyInstallation(argv1: string | undefined, deps: SelfUpgradeDeps): Installation {
-  const invoked = argv1 ?? "";
-  if (invoked === "") return { kind: "unknown", target: "", invoked, reason: "no executable path (argv[1] is empty)" };
-
+function resolveTarget(invoked: string, deps: SelfUpgradeDeps): { target: string; reason?: string } {
   let target: string;
   try {
     target = deps.realpath(invoked);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return { kind: "unknown", target: invoked, invoked, reason: `cannot resolve ${invoked}: ${msg}` };
+    return { target: invoked, reason: `cannot resolve ${invoked}: ${msg}` };
   }
-  if (statOrUndefined(deps, target)?.isFile() !== true) {
-    return { kind: "unknown", target, invoked, reason: `${target} is not a regular file` };
-  }
+  if (statOrUndefined(deps, target)?.isFile() !== true) return { target, reason: `${target} is not a regular file` };
+  return { target };
+}
 
+function kindOfTarget(target: string, deps: SelfUpgradeDeps): Pick<Installation, "kind" | "npmPrefix"> {
   const posix = toPosix(target);
-  if (posix.includes("/node_modules/@mifune/openharness/")) return { kind: "legacy-package", target, invoked };
-  if (posix.includes(`/node_modules/${PACKAGE}/`)) {
-    return { kind: "npm", target, invoked, npmPrefix: npmPrefixOf(posix) };
-  }
-  if (posix.startsWith(IMAGE_ROOT)) return { kind: "image", target, invoked };
-  if (isSourceCheckout(deps, target)) return { kind: "source", target, invoked };
-  return { kind: "standalone", target, invoked };
+  if (posix.includes("/node_modules/@mifune/openharness/")) return { kind: "legacy-package" };
+  if (posix.includes(`/node_modules/${PACKAGE}/`)) return { kind: "npm", npmPrefix: npmPrefixOf(posix) };
+  if (posix.startsWith(IMAGE_ROOT)) return { kind: "image" };
+  if (isSourceCheckout(deps, target)) return { kind: "source" };
+  return { kind: "standalone" };
+}
+
+export function classifyInstallation(argv1: string | undefined, deps: SelfUpgradeDeps): Installation {
+  const invoked = argv1 ?? "";
+  if (invoked === "") return { kind: "unknown", target: "", invoked, reason: "no executable path (argv[1] is empty)" };
+  const resolved = resolveTarget(invoked, deps);
+  if (resolved.reason !== undefined) return { kind: "unknown", target: resolved.target, invoked, reason: resolved.reason };
+  return { ...kindOfTarget(resolved.target, deps), target: resolved.target, invoked };
 }
 
 interface Semver {
@@ -145,6 +149,23 @@ function compareIdentifiers(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+function comparePrerelease(left: string[] | undefined, right: string[] | undefined): number {
+  if (left === undefined || right === undefined) {
+    if (left === right) return 0;
+    return left === undefined ? 1 : -1;
+  }
+  const n = Math.max(left.length, right.length);
+  for (let i = 0; i < n; i++) {
+    const x = left[i];
+    const y = right[i];
+    if (x === undefined) return -1;
+    if (y === undefined) return 1;
+    const c = compareIdentifiers(x, y);
+    if (c !== 0) return c;
+  }
+  return 0;
+}
+
 export function compareSemver(a: string, b: string): number {
   const left = parseSemver(a);
   const right = parseSemver(b);
@@ -154,20 +175,7 @@ export function compareSemver(a: string, b: string): number {
   for (let i = 0; i < 3; i++) {
     if (left.core[i] !== right.core[i]) return left.core[i] < right.core[i] ? -1 : 1;
   }
-  if (left.prerelease === undefined || right.prerelease === undefined) {
-    if (left.prerelease === right.prerelease) return 0;
-    return left.prerelease === undefined ? 1 : -1;
-  }
-  const n = Math.max(left.prerelease.length, right.prerelease.length);
-  for (let i = 0; i < n; i++) {
-    const x = left.prerelease[i];
-    const y = right.prerelease[i];
-    if (x === undefined) return -1;
-    if (y === undefined) return 1;
-    const c = compareIdentifiers(x, y);
-    if (c !== 0) return c;
-  }
-  return 0;
+  return comparePrerelease(left.prerelease, right.prerelease);
 }
 
 function versionOf(result: RunResult): string {
