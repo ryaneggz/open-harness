@@ -28,8 +28,8 @@ for compose in "$COMPOSE_PRIMARY" "$COMPOSE_IO"; do
     fails+=("$label must have exactly one mount targeting /home/sandbox (found ${home_mounts:-0})")
   fi
 
-  grep -Eq '^[[:space:]]*-[[:space:]]*\$\{OH_HOME_MOUNT:-workspace\}:/home/sandbox$' "$compose" \
-    || fails+=("$label must mount \${OH_HOME_MOUNT:-workspace} at /home/sandbox so a blank agro.json storage.homePath falls back to the named volume")
+  grep -Eq '^[[:space:]]*-[[:space:]]*\$\{AGRO_HOME_MOUNT:-\$\{OH_HOME_MOUNT:-workspace\}\}:/home/sandbox$' "$compose" \
+    || fails+=("$label must mount \${AGRO_HOME_MOUNT:-\${OH_HOME_MOUNT:-workspace}} at /home/sandbox so a blank agro.json storage.homePath falls back to the named volume")
 
   grep -qE '^  workspace:$' "$compose" \
     || fails+=("$label must declare the top-level named volume 'workspace' (compose prefixes it with the project name)")
@@ -45,7 +45,7 @@ for compose in "$COMPOSE_PRIMARY" "$COMPOSE_IO"; do
   done
 done
 
-grep -Eq '^[[:space:]]*-[[:space:]]*(\$\{OH_REPO_DIR:-\.\.\}|\.\.):/home/sandbox/harness$' "$COMPOSE_PRIMARY" \
+grep -Eq '^[[:space:]]*-[[:space:]]*(\$\{AGRO_REPO_DIR:-\$\{OH_REPO_DIR:-\.\.\}\}|\$\{OH_REPO_DIR:-\.\.\}|\.\.):/home/sandbox/harness$' "$COMPOSE_PRIMARY" \
   || fails+=("docker-compose.yml must bind the checkout at the fixed path /home/sandbox/harness, nested inside the home mount")
 
 if grep -qE '^[[:space:]]*-[[:space:]]*\.\.:' "$COMPOSE_IO"; then
@@ -149,5 +149,5 @@ if (( ${#fails[@]} > 0 )); then
   exit 1
 fi
 
-echo "PASS: one \${OH_HOME_MOUNT:-workspace} mount at /home/sandbox in both compose files with the per-tool volumes retired and no pinned volume name; the checkout binds at the fixed /home/sandbox/harness; the Dockerfile stages /opt/home-seed and leaves the image home empty; entrypoint prunes \$OH_PROJECT_ROOT instead of -xdev; seed_home copies whole top-level entries the mount lacks, never touches one it already has (mode included), reports write failures, and no-ops without a seed" >&2
+echo "PASS: one \${AGRO_HOME_MOUNT:-\${OH_HOME_MOUNT:-workspace}} mount at /home/sandbox in both compose files with the per-tool volumes retired and no pinned volume name; the checkout binds at the fixed /home/sandbox/harness; the Dockerfile stages /opt/home-seed and leaves the image home empty; entrypoint prunes \$OH_PROJECT_ROOT instead of -xdev; seed_home copies whole top-level entries the mount lacks, never touches one it already has (mode included), reports write failures, and no-ops without a seed" >&2
 exit 0

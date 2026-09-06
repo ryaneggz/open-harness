@@ -89,18 +89,18 @@ describe("oh sandbox install — runtime selection", () => {
 });
 
 describe("oh sandbox install — the entry it writes", () => {
-  it("names the sandbox oh-sbx-1, then oh-sbx-2, and boots each one", async () => {
+  it("names the sandbox agro-sbx-1, then agro-sbx-2, and boots each one", async () => {
     const registryPath = registry();
     const { calls, run } = makeRunner();
     const { out, io } = makeIo();
 
     expect(await runSandboxInstall({ runtime: "docker", yes: true, run }, io)).toBe(0);
-    expect(readdirSync(registryPath)).toEqual(["oh-sbx-1"]);
-    expect(out.join("")).toContain("next: oh shell oh-sbx-1");
+    expect(readdirSync(registryPath)).toEqual(["agro-sbx-1"]);
+    expect(out.join("")).toContain("next: oh shell agro-sbx-1");
     expect(calls.some((c) => c.cmd === "bash" && c.args.includes("up"))).toBe(true);
 
     expect(await runSandboxInstall({ runtime: "docker", yes: true, run }, makeIo().io)).toBe(0);
-    expect(readdirSync(registryPath).sort()).toEqual(["oh-sbx-1", "oh-sbx-2"]);
+    expect(readdirSync(registryPath).sort()).toEqual(["agro-sbx-1", "agro-sbx-2"]);
   });
 
   it("records runtime docker, the host timezone and the git identity", async () => {
@@ -110,7 +110,7 @@ describe("oh sandbox install — the entry it writes", () => {
     expect(
       await runSandboxInstall({ runtime: "docker", name: "box", yes: true, run }, makeIo().io),
     ).toBe(0);
-    const config = readJson(join(registryPath, "box", "oh.json"));
+    const config = readJson(join(registryPath, "box", "agro.json"));
     expect(config).toMatchObject({
       version: 1,
       name: "box",
@@ -134,18 +134,18 @@ describe("oh sandbox install — the entry it writes", () => {
       ".devcontainer/docker-compose.yml",
       ".devcontainer/docker-compose.ssh.yml",
       ".devcontainer/docker-compose.docker-sock.yml",
-      ".oh/scripts/docker-compose.sh",
-      ".oh/scripts/check-host-port.sh",
+      ".agro/scripts/docker-compose.sh",
+      ".agro/scripts/check-host-port.sh",
     ]) {
       expect(existsSync(join(root, rel)), rel).toBe(true);
     }
     const wrapper = calls.find((c) => c.cmd === "bash");
-    expect(wrapper?.args[0]).toBe(join(root, ".oh", "scripts", "docker-compose.sh"));
+    expect(wrapper?.args[0]).toBe(join(root, ".agro", "scripts", "docker-compose.sh"));
     expect(wrapper?.args).toContain("--no-build");
     expect(wrapper?.args).not.toContain("--build");
   });
 
-  it("--repo renders OH_REPO_DIR into the compose env and selects the build base", async () => {
+  it("--repo renders AGRO_REPO_DIR into the compose env and selects the build base", async () => {
     const registryPath = registry();
     const checkout = mkdtempSync(join(tmpdir(), "oh-sandbox-repo-"));
     cleanups.push(checkout);
@@ -166,13 +166,13 @@ describe("oh sandbox install — the entry it writes", () => {
     ).toBe(0);
 
     const root = join(registryPath, "box");
-    expect(readJson(join(root, "oh.json"))).toMatchObject({
+    expect(readJson(join(root, "agro.json"))).toMatchObject({
       repo: checkout,
       image: { mode: "build" },
     });
-    expect(rendered.join("")).toContain(`OH_REPO_DIR=${checkout}`);
+    expect(rendered.join("")).toContain(`AGRO_REPO_DIR=${checkout}`);
     const base = readFileSync(join(root, ".devcontainer", "docker-compose.yml"), "utf8");
-    expect(base).toContain("${OH_REPO_DIR:-..}:/home/sandbox/harness");
+    expect(base).toContain("${AGRO_REPO_DIR:-${OH_REPO_DIR:-..}}:/home/sandbox/harness");
   });
 
   it("seeds every default from <repo>/oh.json when that checkout has one", async () => {
@@ -200,7 +200,7 @@ describe("oh sandbox install — the entry it writes", () => {
       ),
     ).toBe(0);
     expect(readdirSync(registryPath)).toEqual(["seeded"]);
-    expect(readJson(join(registryPath, "seeded", "oh.json"))).toMatchObject({
+    expect(readJson(join(registryPath, "seeded", "agro.json"))).toMatchObject({
       name: "seeded",
       timezone: "Europe/Paris",
       git: { userName: "Grace", userEmail: "grace@example.com" },
@@ -246,7 +246,7 @@ describe("oh sandbox install — the entry it writes", () => {
         makeIo().io,
       ),
     ).toBe(0);
-    expect(readJson(join(registryPath, "x", "oh.json"))).toMatchObject({
+    expect(readJson(join(registryPath, "x", "agro.json"))).toMatchObject({
       image: { ref: "example.test/img:1", mode: "image" },
     });
   });
@@ -261,7 +261,7 @@ describe("oh sandbox install — the entry it writes", () => {
         makeIo().io,
       ),
     ).toBe(0);
-    const config = readJson(join(registryPath, "y", "oh.json"));
+    const config = readJson(join(registryPath, "y", "agro.json"));
     expect((config.image as Record<string, unknown>).ref).toBeUndefined();
   });
 });
@@ -281,7 +281,7 @@ describe("oh sandbox install — the wizard", () => {
     expect(asked[4]).toContain("sshd");
     expect(asked[5]).toContain("Docker socket");
 
-    expect(readJson(join(registryPath, "box", "oh.json"))).toMatchObject({
+    expect(readJson(join(registryPath, "box", "agro.json"))).toMatchObject({
       name: "box",
       timezone: "Europe/Berlin",
       git: { userName: "Ada", userEmail: "ada@example.com" },
@@ -297,7 +297,7 @@ describe("oh sandbox install — the wizard", () => {
     expect(await runSandboxInstall({ runtime: "docker", run }, io)).toBe(0);
     expect(asked).toHaveLength(7);
     expect(asked[5]).toContain("SSH host port");
-    expect(readJson(join(registryPath, "box", "oh.json"))).toMatchObject({
+    expect(readJson(join(registryPath, "box", "agro.json"))).toMatchObject({
       access: { ssh: true, sshPort: 2345, dockerSocket: false },
     });
   });

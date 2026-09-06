@@ -9,11 +9,11 @@ import compatShell from "oh-asset:.agro/scripts/compat.sh";
 import checkHostPort from "oh-asset:.agro/scripts/check-host-port.sh";
 import { spawnRunner, type LifecycleRunner } from "./execution/runner.js";
 import { ohConfigPath, readOhConfig } from "./oh-config.js";
-import { resolveUserStateHome } from "./compat.js";
+import { resolveProjectLayout, resolveUserStateHome } from "./compat.js";
 
 export const SANDBOX_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 
-const DEFAULT_NAME_PREFIX = "oh-sbx-";
+export const DEFAULT_NAME_PREFIX = "agro-sbx-";
 
 export function ohHome(): string {
   return resolveUserStateHome(process.env);
@@ -88,20 +88,21 @@ export interface MaterializeOptions {
 
 export function materialize(root: string, opts: MaterializeOptions = {}): void {
   const entry = resolve(root);
+  const scripts = join(resolveProjectLayout(entry).controlDir, "scripts");
   const files = [
     {
-      rel: ".devcontainer/docker-compose.yml",
+      dest: join(entry, ".devcontainer", "docker-compose.yml"),
       body: opts.repo === undefined ? composeImageOnly : composeRepo,
       mode: 0o644,
     },
-    { rel: ".devcontainer/docker-compose.ssh.yml", body: composeSsh, mode: 0o644 },
-    { rel: ".devcontainer/docker-compose.docker-sock.yml", body: composeDockerSock, mode: 0o644 },
-    { rel: ".oh/scripts/docker-compose.sh", body: composeWrapper, mode: 0o755 },
-    { rel: ".oh/scripts/compat.sh", body: compatShell, mode: 0o644 },
-    { rel: ".oh/scripts/check-host-port.sh", body: checkHostPort, mode: 0o755 },
+    { dest: join(entry, ".devcontainer", "docker-compose.ssh.yml"), body: composeSsh, mode: 0o644 },
+    { dest: join(entry, ".devcontainer", "docker-compose.docker-sock.yml"), body: composeDockerSock, mode: 0o644 },
+    { dest: join(scripts, "docker-compose.sh"), body: composeWrapper, mode: 0o755 },
+    { dest: join(scripts, "compat.sh"), body: compatShell, mode: 0o644 },
+    { dest: join(scripts, "check-host-port.sh"), body: checkHostPort, mode: 0o755 },
   ];
   for (const file of files) {
-    const dest = resolve(entry, file.rel);
+    const dest = resolve(file.dest);
     if (!dest.startsWith(entry + sep)) {
       throw new Error(`refusing to materialize outside the sandbox entry: ${dest}`);
     }

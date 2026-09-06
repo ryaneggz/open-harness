@@ -21,10 +21,10 @@ fi
 
 fails=()
 
-grep -Eq 'image:[[:space:]]*\$\{OH_SANDBOX_IMAGE:-' "$COMPOSE" \
-  || fails+=("docker-compose.yml image: must interpolate \${OH_SANDBOX_IMAGE:-...}")
-grep -Eq 'pull_policy:[[:space:]]*\$\{OH_PULL_POLICY:-' "$COMPOSE" \
-  || fails+=("docker-compose.yml must set pull_policy: \${OH_PULL_POLICY:-...}")
+grep -Eq 'image:[[:space:]]*\$\{AGRO_SANDBOX_IMAGE:-\$\{OH_SANDBOX_IMAGE:-' "$COMPOSE" \
+  || fails+=("docker-compose.yml image: must interpolate \${AGRO_SANDBOX_IMAGE:-\${OH_SANDBOX_IMAGE:-...}}")
+grep -Eq 'pull_policy:[[:space:]]*\$\{AGRO_PULL_POLICY:-\$\{OH_PULL_POLICY:-' "$COMPOSE" \
+  || fails+=("docker-compose.yml must set pull_policy: \${AGRO_PULL_POLICY:-\${OH_PULL_POLICY:-...}}")
 grep -Eq '^[[:space:]]*build:' "$COMPOSE" \
   || fails+=("docker-compose.yml must RETAIN the build: block (local build stays default)")
 
@@ -38,15 +38,15 @@ grep -Eq '^[[:space:]]*pullPolicy\?:[[:space:]]*PullPolicy' "$CONFIG_SRC" \
 grep -Fq '"missing", "always", "never"' "$CONFIG_SRC" \
   || fails+=("oh-config.ts must validate image.pullPolicy against missing/always/never")
 
-grep -Fq 'put("OH_SANDBOX_IMAGE", config.image?.ref)' "$RENDER_SRC" \
-  || fails+=("config-render.ts must render agro.json image.ref as OH_SANDBOX_IMAGE")
-grep -Fq 'put("OH_PULL_POLICY", config.image?.pullPolicy)' "$RENDER_SRC" \
-  || fails+=("config-render.ts must render agro.json image.pullPolicy as OH_PULL_POLICY")
+grep -Fq 'put("AGRO_SANDBOX_IMAGE", config.image?.ref)' "$RENDER_SRC" \
+  || fails+=("config-render.ts must render agro.json image.ref as AGRO_SANDBOX_IMAGE")
+grep -Fq 'put("AGRO_PULL_POLICY", config.image?.pullPolicy)' "$RENDER_SRC" \
+  || fails+=("config-render.ts must render agro.json image.pullPolicy as AGRO_PULL_POLICY")
 
 doc_row() { grep -Eq "^\| \`$1\` \|.*\`$2\`" "$CONFIG_DOC"; }
-doc_row 'image\.ref' 'OH_SANDBOX_IMAGE' \
+doc_row 'image\.ref' '(AGRO_SANDBOX_IMAGE|OH_SANDBOX_IMAGE)' \
   || fails+=("docs/configuration.md must document image.ref -> OH_SANDBOX_IMAGE in the field table")
-doc_row 'image\.pullPolicy' 'OH_PULL_POLICY' \
+doc_row 'image\.pullPolicy' '(AGRO_PULL_POLICY|OH_PULL_POLICY)' \
   || fails+=("docs/configuration.md must document image.pullPolicy -> OH_PULL_POLICY in the field table")
 grep -Eq '^\| `image\.mode` \|' "$CONFIG_DOC" \
   || fails+=("docs/configuration.md must document image.mode (build vs image)")
@@ -57,8 +57,8 @@ if [[ -f "$WRAPPER" ]]; then
     || fails+=("docker-compose.sh must pass 'up -d --no-build' through verbatim (--print-argv)")
 fi
 
-grep -Fq 'OH_SANDBOX_IMAGE' "$LIFECYCLE" \
-  || fails+=("lifecycle.ts must thread OH_SANDBOX_IMAGE into the child env")
+grep -Fq 'aliasedEnvPair("SANDBOX_IMAGE"' "$LIFECYCLE" \
+  || fails+=("lifecycle.ts must thread SANDBOX_IMAGE (AGRO_ and OH_ spellings) into the child env")
 grep -Fq -- '--no-build' "$LIFECYCLE" \
   || fails+=("lifecycle.ts must issue 'up -d --no-build' in image/no-build mode")
 grep -Fq 'DEFAULT_SANDBOX_IMAGE' "$LIFECYCLE" \

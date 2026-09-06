@@ -134,7 +134,7 @@ describe("destroy confirmation phrase", () => {
   it("falls back to oh.json, then to the default", () => {
     vi.stubEnv("SANDBOX_NAME", "");
     expect(destroyConfirmationPhrase(makeRepo("from-file"))).toBe("from-file");
-    expect(destroyConfirmationPhrase(makeRepo())).toBe("openharness");
+    expect(destroyConfirmationPhrase(makeRepo())).toBe("agro");
   });
 });
 

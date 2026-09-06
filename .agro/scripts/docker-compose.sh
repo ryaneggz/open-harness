@@ -120,7 +120,7 @@ fi
 
 CONFIG_JSON="$(compat_selected_path compat_config_file "$REPO_DIR")" || exit 2
 
-if [ -z "$EXTRA_ENV_FILE" ] && [ -n "$CONFIG_JSON" ]; then
+if [ -z "$EXTRA_ENV_FILE" ] && [ -f "$CONFIG_JSON" ]; then
   printf 'note: non-secret config comes from %s via `oh`; this direct run uses only %s and the compose-file defaults\n' \
     "${CONFIG_JSON#"$REPO_DIR"/}" "${ENV_FILE#"$REPO_DIR"/}" >&2
 fi
@@ -153,7 +153,7 @@ if truthy "$ssh_value"; then
     port_check="$SCRIPT_DIR/check-host-port.sh"
     if [ -x "$port_check" ] || [ -f "$port_check" ]; then
       sandbox_name=${SANDBOX_NAME:-$(read_env_value SANDBOX_NAME)}
-      [ -n "$sandbox_name" ] || sandbox_name=openharness
+      [ -n "$sandbox_name" ] || sandbox_name="$COMPAT_DEFAULT_SANDBOX_NAME"
       own_port=0
       if command -v docker >/dev/null 2>&1; then
         docker ps --format '{{.Names}}\t{{.Ports}}' 2>/dev/null \
@@ -173,7 +173,7 @@ if truthy "$ssh_value"; then
   fi
 fi
 
-[ -n "$CONFIG_JSON" ] || CONFIG_JSON="$REPO_DIR/.agro/config.json"
+[ -f "$CONFIG_JSON" ] || CONFIG_JSON="$REPO_DIR/.agro/config.json"
 [ -f "$CONFIG_JSON" ] || CONFIG_JSON="$REPO_DIR/config.json"
 if command -v jq >/dev/null 2>&1 && [ -f "$CONFIG_JSON" ]; then
   while IFS= read -r override; do

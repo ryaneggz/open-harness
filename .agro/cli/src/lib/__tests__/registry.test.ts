@@ -64,7 +64,7 @@ describe("registryRoot", () => {
 
 describe("sandbox names", () => {
   it("accepts lowercase names with digits and dashes", () => {
-    for (const name of ["oh-sbx-1", "box", "a1-b2"]) {
+    for (const name of ["agro-sbx-1", "box", "a1-b2"]) {
       expect(() => assertSandboxName(name)).not.toThrow();
     }
   });
@@ -77,16 +77,16 @@ describe("sandbox names", () => {
 });
 
 describe("nextDefaultName", () => {
-  it("hands out oh-sbx-1 then oh-sbx-2 as entries appear", () => {
+  it("hands out agro-sbx-1 then agro-sbx-2 as entries appear", () => {
     registry();
-    expect(nextDefaultName(noDocker())).toBe("oh-sbx-1");
-    addEntry("oh-sbx-1");
-    expect(nextDefaultName(noDocker())).toBe("oh-sbx-2");
+    expect(nextDefaultName(noDocker())).toBe("agro-sbx-1");
+    addEntry("agro-sbx-1");
+    expect(nextDefaultName(noDocker())).toBe("agro-sbx-2");
   });
 
   it("skips a name a running container already owns", () => {
     registry();
-    expect(nextDefaultName(dockerNames(["oh-sbx-1", "unrelated"]))).toBe("oh-sbx-2");
+    expect(nextDefaultName(dockerNames(["agro-sbx-1", "unrelated"]))).toBe("agro-sbx-2");
   });
 
   it("tolerates docker being absent", () => {
@@ -95,7 +95,7 @@ describe("nextDefaultName", () => {
       nextDefaultName(() => {
         throw new Error("spawn docker ENOENT");
       }),
-    ).toBe("oh-sbx-1");
+    ).toBe("agro-sbx-1");
   });
 });
 
@@ -114,7 +114,38 @@ describe("listEntries", () => {
   });
 });
 
+function addFreshEntry(name: string): string {
+  const root = entryRoot(name);
+  mkdirSync(root, { recursive: true });
+  writeFileSync(join(root, "agro.json"), `${JSON.stringify({ version: 1, name })}\n`);
+  return root;
+}
+
 describe("materialize", () => {
+  it("writes the scripts under .agro/ for a fresh entry and under .oh/ for a legacy entry", () => {
+    registry();
+    const fresh = addFreshEntry("fresh");
+    materialize(fresh);
+    expect(walk(fresh)).toEqual([
+      ".agro/scripts/check-host-port.sh",
+      ".agro/scripts/compat.sh",
+      ".agro/scripts/docker-compose.sh",
+      ".devcontainer/docker-compose.docker-sock.yml",
+      ".devcontainer/docker-compose.ssh.yml",
+      ".devcontainer/docker-compose.yml",
+      "agro.json",
+    ]);
+
+    const legacy = addEntry("legacy");
+    materialize(legacy);
+    expect(walk(legacy).filter((rel) => rel.endsWith(".sh"))).toEqual([
+      ".oh/scripts/check-host-port.sh",
+      ".oh/scripts/compat.sh",
+      ".oh/scripts/docker-compose.sh",
+    ]);
+    expect(existsSync(join(legacy, ".agro"))).toBe(false);
+  });
+
   it("writes exactly the six bundled files, executable where they are scripts", () => {
     registry();
     const root = addEntry("box");
@@ -158,8 +189,8 @@ describe("materialize", () => {
 
     materialize(root, { repo: "/srv/checkout" });
     const withRepo = readFileSync(join(root, ".devcontainer", "docker-compose.yml"), "utf8");
-    expect(withRepo).toContain("context: ${OH_REPO_DIR:-..}");
-    expect(withRepo).toContain("${OH_REPO_DIR:-..}:/home/sandbox/harness");
+    expect(withRepo).toContain("context: ${AGRO_REPO_DIR:-${OH_REPO_DIR:-..}}");
+    expect(withRepo).toContain("${AGRO_REPO_DIR:-${OH_REPO_DIR:-..}}:/home/sandbox/harness");
   });
 
   it("overwrites a drifted file so the entry always matches the CLI", () => {

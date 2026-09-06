@@ -14,6 +14,7 @@ const RETIRED = [
   "PROJECTS_DIR",
   "CRONS_DIR",
   "OH_PROJECT_ROOT",
+  "AGRO_PROJECT_ROOT",
   "INSTALL_DEEPAGENTS",
   "INSTALL_OPENCODE",
   "INSTALL_GROK_BUILD",
@@ -33,15 +34,15 @@ const RETIRED = [
 const HOST_SIDE_KEYS = [
   "SANDBOX_NAME",
   "TZ",
-  "OH_HOME_MOUNT",
-  "OH_REPO_DIR",
+  "AGRO_HOME_MOUNT",
+  "AGRO_REPO_DIR",
   "GIT_USER_NAME",
   "GIT_USER_EMAIL",
   "DOCKER_SOCKET",
   "SANDBOX_SSH",
   "SANDBOX_SSH_PORT",
-  "OH_SANDBOX_IMAGE",
-  "OH_PULL_POLICY",
+  "AGRO_SANDBOX_IMAGE",
+  "AGRO_PULL_POLICY",
 ];
 
 function composeInterpolatedVars(): string[] {
@@ -87,15 +88,15 @@ describe("renderComposeEnv", () => {
     const text = renderComposeEnv(fullConfig());
     expect(text).toContain("SANDBOX_NAME=demo");
     expect(text).toContain("TZ=America/Los_Angeles");
-    expect(text).toContain("OH_HOME_MOUNT=/srv/oh-home");
-    expect(text).toContain("OH_REPO_DIR=/srv/checkout");
+    expect(text).toContain("AGRO_HOME_MOUNT=/srv/oh-home");
+    expect(text).toContain("AGRO_REPO_DIR=/srv/checkout");
     expect(text).toContain("GIT_USER_NAME=Ada");
     expect(text).toContain("GIT_USER_EMAIL=ada@example.com");
     expect(text).toContain("DOCKER_SOCKET=true");
     expect(text).toContain("SANDBOX_SSH=true");
     expect(text).toContain("SANDBOX_SSH_PORT=2022");
-    expect(text).toContain("OH_SANDBOX_IMAGE=ghcr.io/mifunedev/openharness:latest");
-    expect(text).toContain("OH_PULL_POLICY=always");
+    expect(text).toContain("AGRO_SANDBOX_IMAGE=ghcr.io/mifunedev/openharness:latest");
+    expect(text).toContain("AGRO_PULL_POLICY=always");
   });
 
   it("renders the host-side set and nothing else", () => {
@@ -105,13 +106,29 @@ describe("renderComposeEnv", () => {
   it("covers every variable the real compose files interpolate", () => {
     expect(existsSync(DEVCONTAINER)).toBe(true);
     const rendered = new Set(keysOf(fullConfig()));
+    const legacyAliasOf = (key: string): string => key.replace(/^OH_/, "AGRO_");
     const uncovered = composeInterpolatedVars().filter(
       (key) =>
         !rendered.has(key) &&
+        !rendered.has(legacyAliasOf(key)) &&
         !SECRET_KEYS.includes(key as (typeof SECRET_KEYS)[number]) &&
         !RETIRED.includes(key),
     );
     expect(uncovered).toEqual([]);
+  });
+
+  it("keeps a legacy OH_ fallback for every AGRO_ key the compose files interpolate", () => {
+    const interpolated = composeInterpolatedVars();
+    for (const key of keysOf(fullConfig()).filter((k) => k.startsWith("AGRO_"))) {
+      expect(interpolated, key).toContain(key);
+      expect(interpolated, key).toContain(key.replace(/^AGRO_/, "OH_"));
+    }
+    for (const name of readdirSync(DEVCONTAINER).filter((n) => /^docker-compose.*\.ya?ml$/.test(n))) {
+      const text = readFileSync(join(DEVCONTAINER, name), "utf8");
+      for (const match of text.matchAll(/\$\{(AGRO_[A-Z0-9_]+):-\$\{(OH_[A-Z0-9_]+):-/g)) {
+        expect(match[2], name).toBe(match[1].replace(/^AGRO_/, "OH_"));
+      }
+    }
   });
 
   it("emits no secret", () => {
@@ -138,14 +155,14 @@ describe("renderComposeEnv", () => {
     expect(keysOf(config)).toEqual(["SANDBOX_NAME"]);
   });
 
-  it("renders OH_REPO_DIR only for a sandbox that binds a checkout", () => {
+  it("renders AGRO_REPO_DIR only for a sandbox that binds a checkout", () => {
     const imageOnly = defaultOhConfig("demo");
     imageOnly.runtime = "docker";
-    expect(keysOf(imageOnly)).not.toContain("OH_REPO_DIR");
+    expect(keysOf(imageOnly)).not.toContain("AGRO_REPO_DIR");
 
     const withRepo = defaultOhConfig("demo");
     withRepo.repo = "/srv/checkout";
-    expect(renderComposeEnv(withRepo)).toContain("OH_REPO_DIR=/srv/checkout");
+    expect(renderComposeEnv(withRepo)).toContain("AGRO_REPO_DIR=/srv/checkout");
   });
 
   it("leaves skipPnpmInstall to oh.json — entrypoint.sh reads it through the CLI", () => {

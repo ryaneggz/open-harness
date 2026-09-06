@@ -408,3 +408,55 @@ describe("assertDestInTarget", () => {
     ).not.toThrow();
   });
 });
+
+
+describe("runUpdate — dual-generation control dirs", () => {
+  function buildAgroRepo(root: string, version: string, files: Record<string, string>): void {
+    writeFile(root, ".agro/cli/package.json", JSON.stringify({ name: "agro", version }, null, 2));
+    for (const [rel, content] of Object.entries(files)) writeFile(root, rel, content);
+  }
+
+  it("bootstraps an empty target as .agro/ from an .agro/ source", async () => {
+    const from = mkTmp();
+    const target = mkTmp();
+    buildAgroRepo(from, "0.9.0", { ".agro/scripts/foo.sh": "#!/bin/sh\necho agro\n" });
+
+    const { out, err, io } = mkIo();
+    expect(await runUpdate({ targetDir: target, fromDir: from }, io)).toBe(0);
+    expect(err.join("")).toBe("");
+    expect(out.join("")).toContain("updating .agro: 0.0.0 -> 0.9.0");
+    expect(readFile(target, ".agro/scripts/foo.sh")).toBe("#!/bin/sh\necho agro\n");
+    expect(fs.readdirSync(target).sort()).toEqual([".agro"]);
+  });
+
+  it("keeps a legacy .oh/ target on .oh/ when the source is .agro/", async () => {
+    const from = mkTmp();
+    const target = mkTmp();
+    buildAgroRepo(from, "0.9.0", { ".agro/scripts/foo.sh": "#!/bin/sh\necho agro\n" });
+    buildEquippedRepo(target, { version: "0.1.0" });
+
+    const { out, io } = mkIo();
+    expect(await runUpdate({ targetDir: target, fromDir: from }, io)).toBe(0);
+    expect(out.join("")).toContain("updating .oh: 0.1.0 -> 0.9.0");
+    expect(readFile(target, ".oh/scripts/foo.sh")).toBe("#!/bin/sh\necho agro\n");
+    expect(fs.existsSync(path.join(target, ".agro"))).toBe(false);
+  });
+
+  it("names both candidate dirs when the source has neither", async () => {
+    const from = mkTmp();
+    const target = mkTmp();
+    const { err, io } = mkIo();
+    expect(await runUpdate({ targetDir: target, fromDir: from }, io)).toBe(1);
+    expect(err.join("")).toContain("update source not found at");
+    expect(err.join("")).toContain(path.join(from, ".agro"));
+    expect(err.join("")).toContain(path.join(from, ".oh"));
+  });
+
+  it("refuses when source and target are the same .agro", async () => {
+    const root = mkTmp();
+    buildAgroRepo(root, "0.9.0", { ".agro/scripts/foo.sh": "#!/bin/sh\n" });
+    const { err, io } = mkIo();
+    expect(await runUpdate({ targetDir: root, fromDir: root }, io)).toBe(1);
+    expect(err.join("")).toContain("same .agro");
+  });
+});

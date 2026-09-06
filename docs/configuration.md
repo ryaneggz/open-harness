@@ -77,9 +77,9 @@ or consumed by the CLI itself.
 | `version` | number | `1` | — | Schema version. Must be `1`. |
 | `name` | string | directory name | `SANDBOX_NAME` | Container and Compose project name. |
 | `runtime` | `"docker"` | unset | — | The runtime the entry was provisioned on. `oh sandbox install docker` writes it; `docker` is the only value today. |
-| `repo` | string | unset | `OH_REPO_DIR` | Absolute **host** path of a checkout to bind-mount at `/home/sandbox/harness`, set by `oh sandbox install docker --repo <dir>`. It also selects the build-capable compose base and lets a lifecycle verb resolve this sandbox from inside that directory. Unset means image-only: the workspace volume is seeded from the image's `/opt/oh-seed`. |
+| `repo` | string | unset | `AGRO_REPO_DIR` (legacy alias `OH_REPO_DIR`) | Absolute **host** path of a checkout to bind-mount at `/home/sandbox/harness`, set by `oh sandbox install docker --repo <dir>`. It also selects the build-capable compose base and lets a lifecycle verb resolve this sandbox from inside that directory. Unset means image-only: the workspace volume is seeded from the image's `/opt/oh-seed`. |
 | `timezone` | string | `America/Los_Angeles` | `TZ` | Timezone for cron schedules and log timestamps. |
-| `storage.homePath` | string | unset | `OH_HOME_MOUNT` | Absolute **host** path for the single `/home/sandbox` mount. Leave unset and Docker manages it as the named volume `<name>_workspace`. Must start with `/`; use a dedicated empty directory, since the sandbox takes ownership of it. A stale `OH_HOME_MOUNT` in `.devcontainer/.env` outranks this value, because the wrapper passes the dotenv last. |
+| `storage.homePath` | string | unset | `AGRO_HOME_MOUNT` (legacy alias `OH_HOME_MOUNT`) | Absolute **host** path for the single `/home/sandbox` mount. Leave unset and Docker manages it as the named volume `<name>_workspace`. Must start with `/`; use a dedicated empty directory, since the sandbox takes ownership of it. A stale `AGRO_HOME_MOUNT` (or legacy `OH_HOME_MOUNT`) in `.devcontainer/.env` outranks this value, because the wrapper passes the dotenv last. |
 
 ### Git identity inside the sandbox
 
@@ -133,9 +133,9 @@ Recipe: [`oh sandbox install docker`](deployment-prebuilt-image.md).
 
 | Field | Type | Default | Compose variable | What it does |
 | --- | --- | --- | --- | --- |
-| `image.ref` | string | `ghcr.io/mifunedev/openharness:latest` | `OH_SANDBOX_IMAGE` | Published image reference. Set it per sandbox with `oh config set --sandbox <name> image.ref <ref>`. |
+| `image.ref` | string | `ghcr.io/mifunedev/openharness:latest` | `AGRO_SANDBOX_IMAGE` (legacy alias `OH_SANDBOX_IMAGE`) | Published image reference. Set it per sandbox with `oh config set --sandbox <name> image.ref <ref>`. |
 | `image.mode` | `"build"` \| `"image"` | `build` | — | Whether the lifecycle builds locally or runs `image.ref`. A build happens only when `repo` is also set. Pairs with `oh sandbox install docker --image`. |
-| `image.pullPolicy` | `"missing"` \| `"always"` \| `"never"` | `missing` | `OH_PULL_POLICY` | Compose pull policy for `image.ref`. |
+| `image.pullPolicy` | `"missing"` \| `"always"` \| `"never"` | `missing` | `AGRO_PULL_POLICY` (legacy alias `OH_PULL_POLICY`) | Compose pull policy for `image.ref`. |
 
 ### Cloud
 

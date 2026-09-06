@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { join } from "node:path";
-
+import { basename, join } from "node:path";
+import { resolveProjectLayout } from "../compat.js";
 
 export interface RunResult {
   status: number | null;
@@ -67,10 +67,11 @@ export function assertSpawned(r: RunResult, what: string): void {
 }
 
 export function requireLifecycleScript(root: string, rel: string): string {
-  const script = join(root, ".oh", "scripts", rel);
+  const { controlDir } = resolveProjectLayout(root);
+  const script = join(controlDir, "scripts", rel);
   if (!existsSync(script)) {
     throw new Error(
-      `missing lifecycle script ${script} — the vendored .oh/ payload looks incomplete; run \`oh update\` to re-vendor it`,
+      `missing lifecycle script ${script} — the vendored ${basename(controlDir)}/ payload looks incomplete; run \`oh update\` to re-vendor it`,
     );
   }
   return script;

@@ -42,12 +42,14 @@ describe("resolveProduct", () => {
       bin: "agro",
       title: "AGRO CLI",
       packageName: "@mifune/agro",
+      generation: "agro",
     });
     expect(LEGACY_PRODUCT).toEqual({
       name: "oh",
       bin: "oh",
       title: "Open Harness CLI",
       packageName: "@mifune/openharness",
+      generation: "legacy",
     });
     expect(AGRO_PRODUCT.bin).not.toBe(LEGACY_PRODUCT.bin);
     expect(AGRO_PRODUCT.packageName).not.toBe(LEGACY_PRODUCT.packageName);

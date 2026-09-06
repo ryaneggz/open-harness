@@ -52,7 +52,7 @@
         "tests"
       ],
       "acceptance": "absent pair resolves to agro generation in both implementations; registry prefix agro-sbx-; compose ${AGRO_X:-${OH_X:-default}}; tests cover fresh vs legacy",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "T3",
@@ -71,7 +71,7 @@
         ".agro/cli/src/commands/__tests__/migrate-command.test.ts"
       ],
       "acceptance": "check/apply/idempotent/conflict/lock/relink/--home/unknown-file/mode tests pass; cli.ts dispatch left to owner",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "T4",

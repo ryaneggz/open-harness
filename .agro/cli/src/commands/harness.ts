@@ -2,7 +2,7 @@ import {
   ExecutionSpawnError,
   resolveExecutionTarget,
 } from "../lib/execution/index.js";
-import { aliasedEnvValue } from "../lib/compat.js";
+import { aliasedEnvPair, aliasedEnvValue, remoteControlDirScript } from "../lib/compat.js";
 import { sourceDocsUrl } from "../lib/docs.js";
 import { runningInsideSandbox } from "../lib/execution/detect.js";
 import { spawnRunner, type LifecycleRunner } from "../lib/execution/runner.js";
@@ -176,8 +176,8 @@ function hermesTargetRoot(target: ExecutionTarget): string {
 async function reconcileHermes(target: ExecutionTarget, io: HarnessIO): Promise<number> {
   const root = hermesTargetRoot(target);
   const result = await target.exec({
-    argv: ["bash", `${root}/.oh/scripts/link-providers.sh`, "--init", "--hermes-only"],
-    env: { OH_PROJECT_ROOT: root },
+    argv: remoteControlDirScript(root, "scripts/link-providers.sh", ["--init", "--hermes-only"]),
+    env: aliasedEnvPair("PROJECT_ROOT", root),
     user: "sandbox",
     stdio: "inherit",
   });
@@ -226,7 +226,7 @@ export async function runHarnessInstall(
 
   const hermes = entry.id === "hermes";
   const installEnv = hermes ? {
-    OH_PROJECT_ROOT: hermesTargetRoot(target),
+    ...aliasedEnvPair("PROJECT_ROOT", hermesTargetRoot(target)),
     HERMES_HOME: `${hermesTargetRoot(target)}/.hermes`,
   } : undefined;
   if (hermes) {

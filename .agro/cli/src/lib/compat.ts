@@ -39,12 +39,16 @@ export const GENERATIONS: Readonly<Record<Generation, GenerationNames>> = {
 
 export const LEGACY_CHECKOUT_DIR = ".openharness";
 
+export const DEFAULT_GENERATION: Generation = "agro";
+
+export const DEFAULT_SANDBOX_NAME = "agro";
+
 export type PresenceKind = "absent" | "legacy-only" | "agro-only" | "both-equivalent";
 
 export interface PairResolution {
   kind: PresenceKind;
-  generation: Generation | undefined;
-  path: string | undefined;
+  generation: Generation;
+  path: string;
   legacyPath: string;
   agroPath: string;
 }
@@ -150,7 +154,8 @@ function resolvePair(
   const agroExists = present(agroPath);
   const base = { legacyPath, agroPath };
   if (!legacyExists && !agroExists) {
-    return { ...base, kind: "absent", generation: undefined, path: undefined };
+    const path = DEFAULT_GENERATION === "agro" ? agroPath : legacyPath;
+    return { ...base, kind: "absent", generation: DEFAULT_GENERATION, path };
   }
   if (legacyExists && !agroExists) {
     return { ...base, kind: "legacy-only", generation: "legacy", path: legacyPath };
@@ -187,6 +192,45 @@ export function resolveConfigFile(root: string): PairResolution {
     join(dir, GENERATIONS.agro.configFile),
     isFileAt,
   );
+}
+
+export interface ProjectLayout {
+  generation: Generation;
+  root: string;
+  controlDir: string;
+  configFile: string;
+}
+
+export function resolveProjectLayout(root: string): ProjectLayout {
+  const dir = resolve(root);
+  const control = resolveControlDir(dir);
+  const config = resolveConfigFile(dir);
+  const generation =
+    control.kind !== "absent"
+      ? control.generation
+      : config.kind !== "absent"
+        ? config.generation
+        : DEFAULT_GENERATION;
+  const names = GENERATIONS[generation];
+  return {
+    generation,
+    root: dir,
+    controlDir: join(dir, names.controlDir),
+    configFile: join(dir, names.configFile),
+  };
+}
+
+export function controlDirCandidates(): readonly string[] {
+  return [GENERATIONS.agro.controlDir, GENERATIONS.legacy.controlDir];
+}
+
+export function remoteControlDirScript(root: string, rel: string, args: readonly string[]): string[] {
+  const candidates = controlDirCandidates().join(" ");
+  const script =
+    `root="$1"; shift; rel="$1"; shift; for name in ${candidates}; do ` +
+    `if [ -d "$root/$name" ]; then exec bash "$root/$name/$rel" "$@"; fi; done; ` +
+    `printf 'no control plane (%s) under %s\\n' '${candidates}' "$root" >&2; exit 1`;
+  return ["bash", "-c", script, "control-dir", root, rel, ...args];
 }
 
 export type EnvSource = Generation | "none";
@@ -226,6 +270,13 @@ export function resolveAliasedEnv(
 export function aliasConflictWarning(resolved: AliasedEnv): string | undefined {
   if (!resolved.conflict) return undefined;
   return `compat: ${resolved.agroKey} and ${resolved.legacyKey} are both set and differ — using ${resolved.agroKey}`;
+}
+
+export function aliasedEnvPair(suffix: string, value: string): Record<string, string> {
+  return {
+    [`${GENERATIONS.agro.envPrefix}${suffix}`]: value,
+    [`${GENERATIONS.legacy.envPrefix}${suffix}`]: value,
+  };
 }
 
 export function aliasedEnvValue(
@@ -288,5 +339,5 @@ export function resolveSeedSource(
   if (configured !== undefined) return configured;
   const agro = `${prefix}${GENERATIONS.agro.seedDir}`;
   const legacy = `${prefix}${GENERATIONS.legacy.seedDir}`;
-  return existsSync(agro) && !existsSync(legacy) ? agro : legacy;
+  return existsSync(legacy) ? legacy : agro;
 }

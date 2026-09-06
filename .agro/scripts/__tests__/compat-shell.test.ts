@@ -125,6 +125,8 @@ describe("compat.sh helpers", () => {
       join(agro, ".agro", ".image-seeded"),
     );
     const none = fixture({});
-    expect(sh(`compat_marker_file "${none}"`).status).toBe(1);
+    const fresh = sh(`compat_marker_file "${none}"`);
+    expect(fresh.status).toBe(0);
+    expect(fresh.stdout.trimEnd()).toBe(join(none, ".agro", ".image-seeded"));
   });
 });

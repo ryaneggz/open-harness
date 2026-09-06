@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -24,9 +24,9 @@ function makeRoot(): string {
 }
 
 describe("ohConfigPath", () => {
-  it("resolves oh.json at the project root", () => {
+  it("resolves agro.json at a fresh project root", () => {
     const root = makeRoot();
-    expect(ohConfigPath(root)).toBe(join(root, "oh.json"));
+    expect(ohConfigPath(root)).toBe(join(root, "agro.json"));
   });
 });
 
@@ -42,7 +42,7 @@ describe("readOhConfig", () => {
   it("rejects a file that is not valid JSON", () => {
     const root = makeRoot();
     writeFileSync(ohConfigPath(root), "{nope");
-    expect(() => readOhConfig(ohConfigPath(root))).toThrow(/oh\.json is not valid JSON/);
+    expect(() => readOhConfig(ohConfigPath(root))).toThrow(/agro\.json is not valid JSON/);
   });
 
   it("rejects a JSON array", () => {
@@ -219,11 +219,28 @@ describe("validateOhConfig", () => {
 });
 
 describe("ohConfigPath — dual-generation config files", () => {
-  it("keeps oh.json as the path for a fresh root (legacy default unchanged)", () => {
+  it("writes agro.json for a fresh root without any migration step", () => {
     const root = makeRoot();
+    expect(ohConfigPath(root)).toBe(join(root, "agro.json"));
+    writeOhConfig(root, defaultOhConfig("demo"));
+    expect(readFileSync(join(root, "agro.json"), "utf8")).toContain('"name": "demo"');
+    expect(existsSync(join(root, "oh.json"))).toBe(false);
+  });
+
+  it("keeps writing oh.json next to a legacy .oh/ control dir that has no config yet", () => {
+    const root = makeRoot();
+    mkdirSync(join(root, ".oh", "scripts"), { recursive: true });
     expect(ohConfigPath(root)).toBe(join(root, "oh.json"));
     writeOhConfig(root, defaultOhConfig("demo"));
-    expect(readFileSync(join(root, "oh.json"), "utf8")).toContain('"name": "demo"');
+    expect(existsSync(join(root, "oh.json"))).toBe(true);
+    expect(existsSync(join(root, "agro.json"))).toBe(false);
+  });
+
+  it("reads oh.json when only the legacy config exists", () => {
+    const root = makeRoot();
+    writeFileSync(join(root, "oh.json"), JSON.stringify({ version: 1, name: "legacy-era" }));
+    expect(ohConfigPath(root)).toBe(join(root, "oh.json"));
+    expect(readOhConfig(ohConfigPath(root)).name).toBe("legacy-era");
   });
 
   it("selects agro.json when it is the only config present", () => {

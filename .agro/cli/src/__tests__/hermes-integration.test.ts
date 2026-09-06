@@ -46,7 +46,10 @@ describe("Hermes installation postconditions", () => {
       cwd: t.root, run, env: { OH_EXECUTION_TARGET: "docker-compose" },
     }, { stdout: () => {}, stderr: () => {} })).toBe(0);
     const link = calls.find(args => args.includes("--hermes-only"))!;
-    expect(link).toContain("/home/sandbox/harness/.oh/scripts/link-providers.sh");
+    expect(link).toContain("/home/sandbox/harness");
+    expect(link).toContain("scripts/link-providers.sh");
+    expect(link.join(" ")).toContain(".agro .oh");
+    expect(link).toContain("AGRO_PROJECT_ROOT=/home/sandbox/harness");
     expect(link).toContain("OH_PROJECT_ROOT=/home/sandbox/harness");
     expect(calls.flat().some(arg => arg.includes(t.root))).toBe(false);
   });
@@ -59,7 +62,9 @@ describe("Hermes installation postconditions", () => {
     expect(install.env?.OH_PROJECT_ROOT).toBe(t.root);
     expect(t.calls.filter(c => c.args.includes("--hermes-only"))).toHaveLength(2);
     expect(t.calls.filter(c => c.cmd === "hermes")).toHaveLength(2);
-    expect(t.calls[0].args).toContain(join(t.root, ".oh/scripts/link-providers.sh"));
+    expect(t.calls[0].args).toContain(t.root);
+    expect(t.calls[0].args).toContain("scripts/link-providers.sh");
+    expect(install.env?.AGRO_PROJECT_ROOT).toBe(t.root);
     expect(t.out.join("")).toContain("installed —");
   });
 

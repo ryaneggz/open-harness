@@ -6,6 +6,7 @@ const RETIRED_KEYS = [
   "PROJECTS_DIR",
   "CRONS_DIR",
   "OH_PROJECT_ROOT",
+  "AGRO_PROJECT_ROOT",
   "INSTALL_DEEPAGENTS",
   "INSTALL_OPENCODE",
   "INSTALL_GROK_BUILD",
@@ -36,8 +37,8 @@ export function renderComposeVars(config: OhConfig): RenderedVar[] {
 
   put("SANDBOX_NAME", config.name);
   put("TZ", config.timezone);
-  put("OH_HOME_MOUNT", config.storage?.homePath);
-  put("OH_REPO_DIR", config.repo);
+  put("AGRO_HOME_MOUNT", config.storage?.homePath);
+  put("AGRO_REPO_DIR", config.repo);
 
   put("GIT_USER_NAME", config.git?.userName);
   put("GIT_USER_EMAIL", config.git?.userEmail);
@@ -46,18 +47,18 @@ export function renderComposeVars(config: OhConfig): RenderedVar[] {
   put("SANDBOX_SSH", config.access?.ssh);
   put("SANDBOX_SSH_PORT", config.access?.sshPort);
 
-  put("OH_SANDBOX_IMAGE", config.image?.ref);
-  put("OH_PULL_POLICY", config.image?.pullPolicy);
+  put("AGRO_SANDBOX_IMAGE", config.image?.ref);
+  put("AGRO_PULL_POLICY", config.image?.pullPolicy);
 
   for (const { key, value } of out) {
     if (isSecretKey(key)) {
-      throw new Error(`refusing to render secret ${key} from oh.json`);
+      throw new Error(`refusing to render secret ${key} from the sandbox config`);
     }
     if (RETIRED_KEYS.includes(key as (typeof RETIRED_KEYS)[number])) {
       throw new Error(`refusing to render retired variable ${key}`);
     }
     if (/[\r\n]/.test(value)) {
-      throw new Error(`oh.json value for ${key} must not contain a newline`);
+      throw new Error(`config value for ${key} must not contain a newline`);
     }
   }
 

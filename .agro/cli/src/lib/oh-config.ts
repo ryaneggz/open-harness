@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import { assertInRoot } from "./env-file.js";
-import { GENERATIONS, resolveConfigFile } from "./compat.js";
+import { GENERATIONS, resolveProjectLayout } from "./compat.js";
 
 const OH_CONFIG_FILE = GENERATIONS.legacy.configFile;
 const OH_CONFIG_MODE = 0o644;
@@ -111,10 +111,7 @@ export interface OhConfig {
 }
 
 export function ohConfigPath(root: string): string {
-  const resolved = resolveConfigFile(root);
-  return resolved.generation === "agro"
-    ? resolve(root, GENERATIONS.agro.configFile)
-    : resolve(root, OH_CONFIG_FILE);
+  return resolveProjectLayout(root).configFile;
 }
 
 export function defaultOhConfig(name: string): OhConfig {
@@ -155,7 +152,7 @@ export function readOhConfig(path: string): OhConfig {
   try {
     parsed = JSON.parse(raw) as unknown;
   } catch {
-    throw new Error(`${OH_CONFIG_FILE} is not valid JSON: ${path}`);
+    throw new Error(`${basename(path)} is not valid JSON: ${path}`);
   }
   return validateOhConfig(parsed);
 }

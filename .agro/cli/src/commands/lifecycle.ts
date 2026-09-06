@@ -18,7 +18,7 @@ import {
 import { renderComposeEnv } from "../lib/config-render.js";
 import { getOhConfigValue, ohConfigPath, readOhConfig } from "../lib/oh-config.js";
 import { resolveProjectRoot } from "../lib/project.js";
-import { aliasedEnvValue } from "../lib/compat.js";
+import { DEFAULT_SANDBOX_NAME, aliasedEnvPair, aliasedEnvValue } from "../lib/compat.js";
 import { materialize, registryRoot, resolveSandboxRoot } from "../lib/registry.js";
 import { setEnvValue } from "../lib/env-file.js";
 import * as prompt from "../lib/prompt.js";
@@ -99,7 +99,7 @@ function sandboxRoot(opts: SandboxTargetOptions): string {
   return root;
 }
 
-export const DEFAULT_CONTAINER_NAME = "openharness";
+export const DEFAULT_CONTAINER_NAME = DEFAULT_SANDBOX_NAME;
 
 export const DEFAULT_SANDBOX_IMAGE = "ghcr.io/mifunedev/openharness:latest";
 
@@ -166,7 +166,7 @@ export async function runSandbox(opts: SandboxOptions, io: LifecycleIO): Promise
     ? (opts.imageRef ?? configuredImage(root) ?? DEFAULT_SANDBOX_IMAGE)
     : undefined;
   const env: NodeJS.ProcessEnv | undefined =
-    imageRef === undefined ? undefined : { ...process.env, OH_SANDBOX_IMAGE: imageRef };
+    imageRef === undefined ? undefined : { ...process.env, ...aliasedEnvPair("SANDBOX_IMAGE", imageRef) };
 
   if (opts.printArgv === true) {
     const script = requireLifecycleScript(root, "docker-compose.sh");
@@ -380,7 +380,7 @@ export function runGateway(args: string[], opts: LifecycleOptions): number {
   const script = requireLifecycleScript(root, "gateway.sh");
   const r = run("bash", [script, ...args], {
     stdio: "inherit",
-    env: { ...process.env, OH_PROJECT_ROOT: root },
+    env: { ...process.env, ...aliasedEnvPair("PROJECT_ROOT", root) },
   });
   assertSpawned(r, `bash ${script}`);
   return r.status ?? 1;

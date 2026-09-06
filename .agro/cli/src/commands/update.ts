@@ -1,9 +1,6 @@
-import {
-  existsSync,
-  statSync,
-  readFileSync,
-} from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { resolveControlDir } from '../lib/compat.js';
 import { loadManifest, rootPayloadDirs } from '../lib/manifest.js';
 import { copyOhPayload, copyRootPayload, assertDestInTarget, type CopyReport } from '../lib/vendor.js';
 
@@ -60,20 +57,26 @@ export async function runUpdate(opts: UpdateOptions, io: UpdateIO): Promise<numb
   const { targetDir, fromDir, force, dryRun } = opts;
   const dryPrefix = dryRun ? '[dry-run] ' : '';
 
-  const fromOh = path.resolve(fromDir, '.oh');
-  if (!existsSync(fromOh) || !statSync(fromOh).isDirectory()) {
+  const source = resolveControlDir(fromDir);
+  if (source.kind === 'absent') {
     io.stderr(
       'oh update: update source not found at ' +
-        fromOh +
+        source.agroPath +
+        ' or ' +
+        source.legacyPath +
         '. Pass --from <built-OpenHarness-checkout> or --from-remote [--ref <ref>].\n',
     );
     return 1;
   }
+  const fromOh = source.path;
+  const controlName = path.basename(fromOh);
 
-  const targetOh = path.resolve(targetDir, '.oh');
+  const target = resolveControlDir(targetDir);
+  const targetOh = target.kind === 'absent' ? path.resolve(targetDir, controlName) : target.path;
+  const targetName = path.basename(targetOh);
 
   if (fromOh === targetOh) {
-    io.stderr('oh update: source and target are the same .oh; nothing to update.\n');
+    io.stderr('oh update: source and target are the same ' + targetName + '; nothing to update.\n');
     return 1;
   }
 
@@ -82,7 +85,7 @@ export async function runUpdate(opts: UpdateOptions, io: UpdateIO): Promise<numb
   const cmp = compareVersions(available, current);
 
   if (cmp > 0) {
-    io.stdout(dryPrefix + 'updating .oh: ' + current + ' -> ' + available + '\n');
+    io.stdout(dryPrefix + 'updating ' + targetName + ': ' + current + ' -> ' + available + '\n');
   } else if (cmp === 0) {
     if (!force) {
       io.stdout(dryPrefix + 'oh update: already up to date (v' + current + ')\n');
@@ -101,7 +104,7 @@ export async function runUpdate(opts: UpdateOptions, io: UpdateIO): Promise<numb
       return 1;
     }
     io.stdout(
-      dryPrefix + 'oh update: downgrading .oh: ' + current + ' -> ' + available + ' (--force)\n',
+      dryPrefix + 'oh update: downgrading ' + targetName + ': ' + current + ' -> ' + available + ' (--force)\n',
     );
   }
 
@@ -109,7 +112,7 @@ export async function runUpdate(opts: UpdateOptions, io: UpdateIO): Promise<numb
   if (manifest === null) {
     io.stdout(
       dryPrefix +
-        'oh update: no .oh/manifest.json in source; overlaying all of .oh/ (legacy mode)\n',
+        'oh update: no ' + controlName + '/manifest.json in source; overlaying all of ' + controlName + '/ (legacy mode)\n',
     );
   }
 
@@ -149,12 +152,12 @@ export async function runUpdate(opts: UpdateOptions, io: UpdateIO): Promise<numb
   );
 
   for (const dir of rootPayloadDirs(manifest ?? { include: [], exclude: [] })) {
-    const stranded = path.resolve(targetDir, '.oh', dir);
+    const stranded = path.join(targetOh, dir);
     if (existsSync(stranded)) {
       io.stdout(
         dryPrefix +
           'oh update: ' +
-          path.join('.oh', dir) +
+          path.join(targetName, dir) +
           ' still exists from a pre-move install and is no longer read; move any local edits into ' +
           dir +
           '/ and delete it\n',

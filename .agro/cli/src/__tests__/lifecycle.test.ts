@@ -589,7 +589,7 @@ describe("runShell", () => {
 
     expect(runShell({ ...entry, run }, io)).toBe(126);
     expect(err).toEqual([
-      "container `openharness` not running? start it with `oh sandbox install docker`\n",
+      `container \`${DEFAULT_CONTAINER_NAME}\` not running? start it with \`oh sandbox install docker\`\n`,
     ]);
   });
 

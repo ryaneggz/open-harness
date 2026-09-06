@@ -3,3 +3,4 @@
 2026-09-06T20:24:54Z plan: base 9d2fb009; queries "sandbox registry seed compose migration onboarding docs"; two read-only inventory workers; seven stories; blocked on operator coordination for the physical rename (12 live worktrees, 1 stash).
 - 2026-09-06T20:33:43Z execute: operator chose 'start now'; scaffold 2a438810 pushed; draft PR #996; state RUNNING implementation; T1 (US-001 rename) delegated
 - 2026-09-06T20:53:20Z US-001 done: .oh->.agro, oh.json->agro.json (620 files); pnpm test 71/1172 pass, typechecks, link-providers --check, eval runner (no new regressions; oh-update-bootstrap red until US-002, /opt/oh-seed destination left to US-004), git diff --check all 0
+- 2026-09-06T22:21:43Z US-002 done (compat defaults agro, AGRO_* compose interpolation, agro-sbx- prefix, oh-update-bootstrap probe green); US-003 done (agro migrate + relink, cli dispatch, manual check/apply/noop smoke)

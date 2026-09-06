@@ -31,7 +31,7 @@ describe("default Herdr integration", () => {
     (composeFile) => {
       const compose = readRepoFile(`.devcontainer/${composeFile}`);
 
-      expect(compose).toContain("${OH_HOME_MOUNT:-workspace}:/home/sandbox");
+      expect(compose).toContain("${AGRO_HOME_MOUNT:-${OH_HOME_MOUNT:-workspace}}:/home/sandbox");
       expect(compose).not.toContain("/home/sandbox/.herdr");
       expect(compose).not.toContain("/home/sandbox/.config");
       expect(compose).toMatch(/^  workspace:$/m);

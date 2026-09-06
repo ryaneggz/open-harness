@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Boot-safe dual-generation resolution: bash + coreutils only, no node, no jq.
-# The TypeScript contract is .oh/cli/src/lib/compat.ts; both consume the same
-# vectors in .oh/cli/src/lib/__tests__/fixtures/compat-vectors.json.
+# The TypeScript contract is .agro/cli/src/lib/compat.ts; both consume the same
+# vectors in .agro/cli/src/lib/__tests__/fixtures/compat-vectors.json.
 
 COMPAT_LEGACY_CONTROL_DIR=".oh"
 COMPAT_AGRO_CONTROL_DIR=".agro"
@@ -9,6 +9,8 @@ COMPAT_LEGACY_CONFIG_FILE="oh.json"
 COMPAT_AGRO_CONFIG_FILE="agro.json"
 COMPAT_LEGACY_SEED_DIR="/opt/oh-seed"
 COMPAT_AGRO_SEED_DIR="/opt/agro-seed"
+COMPAT_DEFAULT_GENERATION=agro
+COMPAT_DEFAULT_SANDBOX_NAME=agro
 COMPAT_CONFLICT_STATUS=3
 
 compat_tree_manifest() {
@@ -70,7 +72,11 @@ compat_resolve_pair() {
   compat_present "$entry_kind" "$legacy" || legacy_present=0
   compat_present "$entry_kind" "$agro" || agro_present=0
   if [ "$legacy_present" = 0 ] && [ "$agro_present" = 0 ]; then
-    printf 'absent\t\n'
+    if [ "$COMPAT_DEFAULT_GENERATION" = agro ]; then
+      printf 'absent\t%s\n' "$agro"
+    else
+      printf 'absent\t%s\n' "$legacy"
+    fi
     return 0
   fi
   if [ "$legacy_present" = 1 ] && [ "$agro_present" = 0 ]; then
@@ -136,10 +142,10 @@ compat_seed_src() {
     printf '%s\n' "$configured"
     return 0
   fi
-  if [ -d "$prefix$COMPAT_AGRO_SEED_DIR" ] && [ ! -d "$prefix$COMPAT_LEGACY_SEED_DIR" ]; then
-    printf '%s\n' "$prefix$COMPAT_AGRO_SEED_DIR"
-  else
+  if [ -d "$prefix$COMPAT_LEGACY_SEED_DIR" ]; then
     printf '%s\n' "$prefix$COMPAT_LEGACY_SEED_DIR"
+  else
+    printf '%s\n' "$prefix$COMPAT_AGRO_SEED_DIR"
   fi
 }
 
@@ -147,6 +153,5 @@ compat_marker_file() {
   local root="$1" line dir
   line="$(compat_control_dir "$root")" || return $?
   dir="${line#*	}"
-  [ -n "$dir" ] || return 1
   printf '%s\n' "$dir/.image-seeded"
 }

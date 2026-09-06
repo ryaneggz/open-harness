@@ -89,6 +89,21 @@ check_same ".agro/scripts/compat.sh" \
   "$entry_plain/.oh/scripts/compat.sh" \
   "$ROOT/.agro/scripts/compat.sh"
 
+home_fresh="$work/home-fresh"
+entry_fresh="$home_fresh/sandboxes/probe-registry-fresh"
+mkdir -p "$entry_fresh"
+printf '{"version":1,"name":"probe-registry-fresh"}\n' >"$entry_fresh/agro.json"
+oh "$home_fresh" destroy probe-registry-fresh >/dev/null 2>&1 || true
+check_same ".agro/scripts/docker-compose.sh (fresh agro.json entry)" \
+  "$entry_fresh/.agro/scripts/docker-compose.sh" \
+  "$ROOT/.agro/scripts/docker-compose.sh"
+if [[ -e "$entry_fresh/.oh" ]]; then
+  fails+=("a fresh agro.json entry must materialise under .agro/, never .oh/")
+fi
+if [[ -e "$entry_plain/.agro" ]]; then
+  fails+=("a legacy oh.json entry must keep materialising under .oh/, never gain an .agro/")
+fi
+
 home_repo="$work/home-repo"
 entry_repo="$(materialize_entry "$home_repo" "probe-registry-repo" "$ROOT")"
 check_same ".devcontainer/docker-compose.yml (with --repo)" \
@@ -142,5 +157,5 @@ if ((${#fails[@]})); then
   exit 1
 fi
 
-echo "PASS: the CLI materialises the seven bundled texts byte-identically to the tracked compose files and wrapper scripts (image-only without --repo, flavor A with it), lifecycle.ts and sandbox.ts build no docker argv, microsandbox refuses with the RFC pointer and the tool route, and --print-argv registers nothing" >&2
+echo "PASS: the CLI materialises the seven bundled texts byte-identically to the tracked compose files and wrapper scripts (image-only without --repo, flavor A with it; a legacy oh.json entry keeps .oh/scripts and a fresh agro.json entry gets .agro/scripts), lifecycle.ts and sandbox.ts build no docker argv, microsandbox refuses with the RFC pointer and the tool route, and --print-argv registers nothing" >&2
 exit 0

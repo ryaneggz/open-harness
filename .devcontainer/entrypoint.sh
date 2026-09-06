@@ -94,7 +94,7 @@ seed_home() {
 # >>> seed_workspace_volume >>>
 seed_workspace_volume() {
   local dest="$1"
-  local src control marker
+  local src control kind marker
   src="$(compat_seed_src)"
   OH_IMAGE_SEEDED_THIS_BOOT=0
   if [ -n "$src" ] && [ -d "$src/.claude" ]; then
@@ -110,15 +110,16 @@ seed_workspace_volume() {
     echo "[entrypoint] WARNING: $dest holds both .oh/ and .agro/ with different content — not seeding; resolve the conflict" >&2
     return 0
   fi
+  kind="${control%%	*}"
   control="${control#*	}"
-  if [ -n "$control" ] && [ -f "$control/.image-seeded" ]; then
+  if [ "$kind" != absent ] && [ -f "$control/.image-seeded" ]; then
     return 0
   fi
-  if [ -n "$src" ] && [ -d "$src" ] && [ -z "$control" ]; then
+  if [ -n "$src" ] && [ -d "$src" ] && [ "$kind" = absent ]; then
     cp -a "$src/." "$dest/" 2>/dev/null || true
     control="$(compat_selected_path compat_control_dir "$dest" 2>/dev/null)" || control=""
   fi
-  if [ -n "$control" ]; then
+  if [ -d "$control" ]; then
     marker="$control/.image-seeded"
     : > "$marker" 2>/dev/null || true
     OH_IMAGE_SEEDED_THIS_BOOT=1

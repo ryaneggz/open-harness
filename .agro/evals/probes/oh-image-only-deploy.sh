@@ -101,13 +101,13 @@ else
   fi
 fi
 
-grep -Eq '^[[:space:]]*-[[:space:]]*\$\{OH_HOME_MOUNT:-workspace\}:/home/sandbox$' "$COMPOSE_IO" \
-  || fails+=("docker-compose.image-only.yml must mount \${OH_HOME_MOUNT:-workspace} at /home/sandbox")
+grep -Eq '^[[:space:]]*-[[:space:]]*\$\{AGRO_HOME_MOUNT:-\$\{OH_HOME_MOUNT:-workspace\}\}:/home/sandbox$' "$COMPOSE_IO" \
+  || fails+=("docker-compose.image-only.yml must mount \${AGRO_HOME_MOUNT:-\${OH_HOME_MOUNT:-workspace}} at /home/sandbox")
 if grep -Fq 'OH_IMAGE_ONLY' "$COMPOSE_IO"; then
   fails+=("docker-compose.image-only.yml sets OH_IMAGE_ONLY — the flavor is detected inside the container")
 fi
-grep -Eq 'image:[[:space:]]*\$\{OH_SANDBOX_IMAGE' "$COMPOSE_IO" \
-  || fails+=("docker-compose.image-only.yml image: must interpolate \${OH_SANDBOX_IMAGE...}")
+grep -Eq 'image:[[:space:]]*\$\{AGRO_SANDBOX_IMAGE:-\$\{OH_SANDBOX_IMAGE' "$COMPOSE_IO" \
+  || fails+=("docker-compose.image-only.yml image: must interpolate \${AGRO_SANDBOX_IMAGE:-\${OH_SANDBOX_IMAGE...}}")
 grep -Eq '^[[:space:]]*pull_policy:' "$COMPOSE_IO" \
   || fails+=("docker-compose.image-only.yml must set a pull_policy:")
 if grep -Eq '^[[:space:]]*build:' "$COMPOSE_IO"; then
@@ -120,7 +120,7 @@ fi
 if [[ ! -f "$COMPOSE_PRIMARY" ]]; then
   fails+=("primary docker-compose.yml not found at $COMPOSE_PRIMARY")
 else
-  grep -Eq '^[[:space:]]*-[[:space:]]*(\$\{OH_REPO_DIR:-\.\.\}|\.\.):' "$COMPOSE_PRIMARY" \
+  grep -Eq '^[[:space:]]*-[[:space:]]*(\$\{AGRO_REPO_DIR:-\$\{OH_REPO_DIR:-\.\.\}\}|\$\{OH_REPO_DIR:-\.\.\}|\.\.):' "$COMPOSE_PRIMARY" \
     || fails+=("docker-compose.yml lost its checkout bind mount with '..' as the default (\${OH_REPO_DIR:-..}: or ..:) — regression floor broken")
 fi
 
@@ -151,5 +151,5 @@ if (( ${#fails[@]} > 0 )); then
   exit 1
 fi
 
-echo "PASS: Flavor B (image-only) contract — entrypoint detects the flavor with mountpoint, logs the mode on both paths, seeds only in the no-bind branch, and keeps .oh/.image-seeded gitignored; behavioral sim confirms fresh-seed, idempotent-reseed, and no-clobber-of-existing-.oh/; docker-compose.image-only.yml mounts \${OH_HOME_MOUNT:-workspace} at /home/sandbox, carries no OH_IMAGE_ONLY, parameterizes image:/pull_policy:, and has no build:/'..:' bind mount; primary docker-compose.yml still binds the checkout with '..' as the default (regression floor); Dockerfile stages /opt/oh-seed" >&2
+echo "PASS: Flavor B (image-only) contract — entrypoint detects the flavor with mountpoint, logs the mode on both paths, seeds only in the no-bind branch, and keeps .oh/.image-seeded gitignored; behavioral sim confirms fresh-seed, idempotent-reseed, and no-clobber-of-existing-.oh/; docker-compose.image-only.yml mounts \${AGRO_HOME_MOUNT:-\${OH_HOME_MOUNT:-workspace}} at /home/sandbox, carries no OH_IMAGE_ONLY, parameterizes image:/pull_policy:, and has no build:/'..:' bind mount; primary docker-compose.yml still binds the checkout with '..' as the default (regression floor); Dockerfile stages /opt/oh-seed" >&2
 exit 0

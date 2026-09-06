@@ -4,6 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { runUpdate } from "./commands/update.js";
 import { DEFAULT_ARTIFACT_URL, defaultDeps, runSelfUpgrade } from "./commands/self-upgrade.js";
+import { parseMigrateArgs, printMigrateHelp, runMigrate } from "./commands/migrate.js";
 import { runCloud } from "./commands/cloud.js";
 import {
   configFieldList,
@@ -50,7 +51,9 @@ import {
 } from "./commands/tool.js";
 import { installableToolIds, toolIds } from "./lib/tools/catalog.js";
 import { sourceDocsUrl } from "./lib/docs.js";
-import { AGRO_PRODUCT, LEGACY_PRODUCT, resolveProduct, type Product } from "./lib/product.js";
+import { AGRO_PRODUCT, LEGACY_PRODUCT, resolveProduct, stateNames, type Product } from "./lib/product.js";
+import { resolveControlDir } from "./lib/compat.js";
+import { DEFAULT_NAME_PREFIX } from "./lib/registry.js";
 import {
   fetchRemoteSource,
   DEFAULT_REPO_URL,
@@ -101,9 +104,10 @@ export function printOhHelp(product: Product = LEGACY_PRODUCT): void {
 Usage:
   ${bin} sandbox <args...>      Create and list sandboxes (install|list)
   ${bin} shell [name]           Open a zsh shell in the running sandbox container
-  ${bin} config <args...>       Read and write oh.json (show|set), or run a wizard
+  ${bin} config <args...>       Read and write ${stateNames(bin).configFile} (show|set), or run a wizard
   ${bin} secret <args...>       Read and write the gitignored root .env (set|list)
-  ${bin} update                 Vendor or upgrade the .oh/ control plane
+  ${bin} update                 Vendor or upgrade the ${stateNames(bin).controlDir}/ control plane
+  ${bin} migrate                Move a legacy .oh/ project or ~/.oh registry to AGRO names (--check|--home)
   ${bin} stop [name]            Stop the sandbox, preserving volumes
   ${bin} restart [name]         Restart the sandbox service
   ${bin} logs [name]            Tail sandbox logs (follows)
@@ -123,7 +127,7 @@ ${compatibilityNote(product)}`);
 }
 
 function printConfigHelp(bin: string = LEGACY_PRODUCT.bin): void {
-  process.stdout.write(`${bin} config — Read and write oh.json, the tracked non-secret settings
+  process.stdout.write(`${bin} config — Read and write ${stateNames(bin).configFile}, the tracked non-secret settings
 
 Usage:
   ${bin} config show [--sandbox <name>]
@@ -132,7 +136,7 @@ Usage:
   ${bin} config <integration>         Run an integration wizard
   ${bin} config <integration> --help
 
-oh.json holds every non-secret setting and is tracked by git. Credentials live
+${stateNames(bin).configFile} holds every non-secret setting and is tracked by git. Credentials live
 in the gitignored root .env — write those with \`${bin} secret set <KEY>\`. Apply a
 change with \`${bin} stop <name> && ${bin} sandbox install docker --name <name>\`. Field
 reference:
@@ -158,7 +162,7 @@ the registry entry \`${bin} sandbox list\` names.
 
 The value is never read from the command line — an argument would land in your
 shell history. \`${bin} secret list\` never prints a raw value. .env is mode 0600 and
-gitignored; every non-secret setting belongs in oh.json (\`${bin} config set\`).
+gitignored; every non-secret setting belongs in ${stateNames(bin).configFile} (\`${bin} config set\`).
 
 Keys:
 ${secretKeyList()}
@@ -172,7 +176,7 @@ Usage:
   ${bin} update [--dry-run]
 
 Upgrades exactly one thing: the ${bin} executable that is running. It writes no
-project file — no .oh/, no oh.json, no .env — and it never asks for sudo.
+project file — no ${stateNames(bin).controlDir}/, no ${stateNames(bin).configFile}, no .env — and it never asks for sudo.
 
 The upgrade follows whichever mechanism installed this executable:
   npm-managed    realpath under node_modules/${AGRO_PRODUCT.packageName}/: reads the registry
@@ -196,7 +200,7 @@ Flags:
   --dry-run       Report the installation kind, target, and versions without
                   changing anything.
 
-Project payload vendoring (.oh/ + crons/) is \`oh update\` during the
+Project payload vendoring (${stateNames(bin).controlDir}/ + crons/) is \`oh update\` during the
 compatibility window; its --from, --from-remote, --ref and --force flags are
 not accepted here.
 `);
@@ -207,18 +211,18 @@ export function printUpdateHelp(bin: string = LEGACY_PRODUCT.bin): void {
     printSelfUpgradeHelp(bin);
     return;
   }
-  process.stdout.write(`${bin} update — Vendor or upgrade the .oh/ control plane
+  process.stdout.write(`${bin} update — Vendor or upgrade the ${stateNames(bin).controlDir}/ control plane
 
 Usage:
   ${bin} update [--from <dir> | --from-remote [--ref <ref>]] [--dry-run] [--force]
 
-Writes ONLY the .oh/ control plane and crons/ (skills, scripts, CLI) into the
+Writes ONLY the ${stateNames(bin).controlDir}/ control plane and crons/ (skills, scripts, CLI) into the
 current directory. An empty directory is equipped from scratch; everything else
-in your project is left untouched — it writes no oh.json, .env, AGENTS.md,
+in your project is left untouched — it writes no ${stateNames(bin).configFile}, .env, AGENTS.md,
 .gitignore or .devcontainer/.
 
 Payload source precedence: --from <dir> > --from-remote > the CLI's own bundled
-.oh/ payload > a remote fetch announced on one line.
+${stateNames(bin).controlDir}/ payload > a remote fetch announced on one line.
 
 Flags:
   --from <dir>    A built OpenHarness checkout to vendor from.
@@ -247,7 +251,7 @@ Usage:
                                [--image[=<ref>]] [--no-build] [--print-argv]
   ${bin} sandbox list [--json]
 
-\`install\` writes a sandbox entry under \${OH_HOME:-~/.oh}/sandboxes/<name>/,
+\`install\` writes a sandbox entry under \${${stateNames(bin).envPrefix}HOME:-~/${stateNames(bin).userStateDir}}/sandboxes/<name>/,
 materialises the compose files and the compose wrapper into it, then starts the
 container. It needs no project checkout and runs from any directory. Without
 --repo the sandbox runs the prebuilt image; with --repo <dir> that checkout is
@@ -255,16 +259,16 @@ bound at /home/sandbox/harness and can be built locally.
 
 On a terminal without --yes it asks for the sandbox name, the timezone, the git
 identity, SSH (with its host port), and the host Docker socket. With --repo it
-seeds those answers from that checkout's oh.json.
+seeds those answers from that checkout's ${stateNames(bin).configFile}.
 
 Flags:
-  --name <name>    Registry entry name (default: the lowest free oh-sbx-<n>)
+  --name <name>    Registry entry name (default: the lowest free ${DEFAULT_NAME_PREFIX}<n>)
   --repo <dir>     Bind this checkout into the sandbox and seed the defaults
-                   from its oh.json
+                   from its ${stateNames(bin).configFile}
   --yes            Non-interactive: keep every default and ask nothing
   --image[=<ref>]  Run the prebuilt image instead of building (implies
                    --no-build). Ref resolves last-wins: --image=<ref> >
-                   oh.json image.ref > ghcr.io/mifunedev/openharness:latest.
+                   ${stateNames(bin).configFile} image.ref > ghcr.io/mifunedev/openharness:latest.
   --no-build       Suppress the local build and reuse an existing image
   --print-argv     Print the docker compose argv that would run, then exit
                    without writing an entry
@@ -300,7 +304,7 @@ Usage:
   ${bin} harness status [name]            Show installed state
 
 \`install\` is the only door: it probes the running sandbox, installs the harness
-into the persistent home volume, and reports. It reads and writes no \`oh.json\`
+into the persistent home volume, and reports. It reads and writes no \`${stateNames(bin).configFile}\`
 field, and it never rebuilds or restarts the sandbox. It requires a running
 sandbox — start one with \`${bin} sandbox\` first.
 
@@ -322,7 +326,7 @@ Usage:
   ${bin} gateway status                   show both sessions
 
 Only a LEADING --help/-h is intercepted here; everything else passes through
-verbatim to the vendored .oh/scripts/gateway.sh with OH_PROJECT_ROOT set to
+verbatim to the vendored ${stateNames(bin).controlDir}/scripts/gateway.sh with ${stateNames(bin).envPrefix}PROJECT_ROOT set to
 the equipped project root. Exits with the script's exit code.
 `);
 }
@@ -357,7 +361,7 @@ Most tools are baked into the image and are report-only; \`install\` works on:
 ${installableToolIds().map((t) => `  ${t}`).join("\n")}
 
 \`install\` is the only door: it probes the running sandbox, installs the tool
-into the persistent home volume, and reports. It reads and writes no \`oh.json\`
+into the persistent home volume, and reports. It reads and writes no \`${stateNames(bin).configFile}\`
 field, and it never rebuilds or restarts the sandbox. A large download is
 confirmed first, and a non-interactive run without --yes installs nothing.
 
@@ -383,7 +387,7 @@ export function printComposeVerbHelp(verb: ComposeVerb, bin: string = LEGACY_PRO
 Usage:
   ${bin} ${verb} [name] [-- <extra docker compose args>]
 
-Runs .oh/scripts/docker-compose.sh inside the sandbox entry, the single
+Runs ${stateNames(bin).controlDir}/scripts/docker-compose.sh inside the sandbox entry, the single
 implementation. \`${bin}\` is the only lifecycle door. [name] is a sandbox entry from
 \`${bin} sandbox list\`; with exactly one registered sandbox it can be omitted.
 
@@ -397,7 +401,7 @@ export function printDestroyHelp(bin: string = LEGACY_PRODUCT.bin): void {
 Usage:
   ${bin} destroy [name] [--yes]
 
-Runs .oh/scripts/docker-compose.sh with \`down -v\`. This is the one destructive
+Runs ${stateNames(bin).controlDir}/scripts/docker-compose.sh with \`down -v\`. This is the one destructive
 lifecycle verb: \`-v\` deletes the named
 volumes, and those volumes hold every agent CLI login, the gh CLI token, and
 the SSH keys. Use \`${bin} stop\` when you only want the containers gone.
@@ -421,11 +425,11 @@ Usage:
   ${bin} compose config [-- <extra docker compose args>]
 
 Subcommands:
-  config   Print the compose configuration .oh/scripts/docker-compose.sh
-           resolves from .devcontainer/.env and .oh/config.json
+  config   Print the compose configuration ${stateNames(bin).controlDir}/scripts/docker-compose.sh
+           resolves from .devcontainer/.env and ${stateNames(bin).controlDir}/config.json
 
 Namespaced under \`${bin} compose\` because \`${bin} config <integration>\` already means
-"run an integration wizard", and \`${bin} config show/set\` reads and writes oh.json.
+"run an integration wizard", and \`${bin} config show/set\` reads and writes ${stateNames(bin).configFile}.
 
 See ${sourceDocsUrl("docs/lifecycle-commands.md")} for every verb.
 `);
@@ -989,7 +993,7 @@ export interface RemoteSourceHooks {
 function readPayloadVersion(checkoutDir: string): string {
   try {
     const parsed = JSON.parse(
-      readFileSync(join(checkoutDir, ".oh", "cli", "package.json"), "utf8"),
+      readFileSync(join(resolveControlDir(checkoutDir).path, "cli", "package.json"), "utf8"),
     );
     if (parsed && typeof parsed.version === "string") return parsed.version;
   } catch {
@@ -1087,6 +1091,24 @@ async function main(argv: string[]): Promise<number> {
     const scope = a.sandbox === undefined ? {} : { sandbox: a.sandbox };
     if (a.verb === "list") return await runSecretList(scope, io);
     return await runSecretSet(a.key as string, scope, io);
+  }
+
+  if (first === "migrate") {
+    const parsed = parseMigrateArgs(argv.slice(1), bin);
+    if (!parsed.ok) {
+      process.stderr.write(`${parsed.error}\n`);
+      if (parsed.showHelp) printMigrateHelp(bin);
+      return 1;
+    }
+    if (parsed.args.help) {
+      printMigrateHelp(bin);
+      return 0;
+    }
+    const io = {
+      stdout: (s: string) => process.stdout.write(s),
+      stderr: (s: string) => process.stderr.write(s),
+    };
+    return runMigrate(parsed.args, io);
   }
 
   if (first === "update") {

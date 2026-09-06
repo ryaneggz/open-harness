@@ -1,15 +1,21 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   CompatConflictError,
+  DEFAULT_GENERATION,
+  DEFAULT_SANDBOX_NAME,
   GENERATIONS,
+  aliasedEnvPair,
   aliasConflictWarning,
   compareTrees,
   discoverUserState,
+  remoteControlDirScript,
   resolveAliasedEnv,
   resolveConfigFile,
   resolveControlDir,
+  resolveProjectLayout,
   resolveSeedSource,
   resolveUserStateHome,
 } from "../compat.js";
@@ -115,9 +121,9 @@ describe("compareTrees", () => {
 });
 
 describe("resolveUserStateHome", () => {
-  it("keeps the legacy default when no AGRO-era state exists", () => {
+  it("resolves a fresh home to ~/.agro without any migration step", () => {
     const home = fixture({});
-    expect(resolveUserStateHome({}, home)).toBe(join(home, GENERATIONS.legacy.userStateDir));
+    expect(resolveUserStateHome({}, home)).toBe(join(home, GENERATIONS.agro.userStateDir));
   });
 
   it("keeps ~/.oh when only the legacy registry exists", () => {
@@ -162,12 +168,12 @@ describe("resolveUserStateHome", () => {
 
   it("treats an empty OH_HOME as unset, matching the pre-existing registry semantics", () => {
     const home = fixture({});
-    expect(resolveUserStateHome({ OH_HOME: "" }, home)).toBe(join(home, ".oh"));
+    expect(resolveUserStateHome({ OH_HOME: "" }, home)).toBe(join(home, ".agro"));
   });
 
   it("ignores ~/.openharness entirely — a legacy checkout is never registry state", () => {
     const home = fixture({ ".openharness/.oh/README.md": "checkout\n", ".openharness/oh.json": "{}\n" });
-    expect(resolveUserStateHome({}, home)).toBe(join(home, ".oh"));
+    expect(resolveUserStateHome({}, home)).toBe(join(home, ".agro"));
     const discovered = discoverUserState(home);
     expect(discovered.legacyCheckout.exists).toBe(true);
     expect(discovered.legacyHome.exists).toBe(false);
@@ -182,5 +188,92 @@ describe("nested control directories", () => {
     mkdirSync(join(inner, ".agro"), { recursive: true });
     expect(resolveControlDir(outer).kind).toBe("legacy-only");
     expect(resolveControlDir(inner).kind).toBe("agro-only");
+  });
+});
+
+describe("fresh-state defaults", () => {
+  it("names the AGRO generation and the agro compose identity", () => {
+    expect(DEFAULT_GENERATION).toBe("agro");
+    expect(DEFAULT_SANDBOX_NAME).toBe("agro");
+  });
+
+  it("resolves an absent pair to the AGRO path while a legacy pair keeps resolving to .oh", () => {
+    const fresh = fixture({});
+    expect(resolveControlDir(fresh)).toMatchObject({ kind: "absent", generation: "agro", path: join(fresh, ".agro") });
+    expect(resolveConfigFile(fresh)).toMatchObject({ kind: "absent", generation: "agro", path: join(fresh, "agro.json") });
+    const legacy = fixture({ ".oh/README.md": "x\n", "oh.json": "{}\n" });
+    expect(resolveControlDir(legacy)).toMatchObject({ kind: "legacy-only", path: join(legacy, ".oh") });
+    expect(resolveConfigFile(legacy)).toMatchObject({ kind: "legacy-only", path: join(legacy, "oh.json") });
+  });
+
+  it("defaults the seed source to /opt/agro-seed only when no legacy seed exists", () => {
+    const none = fixture({});
+    expect(resolveSeedSource({}, none)).toBe(`${none}/opt/agro-seed`);
+    const legacy = fixture({ "opt/oh-seed/.oh/README.md": "x\n" });
+    expect(resolveSeedSource({}, legacy)).toBe(`${legacy}/opt/oh-seed`);
+  });
+});
+
+describe("resolveProjectLayout", () => {
+  it("lays out a fresh root as .agro + agro.json", () => {
+    const root = fixture({});
+    expect(resolveProjectLayout(root)).toEqual({
+      generation: "agro",
+      root,
+      controlDir: join(root, ".agro"),
+      configFile: join(root, "agro.json"),
+    });
+  });
+
+  it("follows a legacy control dir even when no config exists yet", () => {
+    const root = fixture({ ".oh/scripts/docker-compose.sh": "#!/bin/sh\n" });
+    expect(resolveProjectLayout(root)).toMatchObject({ generation: "legacy", configFile: join(root, "oh.json") });
+  });
+
+  it("follows a legacy config when no control dir exists yet", () => {
+    const root = fixture({ "oh.json": "{}\n" });
+    expect(resolveProjectLayout(root)).toMatchObject({ generation: "legacy", controlDir: join(root, ".oh") });
+  });
+
+  it("follows the AGRO generation when either AGRO file exists", () => {
+    const withDir = fixture({ ".agro/README.md": "x\n" });
+    expect(resolveProjectLayout(withDir)).toMatchObject({ generation: "agro", configFile: join(withDir, "agro.json") });
+    const withConfig = fixture({ "agro.json": "{}\n" });
+    expect(resolveProjectLayout(withConfig)).toMatchObject({ generation: "agro", controlDir: join(withConfig, ".agro") });
+  });
+
+  it("fails closed on a divergent control dir", () => {
+    const root = fixture({ ".oh/README.md": "one\n", ".agro/README.md": "two\n" });
+    expect(() => resolveProjectLayout(root)).toThrow(CompatConflictError);
+  });
+});
+
+describe("aliasedEnvPair", () => {
+  it("sets both spellings to the same value so any compose generation reads it", () => {
+    expect(aliasedEnvPair("SANDBOX_IMAGE", "ghcr.io/x/y:1")).toEqual({
+      AGRO_SANDBOX_IMAGE: "ghcr.io/x/y:1",
+      OH_SANDBOX_IMAGE: "ghcr.io/x/y:1",
+    });
+  });
+});
+
+describe("remoteControlDirScript", () => {
+  it("prefers .agro, falls back to .oh, and fails without either", () => {
+    const run = (root: string): { status: number | null; stdout: string; stderr: string } => {
+      const [cmd, ...args] = remoteControlDirScript(root, "scripts/which.sh", ["--flag"]);
+      const r = spawnSync(cmd, args, { encoding: "utf8" });
+      return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+    };
+    const both = fixture({
+      ".agro/scripts/which.sh": 'printf "agro %s\\n" "$@"\n',
+      ".oh/scripts/which.sh": 'printf "legacy %s\\n" "$@"\n',
+    });
+    expect(run(both).stdout).toBe("agro --flag\n");
+    const legacy = fixture({ ".oh/scripts/which.sh": 'printf "legacy %s\\n" "$@"\n' });
+    expect(run(legacy).stdout).toBe("legacy --flag\n");
+    const none = fixture({});
+    const missing = run(none);
+    expect(missing.status).toBe(1);
+    expect(missing.stderr).toContain(".agro .oh");
   });
 });

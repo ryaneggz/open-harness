@@ -31,7 +31,7 @@
         "Help/error copy names AGRO state (`~/.agro/sandboxes`, `agro.json`) while `oh` invocations keep byte-identical legacy text apart from state names that follow the resolved generation. Tests: compat vectors, `oh-config`, `registry`, `sandbox`, `config-render`, `compose-args`, `lifecycle` updated with explicit fresh-vs-legacy cases."
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -45,7 +45,7 @@
         "`oh migrate` (legacy product) is dispatched to the same command (there is no legacy migrate to preserve). Tests: `migrate-command.test.ts` covering check/apply/idempotent/conflict/lock/relink/`--home`/unknown-file preservation/mode preservation with byte manifests before and after."
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
