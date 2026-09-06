@@ -3,6 +3,7 @@ import { dirname, join, resolve } from "node:path";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { runUpdate } from "./commands/update.js";
+import { DEFAULT_ARTIFACT_URL, defaultDeps, runSelfUpgrade } from "./commands/self-upgrade.js";
 import { runCloud } from "./commands/cloud.js";
 import {
   configFieldList,
@@ -164,7 +165,48 @@ ${secretKeyList()}
 `);
 }
 
-function printUpdateHelp(bin: string = LEGACY_PRODUCT.bin): void {
+function printSelfUpgradeHelp(bin: string): void {
+  process.stdout.write(`${bin} update — Upgrade the installed ${bin} CLI
+
+Usage:
+  ${bin} update [--dry-run]
+
+Upgrades exactly one thing: the ${bin} executable that is running. It writes no
+project file — no .oh/, no oh.json, no .env — and it never asks for sudo.
+
+The upgrade follows whichever mechanism installed this executable:
+  npm-managed    realpath under node_modules/${AGRO_PRODUCT.packageName}/: reads the registry
+                 version with \`npm view\`, then runs
+                 \`npm install -g --prefix <owning prefix> ${AGRO_PRODUCT.packageName}@<version>\`.
+  standalone     a plain file (get-agro.sh): downloads AGRO_JS_URL (falls back to
+                 OH_JS_URL; default
+                 ${DEFAULT_ARTIFACT_URL})
+                 into the same directory, checks its shebang and \`--version\`,
+                 renames it over the executable, and keeps <path>.prev until the
+                 new file verifies.
+
+It refuses, with the supported procedure, when the executable is shipped by the
+sandbox image (/opt/oh), is a source checkout's dist/, belongs to the legacy
+${LEGACY_PRODUCT.packageName} package, cannot be resolved, sits in a read-only
+directory, is shadowed by another ${bin} earlier on PATH, or does not report the
+running version. Downgrades are refused. When the installed version is already
+current it changes nothing.
+
+Flags:
+  --dry-run       Report the installation kind, target, and versions without
+                  changing anything.
+
+Project payload vendoring (.oh/ + crons/) is \`oh update\` during the
+compatibility window; its --from, --from-remote, --ref and --force flags are
+not accepted here.
+`);
+}
+
+export function printUpdateHelp(bin: string = LEGACY_PRODUCT.bin): void {
+  if (bin === AGRO_PRODUCT.bin) {
+    printSelfUpgradeHelp(bin);
+    return;
+  }
   process.stdout.write(`${bin} update — Vendor or upgrade the .oh/ control plane
 
 Usage:
@@ -606,10 +648,19 @@ export interface UpdateArgs {
   dryRun: boolean;
 }
 
+const PAYLOAD_UPDATE_FLAGS = ["--from", "--from-remote", "--ref", "--force"];
+
 export function parseUpdateArgs(rest: string[], bin: string = LEGACY_PRODUCT.bin): ParseResult<UpdateArgs> {
   const args: UpdateArgs = { help: false, fromRemote: false, force: false, dryRun: false };
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i];
+    if (bin === AGRO_PRODUCT.bin && PAYLOAD_UPDATE_FLAGS.includes(arg)) {
+      return {
+        ok: false,
+        error: `${bin} update: ${arg} belongs to the legacy project-payload command; run \`oh update ${arg}\` during the compatibility window — ${bin} update upgrades only the installed CLI`,
+        showHelp: true,
+      };
+    }
     if (arg === "--from") {
       const value = rest[i + 1];
       if (value === undefined) {
@@ -1055,6 +1106,9 @@ async function main(argv: string[]): Promise<number> {
       stdout: (s: string) => process.stdout.write(s),
       stderr: (s: string) => process.stderr.write(s),
     };
+    if (product.name === "agro") {
+      return await runSelfUpgrade({ dryRun, argv1: process.argv[1] }, defaultDeps(VERSION), io);
+    }
     const targetDir = process.cwd();
     const source = resolveUpdateSource(parsed.args, { sourceOhDir: DEFAULT_SOURCE_OH_DIR }, bin);
 

@@ -70,7 +70,7 @@ describe.skipIf(!ESBUILD_AVAILABLE)(
     });
 
     it("error prefixes carry the invoked product name", () => {
-      expect(run(AGRO_JS, ["update", "--from"]).stderr).toBe("agro update: --from requires a directory\n");
+      expect(run(AGRO_JS, ["update", "--from"]).stderr).toMatch(/^agro update: --from belongs to the legacy project-payload command; run `oh update --from` during the compatibility window — agro update upgrades only the installed CLI\n/);
       expect(run(OH_JS, ["update", "--from"]).stderr).toBe("oh update: --from requires a directory\n");
     });
   },

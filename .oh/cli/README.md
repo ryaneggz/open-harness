@@ -66,7 +66,7 @@ To bind one of your own checkouts into the sandbox, equip it and pass `--repo`:
 
 ```bash
 cd your-project
-agro update                                     # vendor .oh/ + crons/ — and nothing else
+oh update                                       # vendor .oh/ + crons/ — and nothing else (compatibility window)
 agro sandbox install docker --repo "$PWD" --name your-project
 ```
 
@@ -104,7 +104,7 @@ with `OH_EXECUTION_TARGET=local` or `OH_EXECUTION_TARGET=docker-compose`.
 | `agro logs [name]` | Tail the sandbox compose logs. |
 | `agro ps [name]` | Show sandbox service status. |
 | `agro destroy [name] [--yes]` | Remove the sandbox, wipe its named volumes (`docker compose down -v`), then delete the registry entry. Names the volumes, then requires you to type the sandbox name; refuses without a TTY unless `--yes` is passed. |
-| `agro update` | Vendor `.oh/` + `crons/` into the current directory, equipping an empty checkout and upgrading an equipped one (`--from <dir>` / `--from-remote [--ref <ref>]`). It writes nothing else and never prompts. |
+| `agro update [--dry-run]` | Upgrade the installed `agro` executable and nothing else, through the mechanism that installed it: npm-managed (`npm view` + `npm install -g --prefix <owning prefix> @mifune/agro@<version>`) or standalone (download `AGRO_JS_URL`, falling back to `OH_JS_URL` and defaulting to the latest `agro.js` release asset; verify its shebang and `--version`; rename it over the file; keep `<path>.prev` until the new file verifies). Refuses image-shipped, source-checkout, legacy-package, unresolvable, read-only, PATH-shadowed, and downgrade cases with the supported procedure; never uses `sudo`; a no-op when current. Project payload vendoring is `oh update` — see the compatibility note below. |
 | `agro config show [--sandbox <name>]` | Print the resolved `oh.json` — every non-secret setting. |
 | `agro config set <field> <value> [--sandbox <name>]` | Set one dotted `oh.json` field (`access.sshPort 2200`), validated against the schema. A secret key is refused with a pointer at `agro secret set`. |
 | `agro config repo` | Create a repo on your GitHub account, keep the cloned-from upstream as the `openharness` remote, point `origin` at yours, and push. Asks first and defaults to no; never runs without an interactive yes. |
@@ -131,10 +131,14 @@ runs `.oh/scripts/docker-compose.sh` — see
 [lifecycle commands](https://github.com/mifunedev/openharness/blob/main/docs/lifecycle-commands.md), which also
 states the confirmation policy `agro destroy` carries.
 
-`agro update` prefers the payload bundled into the CLI itself; with `--from-remote` (or no
-payload at all) it shallow-clones the public OpenHarness repo into a temp dir and removes
-it after the run (`--ref <ref>` pins it). Root `docs/` remains project-owned and is not part
-of that payload. Catalog and help output therefore links to the Open Harness source
+`agro update` never touches a project. During the compatibility window `oh update` vendors
+`.oh/` + `crons/` into the current directory, equipping an empty checkout and upgrading an
+equipped one (`--from <dir>` / `--from-remote [--ref <ref>]`, `--dry-run`, `--force`); it
+writes nothing else and never prompts. `agro update` rejects those flags and points at
+`oh update`. `oh update` prefers the payload bundled into the CLI itself; with `--from-remote`
+(or no payload at all) it shallow-clones the public OpenHarness repo into a temp dir and
+removes it after the run (`--ref <ref>` pins it). Root `docs/` remains project-owned and is
+not part of that payload. Catalog and help output therefore links to the Open Harness source
 documentation instead of a path inside the equipped project.
 
 The CLI writes no scaffold. It creates no `AGENTS.md`, no provider configuration, and no
