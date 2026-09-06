@@ -44,7 +44,7 @@ gate1(){
   printf 'gate1: PASS\n'
 }
 record_for_head(){
-  local label=$1 record=$2 head=$3 task_rel commit changed path
+  local label=$1 record=$2 head=$3 task_rel commit changed
   [[ -f $record && ! -L $record ]] || return 1
   task_rel=${record%/*}; task_rel=${task_rel#"$AUDIT_ROOT/"}
   commit=$(jq -r '.commit // empty' "$record" 2>/dev/null) || return 1
@@ -52,9 +52,7 @@ record_for_head(){
   [[ $commit =~ ^[0-9a-f]{40}$ ]] && git -C "$AUDIT_ROOT" merge-base --is-ancestor "$commit" "$head" 2>/dev/null || return 1
   changed=$(git -C "$AUDIT_ROOT" diff --name-only "$commit" "$head")
   [[ -n $changed ]] || return 1
-  while IFS= read -r path; do
-    [[ $path == "$task_rel/"* || $path == .oh/evals/RESULTS.md ]] || return 1
-  done <<<"$changed"
+  [[ -z $(git -C "$AUDIT_ROOT" diff --name-only "$commit" "$head" -- . ":!$task_rel" ":!.oh/evals/RESULTS.md") ]] || return 1
   printf '%s %s is the content head; only task records changed since\n' "$label" "$commit"
 }
 gate2(){
