@@ -72,6 +72,60 @@ set +e; impl_out=$(PATH="$tmp/bin:$PATH" bash "$RUN" implementation fixture -- "
 grep -q '^gate1: PASS' <<<"$impl_out" && grep -q '^gate2: reused eval-result.json' <<<"$impl_out" || fail 'gates 1-2 did not pass on the green fixture'
 grep -q '^gate3: FAIL (no green CI run for HEAD)' <<<"$impl_out" || fail 'gate3 did not fail closed without a green CI run'
 grep -q 'state=complete verdict=AUDIT-FAIL' <<<"$impl_out" || fail 'gate3 failure did not publish AUDIT-FAIL evidence'
+cat >"$tmp/bin/gh" <<'GH'
+#!/usr/bin/env bash
+case "$1 $2" in
+  'repo view') printf 'owner/name\n';;
+  'run list') printf '[{"headSha":"%s","status":"completed","conclusion":"success"}]\n' "$(git rev-parse HEAD)";;
+  *) exit 9;;
+esac
+GH
+git -C "$tmp" branch development
+head=$(git -C "$tmp" rev-parse HEAD)
+task="$tmp/.oh/tasks/fixture"
+review(){ printf '{"schemaVersion":1,"commit":"%s","reviewer":"fixture-reviewer","reviewedAt":"2026-01-01T00:00:00Z","findings":[%s]}\n' "$1" "$2" >"$task/simplicity-review.json"; }
+finding='{"file":"keep.sh","line":3,"simplerAlternative":"delete the wrapper","removesLines":4,"blocking":true,"status":"%s","resolvedIn":null}'
+ui(){ printf '{"schemaVersion":1,"commit":"%s","verifiedAt":"2026-01-01T00:00:00Z","preflight":{"runId":"audit-20260101T000000Z-fixture","exit":%s},"reviewer":"fixture-reviewer","criteria":[%s]}\n' "$1" "$2" "$3" >"$task/ui-evidence.json"; }
+criterion='{"story":"US-1","criterion":"Verify in browser","result":"%s","screenshotSha256":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","note":"observed"}'
+gated(){
+  set +e; impl_out=$(PATH="$tmp/bin:$PATH" bash "$RUN" implementation fixture -- "$DRIVER" 2>&1); impl_rc=$?; set -e
+  [[ $impl_rc -eq 0 ]] || fail "$1: scripted run was not complete"
+  grep -q "state=complete verdict=$2" <<<"$impl_out" || fail "$1: expected $2"
+  grep -q "^$3" <<<"$impl_out" || fail "$1: report lacks '$3'"
+}
+gated 'no simplicity review' AUDIT-FAIL 'gate5: FAIL (no simplicity review for HEAD'
+grep -q '^gate3: PASS' <<<"$impl_out" && grep -q '^gate4: not applicable' <<<"$impl_out" || fail 'green CI fixture did not pass gate 3 and skip gate 4'
+review "$head" "$(printf "$finding" open)"
+gated 'blocking finding open' AUDIT-FAIL 'gate5: FAIL (1 blocking simplicity finding(s) open)'
+grep -q '^gate5: open keep.sh:3 — delete the wrapper' <<<"$impl_out" || fail 'open finding not listed with its alternative'
+printf '{"rounds":3,"netAdded":7,"lastCommit":"%s"}\n' "$head" >"$task/simplify-rounds.json"
+gated 'round cap reached' AUDIT-PASS 'gate5: PASS with SIMPLICITY-RESIDUAL (1 open finding(s) after 3 round(s))'
+printf '{"rounds":1,"netAdded":7,"lastCommit":"%s","nonReducing":true}\n' "$head" >"$task/simplify-rounds.json"
+gated 'non-reducing round' AUDIT-PASS 'gate5: PASS with SIMPLICITY-RESIDUAL (1 open finding(s) after 1 round(s))'
+printf '{"rounds":"two"}\n' >"$task/simplify-rounds.json"
+gated 'malformed rounds' AUDIT-FAIL 'gate5: FAIL (malformed simplify-rounds.json)'
+rm "$task/simplify-rounds.json"
+review "$head" "$(printf "$finding" resolved)"
+gated 'finding resolved' AUDIT-PASS 'gate5: PASS (review fixture-reviewer at '"$head"', 1 finding(s), none blocking open)'
+review 0000000000000000000000000000000000000000 ''
+gated 'stale review commit' AUDIT-FAIL 'gate5: FAIL (no simplicity review for HEAD'
+review "$head" ''
+mv "$task/simplicity-review.json" "$tmp/linked-review.json"; ln -s "$tmp/linked-review.json" "$task/simplicity-review.json"
+gated 'symlinked review' AUDIT-FAIL 'gate5: FAIL (no simplicity review for HEAD'
+rm "$task/simplicity-review.json"; mv "$tmp/linked-review.json" "$task/simplicity-review.json"
+printf '{"userStories":[{"id":"US-1","passes":true,"acceptanceCriteria":["Verify in browser"]}]}\n' >"$task/prd.json"
+gated 'ui story without evidence' AUDIT-FAIL 'gate4: FAIL (no ui evidence for HEAD'
+ui "$head" 0 "$(printf "$criterion" PASS)"
+gated 'ui evidence verified' AUDIT-PASS 'gate4: PASS (1 criteria verified by fixture-reviewer at '"$head"')'
+ui "$head" 0 "$(printf "$criterion" FAIL)"
+gated 'ui criterion failed' AUDIT-FAIL 'gate4: FAIL (1 criteria FAIL)'
+ui "$head" 1 "$(printf "$criterion" PASS)"
+gated 'ui preflight failed' AUDIT-FAIL 'gate4: FAIL (browser-preflight run audit-20260101T000000Z-fixture exited 1)'
+ui "$head" 0 ''
+gated 'ui evidence without criteria' AUDIT-FAIL 'gate4: FAIL (no criteria verified)'
+ui 0000000000000000000000000000000000000000 0 "$(printf "$criterion" PASS)"
+gated 'stale ui evidence' AUDIT-FAIL 'gate4: FAIL (no ui evidence for HEAD'
+rm "$task/ui-evidence.json" "$task/simplicity-review.json"
 bash "$RUN" pr 7 --base stack-parent -- "$tmp/complete-driver" >/dev/null
 bash "$RUN" prs --mine -- "$tmp/complete-driver" >/dev/null
 bash "$RUN" full --repo owner/name -- "$tmp/complete-driver" >/dev/null

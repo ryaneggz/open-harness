@@ -143,33 +143,63 @@ for `HEAD` has status `completed` and conclusion `success`; no run for `HEAD` fa
 
 ### Gate 4 — UI verification (conditional)
 
-If the task graph contains any browser-verification criteria, the UI must be
-confirmed visually:
+Gate 4 applies when a story in the task graph declares browser verification:
 
 ```bash
 grep -qi "agent-browser\|Verify in browser" "$AUDIT_ROOT/.oh/tasks/$SLUG/prd.json" && echo "UI gate applies"
 ```
 
-Determine applicability with the production helper's `browser-required` mode. When
-it applies, run its `browser-preflight` mode directly (do **not** run the ordinary
-`/agent-browser` repair/install preflight): it requires `command -v agent-browser`
-and a successful `agent-browser --version`, create a profile beneath
-`$AUDIT_TMP_ROOT`, launch only `about:blank` in session `audit-$AUDIT_RUN_ID`, then
-close that session and remove the profile. Set `HOME` to that profile for all
-preflight commands. The preflight must not install/download/repair, navigate to the
-application, write anywhere under `AUDIT_ROOT`, or touch GitHub; compare
-compare status, tracked content, index, and untracked-content snapshots before/after and fail on any delta (including changes to files that were already dirty).
-Failure fails Gate 4 before application navigation. After a successful preflight,
-drive `/agent-browser` against the running app and confirm the acceptance criteria
-render/behave as specified. Store screenshots under `$AUDIT_TMP_ROOT`, not in the
-repository. No clean screenshot/snapshot for an applicable story is `AUDIT-FAIL`.
-When no story declares browser verification, this gate is **not applicable** and
-must not invoke `agent-browser` at all.
+The production helper's `browser-required` mode runs this check. When no story
+declares browser verification, the gate is **not applicable**, and no part of the
+audit invokes `agent-browser`.
 
-The scripted driver runs only `browser-required`. When it applies, the driver fails
-closed with `gate4: FAIL`: the owner runs `browser-preflight` and records the
-screenshots; the driver cannot certify UI verification. When the check does not apply,
-the driver reports `gate4: not applicable`.
+**Who produces the evidence.** The owner of `/spec execute` produces it, before the
+audit. The owner runs the helper's `browser-preflight` mode (not the ordinary
+`/agent-browser` repair/install preflight). The preflight requires `command -v
+agent-browser` and a successful `agent-browser --version`, creates a profile beneath
+`$AUDIT_TMP_ROOT`, launches only `about:blank` in session `audit-$AUDIT_RUN_ID`, then
+closes that session and removes the profile. It sets `HOME` to that profile for every
+browser command. The preflight does not install, download, repair, navigate to the application,
+write under `AUDIT_ROOT`, or touch GitHub. It compares status, tracked content, index,
+and untracked-content snapshots before and after. The preflight fails on any delta, including
+a change to a file already dirty before the run. After a successful preflight the owner
+drives `/agent-browser` against the running application and checks each acceptance
+criterion. Screenshots stay under `$AUDIT_TMP_ROOT`, never in the repository. A
+reviewer who did not write the code under review reads the screenshots against the
+criteria, and the owner writes the verdicts to the record.
+
+**The record.** `.oh/tasks/<slug>/ui-evidence.json`, schema version 1. The owner writes
+it for the `HEAD` that the reviewer verified and adds it with `git add -f`:
+
+```json
+{"schemaVersion":1,"commit":"<40-hex HEAD verified>","verifiedAt":"<ISO-8601>",
+ "preflight":{"runId":"<AUDIT_RUN_ID of the browser-preflight run>","exit":0},
+ "reviewer":"<human or bounded read-only worker id>",
+ "criteria":[{"story":"US-00N","criterion":"<text>","result":"PASS"|"FAIL",
+              "screenshotSha256":"<hex>","note":"<what was observed>"}]}
+```
+
+The record carries the sha256 of each screenshot and the observation, so a later
+reader can match a stored screenshot to the verdict without the repository holding the
+image.
+
+**What the scripted driver enforces.** `scripts/route-driver.sh` never runs a browser.
+When `browser-required` exits 1 it prints `gate4: not applicable`. When it exits 0 the
+driver reads the record and fails closed on each of these conditions, naming the
+reason:
+
+| Condition | Report line |
+|---|---|
+| Record missing, symlinked, unreadable, or `commit` ≠ `git rev-parse HEAD` | `gate4: FAIL (no ui evidence for HEAD <sha>)` |
+| Record does not match schema version 1 | `gate4: FAIL (malformed ui-evidence.json)` |
+| `preflight.exit` ≠ 0 | `gate4: FAIL (browser-preflight run <runId> exited <n>)` |
+| `criteria` is empty | `gate4: FAIL (no criteria verified)` |
+| Any criterion has `result: FAIL` | one `gate4: FAIL criterion <story> <criterion> — <note>` line per failure, then `gate4: FAIL (<n> criteria FAIL)` |
+| Otherwise | `gate4: PASS (<n> criteria verified by <reviewer> at <commit>)` |
+
+A stale record is not a pass: the moment the branch moves, the owner must re-verify
+and rewrite the record for the new `HEAD`. The driver enforces the record; the
+reviewer and the owner judge what the screenshots show.
 
 ### Gate 5 — Slop (less code, low complexity)
 
@@ -212,28 +242,56 @@ with no new work. Anything else is disclosed, non-gating. A function the diff
 *introduces* above `ccnMax` is blocking; one already over the threshold on the base is
 disclosed only — the same pre-existing/new distinction gate 2 makes.
 
-**The bounded, monotone loop.** Read the caller's round record with
-`implementation-gates.sh simplicity-round "$SLUG"`, which prints
-`rounds=<n> cap=3 escalate=<bool> prevNetAdded=<n|none>` from
-`.oh/tasks/<slug>/simplify-rounds.json`:
+**Who produces the findings.** A fresh read-only reviewer who did not write the code
+under review reads the diff at `HEAD` and returns findings in the shape above. The owner
+of `/spec execute` writes them to `.oh/tasks/<slug>/simplicity-review.json`, schema
+version 1, and adds the file with `git add -f`. The driver never writes this record, and
+the implementer of the code under review never writes it:
 
-- `escalate=false` and a blocking finding exists → `AUDIT-FAIL` (gate 5). The build
-  simplifies and re-audits.
-- `escalate=true` (round cap reached), **or** `netAdded` did not strictly fall below
-  `prevNetAdded` on this round → stop blocking. `prevNetAdded=none` is the first round:
-  there is nothing to compare, so the monotone rule does not apply to it. The loop ends when the diff can no
-  longer be made smaller, not when taste is satisfied, so it terminates by construction.
-  Emit `AUDIT-PASS` with `SIMPLICITY-RESIDUAL: <n>` and list the residual findings for
-  the operator; they belong in `evidence.md`.
+```json
+{"schemaVersion":1,"commit":"<40-hex HEAD the review read>",
+ "reviewer":"<bounded read-only worker id or human>","reviewedAt":"<ISO-8601>",
+ "findings":[{"file":"<repo path>","line":<int>,"simplerAlternative":"<concrete>",
+              "removesLines":<int>,"blocking":true|false,
+              "status":"open"|"resolved","resolvedIn":"<commit or null>"}]}
+```
 
-This route **reads** the round record. It never writes or increments it — the
-orchestrating caller owns that file, exactly as it owns `evidence.md`.
+**The bounded, monotone loop.** The owner keeps the round record
+`.oh/tasks/<slug>/simplify-rounds.json` with the fields `rounds`, `netAdded`,
+`lastCommit`, and `nonReducing`. The owner sets `nonReducing: true` when a round's
+`netAdded` did not strictly fall below the previous round's. The loop **terminates**
+when `rounds >= 3` or when `nonReducing` is `true`. The helper's `simplicity-round`
+mode prints `rounds=<n> cap=3 escalate=<bool> prevNetAdded=<n|none>` from the same
+file for a reader who wants the summary. The loop ends when the diff cannot shrink further,
+not on taste, so it terminates by construction.
 
-In the scripted driver, gate 5 is metrics and disclosure only: it prints
-`gate5: metrics <json>`, `gate5: rounds <json>` when the round record exists, and
-`gate5: SIMPLICITY-RESIDUAL disclosed` when lizard reports a function over `ccnMax`. The
-driver never blocks on gate 5; the simplify loop in `/spec execute` owns the judgment and
-the round record.
+**What the scripted driver enforces.** `scripts/route-driver.sh` runs these steps in
+order and fails closed:
+
+1. Print `gate5: metrics <json>` from `slop-metrics <base>`. When `tool` starts with
+   `lizard` and `tsOverCcn` is non-empty, print `gate5: SIMPLICITY-RESIDUAL disclosed`.
+2. Read `simplicity-review.json`. When the file is missing, symlinked, malformed, or its
+   `commit` ≠ `git rev-parse HEAD`, report
+   `gate5: FAIL (no simplicity review for HEAD <sha>)` and publish `AUDIT-FAIL`. A stale
+   or absent review is not a pass.
+3. Read `simplify-rounds.json` when present. A file whose `rounds` is not a number
+   reports `gate5: FAIL (malformed simplify-rounds.json)`. Otherwise the driver prints
+   `gate5: rounds <json>` and computes the termination rule above.
+4. Print one `gate5: open <file>:<line> — <alternative>` line for every open finding,
+   so the report carries the judgment.
+5. When a finding has `blocking: true` and `status: open` and the loop is not
+   terminated, report `gate5: FAIL (<n> blocking simplicity finding(s) open)` and
+   publish `AUDIT-FAIL`.
+6. When blocking findings are open and the loop has ended, report
+   `gate5: PASS with SIMPLICITY-RESIDUAL (<n> open finding(s) after <rounds> round(s))`
+   and continue.
+7. Otherwise report
+   `gate5: PASS (review <reviewer> at <commit>, <n> finding(s), none blocking open)`.
+
+This route **reads** both records. It never writes or increments them — the
+orchestrating caller owns those files, exactly as it owns `evidence.md`. The driver
+enforces the contract; the reviewer supplies the findings and the owner judges the
+route for each one.
 
 ---
 
@@ -259,8 +317,11 @@ a `PASS` that hides residual slop is the one thing this gate exists to prevent.
 - **Fork PR classification.** It consumes the same private classifier JSON as
   `/audit pr` and `/audit prs`.
 - **Re-run a passing gate.** Fail-fast: stop at the first failing gate.
-- **Write or increment the gate-5 round counter.** It reads
-  `.oh/tasks/<slug>/simplify-rounds.json`; the orchestrating caller writes it.
+- **Write the gate-4 or gate-5 records.** It reads
+  `.oh/tasks/<slug>/simplify-rounds.json`, `.oh/tasks/<slug>/simplicity-review.json`,
+  and `.oh/tasks/<slug>/ui-evidence.json`; the orchestrating caller writes them.
+- **Run a browser.** Gate 4 reads the owner's verified record; the owner and a
+  reviewer produce it.
 - **Apply the simplification.** Gate 5 names the smaller alternative; removing the
   code is the `implement` node's job, like every other `AUDIT-FAIL`.
 - **Write the reviewer evidence doc.** The per-gate observations above are what

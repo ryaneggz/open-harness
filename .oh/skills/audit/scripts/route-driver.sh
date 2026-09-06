@@ -84,25 +84,67 @@ gate3(){
   if [[ -n $pr ]]; then gate3_pr; else gate3_branch; fi
   printf 'gate3: PASS\n'
 }
+record_for_head(){
+  local record=$1 head=$2
+  [[ -f $record && ! -L $record ]] || return 1
+  [[ $(jq -r '.commit // empty' "$record" 2>/dev/null) == "$head" ]]
+}
 gate4(){
-  local slug=$1 rc=0
+  local slug=$1 record="$AUDIT_ROOT/.oh/tasks/$1/ui-evidence.json" head rc=0 n failed
   "$gates" browser-required "$slug" || rc=$?
   case $rc in
-    0) fail 'gate4: FAIL (UI verification requires the owner to run browser-preflight and record the screenshots; the scripted driver cannot certify it)';;
-    1) printf 'gate4: not applicable\n';;
+    0) ;;
+    1) printf 'gate4: not applicable\n'; return 0;;
     *) fail "gate4: FAIL (browser-required exited $rc)";;
   esac
+  head=$(git -C "$AUDIT_ROOT" rev-parse HEAD)
+  record_for_head "$record" "$head" || fail "gate4: FAIL (no ui evidence for HEAD $head)"
+  jq -e '.schemaVersion==1 and (.reviewer|type)=="string" and (.reviewer|length>0)
+    and (.preflight.runId|type)=="string" and (.preflight.runId|test("^audit-[0-9]{8}T[0-9]{6}Z-[A-Za-z0-9._-]+$"))
+    and (.preflight.exit|type)=="number" and (.criteria|type)=="array"
+    and all(.criteria[]; type=="object" and (.story|type)=="string" and (.criterion|type)=="string"
+      and (.result=="PASS" or .result=="FAIL") and (.screenshotSha256|type)=="string"
+      and (.screenshotSha256|test("^[0-9a-f]{64}$")) and (.note|type)=="string")' "$record" >/dev/null 2>&1 \
+    || fail 'gate4: FAIL (malformed ui-evidence.json)'
+  [[ $(jq -r '.preflight.exit' "$record") == 0 ]] \
+    || fail "gate4: FAIL (browser-preflight run $(jq -r '.preflight.runId' "$record") exited $(jq -r '.preflight.exit' "$record"))"
+  n=$(jq '.criteria|length' "$record")
+  ((n > 0)) || fail 'gate4: FAIL (no criteria verified)'
+  failed=$(jq -r '.criteria[] | select(.result=="FAIL") | "gate4: FAIL criterion \(.story) \(.criterion) — \(.note)"' "$record")
+  [[ -z $failed ]] || { printf '%s\n' "$failed"; fail "gate4: FAIL ($(wc -l <<<"$failed") criteria FAIL)"; }
+  printf 'gate4: PASS (%s criteria verified by %s at %s)\n' "$n" "$(jq -r .reviewer "$record")" "$head"
 }
 gate5(){
-  local slug=$1 rounds="$AUDIT_ROOT/.oh/tasks/$1/simplify-rounds.json" metrics rc=0
+  local slug=$1 task="$AUDIT_ROOT/.oh/tasks/$1" review rounds metrics head rc=0 open total terminated=false rounds_n=0
+  review="$task/simplicity-review.json"; rounds="$task/simplify-rounds.json"
   metrics=$("$gates" slop-metrics "${base:-development}") || rc=$?
   ((rc == 0)) || fail "gate5: FAIL (slop-metrics exited $rc)"
-  printf 'gate5: metrics %s\n' "$metrics"
-  [[ ! -f $rounds || -L $rounds ]] || printf 'gate5: rounds %s\n' "$(jq -c . "$rounds")"
+  printf 'gate5: metrics %s\n' "$(jq -c . <<<"$metrics")"
   if jq -e '(.tool|startswith("lizard")) and (.tsOverCcn|length>0)' <<<"$metrics" >/dev/null; then
     printf 'gate5: SIMPLICITY-RESIDUAL disclosed\n'
   fi
-  printf 'gate5: disclosed\n'
+  head=$(git -C "$AUDIT_ROOT" rev-parse HEAD)
+  record_for_head "$review" "$head" && jq -e '.schemaVersion==1 and (.reviewer|type)=="string" and (.reviewer|length>0)
+    and (.findings|type)=="array"
+    and all(.findings[]; type=="object" and (.file|type)=="string" and (.line|type)=="number"
+      and (.simplerAlternative|type)=="string" and (.simplerAlternative|length>0) and (.removesLines|type)=="number"
+      and (.blocking|type)=="boolean" and (.status=="open" or .status=="resolved"))' "$review" >/dev/null 2>&1 \
+    || fail "gate5: FAIL (no simplicity review for HEAD $head)"
+  if [[ -f $rounds && ! -L $rounds ]]; then
+    jq -e '(.rounds|type)=="number"' "$rounds" >/dev/null 2>&1 || fail 'gate5: FAIL (malformed simplify-rounds.json)'
+    terminated=$(jq -r '(.rounds >= 3) or (.nonReducing == true)' "$rounds")
+    rounds_n=$(jq -r '.rounds' "$rounds")
+    printf 'gate5: rounds %s\n' "$(jq -c . "$rounds")"
+  fi
+  jq -r '.findings[] | select(.status=="open") | "gate5: open \(.file):\(.line) — \(.simplerAlternative)"' "$review"
+  open=$(jq '[.findings[] | select(.blocking==true and .status=="open")] | length' "$review")
+  total=$(jq '.findings|length' "$review")
+  if ((open > 0)); then
+    [[ $terminated == true ]] || fail "gate5: FAIL ($open blocking simplicity finding(s) open)"
+    printf 'gate5: PASS with SIMPLICITY-RESIDUAL (%s open finding(s) after %s round(s))\n' "$open" "$rounds_n"
+  else
+    printf 'gate5: PASS (review %s at %s, %s finding(s), none blocking open)\n' "$(jq -r .reviewer "$review")" "$head" "$total"
+  fi
 }
 implementation(){
   local slug=$1; shift

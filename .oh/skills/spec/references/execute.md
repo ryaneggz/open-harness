@@ -365,19 +365,44 @@ stories, + the gate-5 slop check) into one verdict:
 - `AUDIT-PASS` → implementation is promotable; continue to the tail.
 
 **The simplify sub-loop — drive `netAdded` down.** Gate 5 asks whether the diff
-can be smaller and still satisfy every acceptance criterion. On an
-`AUDIT-FAIL (gate 5)` the owner assigns the removal of the code the finding
-names to the bounded worker that owns it — the owner does not argue with the
-finding — and re-audits. The owner keeps the round record; the read-only
-audit route only reads it:
+can be smaller and still satisfy every acceptance criterion. The audit route
+reads a simplicity review for `HEAD` and fails closed without one, so the owner
+produces the review before the audit. After implementation, the owner dispatches
+a fresh read-only reviewer for simplicity findings at `HEAD`. The reviewer is a
+bounded worker with no edits in the code under review. Each finding cites `file:line`, names
+the concrete simpler alternative, states the lines it removes, and marks whether
+it blocks. The owner writes the findings to
+`.oh/tasks/<slug>/simplicity-review.json` for `HEAD` and adds the file with
+`git add -f`. The record is owner-written execution state, like `progress.txt`;
+a worker never writes it:
+
+```bash
+REVIEW=".oh/tasks/<slug>/simplicity-review.json"
+cat > "$REVIEW" <<JSON
+{ "schemaVersion": 1, "commit": "$(git rev-parse HEAD)", "reviewer": "<worker id>",
+  "reviewedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "findings": [ { "file": "<path>", "line": <n>, "simplerAlternative": "<concrete>",
+                  "removesLines": <n>, "blocking": true, "status": "open", "resolvedIn": null } ] }
+JSON
+git add -f "$REVIEW"
+```
+
+On an `AUDIT-FAIL (gate 5)` the owner routes each blocking finding to the
+bounded worker that owns the file — the owner does not argue with the finding —
+then records the round, obtains a fresh review on the new head, and re-audits.
+The owner keeps the round record; the read-only audit route only reads it. The
+owner sets `nonReducing` to `true` when the round's `netAdded` did not strictly
+fall below the previous round's:
 
 ```bash
 COUNTER=".oh/tasks/<slug>/simplify-rounds.json"
 ROUNDS=$(jq -r '.rounds // 0' "$COUNTER" 2>/dev/null || echo 0)
+PREV=$(jq -r '.netAdded // empty' "$COUNTER" 2>/dev/null)
 NET=$(AUDIT_ROOT="$PWD" bash .oh/skills/audit/scripts/implementation-gates.sh \
         slop-metrics "$BASE" | jq -r .netAdded)
+NON_REDUCING=false; [ -n "$PREV" ] && [ "$NET" -ge "$PREV" ] && NON_REDUCING=true
 cat > "$COUNTER" <<JSON
-{ "rounds": $((ROUNDS + 1)), "netAdded": $NET, "lastCommit": "$(git rev-parse HEAD)" }
+{ "rounds": $((ROUNDS + 1)), "netAdded": $NET, "lastCommit": "$(git rev-parse HEAD)", "nonReducing": $NON_REDUCING }
 JSON
 git add -f "$COUNTER"
 ```
@@ -387,6 +412,18 @@ rounds, and a **non-reducing round** — one whose `netAdded` did not strictly f
 below the previous round's. Either way the audit stops blocking and passes with
 `SIMPLICITY-RESIDUAL`, and those residual findings go into `evidence.md` under
 *What remains unverified* for the operator to judge.
+
+**UI stories — verified browser evidence.** When a story declares browser
+verification (`Verify in browser` or `agent-browser` in `prd.json`), gate 4
+reads `.oh/tasks/<slug>/ui-evidence.json` for `HEAD` and fails closed without it.
+The owner runs `implementation-gates.sh browser-preflight` under an `AUDIT_RUN_ID`,
+drives the `/agent-browser` checks against the running application, and stores
+the screenshots under `$AUDIT_TMP_ROOT`, never in the repository. A reviewer who
+did not write the code reads each screenshot against its criterion. The owner
+writes the record for `HEAD` — the preflight run id and exit, the reviewer, and
+one entry per criterion with its `PASS`/`FAIL` result, the screenshot's sha256,
+and the observation — and adds it with `git add -f`. When the branch moves, the
+owner re-verifies and rewrites the record.
 
 **The `/eval` gate — run ONCE per cycle.** Run `/eval` while still on the work
 branch. If it updates `.oh/evals/RESULTS.md`, commit the benchmark refresh on the
