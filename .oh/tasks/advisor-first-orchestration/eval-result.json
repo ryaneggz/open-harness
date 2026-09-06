@@ -1,8 +1,8 @@
 {
-  "commit": "ceced13cc1267890d30fe09c6d06bffb2a304817",
+  "commit": "8cd488e58b2640bbb830fb50e812abbb6b0b7923",
   "runnerExit": 0,
-  "ranAt": "2026-09-06T18:54:18Z",
+  "ranAt": "2026-09-06T19:09:29Z",
   "newRegressions": [],
   "preExistingReds": ["oh-config-surfaces", "skills-vendored", "curl-bash-safe-alternatives"],
-  "note": "All three reds reproduce on base 9261d512 in this environment (oh.json invalid JSON; provider-link/safety-net check; python3 absent -> ERROR 127). changelog-entry-length went red on 762c0ec3 from a T3 entry of 303 chars and is green again from 14127d7c. delegate-model-effort-policy was red on 17a510de by design and is green from 758457f2."
+  "note": "Suite on 8cd488e5 (content head after the T1/T2 review repairs): 143 probes, runner exit 0, no green->red delta. All three reds reproduce on base 9261d512 in this environment. CI on 72548bc4 additionally flagged docs-20260901-followup-artifact-cited on evidence.md wording; reworded, probe PASS locally on this head."
 }

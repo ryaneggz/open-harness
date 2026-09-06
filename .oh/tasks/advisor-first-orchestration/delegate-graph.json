@@ -32,7 +32,8 @@
       "recordedAt": "2026-09-06",
       "lBinding": "Operator authorized: dispatch L assignments with model: opus; reasoning recorded as unknown (provider default); thinking-off is NOT claimed",
       "d10": "Operator declined a paid comparison; evidence.md states no efficiency claim and records this disposition"
-    }
+    },
+    "reviewFinding": "T5 (Explore) self-reported claude-opus-5[1m] while requested inherit=Fable; per-type model definitions override inheritance; unknown stays unknown for T1/T2"
   },
   "tasks": [
     {
@@ -44,7 +45,7 @@
       "requestedModel": "inherit session model (Fable 5.1); reasoning: session default (no per-worker control)",
       "selectionReason": "Operator excludes Sonnet; the hardest Claude work binds per task; Fable 5.1 inherited because the task is cross-boundary policy reconciliation and no lower non-Sonnet binding has verified reasoning control",
       "observedSettings": {
-        "model": "unknown — worker did not report; Agent call omitted model (inherit)",
+        "model": "unknown — worker did not report; Agent call omitted model (inherit); NOTE: the Explore built-in was observed not to inherit, so general-purpose inheritance is also unverified",
         "reasoning": "unknown"
       },
       "files": [
@@ -84,7 +85,8 @@
       "summary": "commits 50515549 + 17a510de; advisor re-ran identity/budget(9478B)/roles/boundary/single-owner probes, link check, diff --check: all 0; delegate-model-effort-policy red as expected for T2; one repair (duplicate step number) routed back and fixed",
       "artifacts": [
         "50515549",
-        "17a510de"
+        "17a510de",
+        "ae296157 (BL-1/NB-1 repair)"
       ],
       "usage": "~186k subagent tokens (harness report), 66 tool uses"
     },
@@ -99,7 +101,7 @@
       "requestedModel": "inherit session model (Fable 5.1); reasoning: session default",
       "selectionReason": "Sonnet excluded; adversarial oracle design is high-uncertainty; same reasoning as T1",
       "observedSettings": {
-        "model": "unknown — worker did not report; Agent call omitted model (inherit); interruption error named claude-fable-5-1 as the model sent to the API",
+        "model": "unknown — worker did not report; Agent call omitted model (inherit); interruption error named claude-fable-5-1 as the model sent to the API; NOTE: the Explore built-in was observed not to inherit, so general-purpose inheritance is also unverified",
         "reasoning": "unknown"
       },
       "files": [
@@ -135,7 +137,8 @@
       "artifacts": [
         "ef81cf73",
         "integration: 758457f2",
-        "scratchpad/t2-fault-injection.log"
+        "scratchpad/t2-fault-injection.log",
+        "1898f583 -> 8cd488e5 (BL-5/NB-6 repair)"
       ],
       "usage": "~141k + prior partial (harness report)"
     },
@@ -233,17 +236,17 @@
       ],
       "wave": 4,
       "complexity": "H — adversarial cross-file reasoning",
-      "requestedModel": "inherit session model (Fable 5.1); reasoning: session default",
+      "requestedModel": "inherit session model (Fable 5.1) — NOT honored by the Explore built-in; fresh review will pass model: fable explicitly",
       "selectionReason": "Sonnet excluded; adversarial review needs the high-capability endpoint",
       "observedSettings": {
-        "model": "unknown until dispatch",
+        "model": "claude-opus-5[1m] (worker self-report) — the Explore built-in did NOT inherit the parent model; the recorded inherit assumption was wrong",
         "reasoning": "unknown"
       },
       "files": [],
       "excludes": [
         "all writes"
       ],
-      "executionDirectory": "integration worktree, read-only",
+      "executionDirectory": "integration worktree @72548bc4, read-only (Explore built-in)",
       "workerType": "Explore (read-only provider built-in)",
       "continuation": "SendMessage",
       "acceptance": "findings keyed to D1–D12 with exact paths; no edits",
@@ -261,9 +264,13 @@
         "D11",
         "D12"
       ],
-      "nativeWorkerId": null,
-      "status": "pending",
-      "summary": ""
+      "nativeWorkerId": "ac70a18c7d509bfb8",
+      "status": "completed",
+      "summary": "",
+      "artifacts": [
+        "review report in session transcript; 5 blocking + 10 non-blocking findings"
+      ],
+      "usage": "~154k subagent tokens, 41 tool uses (harness report)"
     }
   ]
 }

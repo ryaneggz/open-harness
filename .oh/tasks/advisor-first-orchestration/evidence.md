@@ -1,6 +1,6 @@
 # Evidence: advisor-first orchestration (#988, ADR #989)
 
-Branch `feat/988-advisor-first-orchestration`, PR #991. Integrated head at the time of writing: `00611ad6` (policy `50515549`+`17a510de`, docs `aa001fa8`+`7ed847d3`+`14127d7c`, probes `758457f2`, knowledge `ceced13c`, eval records `762c0ec3`+`00611ad6`).
+Branch `feat/988-advisor-first-orchestration`, PR #991. Content commits: policy `50515549`+`17a510de`+`ae296157`, docs `aa001fa8`+`7ed847d3`+`14127d7c`, probes `758457f2`+`8cd488e5`, knowledge `ceced13c`; eval records and this document follow them. The independent review (T5) of `72548bc4` returned five blocking findings; their dispositions are in section 3 and the repairs are the two commits `ae296157` (T1) and `8cd488e5` (T2). A fresh review ran on the repaired head (see "Audit correlation").
 Audit correlation: `AUDIT_RUN_ID` and native verdicts are appended in "Audit correlation" below after the audit routes run.
 
 ## 0. Why this is better than not doing it
@@ -9,9 +9,11 @@ Before: five active instruction surfaces told the build owner to implement direc
 
 After: one execution model in all five surfaces. The active session advises, decomposes, dispatches bounded workers, inspects evidence, and accepts. Workers own tracked edits. A direct owner edit needs a recorded operator exception. Same session by default; transfer only on operator request. Model policy honors explicit operator selections after a native capability check and blocks on an unsupported control instead of substituting.
 
-This build ran under the new contract before it landed: every tracked edit in this PR (policy, probes, docs, knowledge page) was written by a bounded worker (T1–T3) and accepted by the advisor after re-running the checks. The advisor wrote only execution-state artifacts (`prd.md`, `prd.json`, `progress.txt`, `delegate-graph.json`, `delegate-log.txt`, `eval-result.json`, this file).
+This build ran under the new contract before it landed: every written policy, probe, docs, and knowledge edit in this PR came from a bounded worker (T1–T3) and was accepted by the advisor after re-running the checks. The advisor committed execution-state artifacts (`prd.md`, `prd.json`, `progress.txt`, `delegate-graph.json`, `delegate-log.txt`, `eval-result.json`, this file), the `/eval` scoreboard `.oh/evals/RESULTS.md`, and one byte-identical baseline copy of the untracked `.oh/skills/plan/SKILL.md` in the scaffold commit so T1 could reconcile it. No operator exception covers those two tracked files; the deviation is disclosed here and in `progress.txt`.
 
-Cost paid, observed: five worker dispatches, three repair round-trips (one duplicate list number, one changelog section/voice, one changelog length), one worker interruption by a provider limit and resume. Harness-reported subagent usage: T1 ~186k tokens, T2 ~141k plus an uncounted interrupted partial, T3 ~128k, T4 ~69k; the parent's own usage was not exposed to the session. Benefit in token or time terms: **claimed, unmeasured** — the operator declined a paid baseline-versus-candidate comparison (see D10).
+Observed in this run: the `Explore` built-in reported `claude-opus-5[1m]` although the call omitted `model`, so a provider built-in can carry its own model definition. Inheritance is not assumed for any worker whose model was not observed.
+
+Cost paid, observed: five worker dispatches, three repair round-trips (one duplicate list number, one changelog section/voice, one changelog length), one worker interruption by a provider limit and resume. Harness-reported subagent usage: T1 ~186k tokens, T2 ~141k plus an uncounted interrupted partial, T3 ~128k, T4 ~69k; the parent's own usage was not exposed to the session. Benefit in token or time terms: **not claimed** — the operator declined a paid baseline-versus-candidate comparison (see D10).
 
 ## 1. What the plan asked for
 
@@ -51,7 +53,8 @@ Requested versus observed, from `delegate-graph.json`:
 | T2 tests (H) | inherit (Fable) | `model` omitted | unknown; the 429 error named `claude-fable-5-1` as the model sent | Agent call; provider error text |
 | T3 docs (L) | Opus, thinking disabled | no per-worker thinking control exists | `claude-opus-5[1m]`; reasoning unknown | worker self-report |
 | T4 checks (L) | Opus, thinking disabled | no per-worker thinking control exists | `claude-opus-5[1m]`; reasoning unknown | worker self-report |
-| T5 review (H) | inherit (Fable), read-only | `Explore` built-in | see "Audit correlation" | — |
+| T5 review (H) | inherit (Fable), read-only | `Explore` built-in did not inherit | `claude-opus-5[1m]`; reasoning unknown | worker self-report |
+| T5 fresh review (H) | `fable` passed explicitly, read-only | `Explore` built-in with `model` set | see "Audit correlation" | worker self-report |
 
 Capability gate: the Agent tool schema visible to this session carries `model` with aliases `sonnet`, `opus`, `haiku`, `fable` and no `thinking` or `effort` parameter. The Claude Code documentation read on 2026-09-06 (`code.claude.com/docs/en/tools-reference.md`, `sub-agents.md`, `model-config.md`) lists no per-subagent thinking or effort control. "Opus with thinking disabled" therefore could not be confirmed; T3 and T4 were BLOCKED before dispatch and the operator was asked. The operator authorized "Opus, reasoning unobserved". Sonnet was never passed. `max` was never passed. Luna/Max and Astra/high: no native surface in this session exposes those models; recorded as a capability gap, no invented parameter passed.
 
@@ -77,7 +80,7 @@ plan-orchestration-contract rc=0
 
 Fault injection: T2 demonstrated 33 cases (REGRESSION then restored PASS) in `scratchpad/t2-fault-injection.log`; T4 independently re-ran 11 named cases (missing delegation, Sonnet substitution, off-to-low, `thinking: max`, stale acceptance, overlapping writers, forced handoff, hard-coded advisor identity, concurrent ownership, incomplete brief, forced handoff in plan) in `scratchpad/t4-checks.log`, all caught. Every probe's `# desc:` states it inspects instruction text and does not verify runtime model selection.
 
-Full suite on `ceced13c` (recorded in `eval-result.json`):
+Full suite on `8cd488e5`, the content head after the review repairs (recorded in `eval-result.json`):
 
 ```
 ran 143 probe(s); runner exit 0; PERSISTENT RED (3) — not gating, no green->red delta
@@ -114,6 +117,26 @@ NOT-APPLICABLE (15 pattern pages — provenance immutable)
 
 T4 section E: `git revert --no-edit` of the seven policy/probe/docs commits together applied with no conflicts; the six original probes then passed on the rollback branch and on base `9261d512`. Root checkout `/home/sandbox/harness` untouched (its unrelated modifications to `.gitignore`, `.claude/settings.json`, `.oh/evals/RESULTS.md`, `skill-impact.md`, and the untracked `.oh/skills/plan/` preserved); the AGRO worktree `feat/940-agro-compat-foundation` untouched; the source plan not staged.
 
+### Independent review findings and dispositions (T5 on `72548bc4`)
+
+| Finding | Disposition |
+|---|---|
+| BL-1 `execute.md` and the task prompt kept "only for bounded, disjoint worker tasks", readable as permission to keep coupled work in the owner | T1 repair `ae296157`: "disjoint" now describes one dispatch shape; coupled work names one continuing worker; pinned prefix intact; probes 0 |
+| BL-2 T5 ran on `claude-opus-5[1m]` while its record said inherit Fable | Records corrected (`delegate-graph.json`, matrix above); fresh review dispatched with `model: fable` explicitly; T1/T2 model stays unknown |
+| BL-3 eval result and check transcript keyed to older commits; audit pending | Suite re-run on the repaired head and recorded in `eval-result.json`; audit run on the pushed head, verdicts below |
+| BL-4 advisor-committed `.oh/skills/plan/SKILL.md` baseline copy and `RESULTS.md` refreshes omitted from the ownership statement | Section 0 corrected; disclosed in `progress.txt`; no operator exception claimed |
+| BL-5 probes passed on `…Sonnet when no Opus…` and `The owner may write tracked implementation edits…` | T2 repair `8cd488e5`: negation must govern the Sonnet token; new permission scan; 7 injection cases in `t2-fault-injection.log` "repair round" |
+| NB-1 stale heading | T1 repair: "Re-ground before you assign work" |
+| NB-2 the delegate skill's L preference (Opus, thinking off) blocks every L dispatch until an operator decision | Left as written on purpose: a standing change to the operator's preference is the operator's call, not the build's; recorded in section 4 |
+| NB-3 `.oh/skills/audit/references/harness.md` and `.oh/skills/strategic-proposal/SKILL.md` still route workers to Sonnet | Outside the approved T-scope; disclosed in section 4, not changed |
+| NB-4 preference-heading exemption is broad | Accepted risk; disclosed |
+| NB-5 root lost two duplicate bullets and the progressive-disclosure sentence | Bullets duplicate non-negotiables #3/#5; the disclosure sentence is restated by "Read the nearest directory README"; accepted |
+| NB-6 fallback check lacked a negation filter | T2 repair `8cd488e5` |
+| NB-7 literal pinning fragility | Accepted; the probes flatten whitespace and scan sentences, paraphrase remains a known limit |
+| NB-8 uncommitted delegation records at review time | Committed with this document |
+| NB-9 "claimed, unmeasured" wording | Reworded to "not claimed" |
+| NB-10 `prd.md` checkboxes unticked | `prd.json` is the completion authority; left |
+
 ## 3. Where they diverged, and why
 
 - **L binding.** The plan's L configuration (Opus, thinking disabled) could not be verified natively. Per the plan's own rule the assignments blocked and the operator chose "Opus, reasoning unobserved". Thinking-off is not claimed anywhere.
@@ -131,7 +154,7 @@ T4 section E: `git revert --no-edit` of the seven policy/probe/docs commits toge
 - **T1/T2 observed model** is unknown; both were dispatched with `model` omitted (inherit). Only the provider's 429 error text names `claude-fable-5-1` for T2.
 - **Efficiency.** No matched comparison; no token, cost, or time claim is made.
 - **Requested-transfer behavior** was tested as a prompt-contract check (T4 section D) and by probes (concurrent-ownership scan); a live two-session transfer was not exercised in this build.
-- **Public docs** (`mifunedev/openharness-web`) may describe the old direct-implementation default; not audited here. Not filed as a follow-up artifact, so it is not claimed as satisfied.
+- **Public docs** (`mifunedev/openharness-web`) may still describe the old direct-implementation default. This PR does not audit or change that repository, and no external issue exists for it; the D11 public-guidance review stays open for the operator.
 - **Other declared sources of `plan-vs-built-reconciliation`** (`reviewer-evidence-doc.md`, `spec-ready-finalization.sh`) were not in this diff and were not re-cited; the page's prior `verified_at` commit is not in this repository's history, so their freshness relative to that page was not re-established here.
 - **STE findings on untouched lines** in the edited skill files (150 pre-existing on `execute.md` and siblings) remain.
 
