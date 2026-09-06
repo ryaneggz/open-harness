@@ -60,6 +60,10 @@ function manifest(base: string, dir: string = base): ManifestEntry[] {
   return out.sort((a, b) => a.rel.localeCompare(b.rel));
 }
 
+function mutating(plan: MigrationPlan): MigrationPlan["steps"] {
+  return plan.steps.filter((s) => s.kind !== "noop");
+}
+
 const LEGACY_PROJECT = {
   ".oh/README.md": "control plane\n",
   ".oh/scripts/run.sh": { content: "#!/bin/sh\necho hi\n", mode: "755" },
@@ -79,7 +83,8 @@ describe("planMigration", () => {
     expect(manifest(root)).toEqual(before);
     expect(plan.status).toBe("ready");
     expect(plan.conflicts).toEqual([]);
-    expect(plan.steps.map((s) => s.kind)).toEqual(["rename", "rename"]);
+    expect(mutating(plan).map((s) => s.kind)).toEqual(["rename", "rename"]);
+    expect(plan.steps.filter((s) => s.kind === "noop")).toHaveLength(5);
     expect(JSON.parse(JSON.stringify(plan))).toEqual(plan);
   });
 
@@ -99,7 +104,7 @@ describe("planMigration", () => {
     });
     const plan = planMigration(projectMigrationSpec(root));
     expect(plan.status).toBe("ready");
-    expect(plan.steps.map((s) => s.kind)).toEqual(["retire", "retire"]);
+    expect(mutating(plan).map((s) => s.kind)).toEqual(["retire", "retire"]);
     const result = applyMigration(plan);
     expect(result.status).toBe("applied");
     expect(existsSync(join(root, ".oh.migrated", "README.md"))).toBe(true);
@@ -165,7 +170,7 @@ describe("applyMigration", () => {
     const plan = planMigration(projectMigrationSpec(root));
     const result = applyMigration(plan);
     expect(result.status).toBe("applied");
-    expect(result.steps.every((s) => s.outcome === "done")).toBe(true);
+    expect(result.steps.map((s) => s.outcome)).toEqual(["done", "done", ...Array(5).fill("skipped")]);
 
     const after = manifest(root);
     const renamed = before.map((row) => ({
@@ -255,7 +260,7 @@ describe("applyMigration", () => {
     try {
       const result = applyMigration(sabotaged);
       expect(result.status).toBe("failed");
-      expect(result.steps.map((s) => s.outcome)).toEqual(["done", "failed"]);
+      expect(result.steps.slice(0, 2).map((s) => s.outcome)).toEqual(["done", "failed"]);
       expect(result.steps[1].error).toBeTruthy();
       expect(existsSync(join(root, ".agro", "README.md"))).toBe(true);
       expect(existsSync(join(root, "oh.json"))).toBe(true);
@@ -287,5 +292,105 @@ describe("applyMigration", () => {
     expect(readFileSync(join(root, "hook.sh"), "utf8")).toBe("#!/bin/sh\nexec .agro/scripts/x.sh\n");
     expect((lstatSync(join(root, "hook.sh")).mode & 0o777).toString(8)).toBe("755");
     expect(planMigration(spec).status).toBe("noop");
+  });
+});
+
+describe("relink steps", () => {
+  const relink = (root: string, link: string, target: string) => ({
+    path: join(root, ...link.split("/")),
+    from: `../.oh/${target}`,
+    to: `../.agro/${target}`,
+  });
+
+  it("plans a relink only for a symlink that points at the legacy target", () => {
+    const root = fixture({
+      ".oh/skills/a": "x\n",
+      ".claude/skills": { symlink: "../.oh/skills" },
+      ".claude/hooks": { symlink: "../.agro/hooks" },
+      ".codex/skills/local.md": "regular dir\n",
+      ".agents/skills": { symlink: "../elsewhere/skills" },
+    });
+    const plan = planMigration({
+      root,
+      pairs: [],
+      relinks: [
+        relink(root, ".claude/skills", "skills"),
+        relink(root, ".claude/hooks", "hooks"),
+        relink(root, ".codex/skills", "skills"),
+        relink(root, ".agents/skills", "skills"),
+        relink(root, ".pi/skills", "skills"),
+      ],
+    });
+    expect(plan.status).toBe("ready");
+    expect(plan.steps.map((s) => (s.kind === "noop" ? `noop:${s.reason}` : s.kind))).toEqual([
+      "relink",
+      "noop:link already points at the AGRO target",
+      "noop:not a symlink",
+      "noop:link points at ../elsewhere/skills, not ../.oh/skills",
+      "noop:link absent",
+    ]);
+    expect(plan.steps[0]).toMatchObject({
+      kind: "relink",
+      path: join(root, ".claude", "skills"),
+      from: "../.oh/skills",
+      to: "../.agro/skills",
+      snapshot: { type: "symlink" },
+    });
+  });
+
+  it("project spec relinks the five provider links after the renames and applies them in order", () => {
+    const root = fixture({
+      ".oh/skills/a": "x\n",
+      ".oh/hooks/h": "x\n",
+      ".claude/skills": { symlink: "../.oh/skills" },
+      ".claude/hooks": { symlink: "../.oh/hooks" },
+      ".codex/skills": { symlink: "../.oh/skills" },
+      ".agents/skills": { symlink: "../.oh/skills" },
+      ".pi/skills": { symlink: "../.oh/skills" },
+    });
+    const plan = planMigration(projectMigrationSpec(root));
+    expect(plan.steps.map((s) => s.kind)).toEqual(["rename", "noop", "relink", "relink", "relink", "relink", "relink"]);
+    const result = applyMigration(plan);
+    expect(result.status).toBe("applied");
+    for (const link of [".claude/skills", ".codex/skills", ".agents/skills", ".pi/skills"]) {
+      expect(readlinkSync(join(root, ...link.split("/")))).toBe("../.agro/skills");
+    }
+    expect(readlinkSync(join(root, ".claude", "hooks"))).toBe("../.agro/hooks");
+    expect(readFileSync(join(root, ".claude", "skills", "a"), "utf8")).toBe("x\n");
+    expect(readdirSync(join(root, ".claude")).sort()).toEqual(["hooks", "skills"]);
+    const again = planMigration(projectMigrationSpec(root));
+    expect(again.status).toBe("noop");
+    expect(applyMigration(again).status).toBe("noop");
+  });
+
+  it("never creates a provider link that did not exist", () => {
+    const root = fixture({ ".oh/README.md": "x\n" });
+    expect(applyMigration(planMigration(projectMigrationSpec(root))).status).toBe("applied");
+    for (const dir of [".claude", ".codex", ".agents", ".pi"]) expect(existsSync(join(root, dir))).toBe(false);
+  });
+
+  it("refuses a relink whose link was retargeted after planning", () => {
+    const root = fixture({ ".oh/skills/a": "x\n", ".claude/skills": { symlink: "../.oh/skills" } });
+    const plan = planMigration({ root, pairs: [], relinks: [relink(root, ".claude/skills", "skills")] });
+    rmSync(join(root, ".claude", "skills"));
+    symlinkSync("../.other/skills", join(root, ".claude", "skills"));
+    const result = applyMigration(plan);
+    expect(result.status).toBe("refused");
+    expect(result.reason).toContain("changed since the plan was made");
+    expect(readlinkSync(join(root, ".claude", "skills"))).toBe("../.other/skills");
+  });
+
+  it("refuses relink targets outside the root", () => {
+    const outside = fixture({ "victim/.claude/skills": { symlink: "../.oh/skills" } });
+    const root = fixture({ ".oh/README.md": "x\n" });
+    symlinkSync(join(outside, "victim"), join(root, "escape"));
+    expect(() =>
+      planMigration({
+        root,
+        pairs: [],
+        relinks: [{ path: join(root, "escape", ".claude", "skills"), from: "../.oh/skills", to: "../.agro/skills" }],
+      }),
+    ).toThrow(/outside/);
+    expect(readlinkSync(join(outside, "victim", ".claude", "skills"))).toBe("../.oh/skills");
   });
 });

@@ -6,8 +6,10 @@ import {
   mkdirSync,
   openSync,
   readFileSync,
+  readlinkSync,
   realpathSync,
   renameSync,
+  symlinkSync,
   unlinkSync,
   writeFileSync,
   type Stats,
@@ -37,10 +39,17 @@ export interface RewriteSpec {
   replacements: Replacement[];
 }
 
+export interface RelinkSpec {
+  path: string;
+  from: string;
+  to: string;
+}
+
 export interface MigrationSpec {
   root: string;
   pairs: MigrationPair[];
   rewrites?: RewriteSpec[];
+  relinks?: RelinkSpec[];
 }
 
 export interface EntrySnapshot {
@@ -55,6 +64,7 @@ export type PlanStep =
   | { kind: "rename"; from: string; to: string; snapshot: EntrySnapshot; createsParent: boolean }
   | { kind: "retire"; from: string; to: string; snapshot: EntrySnapshot }
   | { kind: "rewrite"; path: string; replacements: Replacement[]; snapshot: EntrySnapshot }
+  | { kind: "relink"; path: string; from: string; to: string; snapshot: EntrySnapshot }
   | { kind: "noop"; path: string; reason: string };
 
 export interface MigrationConflict {
@@ -192,6 +202,17 @@ function planRewrite(root: string, rewrite: RewriteSpec): PlanStep {
   return { kind: "rewrite", path, replacements: rewrite.replacements, snapshot: current };
 }
 
+function planRelink(root: string, relink: RelinkSpec): PlanStep {
+  const path = assertInsideRoot(root, relink.path, "relink target");
+  const current = snapshot(path);
+  if (current === undefined) return { kind: "noop", path, reason: "link absent" };
+  if (current.type !== "symlink") return { kind: "noop", path, reason: "not a symlink" };
+  const target = readlinkSync(path);
+  if (target === relink.to) return { kind: "noop", path, reason: "link already points at the AGRO target" };
+  if (target !== relink.from) return { kind: "noop", path, reason: `link points at ${target}, not ${relink.from}` };
+  return { kind: "relink", path, from: relink.from, to: relink.to, snapshot: current };
+}
+
 function isStep(entry: PlanStep | MigrationConflict): entry is PlanStep {
   return "kind" in entry;
 }
@@ -208,6 +229,7 @@ export function planMigration(spec: MigrationSpec): MigrationPlan {
     else conflicts.push(planned);
   }
   for (const rewrite of spec.rewrites ?? []) steps.push(planRewrite(root, rewrite));
+  for (const relink of spec.relinks ?? []) steps.push(planRelink(root, relink));
 
   const mutating = steps.some((step) => step.kind !== "noop");
   const status: PlanStatus = conflicts.length > 0 ? "conflict" : mutating ? "ready" : "noop";
@@ -235,13 +257,17 @@ function acquireLock(root: string): (() => void) | undefined {
   };
 }
 
+function revalidateInPlace(step: Extract<PlanStep, { kind: "rewrite" | "relink" }>): string | undefined {
+  if (!sameSnapshot(step.snapshot, snapshot(step.path))) return `${step.path} changed since the plan was made`;
+  if (step.kind === "relink" && readlinkSync(step.path) !== step.from) {
+    return `${step.path} changed since the plan was made`;
+  }
+  return undefined;
+}
+
 function revalidate(step: PlanStep): string | undefined {
   if (step.kind === "noop") return undefined;
-  if (step.kind === "rewrite") {
-    return sameSnapshot(step.snapshot, snapshot(step.path))
-      ? undefined
-      : `${step.path} changed since the plan was made`;
-  }
+  if (step.kind === "rewrite" || step.kind === "relink") return revalidateInPlace(step);
   if (!sameSnapshot(step.snapshot, snapshot(step.from))) {
     return `${step.from} changed since the plan was made`;
   }
@@ -266,6 +292,17 @@ function applyRewrite(step: Extract<PlanStep, { kind: "rewrite" }>): void {
     closeSync(fd);
   }
   renameSync(tmp, step.path);
+}
+
+function applyRelink(step: Extract<PlanStep, { kind: "relink" }>): void {
+  const tmp = `${step.path}.tmp.${process.pid}`;
+  symlinkSync(step.to, tmp);
+  try {
+    renameSync(tmp, step.path);
+  } catch (error) {
+    unlinkSync(tmp);
+    throw error;
+  }
 }
 
 function pendingResults(plan: MigrationPlan): StepResult[] {
@@ -296,6 +333,10 @@ function applyStep(step: PlanStep): void {
   if (step.kind === "noop") return;
   if (step.kind === "rewrite") {
     applyRewrite(step);
+    return;
+  }
+  if (step.kind === "relink") {
+    applyRelink(step);
     return;
   }
   if (step.kind === "rename" && step.createsParent) mkdirSync(dirname(step.to), { recursive: true });
@@ -347,6 +388,23 @@ export function applyMigration(plan: MigrationPlan): MigrationResult {
   }
 }
 
+export const PROVIDER_LINKS: ReadonlyArray<{ link: string; target: string }> = [
+  { link: ".claude/skills", target: "skills" },
+  { link: ".claude/hooks", target: "hooks" },
+  { link: ".codex/skills", target: "skills" },
+  { link: ".agents/skills", target: "skills" },
+  { link: ".pi/skills", target: "skills" },
+];
+
+export function providerRelinks(root: string): RelinkSpec[] {
+  const dir = resolve(root);
+  return PROVIDER_LINKS.map(({ link, target }) => ({
+    path: resolve(dir, ...link.split("/")),
+    from: `../.oh/${target}`,
+    to: `../.agro/${target}`,
+  }));
+}
+
 export function projectMigrationSpec(root: string): MigrationSpec {
   const dir = resolve(root);
   return {
@@ -355,6 +413,7 @@ export function projectMigrationSpec(root: string): MigrationSpec {
       { legacy: `${dir}${sep}.oh`, agro: `${dir}${sep}.agro`, kind: "dir" },
       { legacy: `${dir}${sep}oh.json`, agro: `${dir}${sep}agro.json`, kind: "file" },
     ],
+    relinks: providerRelinks(dir),
   };
 }
 
