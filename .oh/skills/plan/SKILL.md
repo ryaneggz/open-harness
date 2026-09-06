@@ -181,11 +181,11 @@ parallel operation; public documentation; verification.>
 3. Check every DoD identifier against the implementation and orchestration tables. Reject missing coverage or dangling identifiers.
 4. Confirm that each criterion has an observable pass condition, evidence, and an owner.
 5. Confirm that every bounded assignment carries all required fields and that no read-only worker owns edits.
-5. Run `bash .oh/skills/ste/scripts/ste-check.sh <plan-path>` from the harness repository. Use an absolute plan path for another repository.
-6. Fix checker findings and review meaning with `/ste`'s ten-question check.
-7. In Git, confirm that an ignore rule covers the saved file and that `git ls-files -- <plan-path>` returns no entries.
-8. Report the path, status, unresolved questions, and validation results.
-9. If a Markdown revision changes the content, report any existing sibling `plan.html` as stale. Do not overwrite the rendering automatically.
+6. Run `bash .oh/skills/ste/scripts/ste-check.sh <plan-path>` from the harness repository. Use an absolute plan path for another repository.
+7. Fix checker findings and review meaning with `/ste`'s ten-question check.
+8. In Git, confirm that an ignore rule covers the saved file and that `git ls-files -- <plan-path>` returns no entries.
+9. Report the path, status, unresolved questions, and validation results.
+10. If a Markdown revision changes the content, report any existing sibling `plan.html` as stale. Do not overwrite the rendering automatically.
 
 Use `DRAFT` only when the plan passes validation and awaits operator approval.
 Use `BLOCKED` when a required decision, prerequisite, or validation remains unresolved.
