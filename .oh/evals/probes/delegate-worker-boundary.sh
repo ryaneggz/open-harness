@@ -3,14 +3,17 @@
 # source: ADR #929 — subagents are a bounded execution primitive, not a project-role ontology;
 #         supersedes rl-delegation-write-worker (#57), whose read-only-worker lesson is kept here;
 #         extended by issue #988 / ADR #989 (judgment stays with the advisor, edits go to workers);
-#         extended by issue #1003 (useful bounded sizing replaces the maximize-parallelism slogan)
+#         extended by issue #1003 (useful bounded sizing replaces the maximize-parallelism slogan);
+#         extended by issue #1004 (initial and resumed dispatch share one eligibility gate)
 # desc: prose check: /delegate prefers the active session for context-sharing phases and judgment,
 #       sends tracked implementation edits to bounded provider-native workers (coupled work to one
 #       continuing worker), isolates parallel writers and serializes shared-file work, warns that a
 #       read-only worker writes nothing, names no nonexistent project agent roles, sizes a task by
 #       complexity/briefing overhead/shared context/verification cost instead of maximizing
-#       parallelism or preferring smaller tasks, keeps the max-5-per-wave and recursion caps, and
-#       makes no unmeasured efficiency claim
+#       parallelism or preferring smaller tasks, keeps the max-5-per-wave and recursion caps,
+#       makes no unmeasured efficiency claim, and requires every initial or resumed dispatch to
+#       satisfy its prerequisites, accepted dependencies, required controls, and provenance checks
+#       (issue #1004). This text probe does not establish runtime dispatch behavior.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -101,6 +104,32 @@ grep -qF '| **Evidence destinations** |' <<<"$brief" || missing+=("Evidence dest
 grep -qF '| **Stopping condition** |' <<<"$brief"    || missing+=("Stopping condition")
 (( ${#missing[@]} == 0 )) || fail "the dispatch record no longer requires every worker-brief field: ${missing[*]}"
 
+eligibility="$(awk '/^\*\*Dispatch eligibility applies to initial and resumed runs\.\*\*/{f=1} f && /^\*\*Resume rather than restart\.\*\*/{exit} f{print}' "$SKILL" | tr -s '[:space:]' ' ')"
+[[ -n "${eligibility//[[:space:]]/}" ]] || fail "the initial-and-resumed dispatch eligibility block could not be located"
+
+missing=()
+grep -qiF 'blocking prerequisites' <<<"$eligibility"              || missing+=("blocking prerequisites")
+grep -qF '`Depends On`' <<<"$eligibility"                         || missing+=("every dependency")
+grep -qF 'recorded `completed`' <<<"$eligibility"                  || missing+=("accepted dependency state")
+grep -qiF 'accepted evidence' <<<"$eligibility"                    || missing+=("accepted dependency evidence")
+grep -qiF 'required artifact revision' <<<"$eligibility"           || missing+=("current dependency evidence")
+grep -qiF 'established provenance' <<<"$eligibility"               || missing+=("established dependency provenance")
+grep -qiF 'required model, control, and capability' <<<"$eligibility" || missing+=("required controls")
+grep -qiF 'unresolved native worker status' <<<"$eligibility"      || missing+=("unresolved native status")
+grep -qiF 'artifact provenance' <<<"$eligibility"                  || missing+=("unresolved artifact provenance")
+grep -qiF 'owned-path ambiguity' <<<"$eligibility"                 || missing+=("unresolved path ownership")
+grep -qiF 'no unresolved native worker status, artifact provenance, or owned-path ambiguity' <<<"$eligibility" \
+  || missing+=("unresolved status and provenance must be absent")
+grep -qF 'record `running`' <<<"$eligibility"                      || missing+=("running recorded before dispatch")
+grep -qF 'record or keep `BLOCKED`' <<<"$eligibility"              || missing+=("unmet conditions stay blocked")
+grep -qiF 'dispatch nothing' <<<"$eligibility"                     || missing+=("no dispatch while blocked")
+grep -qF '`pending` alone' <<<"$eligibility"                       || missing+=("pending is not automatic eligibility")
+grep -qiF 'only some accepted dependencies' <<<"$eligibility"     || missing+=("partial dependency acceptance is insufficient")
+(( ${#missing[@]} == 0 )) || fail "dispatch eligibility omits: ${missing[*]}"
+
+unsafe_resume="$(grep -nF -- '- `pending`, `BLOCKED`: re-run the task under its dispatch record.' "$SKILL" || true)"
+[[ -z "$unsafe_resume" ]] || fail "/delegate still re-runs pending and blocked tasks without re-evaluating eligibility: $unsafe_resume"
+
 missing=()
 grep -qF 'Max 5 concurrent agents per wave' <<<"$skill_flat"   || missing+=("the max-5-per-wave wave cap")
 grep -qF 'Max concurrent agents per wave | 5' <<<"$skill_flat" || missing+=("the max-5-per-wave reference row")
@@ -115,4 +144,4 @@ stale="$(grep -nE '\.(oh|claude|codex|pi)/agents/[A-Za-z0-9_-]+\.md' "$SKILL" ||
 roles="$(grep -nEi 'subagent_type: *(implementer|critic|pm|council)|`(implementer|critic|pm|council)`' "$SKILL" || true)"
 [[ -z "$roles" ]] || fail "/delegate still names retired project-agent roles as worker types: $roles"
 
-echo "PASS: /delegate keeps judgment in the active session, sends tracked edits to bounded isolated workers, keeps the read-only warning, sizes tasks by complexity rather than maximum parallelism, keeps its concurrency and recursion caps, and names no project agents (prose check only)" >&2
+echo "PASS: /delegate keeps judgment in the active session, sends tracked edits to bounded isolated workers, sizes tasks usefully, checks initial and resumed dispatch eligibility, keeps its concurrency and recursion caps, and names no project agents (prose check only; runtime behavior unverified)" >&2

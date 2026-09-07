@@ -11,8 +11,10 @@
 #       issue #1003 for /delegate: acceptance is recorded before a dependent is released, resume
 #       reconciles `running` tasks and stale completion evidence, every procedure reference
 #       resolves (no Memory Protocol), planning alone is not a trigger, and the diagram branches
-#       on --dry-run before the run-ledger write (asserted as graph edges, not text order). This probe inspects instruction text; it does
-#       not verify runtime delegation or model settings.
+#       on --dry-run before the run-ledger write (asserted as graph edges, not text order).
+#       Issue #1004 requires blocked and pending tasks to satisfy every dependency, prerequisite,
+#       control, and provenance condition before dispatch. This probe inspects instruction text;
+#       it does not verify runtime delegation, recovery, eligibility decisions, or model settings.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -95,6 +97,7 @@ need delegate/SKILL.md "$delegate_flat" \
   'retry only the incomplete scope' \
   'Re-read the artifact references against the current tree' \
   'returns to `running` for reconciliation' \
+  'its dependents wait' \
   'blocks every write to the affected paths' \
   'never authorizes a second writer' \
   'it never truncates it' \
@@ -103,7 +106,12 @@ need delegate/SKILL.md "$delegate_flat" \
   'is not a trigger' \
   'authorizes no dispatch and creates no execution state' \
   '- `FAIL`: read the failed task' \
-  'Accepted prior-wave artifact references and summaries, not full output'
+  'Accepted prior-wave artifact references and summaries, not full output' \
+  'Dispatch eligibility applies to initial and resumed runs' \
+  'It remains `BLOCKED` while any condition is unmet' \
+  'becomes eligible only after every condition holds' \
+  'Re-evaluate a `BLOCKED` dependent against all dependencies' \
+  'release it only when every condition holds'
 
 if grep -qiF 'Memory Protocol' "$DELEGATE"; then
   problems+=("/delegate still calls the undefined Memory Protocol")
@@ -116,6 +124,9 @@ if grep -qF 'treat `completed` tasks as done' <<<"$delegate_flat"; then
 fi
 if grep -qF 'Re-run only tasks whose status is `pending`, `FAIL`, or `BLOCKED`' <<<"$delegate_flat"; then
   problems+=("resume still skips running tasks instead of reconciling them")
+fi
+if grep -qF -- '- `pending`, `BLOCKED`: re-run the task under its dispatch record.' "$DELEGATE"; then
+  problems+=("resume still dispatches pending and blocked tasks without re-evaluating dependencies and controls")
 fi
 
 delegate_frontmatter="$(awk 'NR==1 && $0=="---"{f=1; next} f && /^---$/{exit} f{print}' "$DELEGATE")"
@@ -196,5 +207,5 @@ if (( ${#problems[@]} > 0 )); then
   exit 1
 fi
 
-echo "PASS: /spec keeps one advisor deciding and accepting, workers implementing first, same-session execution by default, operator-only transfer, no fixed advisor identity, no launched agent, and the human merge gate; /delegate releases dependents only on accepted artifacts, reconciles interrupted work, resolves every procedure reference, and keeps --dry-run read-only (prose check only)" >&2
+echo "PASS: /spec keeps one advisor deciding and accepting, workers implementing first, same-session execution by default, operator-only transfer, no fixed advisor identity, no launched agent, and the human merge gate; /delegate releases only tasks whose full eligibility and accepted-evidence checks hold, reconciles interrupted work, resolves every procedure reference, and keeps --dry-run read-only (prose check only; runtime behavior unverified)" >&2
 exit 0

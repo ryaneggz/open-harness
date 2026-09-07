@@ -254,14 +254,36 @@ This skill's two files sit beside them without collision.
 Both live under `.oh/tasks/`, which is gitignored — that is correct for run state.
 Stage them with `git add -f` only when a PR must carry the delegation as evidence.
 
+**Dispatch eligibility applies to initial and resumed runs.** Before any dispatch,
+re-evaluate the task against the current graph, artifacts, and native capabilities. A
+task is eligible only when all of these conditions hold:
+
+- all blocking prerequisites in the plan and dispatch record are satisfied;
+- every `Depends On` task is recorded `completed`, its accepted evidence still
+  describes the required artifact revision, and that evidence has established
+  provenance;
+- every required model, control, and capability is available; and
+- no unresolved native worker status, artifact provenance, or owned-path ambiguity
+  remains.
+
+A `pending`, `FAIL`, or `BLOCKED` label does not itself authorize dispatch. If every
+condition holds, dispatch only the incomplete authorized scope and record `running`
+before the worker starts. If any condition remains unmet, record or keep `BLOCKED`,
+log each unmet condition, and dispatch nothing. Never infer eligibility from `pending`
+alone or from only some accepted dependencies.
+
 **Resume rather than restart.** If `delegate-graph.json` already exists in the resolved
 directory, read it first and reconcile every task against real state before any
 dispatch.
 
-- `pending`, `BLOCKED`: re-run the task under its dispatch record.
-- `FAIL`: read the failed task's current artifacts before any retry, then retry only
-  the incomplete scope under its dispatch record. Never replay work that is already
-  correct.
+- `pending`: apply the dispatch-eligibility conditions. Do not release it from the
+  label alone.
+- `BLOCKED`: re-evaluate every recorded blocking condition, including all dependencies
+  and required controls. It remains `BLOCKED` while any condition is unmet and becomes
+  eligible only after every condition holds.
+- `FAIL`: read the failed task's current artifacts before any retry, apply the
+  dispatch-eligibility conditions, then route only the incomplete scope through the
+  existing failure / repair route. Never replay work that is already correct.
 - `running`: inspect the persisted native worker reference and the current artifacts
   before any retry. While the worker is still active, reconnect to it or observe it
   through the supported native mechanism, and never spawn a duplicate for it. Once it
@@ -282,7 +304,9 @@ dispatch no worker, create no execution state, then skip to **Step 7**.
 
 ### 5. Execute waves
 
-For each wave, starting from Wave 1:
+For each wave, starting from Wave 1, apply the dispatch-eligibility conditions before
+each task enters step 5a. Wave membership and persisted status never replace that
+check.
 
 **a) Spawn worker agents in ONE message (parallel)**
 
@@ -351,7 +375,9 @@ Release a dependent only on accepted artifacts. Pass the artifact references and
 summaries of tasks recorded `completed` as context to the next wave's workers. A
 dependency that is `running`, `FAIL`, or `BLOCKED` is not accepted: its dependents
 stay `BLOCKED`, and the defect returns to the bounded writer named in the task's
-failure / repair route. Repeat until all waves complete or all remaining tasks are
+failure / repair route. Re-evaluate a `BLOCKED` dependent against all dependencies,
+blocking prerequisites, required controls, and provenance conditions; release it only
+when every condition holds. Repeat until all waves complete or all remaining tasks are
 blocked. Per-task acceptance does not replace step 6; the integrated validation there
 is a separate, still-required check.
 
