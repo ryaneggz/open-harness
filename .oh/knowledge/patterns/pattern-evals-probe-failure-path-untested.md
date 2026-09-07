@@ -6,7 +6,7 @@ tags: [evals, probes, fault-injection, false-pass, exit-code, anchors]
 created: 2026-09-07
 updated: 2026-09-07
 sources:
-  - .oh/evals/probes/advisor-execution-contract.sh@c879ad80
+  - .oh/evals/probes/advisor-execution-contract.sh@d390ebe3
   - .oh/evals/probes/delegate-worker-boundary.sh@c879ad80
   - .oh/tasks/delegate-follow-up/evidence.md@58a538da
 confidence: provisional
@@ -15,7 +15,8 @@ confidence: provisional
 # A probe's failure branch is unexecuted code until something injects the fault
 
 ## Relevant Source Files
-- `.oh/evals/probes/advisor-execution-contract.sh@c879ad80` — the `problems+=(...)` message strings and the token-bound negation helper.
+- `.oh/evals/probes/advisor-execution-contract.sh@c879ad80` — the `problems+=(...)` message strings, and the first per-clause negation helper that shape 3 shows was too tight.
+- `.oh/evals/probes/advisor-execution-contract.sh@d390ebe3` — the shipped helper: per-sentence split with adversative reset, negation accepted either side of the token.
 - `.oh/evals/probes/delegate-worker-boundary.sh@c879ad80` — the checks added for the sizing contract.
 - `.oh/tasks/delegate-follow-up/evidence.md@58a538da` — the advisor-run injection table and T1's two self-caught bugs.
 
@@ -41,8 +42,14 @@ it matters.
 3. **A negation guard mis-binds under enumeration.** A helper scanning with `grep -o`
    resumes after each match, so in `does not trigger after /prd or /plan` the `/prd`
    match consumed the `not`, and `/plan` was judged with the prefix `" or "` — a false
-   `REGRESSION` on correct prose. The fix decides per clause: split on `[.;:,] ` and
-   require the negation within a bounded distance *before* the token.
+   `REGRESSION` on correct prose. The first fix decided per clause — split on `[.;:,] `,
+   negation required within a bounded distance *before* the token — and was itself too
+   tight: it still rejected `/prd is not a trigger.` (token before negation) and
+   `Not a trigger: /prd, /plan, /imagine.` (negation scoped across a list). The shipped
+   fix splits on sentence boundaries plus adversative connectives and accepts the
+   negation on *either* side of the token within a bounded window. **Two rounds of this
+   one check were wrong in opposite directions, and only a must-pass case caught the
+   second.**
 
 **Root cause.** A probe is a program whose error path is executed only by its own
 adversary. Without injection, "the suite is green" tests exactly one of its two
