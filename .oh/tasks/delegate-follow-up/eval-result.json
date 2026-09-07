@@ -1,9 +1,12 @@
 {
-  "commit": "6324e09f8659fc027a4384a9e04d1e5caed8cfe7",
+  "commit": "9962d68bd18f7d61f6e1e5dcea63b8ba342a7807",
   "runnerExit": 0,
-  "ranAt": "2026-09-07T20:28:00Z",
+  "ranAt": "2026-09-07T22:19:00Z",
+  "ranAtProvenance": "taken from the machine-written last-run column in .oh/evals/RESULTS.md, which /eval writes itself; minute precision. Not a hand-entered time.",
   "newRegressions": [],
   "preExistingReds": [
     "skills-vendored"
-  ]
+  ],
+  "probeCount": 145,
+  "note": "Fresh run at this head. The eval and simplicity records keyed to 6324e09f were NOT reused: a probe changed in this commit, so the content-head rule correctly stops covering them."
 }

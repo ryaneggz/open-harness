@@ -1,53 +1,81 @@
 {
-  "schemaVersion": 1,
-  "commit": "6324e09f8659fc027a4384a9e04d1e5caed8cfe7",
-  "reviewer": "T3 - fresh independent read-only reviewer, no prior context on this work, wrote none of the code under review; findings re-keyed to 6324e09f after the B-1..B-4 repair round",
-  "reviewedAt": "2026-09-07T20:33:00Z",
+  "commit": "9962d68bd18f7d61f6e1e5dcea63b8ba342a7807",
+  "reviewer": "Fresh independent simplicity reviewer with no prior context on this task or branch, running as Claude (model id claude-fable-5-1); read-only review of the implementation diff against 56ab2bab. Dispatched fresh at this head because a probe changed in this commit, so the record keyed to 6324e09f no longer described the head content and was not reused.",
+  "reviewedAt": "2026-09-07T22:20:09Z",
+  "reviewedAtProvenance": "produced by the reviewer from `date -u +%Y-%m-%dT%H:%M:%SZ`, not hand-entered, after an earlier record in this task was caught carrying a stamp that postdated its own commit.",
   "findings": [
     {
-      "file": ".oh/skills/delegate/SKILL.md",
-      "line": 323,
-      "simplerAlternative": "Delete the first sentence of the 5b paragraph (\"The `status` field carries the advisor's acceptance decision, never a worker's claim, and it stays inside the existing pending/running/completed/FAIL/BLOCKED values.\") and its closing sentence (\"No worker records this decision for itself.\"); begin the paragraph at \"Keep the worker's own claim in `summary`.\" Both restate rules already stated three times in the same file: the Status field row, the Acceptance owner row (\"a worker never accepts its own result\"), and the predecessor sentence (\"A worker's completed status is a report, not acceptance\"). The operative new content \u2014 the summary/status split, the running default, the FAIL rule, and the log append \u2014 survives intact and still satisfies US-001 criterion 1.",
+      "file": ".oh/evals/probes/advisor-execution-contract.sh",
+      "line": 111,
+      "simplerAlternative": "Delete the three exact-phrase negative checks at lines 111-119 ('Pass completed task summaries as context to the next wave', 'treat `completed` tasks as done', 'Re-run only tasks whose status is `pending`, `FAIL`, or `BLOCKED`'). Each fires only if someone reverts to the precise superseded wording; any paraphrase of the old policy passes. The positive `need` fragments at lines 91, 93, 96 and 97 already require the replacement rules to be present, so these negatives add no failure mode a real regression would trigger. Keep line 108 (Memory Protocol) which greps a term, not a sentence.",
+      "removesLines": 9,
+      "blocking": false,
+      "status": "open",
+      "resolvedIn": null
+    },
+    {
+      "file": ".oh/evals/probes/advisor-execution-contract.sh",
+      "line": 152,
+      "simplerAlternative": "Replace lines 152-164 with two direct assertions: `grep -qF 'D --> F{--dry-run?}' <<<\"$delegate_mermaid\"` and `grep -qF 'F -->|No| E[\"Step 4: Write run ledger' <<<\"$delegate_mermaid\"`, each appending its own message. The dry_nodes/ledger_nodes count pre-check is implied by the edge greps, so the outer if/else and the edges accumulator only change which message prints.",
+      "removesLines": 11,
+      "blocking": false,
+      "status": "open",
+      "resolvedIn": null
+    },
+    {
+      "file": ".oh/evals/probes/advisor-execution-contract.sh",
+      "line": 165,
+      "simplerAlternative": "Delete lines 165-167. Line 108 already greps the whole of $DELEGATE for 'Memory Protocol', which includes the mermaid block; the only extra token here is MEM_. Widen line 108 to grep -qiE 'MEM_|Memory Protocol' and drop the diagram-scoped duplicate.",
       "removesLines": 3,
       "blocking": false,
       "status": "open",
       "resolvedIn": null
     },
     {
-      "file": ".oh/evals/probes/delegate-worker-boundary.sh",
-      "line": 72,
-      "simplerAlternative": "Replace the five-check sizing block (four single-word greps for complexity / briefing overhead / shared context / verification cost, plus the missing=() accumulator) with two literal assertions: grep -qiF 'Complexity, briefing overhead, shared context, and verification cost decide a useful task boundary' and the existing grep -qiF 'one continuing bounded worker is a valid answer'. The single-word greps are individually near-vacuous (the bare token 'complexity' matches almost any sizing prose), so the clause literal is both shorter and stricter.",
-      "removesLines": 5,
+      "file": ".oh/evals/probes/advisor-execution-contract.sh",
+      "line": 123,
+      "simplerAlternative": "Delete the `for key in name description argument-hint` loop (lines 123-125). description presence is already enforced by the empty-delegate_desc check at line 137, and name/argument-hint presence is generic skill-frontmatter hygiene unrelated to the execution contract this probe guards.",
+      "removesLines": 3,
+      "blocking": false,
+      "status": "open",
+      "resolvedIn": null
+    },
+    {
+      "file": ".oh/evals/probes/advisor-execution-contract.sh",
+      "line": 126,
+      "simplerAlternative": "Drop negation_word and reuse the file's existing negation variable (line 31) inside unnegated_hits, which already greps with -i; extend line 31 to include no/neither/nor/without so the later checks gain the extra words rather than the file carrying two negation lists.",
+      "removesLines": 1,
       "blocking": false,
       "status": "open",
       "resolvedIn": null
     },
     {
       "file": ".oh/skills/delegate/SKILL.md",
-      "line": 161,
-      "simplerAlternative": "Drop the trailing sentence \"This path writes no file, dispatches no worker, and creates no execution state.\" from the no-plan-found path, keeping only \"Then stop.\" The guarantee is already stated for the skill-loading and plan-finishing paths and for --dry-run, and no probe literal pins this occurrence. Marked non-blocking because this is the sole statement of the guarantee on that specific control path \u2014 the one that previously ended in the undefined Memory Protocol \u2014 so removing it trades two lines for a real, if redundant, guarantee.",
+      "line": 269,
+      "simplerAlternative": "Remove 'Never replay work that is already correct.' from both the FAIL bullet (lines 263-264) and the running bullet (line 269). Line 63 already states 'Never replay completed work.' as a standing rule for every resume and rebrief; restating it per status bullet is the same policy three times in one file.",
       "removesLines": 2,
       "blocking": false,
       "status": "open",
       "resolvedIn": null
     },
     {
-      "file": ".oh/tasks/delegate-follow-up/delegate-graph.json",
-      "line": 1,
-      "simplerAlternative": "Edit reconciled fields in place instead of re-serializing the whole file. The b61dad88 reconciliation changed roughly 15 lines of real content, but the commit was much larger because a JSON serializer also expanded every compact array onto one element per line and escaped every literal em-dash. RE-SCOPED at 6324e09f: that churn is now in a landed commit and cannot be reclaimed without rewriting history, so removesLines is 0. Carried forward as guidance binding on future writes to this file - keep the compact array style so the semantic change stays visible in the diff.",
-      "removesLines": 0,
+      "file": ".oh/skills/delegate/SKILL.md",
+      "line": 323,
+      "simplerAlternative": "Trim the step 5b paragraph to its operative rules. Its first sentence restates the Status table row at line 194 and the sentence immediately above at lines 320-321; its last sentence restates the Acceptance owner row. Keep the new content. Move the probe literal 'acceptance decision, never a worker' into the table row so advisor-execution-contract.sh line 89 still passes.",
+      "removesLines": 3,
       "blocking": false,
       "status": "open",
       "resolvedIn": null
     },
     {
-      "file": ".oh/evals/probes/delegate-worker-boundary.sh",
-      "line": 96,
-      "simplerAlternative": "Collapse the five unrolled field greps into one loop over the field names, so the field list becomes the data it already is. Behavior is identical. Non-blocking: a style choice at 12 lines versus 8, not unnecessary machinery.",
-      "removesLines": 4,
+      "file": ".oh/skills/delegate/SKILL.md",
+      "line": 131,
+      "simplerAlternative": "Shorten the DRY node label to \"Step 7: report the task graph and wave plan, then stop\". The no-file/no-worker/no-execution-state triple is already stated at lines 161-162 and 280-281; the diagram only needs to route to the step that carries the rule. Probe assertions target lines 161 and 280, not the label.",
+      "removesLines": 0,
       "blocking": false,
       "status": "open",
       "resolvedIn": null
     }
-  ]
+  ],
+  "advisorNote": "Eight findings, none blocking, all left open. Finding 1 independently reaches the same conclusion as the amendment reviewer's B3: exact-phrase negative checks fire only on superseded wording and any paraphrase passes. That gap is real and is disclosed in evidence.md; the specific instance B3 identified - the stale-completed contract having no check at all - was repaired in this commit, while the broader weakness of phrase-exact negatives remains an open non-blocking finding rather than a silent one. The simplify loop was not run and no simplify-rounds.json was seeded, per pattern-spec-simplify-round-seeded-non-reducing."
 }
