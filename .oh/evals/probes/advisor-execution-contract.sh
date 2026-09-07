@@ -7,8 +7,12 @@
 #       transfer happens only on operator request with the originating advisor stopping dispatch
 #       and the receiver acknowledging ownership, a plan without a handoff prompt is valid, the
 #       advisor has no fixed identity, /spec launches no coding-agent process, a worker's completed
-#       status is a report rather than acceptance, and the human merge gate stays. This probe
-#       inspects instruction text; it does not verify runtime delegation or model settings.
+#       status is a report rather than acceptance, and the human merge gate stays. Extended by
+#       issue #1003 for /delegate: acceptance is recorded before a dependent is released, resume
+#       reconciles `running` tasks and stale completion evidence, every procedure reference
+#       resolves (no Memory Protocol), planning alone is not a trigger, and the diagram branches
+#       on --dry-run before the run-ledger write. This probe inspects instruction text; it does
+#       not verify runtime delegation or model settings.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -81,7 +85,64 @@ need spec/SKILL.md "$spec_flat" \
   'never launches another coding-agent process' \
   'human merge gate'
 need delegate/SKILL.md "$delegate_flat" \
-  'completed status is a report, not acceptance'
+  'completed status is a report, not acceptance' \
+  'acceptance decision, never a worker' \
+  'the accepted state that step 5d reads' \
+  'Release a dependent only on accepted artifacts' \
+  'is a separate, still-required check' \
+  'inspect the persisted native worker reference and the current artifacts' \
+  'never spawn a duplicate for it' \
+  'retry only the incomplete scope' \
+  'blocks every write to the affected paths' \
+  'never authorizes a second writer' \
+  'it never truncates it' \
+  'write neither file' \
+  'dispatch no worker, create no execution state'
+
+if grep -qiF 'Memory Protocol' "$DELEGATE"; then
+  problems+=("/delegate still calls the undefined Memory Protocol")
+fi
+if grep -qF 'Pass completed task summaries as context to the next wave' <<<"$delegate_flat"; then
+  problems+=("step 5d still releases a dependent on a worker report instead of on accepted artifacts")
+fi
+if grep -qF 'treat `completed` tasks as done' <<<"$delegate_flat"; then
+  problems+=("resume still trusts a saved completed label without re-checking its evidence")
+fi
+if grep -qF 'Re-run only tasks whose status is `pending`, `FAIL`, or `BLOCKED`' <<<"$delegate_flat"; then
+  problems+=("resume still skips running tasks instead of reconciling them")
+fi
+
+delegate_frontmatter="$(awk 'NR==1 && $0=="---"{f=1; next} f && /^---$/{exit} f{print}' "$DELEGATE")"
+delegate_desc="$(awk '/^description: \|$/{f=1; next} f && /^[a-z][a-z-]*:/{exit} f{print}' <<<"$delegate_frontmatter" | tr -s '[:space:]' ' ')"
+for key in name description argument-hint; do
+  grep -qE "^${key}:" <<<"$delegate_frontmatter" || problems+=("/delegate frontmatter lacks '${key}:'")
+done
+if [[ -z "${delegate_desc//[[:space:]]/}" ]]; then
+  problems+=("/delegate frontmatter has no description block scalar")
+else
+  if grep -qF '/prd' <<<"$delegate_desc"; then
+    problems+=("/delegate still triggers on /prd, so planning alone would authorize dispatch")
+  fi
+  if grep -qiE 'plan creation|plan is (created|written|finished)|after (writing|creating|finishing) a plan' <<<"$delegate_desc"; then
+    problems+=("/delegate still triggers on plan creation, so finishing a plan would authorize dispatch")
+  fi
+fi
+
+delegate_mermaid="$(awk '/^```mermaid$/{f=1; next} f && /^```$/{f=0} f{print}' "$DELEGATE")"
+if [[ -z "${delegate_mermaid//[[:space:]]/}" ]]; then
+  problems+=("/delegate has no Decision Flow mermaid diagram")
+else
+  dry_ln="$(grep -n -- '--dry-run?' <<<"$delegate_mermaid" | head -1 | cut -d: -f1 || true)"
+  ledger_ln="$(grep -n 'run ledger' <<<"$delegate_mermaid" | head -1 | cut -d: -f1 || true)"
+  if [[ -z "$dry_ln" || -z "$ledger_ln" ]]; then
+    problems+=("the Decision Flow diagram lost its --dry-run branch or its run-ledger write")
+  elif (( dry_ln >= ledger_ln )); then
+    problems+=("the Decision Flow diagram writes the run ledger before it branches on --dry-run")
+  fi
+  if grep -qiE 'MEM_|Memory Protocol' <<<"$delegate_mermaid"; then
+    problems+=("the Decision Flow diagram still routes to the undefined Memory Protocol")
+  fi
+fi
 
 fixed="$(grep -iE 'advisor[^.|]{0,80}\b(is|are|runs on|runs in|lives in|uses|requires|must use|means|=)\b[^.|]{0,60}\b(Fable|Opus|Sonnet|Haiku|Luna|Astra|GPT|tmux|Herdr|pane|tab|persistent identity|named agent)\b|(owner|advisor)[^.|]{0,40}(requires|needs|must use) (a |the )?(particular|specific|fixed) (model|identity|terminal)' <<<"$sentences" | grep -vE "$negation|operator preference" || true)"
 [[ -z "$fixed" ]] || problems+=("the advisor is defined by a fixed model, identity, or terminal: $fixed")
@@ -112,5 +173,5 @@ if (( ${#problems[@]} > 0 )); then
   exit 1
 fi
 
-echo "PASS: /spec keeps one advisor deciding and accepting, workers implementing first, same-session execution by default, operator-only transfer, no fixed advisor identity, no launched agent, and the human merge gate (prose check only)" >&2
+echo "PASS: /spec keeps one advisor deciding and accepting, workers implementing first, same-session execution by default, operator-only transfer, no fixed advisor identity, no launched agent, and the human merge gate; /delegate releases dependents only on accepted artifacts, reconciles interrupted work, resolves every procedure reference, and keeps --dry-run read-only (prose check only)" >&2
 exit 0

@@ -2,11 +2,15 @@
 # tier: A
 # source: ADR #929 — subagents are a bounded execution primitive, not a project-role ontology;
 #         supersedes rl-delegation-write-worker (#57), whose read-only-worker lesson is kept here;
-#         extended by issue #988 / ADR #989 (judgment stays with the advisor, edits go to workers)
+#         extended by issue #988 / ADR #989 (judgment stays with the advisor, edits go to workers);
+#         extended by issue #1003 (useful bounded sizing replaces the maximize-parallelism slogan)
 # desc: prose check: /delegate prefers the active session for context-sharing phases and judgment,
 #       sends tracked implementation edits to bounded provider-native workers (coupled work to one
 #       continuing worker), isolates parallel writers and serializes shared-file work, warns that a
-#       read-only worker writes nothing, and names no nonexistent project agent roles
+#       read-only worker writes nothing, names no nonexistent project agent roles, sizes a task by
+#       complexity/briefing overhead/shared context/verification cost instead of maximizing
+#       parallelism or preferring smaller tasks, keeps the max-5-per-wave and recursion caps, and
+#       makes no unmeasured efficiency claim
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -62,10 +66,42 @@ grep -qi 'general-purpose' <<<"$region"  || missing+=("the general-purpose recom
 grep -qi 'built-in' <<<"$region"         || missing+=("the provider built-in worker vocabulary")
 (( ${#missing[@]} == 0 )) || fail "the worker-configuration region omits: ${missing[*]}"
 
+sizing="$(awk '/^\*\*Decomposition rules:\*\*$/{f=1; next} f && /^#+ /{exit} f{print}' "$SKILL" | tr -s '[:space:]' ' ')"
+[[ -n "${sizing//[[:space:]]/}" ]] || fail "the decomposition rules could not be located"
+
+missing=()
+grep -qiF 'complexity' <<<"$sizing"        || missing+=("complexity as a sizing factor")
+grep -qiF 'briefing overhead' <<<"$sizing" || missing+=("briefing overhead as a sizing factor")
+grep -qiF 'shared context' <<<"$sizing"    || missing+=("shared context as a sizing factor")
+grep -qiF 'verification cost' <<<"$sizing" || missing+=("verification cost as a sizing factor")
+grep -qiF 'one continuing bounded worker is a valid answer' <<<"$sizing" \
+  || missing+=("one continuing bounded worker named as a valid answer")
+(( ${#missing[@]} == 0 )) || fail "the decomposition rules omit: ${missing[*]}"
+
+grep -qiF 'dependency order is absolute' <<<"$skill_flat" \
+  || fail "/delegate no longer states that dependency order is absolute"
+
+maximize="$(grep -niE 'maximi[sz]e[^.]{0,24}parallelism|parallelism[^.]{0,24}maximi[sz]ed|as (much|many) (parallelism|workers|agents|sub-?agents)[^.]{0,24}as possible' "$SKILL" || true)"
+[[ -z "$maximize" ]] || fail "/delegate still instructs the advisor to maximize parallelism: $maximize"
+
+smaller="$(grep -niE 'prefer[a-z]*( [a-z]+){0,3} smaller (tasks|units|pieces)|smaller (tasks|units|pieces) over( [a-z]+){0,2} larger' "$SKILL" || true)"
+[[ -z "$smaller" ]] || fail "/delegate still prefers smaller tasks by default instead of a useful boundary: $smaller"
+
+unmeasured="$(grep -niE '[0-9]+ ?% ?(faster|fewer|less|cheaper|savings)|saves? [0-9]+ ?(%|x|tokens)|[0-9]+ ?x (faster|speedup)|token savings' "$SKILL" || true)"
+[[ -z "$unmeasured" ]] || fail "/delegate makes an unmeasured efficiency or token-savings claim: $unmeasured"
+
+missing=()
+grep -qF 'Max 5 concurrent agents per wave' <<<"$skill_flat"   || missing+=("the max-5-per-wave wave cap")
+grep -qF 'Max concurrent agents per wave | 5' <<<"$skill_flat" || missing+=("the max-5-per-wave reference row")
+grep -qF 'Max depth: N' <<<"$skill_flat"                       || missing+=("the Max depth recursion field")
+grep -qF 'Max children per level: M' <<<"$skill_flat"          || missing+=("the Max children per level recursion field")
+grep -qF 'Step budget: S' <<<"$skill_flat"                     || missing+=("the Step budget recursion field")
+(( ${#missing[@]} == 0 )) || fail "/delegate dropped a concurrency or recursion limit: ${missing[*]}"
+
 stale="$(grep -nE '\.(oh|claude|codex|pi)/agents/[A-Za-z0-9_-]+\.md' "$SKILL" || true)"
 [[ -z "$stale" ]] || fail "/delegate still cites project-agent definition files: $stale"
 
 roles="$(grep -nEi 'subagent_type: *(implementer|critic|pm|council)|`(implementer|critic|pm|council)`' "$SKILL" || true)"
 [[ -z "$roles" ]] || fail "/delegate still names retired project-agent roles as worker types: $roles"
 
-echo "PASS: /delegate keeps judgment in the active session, sends tracked edits to bounded isolated workers, keeps the read-only warning, and names no project agents (prose check only)" >&2
+echo "PASS: /delegate keeps judgment in the active session, sends tracked edits to bounded isolated workers, keeps the read-only warning, sizes tasks by complexity rather than maximum parallelism, keeps its concurrency and recursion caps, and names no project agents (prose check only)" >&2
