@@ -44,7 +44,8 @@
       "description": "As the advisor resuming a delegation, I want running tasks reconciled against real worker state and artifacts, so that I never spawn a duplicate writer or accept a completion label whose evidence has gone stale.",
       "acceptanceCriteria": [
         "Step 4's resume rule covers running: inspect the persisted native worker reference and current artifacts before any retry",
-        "A worker still active is reconnected to or observed through the supported native mechanism; spawning a duplicate for it is forbidden",
+        "WITHIN A SESSION: a worker still active is reconnected to or observed through the supported native mechanism; spawning a duplicate for it is forbidden",
+        "ACROSS SESSIONS: a worker still active is reconnected to or observed through the supported native mechanism from persisted state alone; spawning a duplicate for it is forbidden",
         "A worker that ended has its artifacts validated before the advisor decides to accept, resume, or retry only the incomplete scope",
         "Unknown native status or unknown artifact provenance is reported as ambiguity and blocks duplicate writes",
         "A saved completed label whose evidence no longer describes the required artifact revision is not trusted",
@@ -53,8 +54,11 @@
         "Typecheck passes (satisfied by CI's \"Lint, Typecheck, Build & Test\" check, SUCCESS on the final pushed head; the diff touches no TypeScript. Cited after independent review found the criterion marked passing but uncited)"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Resume rule now covers pending/BLOCKED, FAIL (incomplete scope only), running (reconnect, never duplicate), completed (stale-evidence check) and unknown provenance. Five cases exercised; a real end-to-end resume reconciliation found and fixed defect A-1. | CORRECTION after independent review B-4: the earlier case-(a) record described an ENDED worker awaiting verification, not a reconnect to a still-active one. The still-active branch was then exercised properly and is live (SendMessage to a genuinely running worker returned \"Message queued for delivery ... at its next tool round\", distinct from \"Resuming agent\", with no duplicate dispatched). Criterion 2 is satisfied within a session by that observation. The CROSS-SESSION reconnect branch is BLOCKED on a missing native capability and is recorded as a gap, not as satisfied. Case (d) unknown-status remains a fixture."
+      "passes": false,
+      "notes": "Resume rule now covers pending/BLOCKED, FAIL (incomplete scope only), running (reconnect, never duplicate), completed (stale-evidence check) and unknown provenance. Five cases exercised; a real end-to-end resume reconciliation found and fixed defect A-1. | CORRECTION after independent review B-4: the earlier case-(a) record described an ENDED worker awaiting verification, not a reconnect to a still-active one. The still-active branch was then exercised properly and is live within a session (SendMessage to a genuinely running worker returned \"Message queued for delivery ... at its next tool round\", distinct from \"Resuming agent\", with no duplicate dispatched). Case (d) unknown-status remains a fixture. | passes SET TO FALSE after independent review R4 finding B-3. The cross-session criterion is BLOCKED on a missing native capability, measured by the operator-authorized experiment recorded in xsession-experiment/: a separate session given only the persisted ledger could not resolve the persisted nativeWorkerId by any available mechanism. Until this round the story carried passes=true with a note saying the branch was blocked. That boolean is what audit gate 1 reads, so the prose said blocked while the machine-readable state said passed, and three AUDIT-PASS verdicts rested on it. It was the one place in this PR where the tension was resolved in the PR's own favour, and it is corrected here rather than argued. Gate 1 now fails closed, which is the honest state while the criterion is blocked. Setting this back to true requires either a native cross-session worker handle or an explicit operator waiver or deferral for this sub-branch; the advisor will not flip it on its own judgment.",
+      "blockedCriteria": [
+        "ACROSS SESSIONS: a worker still active is reconnected to or observed through the supported native mechanism from persisted state alone; spawning a duplicate for it is forbidden"
+      ]
     },
     {
       "id": "US-004",
@@ -86,7 +90,7 @@
       ],
       "priority": 5,
       "passes": true,
-      "notes": "Both probes extended; advisor ran 8 independent injections (all mutated exit 1 / restored exit 0, plus an unmodified control at 0); T1 reports 31 round-1 and 17 repair-round injections with raw output retained; T2 independently confirmed 4. shellcheck absent from the sandbox \u2014 recorded as a gap."
+      "notes": "Both probes extended; advisor ran 8 independent injections (all mutated exit 1 / restored exit 0, plus an unmodified control at 0); T1 reports 31 round-1 and 17 repair-round injections with raw output retained; T2 independently confirmed 4. shellcheck absent from the sandbox — recorded as a gap."
     },
     {
       "id": "US-006",
