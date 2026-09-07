@@ -1,7 +1,7 @@
 # Evidence — delegate-follow-up
 
 - **PR**: #1004 (mifunedev/openharness, base `development`) · **Branch**: `skill/1003-delegate-follow-up`
-- **Audit run**: `audit-20260907T203507Z-3748740` · **Verdict**: `AUDIT-PASS` (state `complete`) on `3dc561be` · PR audit `audit-20260907T203515Z-3748998` -> `PR-AUDIT-PROMOTABLE`. Every run against this branch, including one `AUDIT-FAIL`, is listed under *Audit history*.
+- **Audit run**: `audit-20260907T211751Z-3792031` · **Verdict**: `AUDIT-PASS` (state `complete`) on `79289327` · PR audit `audit-20260907T211759Z-3792322` -> `PR-AUDIT-PROMOTABLE`. All nine runs against this branch, including both `AUDIT-FAIL`s, are listed under *Audit history*.
 - **Approved baseline**: `56ab2bab894e43073bf79edc43f70fe3ddd6d6de` · **Last non-record commit**: `6324e09f` (the head the gate records key to)
 - **Predecessor**: #988 / PR #991, merged at `e90bbed8`
 
@@ -60,7 +60,7 @@ Close the four instruction gaps the advisor-orchestration work left in `.oh/skil
 - **R4's diagram check hard-codes the mermaid node ids `D`, `E`, `F`.** A pure rename with correct topology would fail falsely. It fails closed and names the missing edge, so it is disclosed rather than fixed.
 - **Everything in `SKILL.md` is prose, not an enforced gate.** The probes assert instruction text. The D2/D4 rows show a compliant advisor doing the right thing; nothing in the system forces it. Finding A-1 is precisely what that gap looks like in practice.
 - **`plan-vs-built-reconciliation` remains `NEEDS-REVIEW`** against upstream `execute.md` changes that predate this PR. Not resolved here; `verified_at` deliberately not advanced.
-- **Non-record content landed after the first audit, and the earlier version of this document misdescribed it.** That sentence claimed the three implementation files were "untouched since `c879ad80`". **That was false.** `d390ebe3` rewrote `unnegated_hits()` in `.oh/evals/probes/advisor-execution-contract.sh` — one of the three owned implementation files — changing the negation split and window. `7ecb933c` added two knowledge pattern pages and the regenerated index. Neither is a record file, so neither could be excused by the content-head rule, and the sentence was written in the very commit that followed `d390ebe3`. Independent review caught it. Both commits are covered by the final audit recorded under *Audit history*, which ran against the final pushed head; the coverage claim now rests on that run rather than on an argument about record files.
+- **Non-record content landed after the first audit, and the earlier version of this document misdescribed it.** That sentence claimed the three implementation files were "untouched since `c879ad80`". **That was false.** `d390ebe3` rewrote `unnegated_hits()` in `.oh/evals/probes/advisor-execution-contract.sh` — one of the three owned implementation files — changing the negation split and window. `7ecb933c` added two knowledge pattern pages and the regenerated index. Neither is a record file, so neither could be excused by the content-head rule, and the sentence was written in the very commit that followed `d390ebe3`. Independent review caught it. Both commits are ancestors of `79289327`, the current pushed head, and are therefore covered by `audit-20260907T211751Z-3792031`, recorded under *Audit history*, which ran against that head. The gate records that run reused are keyed to `6324e09f` under the content-head rule, which still holds: `git diff --name-only 6324e09f HEAD` is empty outside `.oh/tasks/` and `.oh/evals/RESULTS.md`. The coverage claim rests on that run and that check, not on an argument about record files made in place of one.
 - **Cross-session reconnect is unreachable on this provider — a capability gap, not a passing check.** `ListAgents` does not enumerate an ended subagent: T1 and T2 were both absent from the listing after completing, in the same session that dispatched them. It exposes no other session's subagents at all, and `SendMessage` addresses sessions, not another session's workers. The handle exists only in the dispatching session's transcript, so a new session reading `delegate-graph.json` alone cannot address a prior session's worker; such a task always lands in the ambiguity branch, which blocks writes and dispatches no second writer. **That branch is no longer argued — it is measured.** An operator-authorized second session attempted the resume from the ledger alone against a worker independently confirmed live, and could not resolve the persisted handle: `ListAgents` returned no subagents section and no matching entry, and `TaskOutput` returned `No task found with ID: a28a5c1948d75fb02`. It classified the status unknown, held, and dispatched nothing. **That is fail-closed, and fail-closed is useful evidence — but it is not proof that a cross-session reconnect works, because no cross-session reconnect path exists to exercise.** The required runtime criterion for that branch is therefore recorded as **BLOCKED on a missing native capability**, per the approved plan's rule that a missing prerequisite blocks its gate rather than being satisfied by a static check. Closing it now requires a provider surface exposing a durable worker handle that survives the dispatching session. The remaining decision is the narrowly scoped operator waiver or deferral described under *D4 cross-session reconnect*.
 - **The must-pass test class was missing until the last round — now closed, recorded as history.** The re-review found five plainly-correct negated rewordings of the frontmatter description that still produced a `REGRESSION`, because the negation had to precede the token and sit in the same comma-delimited segment. It failed closed, so no defect ever passed. A follow-up round (`d390ebe3`) widened the window to the sentence, allowed the negation on either side of the token, and reset it on an adversative. **Verified closed by both the advisor and the reviewer independently**, each running a both-class matrix: all five rewordings now exit 0, and second-sentence inheritance, an adversative reset, the sibling-command trigger, a bare `/prd` and a bare plan-creation trigger all still exit 1. The lesson stands: until that round every recorded injection asserted only that a defect fails, and none asserted that correct prose passes — which is exactly what this run's own `pattern-evals-probe-failure-path-untested` page prescribes, and following it would have caught the shortfall a round earlier.
 - **The approved plan is not carried by the PR.** `.oh/plans/` is gitignored, so `.oh/plans/delegate-follow-up/plan.md` is unavailable to a reviewer without host filesystem access. `prd.md` carries its substance.
@@ -80,10 +80,13 @@ classified. **No run id appears anywhere in this document that did not actually 
 | `audit-20260907T195030Z-3628747` | implementation | `263b9d52` | **`AUDIT-FAIL`** — gate 5: `no simplicity review for HEAD 263b9d52`. The review was keyed to `c879ad80`, and the two knowledge pattern pages had since changed non-record files, so the content-head rule correctly stopped covering it. The gate failed closed exactly as designed; it was resolved by obtaining a real review at the new head, never by weakening the gate. |
 | `audit-20260907T200902Z-3697153` | implementation | `b61dad88` | `AUDIT-PASS` |
 | `audit-20260907T200923Z-3697739` | pr | `b61dad88` | `PR-AUDIT-PROMOTABLE` |
-| `audit-20260907T203507Z-3748740` | implementation | `3dc561be` | `AUDIT-PASS` — **the run this document reports** |
-| `audit-20260907T203515Z-3748998` | pr | `3dc561be` | `PR-AUDIT-PROMOTABLE` — **the run that gates the undraft** |
+| `audit-20260907T203507Z-3748740` | implementation | `3dc561be` | `AUDIT-PASS` |
+| `audit-20260907T203515Z-3748998` | pr | `3dc561be` | `PR-AUDIT-PROMOTABLE` |
+| `audit-20260907T211548Z-3789393` | implementation | `79289327` | **`AUDIT-FAIL`** — gate 3: `ci: PENDING`, ten seconds after the push. It failed closed and is recorded rather than dropped, exactly like the earlier `AUDIT-FAIL`. |
+| `audit-20260907T211751Z-3792031` | implementation | `79289327` | `AUDIT-PASS` — re-run after CI reported 4/4 pass; gates 1, 2, 3, 5 PASS, gate 4 not applicable. **The run this document reports** |
+| `audit-20260907T211759Z-3792322` | pr | `79289327` | `PR-AUDIT-PROMOTABLE` — **the run that gates the undraft** |
 
-Observed output of the final implementation run:
+Observed output of the `203507Z` implementation run:
 
 ```text
 task-graph: 7/7 stories pass
@@ -107,17 +110,39 @@ AUDIT-EVIDENCE: AUDIT-PASS
 `194250Z` run as its headline verdict long after three non-record commits had landed past
 `8ba02851`, and the later runs appeared in no tracked file at all — so the PR did not carry its own
 coverage. A fresh independent reviewer caught it. The whole sequence is recorded here so a reader can
-see which head each verdict actually describes, rather than having to trust one summary line. All six
-terminal evidence documents are now committed under `audit-runs/`, one file per run, so the ids in
-this table can be opened and checked instead of taken on trust.
+see which head each verdict actually describes, rather than having to trust one summary line. All nine
+terminal evidence documents are now committed under `audit-runs/`, one file per run. That makes the
+ids openable, but it is not what makes them trustworthy: the artifacts are caller-written and unsigned,
+so what actually rescues these ids is the external corroboration — the quoted gate output below, the
+commit-time interleaving, and the reviewer's own reproductions — rather than the files on their own.
+
+**Two separate failures, kept separate.** This document has recorded two distinct defects in its own
+audit citations, and earlier prose blurred them in a way that softened the worse one.
+
+1. **Fabrication.** The advisor wrote the run id `audit-20260907T201500Z-final` into a working-tree
+   draft of this document as a placeholder while repairing a stale citation. It named no run that
+   ever executed, and it did not even match the `audit-<UTC>-<pid>` form the driver mints. It was
+   never committed — it existed only in the uncommitted working tree. A fresh independent reviewer
+   caught it before it landed, by grepping the repository for the cited ids and finding zero hits.
+   It was removed and replaced with the real run ids, which is the state this table is in now.
+   **The artifact-durability limit below does not explain or excuse this one.** The cause was the
+   advisor inventing a placeholder string.
+2. **Real-but-untracked.** The genuinely executed later runs appeared in no tracked file, so a
+   reviewer's grep found nothing for them either. **That** one is explained by the durability limit:
+   `audit-run.sh` persists no artifact.
 
 **What those artifacts do and do not prove.** `audit-run.sh` creates its evidence root with
-`mktemp -d` and deletes it on the EXIT trap, so a normal run persists no artifact at all — that is a
-real capability limit, and it is why an earlier reviewer grepping this repository for these run ids
-found nothing. These six survive only because `route-driver.sh` was invoked directly with a durable
-`AUDIT_EVIDENCE_PATH`. Each file records the run's id, target, state and verdict. It does **not**
-record the commit the run classified; the *Head classified* column above is this document's claim,
-not the artifact's.
+`mktemp -d` and deletes it on the EXIT trap, so a normal run persists no artifact at all. These nine
+survive only because `route-driver.sh` was invoked directly. The driver never reads
+`AUDIT_EVIDENCE_PATH` itself — `route-driver.sh:18` calls `audit-evidence.sh complete "$1"`, and
+`audit-evidence.sh:7` is what requires the path. The consequence matters more than the mechanism:
+invoking the driver directly means `AUDIT_RUN_ID`, `AUDIT_ROOT`, `AUDIT_TARGET` and
+`AUDIT_TARGET_ARGS_JSON` were all **supplied by the caller** rather than minted by `audit-run.sh`. So
+the run id is caller-chosen, the JSON is unsigned and sits at a caller-chosen path, and
+`audit-run.sh`'s own target-correlation check and its `audit -- run-id=… state=… exit=…` stderr line
+never ran — **no exit status was captured for any of these runs.** Each file records the run's id,
+target, state and verdict. It does **not** record the commit the run classified; the *Head
+classified* column above is this document's claim, not the artifact's.
 
 ## Proof by gate
 
@@ -331,7 +356,7 @@ this PR does not claim it, and the PR stays draft.
 |---|---|---|
 | **R1** real recovery evidence | `xsession-experiment/` — the ledger and procedure the second session was given, its brief, its own report, its raw stream log, and the original worker's heartbeat; summarised in *Cross-session recovery experiment — R1*. The worker was independently confirmed active (heartbeat on disk, `ListAgents` in the dispatching session, `ps` run by the second session). The attempt produced a genuine unavailable/unknown result. No duplicate was dispatched (`subagent_stats` `"spawned":0`) and the protected path's sha256 was unchanged until the original worker wrote it. | **Satisfied** |
 | **R2** honest D4 disposition | *D4 cross-session reconnect — BLOCKED, operator decision required*, rewritten on the experiment. Fail-closed behaviour is named as fail-closed and never as reconnection; the capability boundary is stated exactly; a single narrowly scoped waiver or deferral is requested. | **BLOCKED**, pending that waiver; the disposition itself is honest and the PR stays draft |
-| **R3** audit provenance | `audit-runs/` — the six terminal evidence documents, each checked to carry a `runId` equal to its filename and `state: complete`; *Audit history* maps each id to the head this document claims it classified, and discloses that the artifact does not itself record that head. The fabricated-id incident stays recorded as a corrected incident. | `pending independent verification` |
+| **R3** audit provenance | `audit-runs/` — the nine terminal evidence documents, each checked to carry a `runId` equal to its filename and `state: complete`; *Audit history* maps each id to the head this document claims it classified, discloses that the artifact does not itself record that head, and records the fabricated-id incident and the real-but-untracked incident as two separate corrected failures. | **Satisfied with a correction.** A fresh independent reviewer opened the artifacts and confirmed the coverage claim holds: every cited id names a run that executed, every verdict matches its artifact, and every *Head classified* value is corroborated by commit-time interleaving and monotonic PID continuity rather than merely plausible. It found no run against the wrong PR and no softened `AUDIT-FAIL`. It also raised one blocking finding — this document asserted a fabricated-id disclosure it did not actually contain — which is why the disclosure now exists. The criterion is met because that finding was made and fixed, not in spite of it. |
 | **R4** final content and state | *What was built*, *Where it diverged from the plan, and why*, *What remains unverified*, *Proof by gate*, *Observed output*, *Acceptance criteria → proof*, *Deferred register*, and this table; `delegate-graph.json`, `delegate-log.txt` and `progress.txt` carry the reconciled worker state, including both stale-ledger recurrences. | `pending independent verification` |
 
 R3 and R4 are for a fresh independent reviewer to decide. This document does not assign them a
