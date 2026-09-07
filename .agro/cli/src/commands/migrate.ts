@@ -1,6 +1,6 @@
 import { lstatSync } from "node:fs";
-import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { resolveRegistryHome } from "../lib/compat.js";
 import {
   applyMigration,
   planMigration,
@@ -34,6 +34,7 @@ export interface MigrateIO {
 export interface MigrateDeps {
   cwd(): string;
   home(): string;
+  homeConfigured?(): boolean;
 }
 
 export const ROOT_MARKERS = [".oh", ".agro", "oh.json", "agro.json"];
@@ -41,7 +42,12 @@ export const ROOT_MARKERS = [".oh", ".agro", "oh.json", "agro.json"];
 const HELP_FLAGS = ["-h", "--help", "help"];
 
 export function defaultMigrateDeps(): MigrateDeps {
-  return { cwd: () => process.cwd(), home: () => homedir() };
+  const registry = resolveRegistryHome();
+  return {
+    cwd: () => process.cwd(),
+    home: () => registry.path,
+    homeConfigured: () => registry.configured,
+  };
 }
 
 export function parseMigrateArgs(argv: string[], bin: string): ParsedMigrateArgs {
@@ -179,6 +185,13 @@ function apply(args: MigrateArgs, plan: MigrationPlan, io: MigrateIO): number {
 
 export function runMigrate(args: MigrateArgs, io: MigrateIO, deps: MigrateDeps = defaultMigrateDeps()): number {
   try {
+    if (args.home && deps.homeConfigured?.() === true) {
+      io.stdout(
+        `${args.bin} migrate: the registry home is set explicitly to ${deps.home()}, so it holds no .oh or .agro directory to rename\n`,
+      );
+      io.stdout(`${args.bin} migrate: noop\n`);
+      return 0;
+    }
     const plan = planMigration(specFor(args, deps));
     return args.check ? check(args, plan, io) : apply(args, plan, io);
   } catch (error) {

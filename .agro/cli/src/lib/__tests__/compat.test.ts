@@ -16,6 +16,7 @@ import {
   resolveConfigFile,
   resolveControlDir,
   resolveProjectLayout,
+  resolveRegistryHome,
   resolveSeedSource,
   resolveUserStateHome,
 } from "../compat.js";
@@ -275,5 +276,22 @@ describe("remoteControlDirScript", () => {
     const missing = run(none);
     expect(missing.status).toBe(1);
     expect(missing.stderr).toContain(".agro .oh");
+  });
+});
+
+describe("resolveRegistryHome", () => {
+  it("returns the real home when neither alias is set", () => {
+    expect(resolveRegistryHome({}, "/home/someone")).toEqual({ path: "/home/someone", configured: false });
+  });
+
+  it("prefers AGRO_HOME, then OH_HOME, and reports the home as configured", () => {
+    expect(resolveRegistryHome({ OH_HOME: "/state/legacy" }, "/home/someone")).toEqual({
+      path: "/state/legacy",
+      configured: true,
+    });
+    expect(resolveRegistryHome({ OH_HOME: "/state/legacy", AGRO_HOME: "/state/agro" }, "/home/someone")).toEqual({
+      path: "/state/agro",
+      configured: true,
+    });
   });
 });

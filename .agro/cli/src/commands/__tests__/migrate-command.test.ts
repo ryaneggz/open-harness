@@ -338,6 +338,24 @@ describe("runMigrate apply", () => {
   });
 });
 
+describe("runMigrate --home with an explicitly configured registry home", () => {
+  it("is a noop that names the configured home instead of renaming inside it", () => {
+    const home = fixture({ "sandboxes/one/agro.json": "{}\n" });
+    const captured = capture();
+    const code = runMigrate(args({ home: true }), captured.io, {
+      cwd: () => home,
+      home: () => home,
+      homeConfigured: () => true,
+    });
+    expect(code).toBe(0);
+    expect(captured.out.join("")).toContain(`is set explicitly to ${home}`);
+    expect(captured.out.join("")).toContain("agro migrate: noop");
+    expect(captured.err.join("")).toBe("");
+    expect(existsSync(join(home, ".agro"))).toBe(false);
+    expect(existsSync(join(home, LOCK_FILE))).toBe(false);
+  });
+});
+
 describe("runMigrate --home", () => {
   it("moves ~/.oh/sandboxes to ~/.agro/sandboxes and leaves ~/.openharness and the project alone", () => {
     const home = fixture({

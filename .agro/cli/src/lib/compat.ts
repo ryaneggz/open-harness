@@ -315,6 +315,21 @@ export function discoverUserState(home: string = homedir()): UserStateDiscovery 
   };
 }
 
+export interface RegistryHome {
+  path: string;
+  configured: boolean;
+}
+
+export function resolveRegistryHome(
+  env: Record<string, string | undefined> = process.env,
+  home: string = homedir(),
+  warn?: (message: string) => void,
+): RegistryHome {
+  const configured = aliasedEnvValue(env, "HOME", warn);
+  if (configured !== undefined) return { path: resolve(configured), configured: true };
+  return { path: home, configured: false };
+}
+
 export function resolveUserStateHome(
   env: Record<string, string | undefined> = process.env,
   home: string = homedir(),
