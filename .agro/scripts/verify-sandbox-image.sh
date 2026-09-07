@@ -118,7 +118,7 @@ done
 check_nothing_baked() {
   local noun="$1" cmd="$2" filter="$3" json ids baked
 
-  if ! json=$(run "cd /opt/oh-seed && OH_EXECUTION_TARGET=local oh $cmd list --json" 2>/tmp/verify-sandbox-defaults.err); then
+  if ! json=$(run "cd /opt/agro-seed && OH_EXECUTION_TARGET=local oh $cmd list --json" 2>/tmp/verify-sandbox-defaults.err); then
     fail "could not read the $noun catalog from the image: $(head -3 /tmp/verify-sandbox-defaults.err 2>/dev/null)"
     return
   fi
@@ -147,7 +147,7 @@ fi
 # The inverse for tools: a kind:"baked-in" tool must actually be present, or the
 # check above is passing because the image is simply missing everything.
 if command -v jq >/dev/null 2>&1; then
-  if baked_json=$(run "cd /opt/oh-seed && OH_EXECUTION_TARGET=local oh tool list --json" 2>/dev/null); then
+  if baked_json=$(run "cd /opt/agro-seed && OH_EXECUTION_TARGET=local oh tool list --json" 2>/dev/null); then
     absent=$(jq -r '.[] | select(.kind == "baked-in" and .installed != true) | .id' <<<"$baked_json")
     present=$(jq -r '.[] | select(.kind == "baked-in") | .id' <<<"$baked_json")
     if [ -z "$present" ]; then

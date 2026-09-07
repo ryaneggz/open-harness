@@ -110,7 +110,7 @@ jobs:
           docker exec "$cid" bash /home/sandbox/harness/.agro/scripts/sandbox-healthcheck.sh
 
           ids=$(docker exec -u sandbox "$cid" bash -lc \
-            'cd /opt/oh-seed && OH_EXECUTION_TARGET=local oh harness list --json' \
+            'cd /opt/agro-seed && OH_EXECUTION_TARGET=local oh harness list --json' \
             | jq -r '.[] | select(.kind == "installable") | .id')
           if [ -z "$ids" ]; then
             echo "ERROR: the harness catalog declares no installable harnesses — this job would pass vacuously" >&2
@@ -128,7 +128,7 @@ jobs:
             for attempt in 1 2; do
               echo "--- oh harness install $id (attempt $attempt)"
               if docker exec -u sandbox "$cid" bash -lc \
-                "cd /opt/oh-seed && OH_EXECUTION_TARGET=local oh harness install '$id'"; then
+                "cd /opt/agro-seed && OH_EXECUTION_TARGET=local oh harness install '$id'"; then
                 break
               fi
               if [ "$attempt" = 2 ]; then
@@ -153,7 +153,7 @@ jobs:
 
           for id in $ids; do
             binary=$(docker exec -u sandbox "$cid" bash -lc \
-              'cd /opt/oh-seed && OH_EXECUTION_TARGET=local oh harness list --json' \
+              'cd /opt/agro-seed && OH_EXECUTION_TARGET=local oh harness list --json' \
               | jq -r --arg id "$id" '.[] | select(.id == $id) | .binary')
             echo "--- $binary --version"
             output=$(docker exec -u sandbox "$cid" bash -lc "

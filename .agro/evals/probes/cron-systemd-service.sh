@@ -18,8 +18,8 @@ done
 
 missing=()
 
-grep -qF 'ExecStart=/usr/local/bin/node --experimental-strip-types /home/sandbox/harness/.agro/scripts/cron-runtime.ts' "$UNIT" \
-  || missing+=("openharness-cron.service must ExecStart cron-runtime.ts under node --experimental-strip-types")
+grep -qF "ExecStart=/bin/bash -c 'if [ -d /home/sandbox/harness/.agro ]; then exec /usr/local/bin/node --experimental-strip-types /home/sandbox/harness/.agro/scripts/cron-runtime.ts; fi; exec /usr/local/bin/node --experimental-strip-types /home/sandbox/harness/.oh/scripts/cron-runtime.ts'" "$UNIT" \
+  || missing+=("openharness-cron.service must ExecStart cron-runtime.ts under node --experimental-strip-types from the control dir resolved at run time (.agro/ first, then .oh/)")
 grep -qE '^User=sandbox$' "$UNIT" || missing+=("openharness-cron.service must run as User=sandbox")
 grep -qE '^WorkingDirectory=/home/sandbox/harness$' "$UNIT" \
   || missing+=("openharness-cron.service must set WorkingDirectory=/home/sandbox/harness — CRONS_DIR is cwd-relative")

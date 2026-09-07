@@ -93,7 +93,7 @@
         ".agro/evals/probes/oh-image-only-deploy.sh"
       ],
       "acceptance": "fresh seeds .agro once; legacy workspace untouched; divergent refuses; tests and probe pass",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "T5",

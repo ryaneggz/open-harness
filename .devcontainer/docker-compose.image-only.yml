@@ -31,7 +31,7 @@ services:
       - /run/lock
       - /sys/fs
     healthcheck:
-      test: ["CMD", "bash", "/home/sandbox/harness/.agro/scripts/sandbox-healthcheck.sh"]
+      test: ["CMD", "bash", "-c", "if [ -d /home/sandbox/harness/.agro ]; then exec bash /home/sandbox/harness/.agro/scripts/sandbox-healthcheck.sh; fi; exec bash /home/sandbox/harness/.oh/scripts/sandbox-healthcheck.sh"]
       interval: 30s
       timeout: 10s
       retries: 3

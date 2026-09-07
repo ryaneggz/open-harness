@@ -105,11 +105,11 @@ for out in '\.pi/bridge' '\.pi/npm'; do
     || fails+=(".dockerignore must exclude ${out//\\/} — an untracked .pi build output (see .pi/.gitignore)")
 done
 
-# The .pi exclusions must be surgical: /opt/oh-seed still needs every tracked
+# The .pi exclusions must be surgical: /opt/agro-seed still needs every tracked
 # .pi file, so a blanket .pi exclusion without re-includes is a regression.
 if grep -qE '^[[:space:]]*(\*\*/)?\.pi/?[[:space:]]*$' "$DOCKERIGNORE" \
    && ! grep -qE '^[[:space:]]*!\.pi/' "$DOCKERIGNORE"; then
-  fails+=(".dockerignore excludes all of .pi/ without re-including the tracked files /opt/oh-seed needs; follow the exclude-then-re-include pattern already used for .claude/*")
+  fails+=(".dockerignore excludes all of .pi/ without re-including the tracked files /opt/agro-seed needs; follow the exclude-then-re-include pattern already used for .claude/*")
 fi
 
 if command -v git >/dev/null 2>&1 && git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then

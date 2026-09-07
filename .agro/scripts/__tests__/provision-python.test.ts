@@ -101,7 +101,7 @@ describe("Dockerfile uv ownership", () => {
     const text = dockerfile();
     expect(text).toContain("ARG INSTALL_PYTHON_KERNEL=true");
     expect(text).toContain('su - sandbox -c "OH_PYTHON_VERSION=');
-    expect(text).toContain("/opt/oh-seed/.agro/scripts/provision-python.sh");
+    expect(text).toContain("/opt/agro-seed/.agro/scripts/provision-python.sh");
   });
 
   it("sources the generated python env from login shells", () => {
@@ -121,7 +121,7 @@ describe("entrypoint uv ownership repair", () => {
   it("runs provisioning after provider links and does not abort boot on failure", () => {
     const text = entrypoint();
     const links = text.indexOf('link-providers.sh" --init');
-    const provision = text.indexOf('.agro/scripts/provision-python.sh"; then');
+    const provision = text.indexOf('"$CONTROL_DIR/scripts/provision-python.sh"; then');
     expect(provision).toBeGreaterThan(links);
     expect(text).toContain('"${OH_PROVISION_PYTHON:-true}" = "true"');
     expect(text).toContain("WARNING: Python provisioning did not complete");

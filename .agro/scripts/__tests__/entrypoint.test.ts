@@ -53,7 +53,7 @@ describe("devcontainer entrypoint home mount ownership", () => {
     expect(secondRepair).toBeGreaterThan(uidSync);
     const postUidSync = text.slice(secondRepair);
     const secondRepairCall = postUidSync.indexOf("repair_home_mount_ownership");
-    const linkProviders = postUidSync.indexOf('bash "$HARNESS/.agro/scripts/link-providers.sh" --init');
+    const linkProviders = postUidSync.indexOf('bash "$CONTROL_DIR/scripts/link-providers.sh" --init');
     const hermesBlock = postUidSync.indexOf('if command -v hermes >/dev/null 2>&1; then');
     expect(secondRepairCall).toBeGreaterThan(-1);
     expect(linkProviders).toBeGreaterThan(secondRepairCall);
@@ -70,7 +70,7 @@ describe("devcontainer entrypoint home mount ownership", () => {
     expect(block).toContain("uid_reconcile_step()");
     expect(block).toContain("WARNING: failed to");
     const reconBranch = block.slice(
-      block.indexOf('if mountpoint -q "$HARNESS_DIR" 2>/dev/null && [ -d "$HARNESS_DIR/.oh" ]; then'),
+      block.indexOf('if [ -d "$CHECKOUT_CONTROL_DIR" ]; then'),
       block.indexOf('echo "[entrypoint] no checkout bind at $HARNESS_DIR'),
     );
     expect(reconBranch).not.toContain("2>/dev/null || true");
@@ -109,10 +109,62 @@ describe("devcontainer entrypoint home mount ownership", () => {
   });
 });
 
+describe("devcontainer entrypoint dual-generation control dir", () => {
+  it("detects a checkout bind through compat_control_dir and refuses a divergent .oh/.agro pair", () => {
+    const text = entrypoint();
+    const detect = text.indexOf('if mountpoint -q "$HARNESS_DIR" 2>/dev/null; then');
+    const resolve = text.indexOf('CHECKOUT_CONTROL_DIR="$(compat_selected_path compat_control_dir "$HARNESS_DIR")"');
+    const refuse = text.indexOf("refusing to boot; resolve the conflict");
+    const branch = text.indexOf('if [ -d "$CHECKOUT_CONTROL_DIR" ]; then');
+    expect(detect).toBeGreaterThan(-1);
+    expect(resolve).toBeGreaterThan(detect);
+    expect(refuse).toBeGreaterThan(resolve);
+    expect(branch).toBeGreaterThan(refuse);
+    expect(text.slice(resolve, branch)).toContain("exit 1");
+    expect(text).not.toContain('[ -d "$HARNESS_DIR/.oh" ]');
+  });
+
+  it("resolves CONTROL_DIR once after flavor detection and routes every control-plane path through it", () => {
+    const text = entrypoint();
+    const assignment = 'CONTROL_DIR="$(compat_selected_path compat_control_dir "$HARNESS" 2>/dev/null)" || CONTROL_DIR="$HARNESS/$COMPAT_AGRO_CONTROL_DIR"';
+    expect(text.split(assignment).length - 1).toBe(1);
+    const assigned = text.indexOf(assignment);
+    expect(assigned).toBeGreaterThan(text.indexOf('seed_workspace_volume "$OH_PROJECT_ROOT"'));
+    for (const use of [
+      'bash "$CONTROL_DIR/scripts/link-providers.sh" --init',
+      'bash "$CONTROL_DIR/scripts/provision-python.sh"',
+      'BANNER_SOURCE_LINE="source ${CONTROL_DIR}/install/banner.sh 2>/dev/null"',
+      'ln -sf "$CONTROL_DIR/scripts/gateway.sh" /usr/local/bin/gateway',
+      '\\"$CONTROL_DIR\\"/scripts/gateway.sh pi',
+    ]) {
+      expect(text.indexOf(use), use).toBeGreaterThan(assigned);
+    }
+    const body = text.slice(text.indexOf("uid_reconcile_step() {"));
+    expect(body).not.toMatch(/\$HARNESS\/\.agro\//);
+    expect(body).not.toMatch(/\$\{OH_PROJECT_ROOT\}\/\.agro\//);
+  });
+
+  it("resolves the CLI executable through compat_env BIN with agro as the default", () => {
+    const text = entrypoint();
+    expect(text).toContain('CLI_BIN="$(compat_env_value BIN)"');
+    expect(text).toContain('[ -n "$CLI_BIN" ] || CLI_BIN=agro');
+    expect(text).toContain('gosu sandbox "$CLI_BIN" config show');
+    expect(text).not.toContain("${OH_BIN:-");
+  });
+
+  it("resolves the control dir at run time in the compose healthchecks", () => {
+    for (const file of [".devcontainer/docker-compose.yml", ".devcontainer/docker-compose.image-only.yml"]) {
+      const compose = readFileSync(join(ROOT, file), "utf8");
+      const test = compose.split("\n").find((line) => /^\s*test:/.test(line)) ?? "";
+      expect(test, file).toContain('["CMD", "bash", "-c", "if [ -d /home/sandbox/harness/.agro ]; then exec bash /home/sandbox/harness/.agro/scripts/sandbox-healthcheck.sh; fi; exec bash /home/sandbox/harness/.oh/scripts/sandbox-healthcheck.sh"]');
+    }
+  });
+});
+
 describe("devcontainer entrypoint Slack restore (delegates to gateway.sh)", () => {
   it("exposes the bare `gateway` command via a live (idempotent) symlink", () => {
     expect(entrypoint()).toContain(
-      'ln -sf "$HARNESS/.agro/scripts/gateway.sh" /usr/local/bin/gateway',
+      'ln -sf "$CONTROL_DIR/scripts/gateway.sh" /usr/local/bin/gateway',
     );
   });
 
@@ -121,7 +173,7 @@ describe("devcontainer entrypoint Slack restore (delegates to gateway.sh)", () =
     expect(text).toContain("client-slack-pi");
     expect(text).toMatch(/grep -qE '\^PI_SLACK_APP_TOKEN=\.'/);
     expect(text).toMatch(/grep -qE '\^PI_SLACK_BOT_TOKEN=\.'/);
-    expect(text).toContain(".agro/scripts/gateway.sh pi");
+    expect(text).toContain('\\"$CONTROL_DIR\\"/scripts/gateway.sh pi');
   });
 
   it("reads token presence with grep — never sources the Compose env file", () => {
@@ -165,7 +217,7 @@ describe("client-slack bridge supervisor", () => {
   it("is referenced by gateway.sh, which the entrypoint delegates to", () => {
     const gateway = readFileSync(join(ROOT, ".agro/scripts/gateway.sh"), "utf8");
     expect(gateway).toContain(".devcontainer/client-slack-supervise.sh");
-    expect(entrypoint()).toContain(".agro/scripts/gateway.sh pi");
+    expect(entrypoint()).toContain('\\"$CONTROL_DIR\\"/scripts/gateway.sh pi');
   });
 });
 
@@ -200,8 +252,10 @@ describe("devcontainer entrypoint cron supervision", () => {
     const unit = readFileSync(CRON_UNIT, "utf8");
 
     expect(unit).toContain(
-      "ExecStart=/usr/local/bin/node --experimental-strip-types /home/sandbox/harness/.agro/scripts/cron-runtime.ts",
+      "ExecStart=/bin/bash -c 'if [ -d /home/sandbox/harness/.agro ]; then exec /usr/local/bin/node --experimental-strip-types /home/sandbox/harness/.agro/scripts/cron-runtime.ts; fi; exec /usr/local/bin/node --experimental-strip-types /home/sandbox/harness/.oh/scripts/cron-runtime.ts'",
     );
+    const execStart = unit.split("\n").find((line) => line.startsWith("ExecStart=")) ?? "";
+    expect(execStart).not.toContain("$");
     expect(unit).toContain("User=sandbox");
     expect(unit).toContain("WorkingDirectory=/home/sandbox/harness");
     expect(unit).toContain("ExecReload=/bin/kill -HUP $MAINPID");

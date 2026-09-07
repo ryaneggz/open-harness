@@ -3,3 +3,5 @@
 2026-09-06T20:53:33Z wave2 start: T2, T3 pending -> running
 2026-09-06T21:01:21Z T3 completed (owner verified 42 tests, typecheck); cli.ts dispatch deferred until T2 releases cli.ts
 2026-09-06T22:21:43Z T2 completed after spend-limit termination + resume (owner verified: 1220 tests, typecheck, build, migrate smoke, diff --check); wave2 end
+2026-09-06T22:21:45Z wave3 start: T4, T5 pending -> running
+2026-09-07T04:09:38Z T4 completed (owner verified: 1241 tests, compose config, shellcheck, docker build by worker); T5 terminated by spend limit with script+tests+workflow written, owner verifies

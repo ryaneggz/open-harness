@@ -97,6 +97,77 @@ describe("entrypoint seed_workspace_volume — dual-generation markers", () => {
     expect(existsSync(join(dest, ".oh", ".image-seeded"))).toBe(true);
   });
 
+  it("fresh workspace: seeds .agro/ and writes .agro/.image-seeded once, never .oh/", () => {
+    const src = seedSource(".agro");
+    const dest = tmp();
+    expect(runSeed(dest, { AGRO_IMAGE_SEED_SRC: src })).toBe("1");
+    expect(readFileSync(join(dest, ".agro", "README.md"), "utf8")).toBe(".agro seed\n");
+    expect(existsSync(join(dest, ".agro", ".image-seeded"))).toBe(true);
+    expect(existsSync(join(dest, ".oh"))).toBe(false);
+    expect(runSeed(dest, { AGRO_IMAGE_SEED_SRC: src })).toBe("0");
+    expect(existsSync(join(dest, ".oh"))).toBe(false);
+  });
+
+  it("legacy workspace without a marker: copies nothing, creates no .agro/, stamps .oh/.image-seeded", () => {
+    const dest = tmp();
+    mkdirSync(join(dest, ".oh"));
+    writeFileSync(join(dest, ".oh", "OWN"), "mine\n");
+    const src = seedSource(".agro");
+    expect(runSeed(dest, { AGRO_IMAGE_SEED_SRC: src })).toBe("1");
+    expect(existsSync(join(dest, ".agro"))).toBe(false);
+    expect(existsSync(join(dest, "AGENTS.md"))).toBe(false);
+    expect(existsSync(join(dest, ".oh", "README.md"))).toBe(false);
+    expect(readFileSync(join(dest, ".oh", "OWN"), "utf8")).toBe("mine\n");
+    expect(existsSync(join(dest, ".oh", ".image-seeded"))).toBe(true);
+    expect(runSeed(dest, { AGRO_IMAGE_SEED_SRC: src })).toBe("0");
+    expect(existsSync(join(dest, ".agro"))).toBe(false);
+  });
+
+  it("legacy workspace with a marker: copies nothing, creates no .agro/, leaves the marker alone", () => {
+    const dest = tmp();
+    mkdirSync(join(dest, ".oh"));
+    writeFileSync(join(dest, ".oh", ".image-seeded"), "stamped\n");
+    writeFileSync(join(dest, ".oh", "OWN"), "mine\n");
+    const src = seedSource(".agro");
+    expect(runSeed(dest, { AGRO_IMAGE_SEED_SRC: src })).toBe("0");
+    expect(existsSync(join(dest, ".agro"))).toBe(false);
+    expect(existsSync(join(dest, "AGENTS.md"))).toBe(false);
+    expect(readFileSync(join(dest, ".oh", ".image-seeded"), "utf8")).toBe("stamped\n");
+    expect(readFileSync(join(dest, ".oh", "OWN"), "utf8")).toBe("mine\n");
+  });
+
+  it("agro workspace with a marker: copies nothing and leaves the marker alone", () => {
+    const dest = tmp();
+    mkdirSync(join(dest, ".agro"));
+    writeFileSync(join(dest, ".agro", ".image-seeded"), "stamped\n");
+    writeFileSync(join(dest, ".agro", "OWN"), "mine\n");
+    const src = seedSource(".agro");
+    expect(runSeed(dest, { AGRO_IMAGE_SEED_SRC: src })).toBe("0");
+    expect(existsSync(join(dest, ".oh"))).toBe(false);
+    expect(existsSync(join(dest, "AGENTS.md"))).toBe(false);
+    expect(existsSync(join(dest, ".agro", "README.md"))).toBe(false);
+    expect(readFileSync(join(dest, ".agro", ".image-seeded"), "utf8")).toBe("stamped\n");
+  });
+
+  it("resolves /opt/agro-seed when no /opt/oh-seed exists and seeds .agro/ from it", () => {
+    const prefix = tmp();
+    const src = join(prefix, "opt", "agro-seed");
+    mkdirSync(join(src, ".agro", "scripts"), { recursive: true });
+    writeFileSync(join(src, ".agro", "README.md"), "image seed\n");
+    writeFileSync(join(src, "AGENTS.md"), "seeded workspace\n");
+    const resolved = execFileSync("bash", ["-c", `. "${COMPAT}"; compat_seed_src "$1"`, "seed", prefix], {
+      encoding: "utf8",
+      env: Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(AGRO|OH)_IMAGE_SEED_SRC$/.test(key))) as Record<string, string>,
+    }).trim();
+    expect(resolved).toBe(src);
+    expect(existsSync(join(prefix, "opt", "oh-seed"))).toBe(false);
+    const dest = tmp();
+    expect(runSeed(dest, { AGRO_IMAGE_SEED_SRC: resolved })).toBe("1");
+    expect(readFileSync(join(dest, ".agro", "README.md"), "utf8")).toBe("image seed\n");
+    expect(existsSync(join(dest, ".agro", ".image-seeded"))).toBe(true);
+    expect(existsSync(join(dest, ".oh"))).toBe(false);
+  });
+
   it("refuses to seed or stamp a workspace whose .oh/ and .agro/ diverge", () => {
     const dest = tmp();
     mkdirSync(join(dest, ".oh"));

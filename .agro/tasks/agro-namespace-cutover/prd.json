@@ -58,7 +58,7 @@
         "`OH_BIN`/`AGRO_BIN` resolved through `compat_env` with default `agro`."
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

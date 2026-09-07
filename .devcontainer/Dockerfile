@@ -108,12 +108,12 @@ RUN echo "cd ${OH_PROJECT_ROOT} 2>/dev/null" >> /home/sandbox/.bashrc
 COPY --chown=sandbox:sandbox .agro/install/ /home/sandbox/install/
 RUN chmod +x /home/sandbox/install/*.sh
 
-COPY --chown=sandbox:sandbox . /opt/oh-seed/
+COPY --chown=sandbox:sandbox . /opt/agro-seed/
 
 ARG INSTALL_PYTHON_KERNEL=true
 ARG OH_PYTHON_VERSION=3.11
 RUN if [ "${INSTALL_PYTHON_KERNEL}" = "true" ]; then \
-      su - sandbox -c "OH_PYTHON_VERSION='${OH_PYTHON_VERSION}' bash /opt/oh-seed/.agro/scripts/provision-python.sh"; \
+      su - sandbox -c "OH_PYTHON_VERSION='${OH_PYTHON_VERSION}' bash /opt/agro-seed/.agro/scripts/provision-python.sh"; \
     else \
       echo "Skipping Python kernel provisioning (INSTALL_PYTHON_KERNEL=false)"; \
     fi \
@@ -128,7 +128,7 @@ LABEL org.opencontainers.image.source="https://github.com/mifunedev/openharness"
 LABEL org.opencontainers.image.title="agro"
 LABEL org.opencontainers.image.description="AGRO sandbox image (compatibility alias: openharness)"
 
-COPY --chown=sandbox:sandbox . /opt/oh-seed/
+COPY --chown=sandbox:sandbox . /opt/agro-seed/
 
 COPY .devcontainer/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
