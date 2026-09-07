@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "slug": "delegate-follow-up",
+  "issue": 1003,
+  "pr": 1004,
+  "branch": "skill/1003-delegate-follow-up",
+  "baseCommit": "56ab2bab894e43073bf79edc43f70fe3ddd6d6de",
+  "advisor": {
+    "role": "active session; owns scope, prd.json, progress.txt, acceptance, evidence.md, and the PR",
+    "dispatchesNestedWorkers": false,
+    "nativePreflight": {
+      "workerTool": "Agent",
+      "modelArgument": "present; enum sonnet | opus | haiku | fable",
+      "effortArgument": "absent on the per-call Agent tool",
+      "perWorkerEffortControl": "subagent definition frontmatter (effort:) — no agents directory exists in this repository and none is created, so no per-worker effort control is available at dispatch time",
+      "consequence": "requested effort is an advisor judgment recorded before dispatch; observed effort stays 'inherited session level, unobserved'. Per the merged policy a missing effort control never blocks a worker and never justifies a model substitution."
+    }
+  },
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Implement the four residual delegate corrections and extend the two contract probes",
+      "description": "Revise .oh/skills/delegate/SKILL.md so dependents are released only on advisor acceptance, sizing guidance names the factors that decide a boundary instead of maximizing parallelism, resume reconciles interrupted `running` tasks, and the undefined Memory Protocol and after-planning execution trigger are removed with the read-only --dry-run contract preserved. Extend .oh/evals/probes/delegate-worker-boundary.sh and .oh/evals/probes/advisor-execution-contract.sh to pin those contracts, fault-injection testing every added check.",
+      "dependsOn": [],
+      "complexity": "medium — acceptance ordering and resume share the task graph's semantics, the edits are coupled, and the probe work needs negative cases; deciding factors: subtle contract semantics, cross-file coupling, low reversibility risk (text only), decisive checks available",
+      "selectionReason": "Hardest supported non-Sonnet model per the canonical policy; effort raised above the mechanical floor because the edits change contract semantics rather than applying a known transformation, and each probe check must be fault-injection tested. Never Sonnet, never max.",
+      "requestedModelReasoning": "opus / effort high (advisor judgment, recorded before dispatch)",
+      "observedSettingsProvenance": "pending dispatch",
+      "readScope": ".oh/skills/delegate/SKILL.md, .oh/evals/probes/*.sh, .oh/skills/spec/references/execute.md, .oh/skills/spec/templates/task-prompt.md, .oh/skills/spec/SKILL.md, .oh/tasks/delegate-follow-up/prd.md, .oh/tasks/delegate-follow-up/prd.json, .oh/tasks/README.md",
+      "ownedWritePaths": [
+        ".oh/skills/delegate/SKILL.md",
+        ".oh/evals/probes/delegate-worker-boundary.sh",
+        ".oh/evals/probes/advisor-execution-contract.sh"
+      ],
+      "exclusions": [
+        ".oh/skills/audit/** (the deferred gate-3 and gate-5 repairs are not in scope)",
+        ".oh/evals/probes/audit-run-root-contract.sh (read-only)",
+        ".oh/evals/probes/delegate-model-effort-policy.sh, spec-single-owner.sh, plan-orchestration-contract.sh, roles-are-skills.sh (read-only)",
+        "AGENTS.md / CLAUDE.md and all root instructions",
+        ".oh/skills/spec/** (read-only)",
+        "any provider mirror under .claude/, .codex/, .pi/",
+        "docs/, CHANGELOG.md, and any public documentation",
+        ".oh/tasks/advisor-first-orchestration/** and every other predecessor task record",
+        ".oh/tasks/delegate-follow-up/prd.json and progress.txt (advisor-owned)",
+        "git push, gh, PR finalization, nested Agent dispatch"
+      ],
+      "executionDirectory": "/home/sandbox/harness/.worktrees/skill/1003-delegate-follow-up",
+      "worktreeIsolation": "isolated worktree on branch skill/1003-delegate-follow-up; T1 is the only writer, so shared-file work is serialized by construction",
+      "workerType": "general-purpose (provider built-in, write-capable)",
+      "continuationMethod": "native continuation via SendMessage to the same worker; otherwise checkpoint the diff and rebrief only the incomplete scope",
+      "deliverable": "the patch to the three owned files, the exact diff, the tested revision, and every verification command with its real exit code",
+      "verification": "bash .oh/evals/probes/delegate-worker-boundary.sh; bash .oh/evals/probes/advisor-execution-contract.sh; bash .oh/evals/probes/delegate-model-effort-policy.sh; bash .oh/evals/probes/spec-single-owner.sh; bash .oh/evals/probes/plan-orchestration-contract.sh; bash .oh/evals/probes/roles-are-skills.sh; bash .oh/scripts/link-providers.sh --check; per-check fault injection in a disposable copy under the scratchpad",
+      "evidenceDestinations": "worker report to the advisor; the advisor records accepted evidence in .oh/tasks/delegate-follow-up/evidence.md and the narrative in progress.txt",
+      "coveredDoDIds": ["D2", "D3", "D4", "D5", "D6"],
+      "acceptanceOwner": "active advisor; a worker never accepts its own result",
+      "failureRepairRoute": "failed checks return to T1; the advisor rechecks the repair before fresh independent review",
+      "maxDepth": 1,
+      "nativeWorkerId": null,
+      "status": "pending",
+      "artifactReferences": [],
+      "usage": "unknown"
+    },
+    {
+      "id": "T2",
+      "title": "Independent read-only review of the integrated residual diff",
+      "description": "Read the complete diff against the approved base and assess D1-D7 independently. Confirm the three merged pre-merge repairs remain intact, every retained follow-up carries an explicit disposition, and no deferred surface was touched.",
+      "dependsOn": ["T1"],
+      "complexity": "medium — independent cross-file and runtime-evidence review with no duplicate implementation",
+      "selectionReason": "Adversarial review of subtle contract semantics; hardest supported non-Sonnet model, effort raised for adversarial reading. Never Sonnet, never max.",
+      "requestedModelReasoning": "opus / effort high (advisor judgment, recorded before dispatch)",
+      "observedSettingsProvenance": "pending dispatch",
+      "readScope": "the complete diff, all verification-matrix sources, .oh/tasks/delegate-follow-up/evidence.md, .oh/plans/delegate-follow-up/plan.md",
+      "ownedWritePaths": [],
+      "exclusions": ["all writes", "dispatch", "implementation", "session steering"],
+      "executionDirectory": "/home/sandbox/harness/.worktrees/skill/1003-delegate-follow-up",
+      "worktreeIsolation": "same worktree, read-only brief",
+      "workerType": "general-purpose (read-only brief)",
+      "continuationMethod": "checkpoint-and-rebrief for a repair review",
+      "deliverable": "blocking findings per criterion against the tested revision, plus verification gaps",
+      "verification": "advisor reads each finding against the source and either routes it to T1 or records why it is not blocking",
+      "evidenceDestinations": ".oh/tasks/delegate-follow-up/evidence.md",
+      "coveredDoDIds": ["D1", "D2", "D3", "D4", "D5", "D6", "D7"],
+      "acceptanceOwner": "active advisor",
+      "failureRepairRoute": "T1 repairs; T2 re-reviews",
+      "maxDepth": 1,
+      "nativeWorkerId": null,
+      "status": "pending",
+      "artifactReferences": [],
+      "usage": "unknown"
+    }
+  ],
+  "waves": [
+    { "wave": 1, "tasks": ["T1"], "parallelism": 1, "reason": "coupled implementation stays with one continuing worker" },
+    { "wave": 2, "tasks": ["T2"], "parallelism": 1, "reason": "review depends on the integrated T1 result and the advisor's own checks" }
+  ]
+}

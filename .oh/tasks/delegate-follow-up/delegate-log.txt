@@ -1,0 +1,3 @@
+# delegate log — delegate-follow-up (#1003)
+2026-09-07  capability check: Agent tool exposes `model` (sonnet|opus|haiku|fable) and no effort argument. No agents directory exists and none is created, so no per-worker effort control is available at dispatch time. Effort is recorded as an advisor judgment; observed effort stays "inherited session level, unobserved". A missing effort control does not block a worker.
+2026-09-07  wave 1 planned: T1 (opus / effort high requested), max depth 1, isolated worktree /home/sandbox/harness/.worktrees/skill/1003-delegate-follow-up.

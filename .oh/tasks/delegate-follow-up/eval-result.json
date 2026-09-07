@@ -1,0 +1,7 @@
+{
+  "commit": "3ddb06b15bc20148bdf08dd1caf1a7b8a56a8103",
+  "runnerExit": 0,
+  "ranAt": "2026-09-07T19:14:37Z",
+  "newRegressions": [],
+  "preExistingReds": ["skills-vendored"]
+}
