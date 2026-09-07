@@ -121,3 +121,21 @@ no workflow they score behaves differently. Re-scoring them means three full
 agent runs that would measure the same behaviour, so no run was made and no row
 was overwritten. This phase's benefit is contractual — issue #942 and the epic's
 RFC — and the capability benchmark is not the instrument that decides it.
+
+## Promotable audit
+
+Read-only classification immediately before the undraft, at `73df2dc0`:
+
+| Field | Value |
+|---|---|
+| CI | PASS, all seven checks |
+| mergeable | MERGEABLE |
+| merge state | CLEAN |
+| evidence complete | true |
+| promotable | true |
+| flags | size-convention |
+
+`size-convention` is the only flag: the tree rename moves about 620 files in one
+commit, which the pull-request body explains and which later stories depend on
+for a clean diff. Verdict: PR-AUDIT-PROMOTABLE. The pull request is marked ready
+for review; the merge is the operator's.

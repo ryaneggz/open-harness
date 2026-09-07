@@ -12,3 +12,4 @@
 - 2026-09-07T05:06:40Z retro: two patterns compiled (rename sweep re-indenting a YAML block scalar; an inherited environment label on a red probe). Knowledge index regenerated, 37 entries, wiki probes PASS.
 - 2026-09-07T05:06:40Z CI on 388940c0: all seven checks green earlier at 4bd16f74 including the new sandbox-upgrade-guard job; re-running after the pattern commit.
 - 2026-09-07T05:07:22Z benchmark: floor held (145 probes, one pre-existing red, two red->green); ceiling not re-scored, no scored task's behaviour changed
+- 2026-09-07T05:11:12Z PR-AUDIT-PROMOTABLE at 73df2dc0 (CI PASS, MERGEABLE, CLEAN, evidenceComplete); PR #996 marked ready for review; state READY
