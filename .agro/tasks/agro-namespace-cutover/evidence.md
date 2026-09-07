@@ -47,7 +47,52 @@ Legacy image `ghcr.io/mifunedev/openharness:0.9.0`; new image built from this ch
 
 ## Gates
 
-<!-- filled at the end of the build -->
+Run from this worktree at `cfc1ab04`.
+
+| Gate | Command | Result |
+|---|---|---|
+| Unit and script tests | `pnpm test` | 74 files, 1244 tests, exit 0 |
+| Root typecheck | `pnpm run typecheck` | exit 0 |
+| CLI typecheck and build | `npm --prefix .agro/cli run typecheck`, `run build` | exit 0 |
+| Provider links | `bash .agro/scripts/link-providers.sh --check` | exit 0 |
+| Probe suite | `bash .agro/skills/eval/run.sh` | 145 probes, 144 green |
+| Whitespace | `git diff --check` | exit 0 |
+| Shellcheck | the boot-path glob from `ci-harness.yml` | exit 0 |
+| Compose | `docker compose -f .devcontainer/docker-compose.yml config` and the image-only base | exit 0 |
+| Knowledge freshness | `knowledge-impact.sh --verified` | 0 needs-review, 9 fresh |
+| Docker upgrade | `bash .agro/scripts/sandbox-upgrade-smoke.sh` | PASS |
+
+### The one red probe
+
+`skills-vendored` is REGRESSION here and on `development`: its row reads REGRESSION in
+the tracked results file at the branch point `9d2fb009` and at `origin/development`.
+Earlier phases recorded the cause as a missing binary. That is wrong. `cc-safety-net@1.0.6`
+is installed at `/usr/local/bin/cc-safety-net`. The probe's clean-clone simulation runs
+`link-providers.sh` with `PATH` set to `<fixture>:/usr/bin:/bin`
+(`.agro/evals/probes/skills-vendored.sh:53`), which omits `/usr/local/bin`, so the pin
+check inside `link-providers.sh` cannot find the binary it requires. The simulation's
+purpose is to prove the Hermes link keys off the `hermes` binary, and dropping
+`/usr/local/bin` is incidental to that. Nothing in this branch touches either file. The
+fix is one line and belongs to a change that owns that probe.
+
+### Defects this build's verification found and fixed
+
+| Defect | How it surfaced | Fix |
+|---|---|---|
+| The rename re-indented one line inside a YAML block scalar, making the close-issues workflow invalid and failing every push at startup | red branch runs with no job and no log | restored the indentation; a scan of every changed line pair in the whole diff found this one site |
+| `agro migrate --home` read the home directory directly, ignoring `AGRO_HOME` and `OH_HOME`, and would have renamed inside an explicitly configured registry home | `oh-config-surfaces` named `migrate.ts` as a source resolving config out of `$HOME` | `compat.ts` owns the resolution through `resolveRegistryHome`; a configured home is a reported noop |
+| A compat constant was unused inside its own file | `Boot Path Lint` shellcheck SC2034 in CI | the default sandbox name got an owner function that the compose wrapper calls |
+| Knowledge claims that predate this work: `materialize()` documented as seven files, the CLI pin as 0.8.0, a retired pnpm opt-out described as live, and line ranges past the end of their file | re-grounding each page the diff invalidated | corrected in place |
+
+### Probe changes, with fault injection
+
+`sandbox-boot-guard-ci.sh` banned every registry image reference in that workflow, which
+the upgrade job's pinned public legacy image trips. The rule now bans pushes, logins,
+`packages: write`, and secrets as before, permits a registry reference only on the
+upgrade job's `LEGACY_IMAGE` line, rejects a moving tag there, and additionally requires
+the upgrade job to exist. Five injections were each rejected: a `docker push`, a
+`:latest` pin, a stray registry reference elsewhere, an injected secret, and deleting the
+upgrade smoke invocation. The restored file passes.
 
 ## Unverified or deferred
 
