@@ -1,7 +1,7 @@
 # Evidence — delegate-follow-up
 
 - **PR**: #1004 (mifunedev/openharness, base `development`) · **Branch**: `skill/1003-delegate-follow-up`
-- **Audit run**: `audit-20260907T211751Z-3792031` classified `79289327` -> `AUDIT-PASS` (state `complete`); PR audit `audit-20260907T211759Z-3792322` classified `79289327` -> `PR-AUDIT-PROMOTABLE`. Those are the newest runs in *Audit history*; they are not a claim about the current head. **The PR is now failing gate 1 by design** — see *Audit history*. All nine runs, including both `AUDIT-FAIL`s, are listed there.
+- **Audit run**: `audit-20260907T214546Z-3826355` classified `040c3ca1` -> **`AUDIT-FAIL`** (state `complete`), at gate 1, **by design** — `prd.json` US-003 is `passes: false` because a required criterion is blocked, and the gate correctly refuses to certify the task complete. PR audit `audit-20260907T214554Z-3826531` classified `040c3ca1` -> `PR-AUDIT-PROMOTABLE`. Those are the newest runs in *Audit history*; they are not a claim about the current head. **The two verdicts are not in conflict, and `PR-AUDIT-PROMOTABLE` is not permission to merge** — see *Audit history*. All eleven runs, including all three `AUDIT-FAIL`s, are listed there. **This PR is deliberately held in draft.**
 - **Approved baseline**: `56ab2bab894e43073bf79edc43f70fe3ddd6d6de` · **Last non-record commit**: `6324e09f` (the head the gate records key to)
 - **Predecessor**: #988 / PR #991, merged at `e90bbed8`
 
@@ -87,20 +87,39 @@ classified. **No run id appears anywhere in this document that did not actually 
 | `audit-20260907T203515Z-3748998` | pr | `3dc561be` | `PR-AUDIT-PROMOTABLE` |
 | `audit-20260907T211548Z-3789393` | implementation | `79289327` | **`AUDIT-FAIL`** — gate 3: `ci: PENDING`, ten seconds after the push. It failed closed and is recorded rather than dropped, exactly like the earlier `AUDIT-FAIL`. |
 | `audit-20260907T211751Z-3792031` | implementation | `79289327` | `AUDIT-PASS` — re-run after CI reported 4/4 pass; gates 1, 2, 3, 5 PASS, gate 4 not applicable. **The newest implementation run in this table** |
-| `audit-20260907T211759Z-3792322` | pr | `79289327` | `PR-AUDIT-PROMOTABLE` — **the newest PR run in this table** |
+| `audit-20260907T211759Z-3792322` | pr | `79289327` | `PR-AUDIT-PROMOTABLE` |
+| `audit-20260907T214546Z-3826355` | implementation | `040c3ca1` | **`AUDIT-FAIL`** — gate 1, **by design**. See below. **The newest implementation run in this table** |
+| `audit-20260907T214554Z-3826531` | pr | `040c3ca1` | `PR-AUDIT-PROMOTABLE` — `ci: PASS`, `MERGEABLE`, `CLEAN`, `isDraft: true`. **The newest PR run in this table** |
 
-**The most recent audited head named above is `79289327`, and the PR head has moved past it.** Record
-commits have landed since, so the content-head rule (checked under *Where it diverged from the plan*)
-is what carries gates 2 and 5 forward. Gate 3 is not covered by that rule — it re-classifies the live
-PR when it runs — so the gate-3 results above describe the head that was live at each run and nothing
-later.
+**The most recent audited head named above is `040c3ca1`.** Where the PR head has moved past a run's
+head, the content-head rule (checked under *Where it diverged from the plan*) is what carries gates 2
+and 5 forward. Gate 3 is not covered by that rule — it re-classifies the live PR when it runs — so the
+gate-3 results above describe the head that was live at each run and nothing later.
 
-**Gate 1 now fails, deliberately.** `prd.json`'s US-003 carried `"passes": true` while its own note
-said the cross-session criterion was BLOCKED. That boolean is what gate 1 reads to emit
-`task-graph: 7/7 stories pass`, so the prose said blocked and the machine-readable state said passed —
-and three `AUDIT-PASS` verdicts rested on the latter. It is now `"passes": false`. The next
-implementation audit will return `AUDIT-FAIL` at gate 1. That is the honest state while the criterion
-is blocked, not a regression to be explained away.
+**Gate 1 fails deliberately, and that is the gate working.** `prd.json`'s US-003 carried
+`"passes": true` while its own note said the cross-session criterion was BLOCKED. That boolean is what
+gate 1 reads to emit `task-graph: N/7 stories pass`, so the prose said blocked and the
+machine-readable state said passed — and three `AUDIT-PASS` verdicts rested on the latter. It is now
+`"passes": false`. The complete output of `audit-20260907T214546Z-3826355`:
+
+```text
+task-graph: 6/7 stories pass
+FAIL gate1: 1 story(ies) not passing
+gate1: FAIL
+AUDIT-EVIDENCE: AUDIT-FAIL
+```
+
+The gate is reading the blocked criterion and refusing to certify the task complete. **That is the
+outcome the correction was made to produce, not a defect and not a regression.** Note that gate 1
+fails before gates 2, 3 and 5 execute, so this run carries **no verdict on them**. The last run that
+exercised all five was `audit-20260907T211751Z-3792031` on `79289327`, and it passed them.
+
+**The two newest verdicts point opposite ways, and they are not in conflict.** The PR audit classifies
+the *pull request's* state — CI, mergeability, draft status, evidence completeness. Gate 1 classifies
+whether the *task's* stories are all complete. So: the PR is mechanically ready to merge, and the work
+is not certified complete, because a required criterion is blocked. **`PR-AUDIT-PROMOTABLE` is not
+permission to merge.** The PR is held in draft on purpose, and stays there until the operator decides
+the D4 cross-session sub-branch.
 
 Observed output of the `203507Z` implementation run:
 
@@ -126,7 +145,7 @@ AUDIT-EVIDENCE: AUDIT-PASS
 `194250Z` run as its headline verdict long after three non-record commits had landed past
 `8ba02851`, and the later runs appeared in no tracked file at all — so the PR did not carry its own
 coverage. A fresh independent reviewer caught it. The whole sequence is recorded here so a reader can
-see which head each verdict actually describes, rather than having to trust one summary line. All nine
+see which head each verdict actually describes, rather than having to trust one summary line. All eleven
 terminal evidence documents are now committed under `audit-runs/`, one file per run. That makes the
 ids openable, but it is not what makes them trustworthy: the artifacts are caller-written and unsigned,
 so what actually rescues these ids is the external corroboration — the quoted gate output below, the
@@ -148,7 +167,7 @@ audit citations, and earlier prose blurred them in a way that softened the worse
    `audit-run.sh` persists no artifact.
 
 **What those artifacts do and do not prove.** `audit-run.sh` creates its evidence root with
-`mktemp -d` and deletes it on the EXIT trap, so a normal run persists no artifact at all. These nine
+`mktemp -d` and deletes it on the EXIT trap, so a normal run persists no artifact at all. These eleven
 survive only because `route-driver.sh` was invoked directly. The driver never reads
 `AUDIT_EVIDENCE_PATH` itself — `route-driver.sh:18` calls `audit-evidence.sh complete "$1"`, and
 `audit-evidence.sh:7` is what requires the path. The consequence matters more than the mechanism:
@@ -374,11 +393,18 @@ this PR does not claim it, and the PR stays draft.
 
 ## Operator continuation criteria R1–R4 → evidence
 
+**Overall state: DRAFT-BLOCKED.** R1, R3 and R4 are satisfied — R4 after its four blocking findings
+were fixed. R2 is blocked, pending one narrowly scoped operator waiver or deferral for the
+cross-session sub-branch of D4's `running` case. **This PR is deliberately held in draft, and
+`PR-AUDIT-PROMOTABLE` on `audit-20260907T214554Z-3826531` is not permission to merge it** — that
+verdict describes the pull request's mechanical state, not whether the work is certified complete.
+Gate 1 says it is not.
+
 | Criterion | Evidence in this repository | Verdict |
 |---|---|---|
 | **R1** real recovery evidence | `xsession-experiment/` — the ledger and procedure the second session was given, its brief, its own report, its raw stream log, and the original worker's heartbeat; summarised in *Cross-session recovery experiment — R1*. The worker was independently confirmed active (heartbeat on disk, `ListAgents` in the dispatching session, `ps` run by the second session). The attempt produced a genuine unavailable/unknown result. No duplicate was dispatched (`subagent_stats` `"spawned":0`) and the protected path's sha256 was unchanged until the original worker wrote it. | **Satisfied** |
 | **R2** honest D4 disposition | *D4 cross-session reconnect — BLOCKED, operator decision required*, rewritten on the experiment. Fail-closed behaviour is named as fail-closed and never as reconnection; the capability boundary is stated exactly; a single narrowly scoped waiver or deferral is requested. | **BLOCKED**, pending that waiver. The R4 reviewer judged the D4 prose exemplary but found the disposition undermined by `prd.json`, whose US-003 read `passes: true` while the prose said BLOCKED — the machine-readable state contradicting the disclosure. That is corrected: US-003 is now `passes: false` and gate 1 fails accordingly. The PR stays draft. |
-| **R3** audit provenance | `audit-runs/` — the nine terminal evidence documents, each checked to carry a `runId` equal to its filename and `state: complete`; *Audit history* maps each id to the head this document claims it classified, discloses that the artifact does not itself record that head, and records the fabricated-id incident and the real-but-untracked incident as two separate corrected failures. | **Satisfied with a correction.** A fresh independent reviewer opened the artifacts and confirmed the coverage claim holds: every cited id names a run that executed, every verdict matches its artifact, and every *Head classified* value is corroborated by commit-time interleaving and monotonic PID continuity rather than merely plausible. It found no run against the wrong PR and no softened `AUDIT-FAIL`. It also raised one blocking finding — this document asserted a fabricated-id disclosure it did not actually contain — which is why the disclosure now exists. The criterion is met because that finding was made and fixed, not in spite of it. |
+| **R3** audit provenance | `audit-runs/` — the eleven terminal evidence documents, each checked to carry a `runId` equal to its filename and `state: complete`; *Audit history* maps each id to the head this document claims it classified, discloses that the artifact does not itself record that head, and records the fabricated-id incident and the real-but-untracked incident as two separate corrected failures. | **Satisfied with a correction.** A fresh independent reviewer opened the artifacts and confirmed the coverage claim holds: every cited id names a run that executed, every verdict matches its artifact, and every *Head classified* value is corroborated by commit-time interleaving and monotonic PID continuity rather than merely plausible. It found no run against the wrong PR and no softened `AUDIT-FAIL`. It also raised one blocking finding — this document asserted a fabricated-id disclosure it did not actually contain — which is why the disclosure now exists. The criterion is met because that finding was made and fixed, not in spite of it. |
 | **R4** final content and state | *What was built*, *Where it diverged from the plan, and why*, *What remains unverified*, *Proof by gate*, *Observed output*, *Acceptance criteria → proof*, *Deferred register*, and this table; `delegate-graph.json`, `delegate-log.txt` and `progress.txt` now carry the reconciled worker state, including all three stale-ledger recurrences and the separately unrecorded T3. | **DRAFT-BLOCKED.** The reviewer returned four blocking findings, **all in the record layer — it found no fault in the implementation itself.** It independently confirmed the probe pins are real using its own injection harness, reproduced all three disclosed paraphrase blind spots verbatim, confirmed the content-head rule holds strictly at the true head, and confirmed no document describes the fail-closed cross-session result as a reconnection. The blocking findings were: two remediation claims the record falsified (the recurrence count and the "every commit" recipe claim), a stale head written by the commit that made it stale, the `prd.json` / `prd.md` divergence, and two provenance stamps postdating their own commits. All are now disclosed above. The verdict is DRAFT-BLOCKED because those findings were made, not in spite of them. |
 
 R3 and R4 are for a fresh independent reviewer to decide. This document does not assign them a
