@@ -1,7 +1,7 @@
 # Evidence — delegate-follow-up
 
 - **PR**: #1004 (mifunedev/openharness, base `development`) · **Branch**: `skill/1003-delegate-follow-up`
-- **Audit run**: see *Audit history* below, which lists every run against this branch with its real id and verdict, including one `AUDIT-FAIL`. No run id appears in this document that did not actually execute.
+- **Audit run**: `audit-20260907T203507Z-3748740` · **Verdict**: `AUDIT-PASS` (state `complete`) on `3dc561be` · PR audit `audit-20260907T203515Z-3748998` -> `PR-AUDIT-PROMOTABLE`. Every run against this branch, including one `AUDIT-FAIL`, is listed under *Audit history*.
 - **Approved baseline**: `56ab2bab894e43073bf79edc43f70fe3ddd6d6de` · **Last non-record commit**: `6324e09f` (the head the gate records key to)
 - **Predecessor**: #988 / PR #991, merged at `e90bbed8`
 
@@ -66,7 +66,48 @@ Close the four instruction gaps the advisor-orchestration work left in `.oh/skil
 - **The approved plan is not carried by the PR.** `.oh/plans/` is gitignored, so `.oh/plans/delegate-follow-up/plan.md` is unavailable to a reviewer without host filesystem access. `prd.md` carries its substance.
 - **D4 case labelling was wrong and is corrected.** An earlier version called the disposable acceptance-ordering worker a live observation of the *active-worker reconnect* branch. Independent review established it was not: that worker had already **returned** and was awaiting verification, which under this PR's own `SKILL.md` is the **ended** sub-case. The reconnect-to-still-active branch was then exercised properly (block below, and the full record in `progress.txt`), so it is now live — but the mislabelling stood in the record until a reviewer caught it. Case (d), unknown native status, remains a **fixture**: a constructed graph row, not a live observation, because a genuinely indeterminate status cannot be manufactured in-session while the advisor still holds the transcript.
 - **`skills-vendored` is red** and stays red: `cc-safety-net binary not found on PATH (expected @1.0.6)`. Reproduced identically on the approved base, so it is environmental and not attributable to this diff.
-- **`netAdded` reported by gate 5 is 1056**, which counts the whole task folder. The implementation itself is +201/−40 across three files.
+- **`netAdded` reported by gate 5 is 1493**, which counts the whole task folder and both knowledge pages. The implementation itself is **+205 / −40** across three files.
+
+## Audit history
+
+Every implementation- and PR-audit run against this branch, with its real id and the head it
+classified. **No run id appears anywhere in this document that did not actually execute**, and the
+`AUDIT-FAIL` is listed rather than dropped.
+
+| Run id | Target | Head classified | Verdict |
+|---|---|---|---|
+| `audit-20260907T194250Z-3600847` | implementation | `8ba02851` | `AUDIT-PASS` |
+| `audit-20260907T195030Z-3628747` | implementation | `263b9d52` | **`AUDIT-FAIL`** — gate 5: `no simplicity review for HEAD 263b9d52`. The review was keyed to `c879ad80`, and the two knowledge pattern pages had since changed non-record files, so the content-head rule correctly stopped covering it. The gate failed closed exactly as designed; it was resolved by obtaining a real review at the new head, never by weakening the gate. |
+| `audit-20260907T200902Z-3697153` | implementation | `b61dad88` | `AUDIT-PASS` |
+| `audit-20260907T200923Z-3697739` | pr | `b61dad88` | `PR-AUDIT-PROMOTABLE` |
+| `audit-20260907T203507Z-3748740` | implementation | `3dc561be` | `AUDIT-PASS` — **the run this document reports** |
+| `audit-20260907T203515Z-3748998` | pr | `3dc561be` | `PR-AUDIT-PROMOTABLE` — **the run that gates the undraft** |
+
+Observed output of the final implementation run:
+
+```text
+task-graph: 7/7 stories pass
+gate1: PASS
+gate2: eval-result commit 6324e09f is the content head; only task records changed since
+gate2: reused eval-result.json for HEAD 3dc561be (runnerExit=0)
+gate2: PASS
+gate3: PASS
+gate4: not applicable
+gate5: metrics {"netAdded":1493,"netRemoved":40,"shBranchPoints":55,"ccnMax":10,
+                "tsOverCcn":[],"tool":"lizard n/a (no analysable files changed)"}
+gate5: review commit 6324e09f is the content head; only task records changed since
+gate5: PASS (review T3, 5 finding(s), none blocking open)
+AUDIT-EVIDENCE: AUDIT-PASS
+```
+
+`netAdded 1493` counts the whole task folder and both knowledge pages; the implementation itself is
+**+205 / −40** across three files.
+
+**Why the earlier runs are listed.** An earlier version of this document reported the
+`194250Z` run as its headline verdict long after three non-record commits had landed past
+`8ba02851`, and the later runs appeared in no tracked file at all — so the PR did not carry its own
+coverage. A fresh independent reviewer caught it. The whole sequence is recorded here so a reader can
+see which head each verdict actually describes, rather than having to trust one summary line.
 
 ## Proof by gate
 
@@ -207,6 +248,40 @@ None of these was implemented. None is claimed as done.
 | Efficiency comparison | **Not run. No budget requested, none spent.** No efficiency or token-savings claim appears anywhere in this PR. |
 | Live transfer testing | **Not run.** Ownership stayed in one session throughout; no handoff was needed or performed, and handoff remains optional. |
 | Historical unknown model/effort observations | **Preserved as unknown.** T1 and T2 requested `opus` / effort `high`; observed model is recorded `unknown` (neither self-reported, no native display) and observed effort `inherited session level, unobserved`, because the per-call Agent tool exposes `model` and no effort argument, and no subagent definition file exists or was created. No retrospective setting was manufactured. |
+
+## D4 cross-session reconnect — BLOCKED, operator decision required
+
+The approved plan requires D4's five resume cases and states that a missing prerequisite **blocks**
+its required gate rather than being satisfied by a static check. Four of five cases are live
+within-session observations; case (d) is an honestly-labelled fixture. One branch cannot be closed
+here:
+
+**What is blocked.** The `running` resume rule says a still-active worker is reconnected to or
+observed *"through the supported native mechanism"*. Within a session that is now verified live —
+`SendMessage` to a genuinely running worker returns `Message queued for delivery … at its next tool
+round`, distinct from the `Resuming agent` returned for an ended worker, with no duplicate dispatched.
+**Across sessions it is unreachable**: `ListAgents` does not enumerate an ended subagent (T1 and T2
+were both absent after completing, in the session that dispatched them) and exposes no other
+session's subagents at all; `SendMessage` addresses sessions, not another session's workers. The
+handle exists only in the dispatching session's transcript.
+
+**Why that is not quietly acceptable.** A `running` task resumed in a new session always lands in the
+ambiguity branch, which blocks writes and dispatches no second writer. That is fail-closed and it is
+useful evidence — but it is **not proof the reconnect path works**, because no cross-session reconnect
+path exists to exercise. Recording it as satisfied would weaken the approved requirement.
+
+**The operator's options.**
+
+1. **Waiver** — accept D4 as satisfied within-session, with the cross-session branch recorded as a
+   capability gap. Nothing further to build; this document already carries the disclosure.
+2. **Alternative verification** — authorize a second session to attempt the resume from
+   `delegate-graph.json` alone and record what it observes. This advisor will not steer an active
+   session to manufacture the observation.
+3. **Defer the branch** — add it to the deferred register as a provider-capability item, alongside the
+   audit-driver gate-3 and metric-base-skew rows.
+
+Until one is chosen, D4's cross-session reconnect criterion stands **BLOCKED**, and this PR does not
+claim it.
 
 ## Gaps and non-gating findings
 
