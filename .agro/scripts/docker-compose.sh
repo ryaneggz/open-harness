@@ -153,7 +153,7 @@ if truthy "$ssh_value"; then
     port_check="$SCRIPT_DIR/check-host-port.sh"
     if [ -x "$port_check" ] || [ -f "$port_check" ]; then
       sandbox_name=${SANDBOX_NAME:-$(read_env_value SANDBOX_NAME)}
-      [ -n "$sandbox_name" ] || sandbox_name="$COMPAT_DEFAULT_SANDBOX_NAME"
+      sandbox_name="$(compat_sandbox_name "$sandbox_name")"
       own_port=0
       if command -v docker >/dev/null 2>&1; then
         docker ps --format '{{.Names}}\t{{.Ports}}' 2>/dev/null \

@@ -58,6 +58,14 @@ compat_tree_diff() {
   return "$rc"
 }
 
+compat_sandbox_name() {
+  if [ -n "${1:-}" ]; then
+    printf '%s\n' "$1"
+  else
+    printf '%s\n' "$COMPAT_DEFAULT_SANDBOX_NAME"
+  fi
+}
+
 compat_present() {
   case "$1" in
     dir) [ -d "$2" ] ;;

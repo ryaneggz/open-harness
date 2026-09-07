@@ -60,7 +60,7 @@ jobs:
             const { pathToFileURL } = require("url");
             const parserPath = path.join(
               process.env.GITHUB_WORKSPACE,
-      ".agro",
+              ".agro",
               "scripts",
               "closing-keywords.mjs",
             );
