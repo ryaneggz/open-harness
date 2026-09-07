@@ -26,7 +26,7 @@ and exits non-zero. Start the sandbox with `oh sandbox install docker`, then re-
 `oh harness` works from inside the sandbox too. There it installs into the
 environment you are already in, and `list`/`status` report the CLIs actually
 present rather than `?`. See
-[Lifecycle commands → Where you are standing when you type `oh`](../lifecycle-commands.md#where-you-are-standing-when-you-type-oh).
+[Lifecycle commands → Where you are standing when you type `oh`](../lifecycle-commands.md#where-you-are-standing-when-you-type-agro).
 
 Flags:
 

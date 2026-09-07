@@ -1,13 +1,17 @@
-# Creating a sandbox: `oh sandbox install docker`
+# Creating a sandbox: `agro sandbox install docker`
 
-`oh sandbox install docker` is the one command that creates a sandbox. It runs
+`agro sandbox install docker` is the one command that creates a sandbox. It runs
 from **any** directory, writes a registry entry under
-`${OH_HOME:-~/.oh}/sandboxes/<name>/`, and starts the container:
+`${AGRO_HOME:-~/.agro}/sandboxes/<name>/`, and starts the container:
 
 ```bash
-oh sandbox install docker   # wizard: name, timezone, git identity, SSH, Docker socket
-oh shell <name>             # attach as the sandbox user
+agro sandbox install docker   # wizard: name, timezone, git identity, SSH, Docker socket
+agro shell <name>             # attach as the sandbox user
 ```
+
+Every verb below is also available as `oh <verb>`. A registry created by an
+earlier release stays at `${OH_HOME:-~/.oh}/sandboxes/<name>/` and still
+resolves; `agro migrate --home` moves it.
 
 **Running the published image is the default.** Each tagged release publishes the
 sandbox image, already built and smoke-tested, to GHCR:
@@ -19,7 +23,9 @@ ghcr.io/mifunedev/openharness:<version>   # e.g. 0.1.0 — pin for reproducibili
 
 With no `--repo` there is **no checkout on the host at all**: the workspace and
 the `.agro/` control plane live in the sandbox's home volume, seeded once from the
-image's baked `/opt/oh-seed`. Nothing is cloned and nothing is built.
+image's baked `/opt/agro-seed`. Nothing is cloned and nothing is built. A volume
+seeded by an earlier image keeps its `.oh/` control plane and is never
+re-seeded.
 
 Pass `--repo <dir>` and that checkout is bind-mounted at
 `/home/sandbox/harness` instead. The image then supplies only the **toolchain** —
@@ -36,7 +42,7 @@ Docker CLI, bun, uv, pnpm — happens only in that case, and only when
 | Need | For |
 |---|---|
 | Docker (with Compose plugin) | pulling + running the image |
-| Node.js ≥ 20 | running the `oh` CLI |
+| Node.js ≥ 20 | running the `agro` CLI |
 | A checkout equipped with `oh update` | only for `--repo`: the bind-mounted `.agro/` control plane |
 
 The image is public — no `docker login ghcr.io` is required to pull it. The
@@ -47,13 +53,14 @@ run a different CPU arch, prefer a local build (`--repo` with `image.mode` set t
 ## Pinning an image ref
 
 ```bash
-oh sandbox install docker --image              # pull ghcr.io/mifunedev/openharness:latest
-oh sandbox install docker --image=ghcr.io/mifunedev/openharness:2026.7.5   # pin a release
-oh shell <name>                                # zsh in the running container, as usual
+agro sandbox install docker --image              # pull ghcr.io/mifunedev/openharness:latest
+agro sandbox install docker --image=ghcr.io/mifunedev/openharness:2026.7.5   # pin a release
+agro shell <name>                                # zsh in the running container, as usual
 ```
 
 `--image` implies `--no-build`: it swaps the wrapper's `up -d --build` for
-`up -d --no-build` and threads the resolved image ref through `OH_SANDBOX_IMAGE`,
+`up -d --no-build` and threads the resolved image ref through
+`AGRO_SANDBOX_IMAGE` (with the legacy `OH_SANDBOX_IMAGE` spelling beside it),
 which the compose file interpolates at `image:`.
 
 `--no-build` on its own suppresses the build and reuses whatever image compose
@@ -65,17 +72,17 @@ the entry's `agro.json`) without pinning one — an advanced escape hatch.
 ```
 ghcr.io/mifunedev/openharness:latest      (built-in default)
   └─ agro.json  image.ref=<ref>               (the entry's default — see docs/configuration.md)
-       └─ oh sandbox install docker --image=<ref>   (per-invocation override)
+       └─ agro sandbox install docker --image=<ref> (per-invocation override)
 ```
 
 Set a durable default on the entry:
 
 ```bash
-oh config set --sandbox <name> image.ref ghcr.io/mifunedev/openharness:latest
-oh config set --sandbox <name> image.pullPolicy always
+agro config set --sandbox <name> image.ref ghcr.io/mifunedev/openharness:latest
+agro config set --sandbox <name> image.pullPolicy always
 ```
 
-which is the same as writing this into `~/.oh/sandboxes/<name>/oh.json`:
+which is the same as writing this into `~/.agro/sandboxes/<name>/agro.json`:
 
 ```json
 {
@@ -87,7 +94,7 @@ which is the same as writing this into `~/.oh/sandboxes/<name>/oh.json`:
 }
 ```
 
-With `image.ref` set, a bare `oh sandbox install docker --image` uses it; set
+With `image.ref` set, a bare `agro sandbox install docker --image` uses it; set
 `image.pullPolicy` to `"always"` to always re-pull `latest`.
 
 ## `--repo`: bind a checkout into the sandbox
@@ -95,14 +102,15 @@ With `image.ref` set, a bare `oh sandbox install docker --image` uses it; set
 ```bash
 cd <your-project>
 oh update                                     # vendor .agro/ + crons/ into this checkout
-oh sandbox install docker --repo "$PWD" --name <your-project>
+agro sandbox install docker --repo "$PWD" --name <your-project>
 ```
 
 `repo` is stored in the entry's `agro.json` and rendered into the compose
-environment as `OH_REPO_DIR`, which the base compose file reads as
-`${OH_REPO_DIR:-..}` for both the bind mount and the build context. It also lets
-a lifecycle verb resolve this sandbox whenever you stand inside that checkout, so
-`oh shell` needs no name there.
+environment as `AGRO_REPO_DIR`, which the base compose file reads as
+`${AGRO_REPO_DIR:-${OH_REPO_DIR:-..}}` for both the bind mount and the build
+context — so an entry rendered by an older CLI still resolves. It also lets a
+lifecycle verb resolve this sandbox whenever you stand inside that checkout, so
+`agro shell` needs no name there.
 
 ## What still happens at boot
 
@@ -119,13 +127,14 @@ The CLI is a thin wrapper over the compose files it materialises into the entry;
 you can drive compose directly from an equipped checkout:
 
 ```bash
-OH_SANDBOX_IMAGE=ghcr.io/mifunedev/openharness:latest \
+AGRO_SANDBOX_IMAGE=ghcr.io/mifunedev/openharness:latest \
   bash .agro/scripts/docker-compose.sh --repo-dir "$PWD" up -d --no-build
 ```
 
-`OH_SANDBOX_IMAGE` in the process environment takes precedence over the
-`.env` `--env-file`, so it overrides an `OH_SANDBOX_IMAGE` pin — the
-same last-wins ordering as the CLI.
+`AGRO_SANDBOX_IMAGE` in the process environment takes precedence over the
+`.env` `--env-file`, so it overrides an `AGRO_SANDBOX_IMAGE` pin — the
+same last-wins ordering as the CLI. The legacy `OH_SANDBOX_IMAGE` spelling
+applies when the AGRO one is unset.
 
 ## VS Code "Reopen in Container"
 
@@ -135,8 +144,8 @@ The VS Code Dev Containers path reads
 `pull_policy`. Set both in `.devcontainer/.env` (compose auto-loads it):
 
 ```dotenv
-OH_SANDBOX_IMAGE=ghcr.io/mifunedev/openharness:latest
-OH_PULL_POLICY=always
+AGRO_SANDBOX_IMAGE=ghcr.io/mifunedev/openharness:latest
+AGRO_PULL_POLICY=always
 ```
 
 > ⚠️ Because the service keeps its `build:` block, some Docker Compose versions
@@ -166,7 +175,7 @@ container:
 Without `--repo`, the CLI materialises
 [`.devcontainer/docker-compose.image-only.yml`](../.devcontainer/docker-compose.image-only.yml)
 into the entry as the compose base. Everything below describes that path, and it
-is what `oh sandbox install docker` runs for you. Tracked in
+is what `agro sandbox install docker` runs for you. Tracked in
 [#609](https://github.com/mifunedev/openharness/issues/609).
 
 ### The recipe by hand
@@ -181,7 +190,8 @@ This pulls and runs the published image with **no clone and no build**.
 Everything the sandbox persists — the workspace and control plane at
 `/home/sandbox/harness` included — lives in the single `/home/sandbox` mount
 declared in that file: the named volume `<sandbox-name>_workspace` by default,
-or an absolute host path when `OH_HOME_MOUNT` is set.
+or an absolute host path when `AGRO_HOME_MOUNT` (legacy `OH_HOME_MOUNT`) is
+set.
 
 ### How the mode is detected
 
@@ -198,21 +208,22 @@ and reads the answer from the kernel and the filesystem:
   `pnpm install`, and cron tmux setup, so those steps see a populated `.agro/`.
 
 The detected mode is logged on both paths, so a wrong detection is visible in
-`oh logs` rather than silent:
+`agro logs` rather than silent:
 
 ```
 [entrypoint] checkout bind detected at /home/sandbox/harness — syncing host UID/GID
-[entrypoint] no checkout bind at /home/sandbox/harness — seeding from /opt/oh-seed
+[entrypoint] no checkout bind at /home/sandbox/harness — seeding from /opt/agro-seed
 ```
 
 Three independent guards keep a misdetection from seeding over a real checkout:
 `mountpoint -q` is a kernel fact rather than a heuristic, `seed_workspace_volume`
-refuses when `.agro/` already exists, and `.agro/.image-seeded` is gitignored.
+refuses when `.agro/` or a legacy `.oh/` already exists, and
+`.agro/.image-seeded` is gitignored.
 
 ### Seed-to-volume persistence
 
 On the **first boot** against an empty home mount, the entrypoint
-seeds the baked control plane — from the image's `/opt/oh-seed` — into the
+seeds the baked control plane — from the image's `/opt/agro-seed` — into the
 volume, then writes the marker `.agro/.image-seeded`. From that point on, the
 **volume is authoritative**: it is the operator-editable copy of `.agro/` (and
 the rest of the repo), and edits made inside the running sandbox persist there
@@ -271,7 +282,7 @@ docker logs "$NAME" 2>&1 | tail -30
 docker exec "$NAME" bash -lc '
   ls -l /home/sandbox/harness/.claude/protected-paths.txt \
   && bash /home/sandbox/harness/.agro/scripts/link-providers.sh --check \
-  && ls /home/sandbox/harness/.oh >/dev/null && echo SEED_OK'
+  && ls /home/sandbox/harness/.agro >/dev/null && echo SEED_OK'
 ```
 
 A healthy boot ends with `Providers OK: …` and `SEED_OK`, and the logs show
@@ -281,10 +292,10 @@ re-seeding, so your in-container edits persist.
 
 The boot installs no harness and no tool. The image contains none either, so the
 container comes up with no agent CLI and no `herdr`. Check the state with
-`docker exec "$NAME" bash -lc 'oh harness list'` and
-`docker exec "$NAME" bash -lc 'oh tool list'`, then install what you need
+`docker exec "$NAME" bash -lc 'agro harness list'` and
+`docker exec "$NAME" bash -lc 'agro tool list'`, then install what you need
 through the one door, for example
-`docker exec "$NAME" bash -lc 'oh tool install herdr'`.
+`docker exec "$NAME" bash -lc 'agro tool install herdr'`.
 
 ```bash
 # ── 4. Attach an interactive shell (once the container is stable) ──
@@ -295,7 +306,7 @@ done
 
 docker exec -it -u sandbox "$NAME" zsh   # interactive shell (bash also available)
 # first commands inside the container:
-#   oh tool install herdr
+#   agro tool install herdr
 #   herdr
 # then complete gh/provider auth and launch agents from Herdr panes
 ```
@@ -304,7 +315,7 @@ The image has no `HEALTHCHECK` of its own, so `docker run` won't populate
 `.State.Health` unless you add `--health-cmd`; on the plain `docker run` above,
 skip the wait loop and just exec once `docker ps` shows the container `Up`. The
 compose path (`docker-compose.image-only.yml`) defines the healthcheck, so there
-the wait loop works as written — or use `oh ps <name>` and `oh shell <name>`.
+the wait loop works as written — or use `agro ps <name>` and `agro shell <name>`.
 
 ### The same image runs under MicroSandbox
 
@@ -328,12 +339,12 @@ shape, doc content) deterministically, without a Docker host. It cannot cover
 an actual live boot. Before relying on the image-only path in production, run
 this checklist by hand on a real host:
 
-- [ ] `docker pull ghcr.io/mifunedev/openharness:<tag built after the /opt/oh-seed change>`
+- [ ] `docker pull ghcr.io/mifunedev/openharness:<tag built after the /opt/agro-seed change>`
 - [ ] `docker compose -f .devcontainer/docker-compose.image-only.yml up -d`
 - [ ] confirm **no build step ran** — the compose/Docker output shows a pull, not a build
 - [ ] confirm `.agro/` was seeded into the volume:
-      `docker compose -f .devcontainer/docker-compose.image-only.yml exec sandbox ls /home/sandbox/harness/.oh`
-- [ ] confirm an agent / the `oh` CLI is usable inside the container
+      `docker compose -f .devcontainer/docker-compose.image-only.yml exec sandbox ls /home/sandbox/harness/.agro`
+- [ ] confirm an agent / the `agro` CLI is usable inside the container
 - [ ] edit a file under `.agro/` in the running container, then
       `docker compose -f .devcontainer/docker-compose.image-only.yml restart`,
       and confirm the edit is still there

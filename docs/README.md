@@ -10,7 +10,7 @@ live in [`mifunedev/openharness-web`](https://github.com/mifunedev/openharness-w
 ## Start here
 
 Open Harness provides the sandbox; you choose the harness — a Docker workspace you
-clone-and-own, where `oh sandbox install docker` boots one long-lived container and the coding agent
+own, where `agro sandbox install docker` boots one long-lived container and the coding agent
 of your choice (Claude Code, Codex, Pi, Hermes, and more) works on its own branch and
 identity, running identically on your laptop or an unattended, lights-out remote VM.
 

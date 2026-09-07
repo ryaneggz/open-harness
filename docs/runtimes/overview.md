@@ -43,7 +43,7 @@ docs/rfcs/rfc-runtime-support.md. Inside a sandbox run `oh tool install microsan
 `oh sandbox install` is host-scoped. Run from inside the sandbox it refuses with
 a host-only error, because it changes the sandbox's own Docker configuration.
 See
-[Lifecycle commands → Where you are standing when you type `oh`](../lifecycle-commands.md#where-you-are-standing-when-you-type-oh).
+[Lifecycle commands → Where you are standing when you type `oh`](../lifecycle-commands.md#where-you-are-standing-when-you-type-agro).
 
 ## What is in the catalog
 

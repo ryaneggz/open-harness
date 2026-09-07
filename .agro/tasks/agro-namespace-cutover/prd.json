@@ -83,7 +83,7 @@
         "`.agro/compat-inventory.json`: Phase 2 entries' notes record delivery; new AGRO paths documented; `CHANGELOG.md` Unreleased entry ≤250 chars linking #942; `.example.env` prose updated. No doc renames the GitHub repo, domain, or image name (Phase 3)."
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

@@ -2,7 +2,8 @@
 # tier: A
 # source: issue #449 (sandbox image build CI guard) 2026-06-19;
 #         issue #807 (Debian Trixie base compatibility and parity CI)
-# desc: PR CI must validate sandbox compose config and locally build the devcontainer image
+# desc: PR CI must validate sandbox compose config, locally build the devcontainer image, and boot
+#       the last released image against a legacy volume before the fresh one
 #       without registry writes, run the reusable image verifier, compare fixed Debian bases,
 #       and install every installable harness through the CLI with real version evidence.
 set -euo pipefail
@@ -78,12 +79,29 @@ else
   fi
 fi
 
+has 'bash .agro/scripts/sandbox-upgrade-smoke.sh' "upgrade smoke invocation — a legacy workspace volume must be booted against the freshly built image"
+has 'name: Boot a legacy volume against the fresh image' "the named upgrade guard job"
+has_regex '^[[:space:]]*LEGACY_IMAGE:[[:space:]]*[[:alnum:]._-]+\.[[:alnum:]._-]+/' "the upgrade guard pins the released legacy image it boots"
+
 has 'Sandbox boot guard only' "comment explaining non-release intent"
 
-if grep -Eq 'docker[[:space:]]+push|--push([[:space:]]|$)|docker/login-action|docker/login|ghcr\.io|[[:alnum:]._-]+\.[[:alnum:]._-]+/.+:.+|packages:[[:space:]]*write|secrets\.' <<<"$text"; then
+if grep -Eq 'docker[[:space:]]+push|--push([[:space:]]|$)|docker/login-action|docker/login|packages:[[:space:]]*write|secrets\.' <<<"$text"; then
   echo "REGRESSION sandbox boot guard must not push/login/write packages/use secrets" >&2
   exit 1
 fi
+
+registry_refs="$(grep -Eo '[[:alnum:]._-]+\.[[:alnum:]._-]+/[[:alnum:]._/-]+:[[:alnum:]._-]+' <<<"$text" | sort -u || true)"
+while IFS= read -r ref; do
+  [[ -n "$ref" ]] || continue
+  if ! grep -Eq "^[[:space:]]*LEGACY_IMAGE:[[:space:]]*$ref[[:space:]]*\$" <<<"$text"; then
+    echo "REGRESSION sandbox boot guard names the registry image $ref outside the upgrade smoke's pinned LEGACY_IMAGE — this workflow reads one published legacy image and touches no other registry content" >&2
+    exit 1
+  fi
+  if [[ "$ref" == *:latest ]]; then
+    echo "REGRESSION sandbox boot guard pins LEGACY_IMAGE to a moving tag ($ref) — the upgrade evidence must name the last released version" >&2
+    exit 1
+  fi
+done <<<"$registry_refs"
 
 VERIFIER="$ROOT/.agro/scripts/verify-sandbox-image.sh"
 [[ -x "$VERIFIER" ]] || missing+=("reusable image verifier .agro/scripts/verify-sandbox-image.sh is missing or not executable")

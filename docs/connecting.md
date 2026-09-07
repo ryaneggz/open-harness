@@ -18,8 +18,7 @@ The sandbox is a Docker container running on your host (or a remote server). Get
 ### Option A — Terminal
 
 ```bash
-cd ~/.openharness
-oh shell
+agro shell <name>
 ```
 Pass an optional container name to attach to a different running container, e.g. `oh shell portfolio-advisor`. `oh shell` always attaches as the `sandbox` user; if the target container has no such user, use `docker exec -it -u <user> <container> zsh` instead.
 

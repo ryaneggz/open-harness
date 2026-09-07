@@ -121,7 +121,7 @@ Before implementation, mark each surface **applied** or **not applicable**. Do n
 silently skip a surface.
 
 - **Host and sandbox:** Where must each command and file change occur?
-- **Lifecycle door:** Does every affected `oh` verb stay aligned?
+- **Lifecycle door:** Does every affected `agro` verb stay aligned?
 - **Canonical and provider surfaces:** Is the change in `.agro/`, and do symlinks still
   resolve?
 - **Root and scaffold:** Does the change affect this orchestrator, initialized
@@ -144,24 +144,22 @@ produced apart from it. Every other directory uses a `README.md`.
 
 Use the lifecycle in this order:
 
-1. Run `oh sandbox install docker` on the host.
-2. Run `oh shell <name>`.
-3. Run `oh tool install herdr`, then `herdr`.
+1. Run `agro sandbox install docker` on the host.
+2. Run `agro shell <name>`.
+3. Run `agro tool install herdr`, then `herdr`.
 4. Run `gh auth login && gh auth setup-git` once from the first Herdr pane.
-5. Run `oh ps <name>` on the host to verify the container.
+5. Run `agro ps <name>` on the host to verify the container.
 
-Run `oh destroy <name>` only for operator-authorized teardown.
+Run `agro destroy <name>` only for operator-authorized teardown.
 
-`oh` is the only lifecycle door, on the host and in the sandbox, and it calls
-`.agro/scripts/docker-compose.sh`. Host prerequisites are Docker, Git, and Node 20 or
-newer. The verb reference is
+`agro` is the only lifecycle door, on the host and in the sandbox, and it calls
+`.agro/scripts/docker-compose.sh`. `oh` remains a working alias through the SLA.
+Host prerequisites are Docker, Git, and Node 20 or newer. The verb reference is
 [`docs/lifecycle-commands.md`](docs/lifecycle-commands.md).
 
 ## How the system fits together
 
-The host calls `oh`, which reaches `.agro/scripts/docker-compose.sh` and starts the
-project sandbox from `.devcontainer/`. Inside the sandbox, Herdr holds interactive
-work while named tmux sessions hold unattended infrastructure.
+The host calls `agro`, which starts the project sandbox from `.devcontainer/`.
 Application agents work on their branches or isolated worktrees. Task-specific
 procedures load only when the current task needs them. Tests and deterministic
 probes verify the control plane against real repository state.

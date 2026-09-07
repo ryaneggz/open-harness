@@ -137,7 +137,7 @@
         ".example.env"
       ],
       "acceptance": "docs describe AGRO fresh state and legacy fallback; inventory tests green; changelog entry <=250 chars",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "T7",

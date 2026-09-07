@@ -19,9 +19,11 @@ Every compose verb runs `.agro/scripts/docker-compose.sh`, which owns overlay
 resolution, project naming, and env plumbing. `agro` is the surface; the script
 is the mechanism.
 
-A sandbox is a **registry entry** under `${OH_HOME:-~/.oh}/sandboxes/<name>/`.
+A sandbox is a **registry entry** under `${AGRO_HOME:-~/.agro}/sandboxes/<name>/`.
 `agro sandbox install docker` writes it, and every later verb finds it by name
-from any directory — no project checkout required. Details:
+from any directory — no project checkout required. A registry created by an
+earlier release stays at `${OH_HOME:-~/.oh}/sandboxes/<name>/` and still
+resolves; `agro migrate --home` moves it. Details:
 [Configuration → the two `agro.json` files](configuration.md#the-two-agrojson-files).
 
 Host prerequisites: **Docker** (with the Compose plugin), **Git**, and
@@ -43,6 +45,7 @@ sandbox.
 | `agro destroy [name] [--yes]` | `docker-compose.sh down -v`, then remove the registry entry — see below |
 | `agro compose config` | `docker-compose.sh config` — the resolved compose file |
 | `agro update [--dry-run]` | upgrade the installed `agro` executable through the mechanism that installed it — see below |
+| `agro migrate [--check] [--home] [--json]` | move a legacy `.oh/` project or `~/.oh` registry to the AGRO names — see below |
 | `oh update [--from <dir> \| --from-remote [--ref <ref>]] [--dry-run] [--force]` | equip an empty checkout with `.agro/` + `crons/`, and upgrade an equipped one (compatibility window) |
 | `agro config show [--sandbox <name>]` · `agro config set <field> <value> [--sandbox <name>]` | read and write `agro.json` |
 | `agro config repo` · `agro config <integration>` | GitHub-remote and integration wizards |
@@ -65,13 +68,13 @@ agro sandbox install docker      # wizard: name, timezone, git identity, SSH, Do
 agro shell <name>                # attach as the sandbox user
 ```
 
-- The entry lands in `${OH_HOME:-~/.oh}/sandboxes/<name>/`, holding its own
+- The entry lands in `${AGRO_HOME:-~/.agro}/sandboxes/<name>/`, holding its own
   `agro.json`, its `.env`, and the compose files plus the wrapper script the CLI
   re-materialises on every lifecycle call. Edit `agro.json`; the rest is generated.
-- The default name is `oh-sbx-<n>`, the lowest unused number. `--yes` prompts
+- The default name is `agro-sbx-<n>`, the lowest unused number. `--yes` prompts
   zero times and keeps every default.
 - Without `--repo` the sandbox runs the prebuilt image and the image's
-  `/opt/oh-seed` seeds the workspace volume. With `--repo <dir>` that checkout
+  `/opt/agro-seed` seeds the workspace volume. With `--repo <dir>` that checkout
   is bind-mounted at `/home/sandbox/harness` and can be built locally. Recipes:
   [`agro sandbox install docker`](deployment-prebuilt-image.md).
 - `docker` is the only provisionable runtime today. `agro sandbox install
@@ -129,6 +132,42 @@ It writes **nothing else** — no `agro.json`, no `.env`, no `AGENTS.md`, no
 are yours. It never prompts. It does not upgrade the CLI itself; that is
 `agro update`.
 
+## Migrating to the AGRO names: `agro migrate`
+
+`agro migrate` moves an installation created under the legacy names to the AGRO
+names. It renames `.oh/` to `.agro/` and `oh.json` to `agro.json` wholesale,
+re-points the five provider links (`.claude/skills`, `.claude/hooks`,
+`.codex/skills`, `.agents/skills`, `.pi/skills`) from `../.oh/…` to `../.agro/…`,
+and retires a byte-identical legacy copy to `<name>.migrated` instead of deleting
+it. `oh migrate` dispatches to the same command.
+
+Project mode is the default: it starts at the current directory and walks up to
+the nearest ancestor holding `.oh/`, `.agro/`, `oh.json`, or `agro.json`.
+
+| Flag | Effect |
+|---|---|
+| `--check` | print the plan and change nothing |
+| `--home` | migrate the sandbox registry `~/.oh/sandboxes` → `~/.agro/sandboxes` instead of a project |
+| `--json` | emit the plan (`--check`) or `{plan, result}` as JSON on stdout |
+
+```bash
+agro migrate --check   # plan the project in this directory
+agro migrate           # apply it
+agro migrate --home    # move the registry instead
+```
+
+| Exit code | Meaning |
+|---|---|
+| `0` | applied, or nothing to do |
+| `2` | refused: a conflict, or the `.agro-migrate.lock` is held |
+| `1` | failure |
+
+It is idempotent: a second run is a no-op. It never merges and has no force
+option — divergent `.oh/` and `.agro/` (or `oh.json` and `agro.json`) copies are
+refused with the differing entries named, and you keep exactly one copy or make
+them identical. It preserves unknown files, permission bits, and symlink targets,
+and it never touches `~/.openharness`, `.env`, or git history.
+
 ## Where you are standing when you type `agro`
 
 `agro` runs on the host **and** inside the sandbox, and it resolves a different
@@ -138,7 +177,8 @@ the environment those commands target.
 
 Detection is automatic: `agro` treats itself as in-sandbox when `/.dockerenv`
 exists **and** `SANDBOX_NAME` is set. Override it with
-`OH_EXECUTION_TARGET=local` or `OH_EXECUTION_TARGET=docker-compose`.
+`AGRO_EXECUTION_TARGET=local` or `AGRO_EXECUTION_TARGET=docker-compose`; the
+legacy `OH_EXECUTION_TARGET` spelling still applies when the AGRO one is unset.
 
 | Verb | On the host | Inside the sandbox |
 |---|---|---|
@@ -166,8 +206,8 @@ the sandbox name. A blank line, a wrong name, or anything else aborts with a
 non-zero exit and removes nothing.
 
 Once `down -v` succeeds the registry entry under
-`${OH_HOME:-~/.oh}/sandboxes/<name>/` is removed too, so the name becomes free
-again.
+`${AGRO_HOME:-~/.agro}/sandboxes/<name>/` is removed too, so the name becomes
+free again.
 
 When `storage.homePath` points the home mount at a host path, `down -v` cannot
 delete it. `agro destroy` says so and leaves the directory in place; remove it
@@ -206,7 +246,7 @@ this path each variable falls back to its default in
 `.devcontainer/docker-compose.yml`.
 
 :::danger `storage.homePath` is ignored on this path
-`OH_HOME_MOUNT` is one of those rendered-only variables, so *Reopen in
+`AGRO_HOME_MOUNT` is one of those rendered-only variables, so *Reopen in
 Container* falls back to the Docker-managed `<name>_workspace` volume even when
 `storage.homePath` points the sandbox home at a host directory. That is a
 **second, separate home**: agent logins made through `agro sandbox install docker` are not there,
