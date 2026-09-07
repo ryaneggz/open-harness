@@ -12,7 +12,7 @@
       "workerTool": "Agent",
       "modelArgument": "present; enum sonnet | opus | haiku | fable",
       "effortArgument": "absent on the per-call Agent tool",
-      "perWorkerEffortControl": "subagent definition frontmatter (effort:) \u2014 no agents directory exists in this repository and none is created, so no per-worker effort control is available at dispatch time",
+      "perWorkerEffortControl": "subagent definition frontmatter (effort:) — no agents directory exists in this repository and none is created, so no per-worker effort control is available at dispatch time",
       "consequence": "requested effort is an advisor judgment recorded before dispatch; observed effort stays 'inherited session level, unobserved'. Per the merged policy a missing effort control never blocks a worker and never justifies a model substitution."
     }
   },
@@ -22,10 +22,10 @@
       "title": "Implement the four residual delegate corrections and extend the two contract probes",
       "description": "Revise .oh/skills/delegate/SKILL.md so dependents are released only on advisor acceptance, sizing guidance names the factors that decide a boundary instead of maximizing parallelism, resume reconciles interrupted `running` tasks, and the undefined Memory Protocol and after-planning execution trigger are removed with the read-only --dry-run contract preserved. Extend .oh/evals/probes/delegate-worker-boundary.sh and .oh/evals/probes/advisor-execution-contract.sh to pin those contracts, fault-injection testing every added check.",
       "dependsOn": [],
-      "complexity": "medium \u2014 acceptance ordering and resume share the task graph's semantics, the edits are coupled, and the probe work needs negative cases; deciding factors: subtle contract semantics, cross-file coupling, low reversibility risk (text only), decisive checks available",
+      "complexity": "medium — acceptance ordering and resume share the task graph's semantics, the edits are coupled, and the probe work needs negative cases; deciding factors: subtle contract semantics, cross-file coupling, low reversibility risk (text only), decisive checks available",
       "selectionReason": "Hardest supported non-Sonnet model per the canonical policy; effort raised above the mechanical floor because the edits change contract semantics rather than applying a known transformation, and each probe check must be fault-injection tested. Never Sonnet, never max.",
       "requestedModelReasoning": "opus / effort high (advisor judgment, recorded before dispatch)",
-      "observedSettingsProvenance": "requested opus / effort high. Observed model: unknown \u2014 the worker did not self-report and no native surface displayed it. Observed effort: inherited session level, unobserved (no per-worker effort control at dispatch time).",
+      "observedSettingsProvenance": "requested opus / effort high. Observed model: unknown — the worker did not self-report and no native surface displayed it. Observed effort: inherited session level, unobserved (no per-worker effort control at dispatch time).",
       "readScope": ".oh/skills/delegate/SKILL.md, .oh/evals/probes/*.sh, .oh/skills/spec/references/execute.md, .oh/skills/spec/templates/task-prompt.md, .oh/skills/spec/SKILL.md, .oh/tasks/delegate-follow-up/prd.md, .oh/tasks/delegate-follow-up/prd.json, .oh/tasks/README.md",
       "ownedWritePaths": [
         ".oh/skills/delegate/SKILL.md",
@@ -78,10 +78,10 @@
       "dependsOn": [
         "T1"
       ],
-      "complexity": "medium \u2014 independent cross-file and runtime-evidence review with no duplicate implementation",
+      "complexity": "medium — independent cross-file and runtime-evidence review with no duplicate implementation",
       "selectionReason": "Adversarial review of subtle contract semantics; hardest supported non-Sonnet model, effort raised for adversarial reading. Never Sonnet, never max.",
       "requestedModelReasoning": "opus / effort high (advisor judgment, recorded before dispatch)",
-      "observedSettingsProvenance": "requested opus / effort high. Observed model: unknown \u2014 not self-reported. Observed effort: inherited session level, unobserved.",
+      "observedSettingsProvenance": "requested opus / effort high. Observed model: unknown — not self-reported. Observed effort: inherited session level, unobserved.",
       "readScope": "the complete diff, all verification-matrix sources, .oh/tasks/delegate-follow-up/evidence.md, .oh/plans/delegate-follow-up/plan.md",
       "ownedWritePaths": [],
       "exclusions": [
@@ -118,6 +118,54 @@
       ],
       "usage": "588k subagent tokens, 86 tool uses across three rounds (provider-reported)",
       "summary": "Three review rounds, all ACCEPTED. Round 1: 4 blocking / 22 non-blocking. Round 2 (re-review of the repair): 1 blocking (B-1, the stale ledger recurrence) / 7 non-blocking. Round 3: no new blocking finding, B-1 confirmed closed by re-running the pattern page's own recipe, and the gate-5 record keyed to the last implementation commit."
+    },
+    {
+      "id": "T4",
+      "title": "Record the cross-session recovery experiment and make the audit runs independently verifiable",
+      "description": "Copy the six terminal audit evidence documents and the full cross-session experiment artifact set into the task record, write both directory READMEs from the raw files, and update evidence.md: rewrite the D4 section on the experiment rather than on inference, add the R1 evidence table, record the audit-artifact durability limit, and map R1-R4 to evidence.",
+      "dependsOn": [],
+      "complexity": "medium — factual recording under a strict no-overstatement rule; the hazard is prose that reads as a reconnection claim, not implementation difficulty",
+      "selectionReason": "Hardest supported non-Sonnet model; the task is contract-sensitive prose where a single overstated sentence is the defect. Never Sonnet, never max.",
+      "requestedModelReasoning": "opus / effort inherited (advisor judgment, recorded before dispatch)",
+      "observedSettingsProvenance": "requested opus. Observed model: unknown — not self-reported. Observed effort: inherited session level, unobserved.",
+      "readScope": ".oh/tasks/delegate-follow-up/**, .oh/skills/audit/scripts/audit-run.sh, the staged scratch artifacts named in the brief",
+      "ownedWritePaths": [
+        ".oh/tasks/delegate-follow-up/evidence.md",
+        ".oh/tasks/delegate-follow-up/audit-runs/",
+        ".oh/tasks/delegate-follow-up/xsession-experiment/"
+      ],
+      "exclusions": [
+        ".oh/tasks/delegate-follow-up/prd.json, progress.txt, delegate-graph.json, delegate-log.txt (advisor-owned)",
+        ".oh/skills/**, .oh/evals/**, .oh/knowledge/**, docs/, root instructions, every provider mirror",
+        "git commit, git push, gh, any PR operation",
+        "nested Agent dispatch"
+      ],
+      "executionDirectory": "/home/sandbox/harness/.worktrees/skill/1003-delegate-follow-up",
+      "worktreeIsolation": "same worktree; T4 is the only writer while it runs",
+      "workerType": "general-purpose (provider built-in, write-capable)",
+      "continuationMethod": "native continuation via SendMessage to the same worker",
+      "searchOutputLimits": "read only the named task-record files and the staged artifacts; copy byte-for-byte rather than retyping",
+      "stoppingCondition": "the three owned paths carry the recorded evidence and the report names every created file; no commit, no push",
+      "deliverable": "the copied artifacts, both READMEs, the evidence.md edit, and a report naming every file with the six run ids read off the JSON",
+      "verification": "advisor re-reads every claim against the raw artifacts and re-runs the probe and link checks before acceptance",
+      "evidenceDestinations": ".oh/tasks/delegate-follow-up/evidence.md and the two new record directories",
+      "coveredDoDIds": [
+        "R1",
+        "R2",
+        "R3"
+      ],
+      "acceptanceOwner": "active advisor; a worker never accepts its own result",
+      "failureRepairRoute": "failed checks return to T4; the advisor rechecks before independent review",
+      "maxDepth": 1,
+      "nativeWorkerId": "a592c15acf774c966",
+      "status": "completed",
+      "artifactReferences": [
+        ".oh/tasks/delegate-follow-up/audit-runs/ (6 evidence JSON + README)",
+        ".oh/tasks/delegate-follow-up/xsession-experiment/ (6 copied artifacts + transcribed worker report + README)",
+        ".oh/tasks/delegate-follow-up/evidence.md +80/-26"
+      ],
+      "usage": "194k subagent tokens, 28 tool uses across two rounds (provider-reported)",
+      "summary": "Two rounds, one continuing worker, routed by native continuation; no duplicate dispatched. Round 1 copied the six audit evidence documents and the experiment artifact set into the task record, wrote both READMEs, and rewrote the D4 section on the experiment. Round 2 fixed the two defects the worker itself raised: the original worker report existed in no file, and the stale bullet at evidence.md:64 still described the experiment as outstanding. The advisor verified every copied artifact with cmp and checked each runId against its filename before acceptance."
     }
   ],
   "waves": [
@@ -136,6 +184,14 @@
       ],
       "parallelism": 1,
       "reason": "review depends on the integrated T1 result and the advisor's own checks"
+    },
+    {
+      "wave": 3,
+      "tasks": [
+        "T4"
+      ],
+      "parallelism": 1,
+      "reason": "recording depends on the completed experiment"
     }
   ],
   "reconciliation": {
@@ -145,7 +201,7 @@
     "action": "the advisor re-read the persisted graph against real state and reconciled it; this is the end-to-end resume the review recorded as never exercised",
     "secondOccurrence": {
       "at": "2026-09-07",
-      "finding": "B-1 \u2014 the same defect recurred one round later: progress.txt recorded the repair round as accepted while the graph still said running and the log had no round-2 acceptance line",
+      "finding": "B-1 — the same defect recurred one round later: progress.txt recorded the repair round as accepted while the graph still said running and the log had no round-2 acceptance line",
       "foundBy": "the independent reviewer, by running the reproduction recipe from pattern-delegate-ledger-stale-at-acceptance.md, which this run itself wrote",
       "severityDifference": "milder than the first occurrence: nativeWorkerId is non-null, so a resume reaches the ambiguity branch and blocks writes rather than dispatching a duplicate",
       "action": "acceptance written back to both the graph and the log; the page's own recipe is now run before each commit that follows an acceptance"

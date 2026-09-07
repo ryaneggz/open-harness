@@ -61,7 +61,7 @@ Close the four instruction gaps the advisor-orchestration work left in `.oh/skil
 - **Everything in `SKILL.md` is prose, not an enforced gate.** The probes assert instruction text. The D2/D4 rows show a compliant advisor doing the right thing; nothing in the system forces it. Finding A-1 is precisely what that gap looks like in practice.
 - **`plan-vs-built-reconciliation` remains `NEEDS-REVIEW`** against upstream `execute.md` changes that predate this PR. Not resolved here; `verified_at` deliberately not advanced.
 - **Non-record content landed after the first audit, and the earlier version of this document misdescribed it.** That sentence claimed the three implementation files were "untouched since `c879ad80`". **That was false.** `d390ebe3` rewrote `unnegated_hits()` in `.oh/evals/probes/advisor-execution-contract.sh` — one of the three owned implementation files — changing the negation split and window. `7ecb933c` added two knowledge pattern pages and the regenerated index. Neither is a record file, so neither could be excused by the content-head rule, and the sentence was written in the very commit that followed `d390ebe3`. Independent review caught it. Both commits are covered by the final audit recorded under *Audit history*, which ran against the final pushed head; the coverage claim now rests on that run rather than on an argument about record files.
-- **Cross-session reconnect is unreachable on this provider — a capability gap, not a passing check.** `ListAgents` does not enumerate an ended subagent: T1 and T2 were both absent from the listing after completing, in the same session that dispatched them. It exposes no other session's subagents at all, and `SendMessage` addresses sessions, not another session's workers. The handle exists only in the dispatching session's transcript, so a new session reading `delegate-graph.json` alone cannot address a prior session's worker; such a task always lands in the ambiguity branch, which blocks writes and dispatches no second writer. **That is fail-closed, and fail-closed is useful evidence — but it is not proof that a cross-session reconnect works, because no cross-session reconnect path exists to exercise.** The required runtime criterion for that branch is therefore recorded as **BLOCKED on a missing native capability**, per the approved plan's rule that a missing prerequisite blocks its gate rather than being satisfied by a static check. Closing it needs either a provider surface exposing a durable worker handle, or an operator-authorized second session that attempts the resume from the ledger alone.
+- **Cross-session reconnect is unreachable on this provider — a capability gap, not a passing check.** `ListAgents` does not enumerate an ended subagent: T1 and T2 were both absent from the listing after completing, in the same session that dispatched them. It exposes no other session's subagents at all, and `SendMessage` addresses sessions, not another session's workers. The handle exists only in the dispatching session's transcript, so a new session reading `delegate-graph.json` alone cannot address a prior session's worker; such a task always lands in the ambiguity branch, which blocks writes and dispatches no second writer. **That branch is no longer argued — it is measured.** An operator-authorized second session attempted the resume from the ledger alone against a worker independently confirmed live, and could not resolve the persisted handle: `ListAgents` returned no subagents section and no matching entry, and `TaskOutput` returned `No task found with ID: a28a5c1948d75fb02`. It classified the status unknown, held, and dispatched nothing. **That is fail-closed, and fail-closed is useful evidence — but it is not proof that a cross-session reconnect works, because no cross-session reconnect path exists to exercise.** The required runtime criterion for that branch is therefore recorded as **BLOCKED on a missing native capability**, per the approved plan's rule that a missing prerequisite blocks its gate rather than being satisfied by a static check. Closing it now requires a provider surface exposing a durable worker handle that survives the dispatching session. The remaining decision is the narrowly scoped operator waiver or deferral described under *D4 cross-session reconnect*.
 - **The must-pass test class was missing until the last round — now closed, recorded as history.** The re-review found five plainly-correct negated rewordings of the frontmatter description that still produced a `REGRESSION`, because the negation had to precede the token and sit in the same comma-delimited segment. It failed closed, so no defect ever passed. A follow-up round (`d390ebe3`) widened the window to the sentence, allowed the negation on either side of the token, and reset it on an adversative. **Verified closed by both the advisor and the reviewer independently**, each running a both-class matrix: all five rewordings now exit 0, and second-sentence inheritance, an adversative reset, the sibling-command trigger, a bare `/prd` and a bare plan-creation trigger all still exit 1. The lesson stands: until that round every recorded injection asserted only that a defect fails, and none asserted that correct prose passes — which is exactly what this run's own `pattern-evals-probe-failure-path-untested` page prescribes, and following it would have caught the shortfall a round earlier.
 - **The approved plan is not carried by the PR.** `.oh/plans/` is gitignored, so `.oh/plans/delegate-follow-up/plan.md` is unavailable to a reviewer without host filesystem access. `prd.md` carries its substance.
 - **D4 case labelling was wrong and is corrected.** An earlier version called the disposable acceptance-ordering worker a live observation of the *active-worker reconnect* branch. Independent review established it was not: that worker had already **returned** and was awaiting verification, which under this PR's own `SKILL.md` is the **ended** sub-case. The reconnect-to-still-active branch was then exercised properly (block below, and the full record in `progress.txt`), so it is now live — but the mislabelling stood in the record until a reviewer caught it. Case (d), unknown native status, remains a **fixture**: a constructed graph row, not a live observation, because a genuinely indeterminate status cannot be manufactured in-session while the advisor still holds the transcript.
@@ -107,7 +107,17 @@ AUDIT-EVIDENCE: AUDIT-PASS
 `194250Z` run as its headline verdict long after three non-record commits had landed past
 `8ba02851`, and the later runs appeared in no tracked file at all — so the PR did not carry its own
 coverage. A fresh independent reviewer caught it. The whole sequence is recorded here so a reader can
-see which head each verdict actually describes, rather than having to trust one summary line.
+see which head each verdict actually describes, rather than having to trust one summary line. All six
+terminal evidence documents are now committed under `audit-runs/`, one file per run, so the ids in
+this table can be opened and checked instead of taken on trust.
+
+**What those artifacts do and do not prove.** `audit-run.sh` creates its evidence root with
+`mktemp -d` and deletes it on the EXIT trap, so a normal run persists no artifact at all — that is a
+real capability limit, and it is why an earlier reviewer grepping this repository for these run ids
+found nothing. These six survive only because `route-driver.sh` was invoked directly with a durable
+`AUDIT_EVIDENCE_PATH`. Each file records the run's id, target, state and verdict. It does **not**
+record the commit the run classified; the *Head classified* column above is this document's claim,
+not the artifact's.
 
 ## Proof by gate
 
@@ -249,39 +259,83 @@ None of these was implemented. None is claimed as done.
 | Live transfer testing | **Not run.** Ownership stayed in one session throughout; no handoff was needed or performed, and handoff remains optional. |
 | Historical unknown model/effort observations | **Preserved as unknown.** T1 and T2 requested `opus` / effort `high`; observed model is recorded `unknown` (neither self-reported, no native display) and observed effort `inherited session level, unobserved`, because the per-call Agent tool exposes `model` and no effort argument, and no subagent definition file exists or was created. No retrospective setting was manufactured. |
 
+## Cross-session recovery experiment — R1
+
+One operator-authorised experiment. A second session, holding only the persisted ledger and the
+recovery procedure, attempted to observe or reconnect to a worker that was genuinely still running in
+the session that dispatched it. Raw artifacts and the full record are in
+`xsession-experiment/README.md`.
+
+| What was established | By what observation | When |
+|---|---|---|
+| The worker was genuinely active during the test | heartbeat file advancing every 5 s on disk; `ListAgents` in the dispatching session showing `a28a5c1948d75fb02 · general-purpose · running`; `ps -p 3772791` returning the live loop, `ELAPSED 02:28`, `STAT Ss` | dispatched 2026-09-07T21:01:30Z; heartbeat from 21:01:38Z |
+| A genuinely separate session made the attempt | a separate `claude` process in tmux session `xsession-recovery`, identifying as `1003-delegate-follow-up-52 [2a903b]`, session id `6d69ed14-3ea7-453b-be81-30c8c9b9f493`, given only the ledger and procedure paths | launched 21:03:37Z, at heartbeat tick 23 |
+| The persisted handle is not enumerable | `ListAgents` returned `Peer sessions (2)` with no subagents section and no entry referencing `a28a5c1948d75fb02` | during the run |
+| The persisted handle is not a task id | `TaskOutput` with `task_id: "a28a5c1948d75fb02"` returned `No task found with ID: a28a5c1948d75fb02` | during the run |
+| The ambiguity branch was reached and held | the second session classified the status **unknown**, wrote only its report, and dispatched nothing (`subagent_stats` `"spawned":0` in its own stream log) | during the run |
+| No second writer touched the protected path | artifact sha256 `857de757…be4c` before and at inspection; changed to `6b52a562…0003` only when the original worker wrote it at 21:05:13Z after release at 21:05:09Z | 21:01:14Z – 21:05:13Z |
+
+The second session declined to call `SendMessage` on its own reasoning: a send *"resumes it from its
+transcript"* and could have produced a write to the owned path. It also refused to count the live OS
+process it found as contact — *"That is not the recorded worker and I have no evidence linking it to
+`a28a5c1948d75fb02`."* One experiment, no retries; the result holds for this provider and runtime
+only.
+
 ## D4 cross-session reconnect — BLOCKED, operator decision required
 
 The approved plan requires D4's five resume cases and states that a missing prerequisite **blocks**
 its required gate rather than being satisfied by a static check. Four of five cases are live
 within-session observations; case (d) is an honestly-labelled fixture. One branch cannot be closed
-here:
+here.
+
+**The experiment, and what the authorisation was.** The operator authorised exactly one bounded
+cross-session recovery experiment. That authorisation was **not** a waiver of the criterion. A second
+session — a separate process, given only `delegate-graph.json` and the recovery procedure, with no
+parent transcript — attempted the `running` branch against a worker that three independent sources
+confirm was live at the time. It could not resolve the persisted `nativeWorkerId` by any available
+mechanism, classified the status unknown, applied the ambiguity clause, held, dispatched nothing, and
+wrote nothing outside its own report. The artifact was untouched until the original worker wrote it
+itself. Record and raw artifacts: `xsession-experiment/`, summarised above as R1.
+
+**The two runtime strings, verbatim.** `ListAgents` returned `Peer sessions (2)` with no subagents
+section at all. `TaskOutput` with that id returned `No task found with ID: a28a5c1948d75fb02`.
 
 **What is blocked.** The `running` resume rule says a still-active worker is reconnected to or
-observed *"through the supported native mechanism"*. Within a session that is now verified live —
+observed *"through the supported native mechanism"*. Within a session that is verified live:
 `SendMessage` to a genuinely running worker returns `Message queued for delivery … at its next tool
 round`, distinct from the `Resuming agent` returned for an ended worker, with no duplicate dispatched.
-**Across sessions it is unreachable**: `ListAgents` does not enumerate an ended subagent (T1 and T2
-were both absent after completing, in the session that dispatched them) and exposes no other
-session's subagents at all; `SendMessage` addresses sessions, not another session's workers. The
-handle exists only in the dispatching session's transcript.
+Across sessions there is no such mechanism. No durable worker handle survives the dispatching
+session: the id in the ledger is neither a task id `TaskOutput` recognises nor an addressable name in
+`ListAgents`.
 
-**Why that is not quietly acceptable.** A `running` task resumed in a new session always lands in the
-ambiguity branch, which blocks writes and dispatches no second writer. That is fail-closed and it is
-useful evidence — but it is **not proof the reconnect path works**, because no cross-session reconnect
-path exists to exercise. Recording it as satisfied would weaken the approved requirement.
+**Why that is still not satisfied.** The fail-closed behaviour is real, it is useful, and it is now
+**observed across a genuine session boundary** rather than inferred. It is still not proof of
+reconnection. An unavailable handle that correctly blocks writes is a safe failure, not a successful
+reconnect, and recording it as satisfied would weaken the approved requirement.
 
-**The operator's options.**
+**The decision now needed.** One narrowly scoped item: **an explicit operator waiver or deferral for
+the cross-session sub-branch of D4's `running` case.**
 
-1. **Waiver** — accept D4 as satisfied within-session, with the cross-session branch recorded as a
-   capability gap. Nothing further to build; this document already carries the disclosure.
-2. **Alternative verification** — authorize a second session to attempt the resume from
-   `delegate-graph.json` alone and record what it observes. This advisor will not steer an active
-   session to manufacture the observation.
-3. **Defer the branch** — add it to the deferred register as a provider-capability item, alongside the
-   audit-driver gate-3 and metric-base-skew rows.
+- **What would be waived:** that the `running` branch's *"reconnect to it or observe it through the
+  supported native mechanism"* cannot be exercised across sessions on this provider, because no
+  durable worker handle survives the dispatching session.
+- **What remains proven either way:** the within-session branch, live; and the ambiguity branch, now
+  live across sessions.
 
-Until one is chosen, D4's cross-session reconnect criterion stands **BLOCKED**, and this PR does not
-claim it.
+Until such a waiver or deferral is granted, D4's cross-session reconnect criterion stands **BLOCKED**,
+this PR does not claim it, and the PR stays draft.
+
+## Operator continuation criteria R1–R4 → evidence
+
+| Criterion | Evidence in this repository | Verdict |
+|---|---|---|
+| **R1** real recovery evidence | `xsession-experiment/` — the ledger and procedure the second session was given, its brief, its own report, its raw stream log, and the original worker's heartbeat; summarised in *Cross-session recovery experiment — R1*. The worker was independently confirmed active (heartbeat on disk, `ListAgents` in the dispatching session, `ps` run by the second session). The attempt produced a genuine unavailable/unknown result. No duplicate was dispatched (`subagent_stats` `"spawned":0`) and the protected path's sha256 was unchanged until the original worker wrote it. | **Satisfied** |
+| **R2** honest D4 disposition | *D4 cross-session reconnect — BLOCKED, operator decision required*, rewritten on the experiment. Fail-closed behaviour is named as fail-closed and never as reconnection; the capability boundary is stated exactly; a single narrowly scoped waiver or deferral is requested. | **BLOCKED**, pending that waiver; the disposition itself is honest and the PR stays draft |
+| **R3** audit provenance | `audit-runs/` — the six terminal evidence documents, each checked to carry a `runId` equal to its filename and `state: complete`; *Audit history* maps each id to the head this document claims it classified, and discloses that the artifact does not itself record that head. The fabricated-id incident stays recorded as a corrected incident. | `pending independent verification` |
+| **R4** final content and state | *What was built*, *Where it diverged from the plan, and why*, *What remains unverified*, *Proof by gate*, *Observed output*, *Acceptance criteria → proof*, *Deferred register*, and this table; `delegate-graph.json`, `delegate-log.txt` and `progress.txt` carry the reconciled worker state, including both stale-ledger recurrences. | `pending independent verification` |
+
+R3 and R4 are for a fresh independent reviewer to decide. This document does not assign them a
+verdict.
 
 ## Gaps and non-gating findings
 
