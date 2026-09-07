@@ -20,12 +20,19 @@ These names describe separate layers, not interchangeable jobs:
 
 ## Terms
 
+- **advisor** — The active session's behavior of deciding, assigning bounded
+  work, verifying the result, and accepting it. The advisor is a behavior, not an
+  identity, a model, or a terminal, and it stays with the active session unless
+  the operator requests a transfer. Source: [`AGENTS.md`](../AGENTS.md) and
+  [`.agro/skills/delegate/SKILL.md`](../.agro/skills/delegate/SKILL.md).
+
 - **agent / coding agent** — The running model-plus-tools process that reads the
-  workspace and does the task: Claude Code, Codex, Pi, or another coding harness
+  workspace and drives the task: Claude Code, Codex, Pi, or another coding harness
   running inside the sandbox. The agent is the **runtime and the owner of the
-  work**; a role never implies a separate session or process. The repository
-  authors no agent definition files — a durable role is a **skill** the active
-  session adopts. Source: [`AGENTS.md`](../AGENTS.md).
+  work**: it advises, assigns bounded work, and accepts the result, while bounded
+  workers perform the tracked edits. A role never implies a separate session or
+  process. The repository authors no agent definition files — a durable role is a
+  **skill** the active session adopts. Source: [`AGENTS.md`](../AGENTS.md).
 
 - **artifact** — Any inspectable file a workflow stage produces and a later stage
   or a human then consumes. The canonical example is the `.agro/tasks/<slug>/` task
@@ -115,9 +122,10 @@ These names describe separate layers, not interchangeable jobs:
 - **session** — A terminal-backend run of an agent: a tmux session, a Herdr pane, or a
   plain shell. It is a *backend*, not an identity. Distinguish it from the
   **implementation owner** — the logical role that owns one `/spec execute` task from the
-  isolated worktree through the final PR gates. `/spec execute` keeps implementation,
+  isolated worktree through the final PR gates. `/spec execute` keeps the decisions,
   validation, evidence, and PR finalization with the single agent that invoked it, whatever
-  backend that agent happens to be running in, and launches no session of its own.
+  backend that agent happens to be running in. That agent advises and accepts while bounded
+  workers perform the tracked edits, and it launches no session of its own.
   Source: [`.agro/skills/spec/references/execute.md`](../.agro/skills/spec/references/execute.md) and
   [`sandbox-processes.md`](../.agro/skills/t3/references/sandbox-processes.md).
 

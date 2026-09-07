@@ -4,7 +4,7 @@
 # desc: production lifecycle validates before state, preserves child identity, cleans temp, and reports one run record
 set -euo pipefail
 unset AUDIT_RUN_ID AUDIT_ROOT AUDIT_TMP_ROOT AUDIT_EVIDENCE_PATH \
-      AUDIT_ROUTE AUDIT_TARGET AUDIT_TARGET_ARGS_JSON AUDIT_AGENT_COMMAND_JSON
+      AUDIT_ROUTE AUDIT_TARGET AUDIT_TARGET_ARGS_JSON
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 tmp=$(mktemp -d); tmpdir=$(mktemp -d); trap 'rm -rf "$tmp" "$tmpdir"' EXIT
 mkdir -p "$tmp/.agro/skills/audit/references" "$tmp/.agro/scripts"
@@ -43,23 +43,102 @@ if bash "$RUN" implementation -- true >/dev/null 2>&1; then fail 'missing implem
 if bash "$RUN" pr 7 --repo bad -- true >/dev/null 2>&1; then fail 'invalid focused repo accepted'; fi
 if bash "$RUN" drift >/dev/null 2>&1; then fail 'missing route driver accepted'; fi
 if bash "$RUN" drift -- true >/dev/null 2>&1; then fail 'true callback certified completion'; fi
-cat >"$tmp/fake-agent" <<'AGENT'
+cp "$REPO/.agro/skills/audit/scripts/route-driver.sh" "$REPO/.agro/skills/audit/scripts/implementation-gates.sh" "$tmp/.agro/skills/audit/scripts/"
+DRIVER="$tmp/.agro/skills/audit/scripts/route-driver.sh"
+chmod +x "$DRIVER" "$tmp/.agro/skills/audit/scripts/implementation-gates.sh"
+grep -q AUDIT_AGENT_COMMAND_JSON "$DRIVER" && fail 'scripted route driver still references a nested agent command'
+set +e; drift_rec=$(bash "$RUN" drift -- "$DRIVER" 2>&1 >/dev/null); drift_rc=$?; set -e
+[[ $drift_rc -eq 64 ]] || fail 'scripted driver accepted a report-only route'
+grep -q 'state=failed verdict=none' <<<"$drift_rec" || fail 'report-only route published evidence or did not fail'
+mkdir -p "$tmp/.agro/tasks/fixture" "$tmp/bin"
+printf '{"userStories":[{"id":"US-1","passes":false}]}\n' >"$tmp/.agro/tasks/fixture/prd.json"
+set +e; impl_out=$(bash "$RUN" implementation fixture -- "$DRIVER" 2>&1); impl_rc=$?; set -e
+[[ $impl_rc -eq 0 ]] || fail 'scripted driver AUDIT-FAIL verdict was not a complete run'
+grep -q 'state=complete verdict=AUDIT-FAIL' <<<"$impl_out" || fail 'gate1 failure did not publish AUDIT-FAIL evidence'
+grep -q '^gate1: FAIL' <<<"$impl_out" || fail 'gate1 failure not reported'
+printf '{"userStories":[{"id":"US-1","passes":true}]}\n' >"$tmp/.agro/tasks/fixture/prd.json"
+printf '{"commit":"%s","runnerExit":0}\n' "$(git -C "$tmp" rev-parse HEAD)" >"$tmp/.agro/tasks/fixture/eval-result.json"
+cat >"$tmp/bin/gh" <<'GH'
 #!/usr/bin/env bash
-prompt=${!#}
-grep -q 'AUDIT_TARGET: drift' <<<"$prompt" || exit 9
-grep -q '# test route drift' <<<"$prompt" || exit 9
-# The agent receives every binding it needs as prompt TEXT. Inheriting the lifecycle
-# identity as environment is what made this very probe grade its caller instead of the
-# repo, twice (AUDIT_ROOT/AUDIT_RUN_ID, then AUDIT_SIGNALS_RESET). The driver must scrub
-# it; a leak here is a real defect, so fail loudly rather than tolerate it.
-leaked=$(printenv | grep -c '^AUDIT_' || true)
-[[ $leaked -eq 0 ]] || { printf 'agent inherited %s AUDIT_* variable(s)\n' "$leaked" >&2; exit 8; }
-printf 'route report\nAUDIT-EVIDENCE: DRIFT-OK\n'
-AGENT
-chmod +x "$tmp/fake-agent"
-AUDIT_AGENT_COMMAND_JSON="[\"$tmp/fake-agent\"]" \
-  bash "$RUN" drift -- "$REPO/.agro/skills/audit/scripts/route-driver.sh" >/dev/null \
-  || fail 'canonical production route driver did not publish correlated evidence (rc 8 = it leaked AUDIT_* into the agent)'
+case "$1 $2" in
+  'repo view') printf 'owner/name\n';;
+  'run list') printf '%s\n' "${GH_RUNS:-[]}";;
+  *) exit 9;;
+esac
+GH
+chmod +x "$tmp/bin/gh"
+set +e; impl_out=$(PATH="$tmp/bin:$PATH" bash "$RUN" implementation fixture -- "$DRIVER" 2>&1); impl_rc=$?; set -e
+[[ $impl_rc -eq 0 ]] || fail 'scripted driver gate3 failure was not a complete run'
+grep -q '^gate1: PASS' <<<"$impl_out" && grep -q '^gate2: reused eval-result.json' <<<"$impl_out" || fail 'gates 1-2 did not pass on the green fixture'
+grep -q '^gate3: FAIL (no green CI run for HEAD)' <<<"$impl_out" || fail 'gate3 did not fail closed without a green CI run'
+grep -q 'state=complete verdict=AUDIT-FAIL' <<<"$impl_out" || fail 'gate3 failure did not publish AUDIT-FAIL evidence'
+git -C "$tmp" branch development
+head=$(git -C "$tmp" rev-parse HEAD)
+task="$tmp/.agro/tasks/fixture"
+review(){ printf '{"schemaVersion":1,"commit":"%s","reviewer":"fixture-reviewer","reviewedAt":"2026-01-01T00:00:00Z","findings":[%s]}\n' "$1" "$2" >"$task/simplicity-review.json"; }
+finding='{"file":"keep.sh","line":3,"simplerAlternative":"delete the wrapper","removesLines":4,"blocking":true,"status":"%s","resolvedIn":null}'
+ui(){ printf '{"schemaVersion":1,"commit":"%s","verifiedAt":"2026-01-01T00:00:00Z","preflight":{"runId":"audit-20260101T000000Z-fixture","exit":%s},"reviewer":"fixture-reviewer","criteria":[%s]}\n' "$1" "$2" "$3" >"$task/ui-evidence.json"; }
+criterion='{"story":"US-1","criterion":"Verify in browser","result":"%s","screenshotSha256":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","note":"observed"}'
+gated(){
+  GH_RUNS=$(printf '[{"headSha":"%s","status":"completed","conclusion":"success"}]' "$(git -C "$tmp" rev-parse HEAD)")
+  set +e; impl_out=$(GH_RUNS="$GH_RUNS" PATH="$tmp/bin:$PATH" bash "$RUN" implementation fixture -- "$DRIVER" 2>&1); impl_rc=$?; set -e
+  [[ $impl_rc -eq 0 ]] || fail "$1: scripted run was not complete"
+  grep -q "state=complete verdict=$2" <<<"$impl_out" || fail "$1: expected $2"
+  grep -q "^$3" <<<"$impl_out" || fail "$1: report lacks '$3'"
+}
+gated 'no simplicity review' AUDIT-FAIL 'gate5: FAIL (no simplicity review for HEAD'
+grep -q '^gate3: PASS' <<<"$impl_out" && grep -q '^gate4: not applicable' <<<"$impl_out" || fail 'green CI fixture did not pass gate 3 and skip gate 4'
+review "$head" "$(printf "$finding" open)"
+gated 'blocking finding open' AUDIT-FAIL 'gate5: FAIL (1 blocking simplicity finding(s) open)'
+grep -q '^gate5: open keep.sh:3 — delete the wrapper' <<<"$impl_out" || fail 'open finding not listed with its alternative'
+printf '{"rounds":3,"netAdded":7,"lastCommit":"%s"}\n' "$head" >"$task/simplify-rounds.json"
+gated 'round cap reached' AUDIT-PASS 'gate5: PASS with SIMPLICITY-RESIDUAL (1 open finding(s) after 3 round(s))'
+printf '{"rounds":1,"netAdded":7,"lastCommit":"%s","nonReducing":true}\n' "$head" >"$task/simplify-rounds.json"
+gated 'non-reducing round' AUDIT-PASS 'gate5: PASS with SIMPLICITY-RESIDUAL (1 open finding(s) after 1 round(s))'
+printf '{"rounds":"two"}\n' >"$task/simplify-rounds.json"
+gated 'malformed rounds' AUDIT-FAIL 'gate5: FAIL (malformed simplify-rounds.json)'
+rm "$task/simplify-rounds.json"
+review "$head" "$(printf "$finding" resolved)"
+gated 'finding resolved' AUDIT-PASS 'gate5: PASS (review fixture-reviewer at '"$head"', 1 finding(s), none blocking open)'
+review 0000000000000000000000000000000000000000 ''
+gated 'stale review commit' AUDIT-FAIL 'gate5: FAIL (no simplicity review for HEAD'
+review "$head" ''
+mv "$task/simplicity-review.json" "$tmp/linked-review.json"; ln -s "$tmp/linked-review.json" "$task/simplicity-review.json"
+gated 'symlinked review' AUDIT-FAIL 'gate5: FAIL (no simplicity review for HEAD'
+rm "$task/simplicity-review.json"; mv "$tmp/linked-review.json" "$task/simplicity-review.json"
+printf '{"userStories":[{"id":"US-1","passes":true,"acceptanceCriteria":["Verify in browser"]}]}\n' >"$task/prd.json"
+gated 'ui story without evidence' AUDIT-FAIL 'gate4: FAIL (no ui evidence for HEAD'
+ui "$head" 0 "$(printf "$criterion" PASS)"
+gated 'ui evidence verified' AUDIT-PASS 'gate4: PASS (1 criteria verified by fixture-reviewer at '"$head"')'
+ui "$head" 0 "$(printf "$criterion" FAIL)"
+gated 'ui criterion failed' AUDIT-FAIL 'gate4: FAIL (1 criteria FAIL)'
+ui "$head" 1 "$(printf "$criterion" PASS)"
+gated 'ui preflight failed' AUDIT-FAIL 'gate4: FAIL (browser-preflight run audit-20260101T000000Z-fixture exited 1)'
+ui "$head" 0 ''
+gated 'ui evidence without criteria' AUDIT-FAIL 'gate4: FAIL (no criteria verified)'
+ui 0000000000000000000000000000000000000000 0 "$(printf "$criterion" PASS)"
+gated 'stale ui evidence' AUDIT-FAIL 'gate4: FAIL (no ui evidence for HEAD'
+rm "$task/ui-evidence.json"
+printf '{"userStories":[{"id":"US-1","passes":true}]}\n' >"$task/prd.json"
+review "$head" "$(printf "$finding" resolved)"
+git -C "$tmp" add .agro/tasks/fixture; git -C "$tmp" commit -qm records
+gated 'content-head records' AUDIT-PASS 'gate5: review commit '"$head"' is the content head; only task records changed since'
+grep -q "^gate2: eval-result commit $head is the content head; only task records changed since" <<<"$impl_out" || fail 'eval-result at the content head was not reused'
+grep -q "^gate2: reused eval-result.json for HEAD $(git -C "$tmp" rev-parse HEAD)" <<<"$impl_out" || fail 'content-head reuse did not report the HEAD it covered'
+printf 'a\n' >"$tmp/keep.sh"; git -C "$tmp" add keep.sh; git -C "$tmp" commit -qm code
+printf '{"commit":"%s","runnerExit":0}\n' "$(git -C "$tmp" rev-parse HEAD)" >"$task/eval-result.json"
+gated 'code changed past review' AUDIT-FAIL 'gate5: FAIL (no simplicity review for HEAD'
+grep -q "^gate2: eval-result commit $(git -C "$tmp" rev-parse HEAD) equals HEAD" <<<"$impl_out" || fail 'eval-result equal to HEAD did not report the equals case'
+review 4b825dc642cb6eb9a060e54bf8d69288fbee4904 "$(printf "$finding" resolved)"
+gated 'review commit not an ancestor' AUDIT-FAIL 'gate5: FAIL (no simplicity review for HEAD'
+review "$(git -C "$tmp" rev-parse HEAD)" "$(printf "$finding" resolved)"
+gated 'review at HEAD' AUDIT-PASS 'gate5: review commit '"$(git -C "$tmp" rev-parse HEAD)"' equals HEAD'
+parent=$(git -C "$tmp" rev-parse HEAD)
+printf '# tasks\n' >"$tmp/.agro/tasks/README.md"; git -C "$tmp" add .agro/tasks/README.md; git -C "$tmp" commit -qm readme
+printf '{"commit":"%s","runnerExit":0}\n' "$(git -C "$tmp" rev-parse HEAD)" >"$task/eval-result.json"
+review "$parent" "$(printf "$finding" resolved)"
+gated 'other task path changed past review' AUDIT-FAIL 'gate5: FAIL (no simplicity review for HEAD'
+rm "$task/simplicity-review.json"
 bash "$RUN" pr 7 --base stack-parent -- "$tmp/complete-driver" >/dev/null
 bash "$RUN" prs --mine -- "$tmp/complete-driver" >/dev/null
 bash "$RUN" full --repo owner/name -- "$tmp/complete-driver" >/dev/null

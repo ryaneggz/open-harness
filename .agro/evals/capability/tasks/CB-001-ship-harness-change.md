@@ -3,7 +3,7 @@ id: CB-001
 slug: ship-harness-change
 title: "Ship a harness-infra change end-to-end"
 axes: [success, cost-time, unattended]
-skills: [/spec, /prd, /ralph, /eval, /audit pr]
+skills: [/spec, /delegate, /prd, /ralph, /eval, /audit pr]
 datasets: [DS-001, DS-002]
 created: 2026-06-15
 ---
@@ -34,6 +34,12 @@ Recent ready-for-review PRs demonstrate the end-to-end path: e.g. #147 (default 
 `/spec execute` and deleted. The capability under test is unchanged; only the surface that
 provides it moved, so historical scores stay comparable. `/delegate` left the skill list
 because it is no longer a build arm — it survives only as optional within-story fan-out.
+
+**Re-authored 2026-09-06 (#988, ADR #989)** when advisor-first execution became the
+default: `/spec execute` now assigns tracked implementation edits to bounded
+`/delegate` workers and keeps decisions and acceptance with the single owner, so
+`/delegate` returns to the skill list as the build arm. The capability under test is
+unchanged; historical scores stay comparable.
 
 **Baseline reset 0.3.0 (autopilot removal).** The `unattended` axis previously had an
 hourly unattended runner behind it; it no longer does. Scores from before 0.3.0 are NOT

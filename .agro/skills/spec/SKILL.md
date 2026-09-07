@@ -3,8 +3,9 @@ name: spec
 description: >-
   Canonical build dispatcher and repo-knowledge learning loop. Routes to plan,
   execute, or retro; an approved plan path runs plan then execute. Recalls and
-  re-grounds .agro/knowledge/, scaffolds .agro/tasks/<slug>/, implements under one
-  owner, and derives knowledge invalidation from the diff. Owns the only build
+  re-grounds .agro/knowledge/, scaffolds .agro/tasks/<slug>/, assigns implementation
+  to bounded workers under one owner, and derives knowledge invalidation from the
+  diff. Owns the only build
   path. Procedures: references/{plan,execute,retro}.md.
   TRIGGER when: an approved plan file should become a ready PR without further
   hand-holding, "/spec <plan-path>", "build this plan end to end" -> the default
@@ -189,27 +190,38 @@ esac
   key (task directory, branch second segment, status file). It is never a terminal
   identifier: no session, tab, or pane name is derived from it, and none is read
   back to decide task state.
-- **One owner builds it — the agent that is running `execute`** — implementation
-  and every post-build gate belong to that agent.
+- **One owner, bounded writers — the agent that is running `execute` is the
+  owner** — it acts as advisor and owns every decision, every post-build gate,
+  `prd.json`, and `progress.txt`.
   **`/spec` never launches another coding-agent process to do that work**:
   no multiplexer session, no Herdr
-  workspace/tab/pane, no background shell, no runner selection. `/delegate` is
-  available only for bounded, disjoint worker tasks; a worker never becomes a
-  second supervisor, executor, or PR owner, and the owner reconciles and validates
-  every result.
+  workspace/tab/pane, no background shell, no runner selection. Tracked
+  implementation edits — code, tests, docs, integration fixes, repair — go to
+  bounded `/delegate` workers before the owner performs acceptance. A direct
+  owner edit requires an explicit operator exception recorded in `progress.txt`
+  before the edit. A small task can use one worker. A worker never becomes a
+  second supervisor, executor, or PR owner, never writes `prd.json` or
+  `progress.txt`, and the owner reconciles and validates every result.
+- **Same session by default** — the owner needs no particular model and no
+  handoff. Ownership transfers only when the operator requests another session:
+  the originating advisor stops dispatching work for the task first, and the
+  receiving advisor reads the plan and current evidence, then acknowledges
+  ownership before it dispatches a worker. A plan without a handoff prompt is
+  complete. A factual question or a plan-only request needs no worker.
 - **Compose, don't fork** — each node reuses existing skills rather than
   re-implementing them: `plan` composes `/wiki query` + `/prd` + `/ralph`;
   `execute` composes `/audit implementation` + `/eval` + `knowledge-impact.sh` +
   `/wiki compile` + `/benchmark` + `/audit pr`; `retro` composes `/retro`. The
   build **literals** — the `gh` invocations, the branch and PR shapes, the
-  implementation step, and the handoff-free implementation rules — live in
+  implementation step, and the worker-first implementation rules — live in
   `references/execute.md`, which is the single source for them and is a
   protected path.
 - **Dependency-aware invalidation lives in the knowledge primitive** —
   `.agro/skills/wiki/scripts/knowledge-impact.sh`. `/spec` calls it; it does not
   carry a second copy of the logic.
 - **One adversarial loop** — `implementation ⇄ audit` inside `execute` vets the
-  implementation (`AUDIT-FAIL` routes back to the same owner). The plan
+  implementation (`AUDIT-FAIL` routes back to the same owner, who assigns the
+  repair to the bounded worker that owns the affected files). The plan
   itself is vetted by the operator who approves it, and re-approved if grounding
   materially changes it.
 - **Distil before you compress** — high-resolution execution evidence is turned

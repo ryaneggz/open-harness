@@ -71,23 +71,22 @@ no-op such as `-- true`, stale evidence, a symlink, or mismatched target fails c
 routes publish it with `scripts/audit-evidence.sh complete <NATIVE-VERDICT>` only after their
 checks finish.
 
-The shipped production driver runs the route through a non-interactive agent process. Use it
-rather than substituting a preflight callback:
+The shipped production driver is a script. Use it rather than substituting a preflight
+callback:
 
 ```bash
 ROOT=$(git rev-parse --show-toplevel)
-AUDIT_AGENT_COMMAND_JSON='["claude","-p","--output-format","text"]' \
-  "$ROOT/.agro/skills/audit/scripts/audit-run.sh" \
+"$ROOT/.agro/skills/audit/scripts/audit-run.sh" \
   implementation <slug> --pr <N> --repo <owner/name> -- \
   "$ROOT/.agro/skills/audit/scripts/route-driver.sh"
 ```
 
-The driver supplies the selected route and correlated bindings to that agent, requires its
-final `AUDIT-EVIDENCE: <NATIVE-VERDICT>` line, and atomically publishes the evidence contract.
-Set `AUDIT_AGENT_COMMAND_JSON` to the equivalent non-interactive argv for another provider.
-The driver launches that agent with the `AUDIT_*` lifecycle variables **scrubbed from its
-environment** — it receives every binding it needs as prompt text, and an agent that inherits
-the identity instead grades its caller's environment rather than the repository.
+The driver runs the deterministic gates itself for the `implementation` and `pr` targets,
+prints the gate report with a final `AUDIT-EVIDENCE: <NATIVE-VERDICT>` line, and atomically
+publishes the correlated evidence. It launches no nested inference CLI. The active session
+reads the report-only routes (`prs`, `harness`, `context`, `skills`, `eval-quality`,
+`drift`, `full`) directly; they never gated a merge, and the driver exits 64 for them
+without evidence.
 
 **What the boundary requires is target-correlated schema-v1 evidence, not a particular process
 shape.** This driver is the shipped way to produce it; any protocol that publishes evidence

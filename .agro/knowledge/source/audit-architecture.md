@@ -12,7 +12,7 @@ sources:
   - .agro/skills/audit/scripts/pr-classify.sh
   - .agro/skills/audit/scripts/implementation-gates.sh
   - .agro/skills/audit/references/full.md
-verified_at: 5b426f977b0e892786998638ba526796bfcd2b99
+verified_at: 5deb1d544b2d293b159c7f0aae2552b65d085246
 related: [oh-cli-portable-lifecycle]
 confidence: confirmed
 ---

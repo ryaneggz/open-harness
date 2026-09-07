@@ -63,13 +63,25 @@ the folder is incomplete, or reconciliation says `NO`, refuse and route back to
 
 `/spec execute` has exactly one implementation owner:
 **the agent that is running it**.
-That agent implements the approved task graph, validates each story, records
-progress, runs the audit / eval / knowledge / evidence gates, and finalizes the
-PR. Ownership is a **role**, not a terminal topology — it is not conferred by a
-session, a tab, or a pane, and this node creates none of those. `/delegate` is
-available only for bounded, disjoint worker tasks; a delegated worker never
-becomes a second supervisor, never owns the whole task, and never finalizes the
-PR, and the owner reconciles and validates every result itself.
+That agent acts as advisor: it interprets the approved task graph, assigns each
+story to a bounded worker, validates each story, records progress, runs the
+audit / eval / knowledge / evidence gates, and finalizes the PR.
+Ownership is a **role**, not a terminal topology: a session, a tab, or a pane
+does not confer it, and this node creates none of those. Bounded `/delegate` workers perform
+the tracked implementation edits — code, tests, docs, integration fixes, and
+repair — before the owner performs acceptance; a small task can use one worker.
+A direct owner edit requires an explicit operator exception recorded in
+`progress.txt` before the edit. A delegated worker never becomes a second
+supervisor, never owns the whole task, never writes `prd.json` or
+`progress.txt`, and never finalizes the PR; the owner reconciles and validates
+every result itself.
+
+**Same session by default.** The owner needs no particular model and no
+handoff. Ownership transfers only when the operator requests another session.
+Before an authorized transfer, the originating advisor stops dispatching work
+for the task. The receiving advisor reads `prd.md`, `prd.json`, `progress.txt`,
+and the current evidence, then acknowledges ownership in `progress.txt` before
+it dispatches a worker. Worker delegation never transfers ownership.
 
 ---
 
@@ -255,9 +267,9 @@ Closes #<N>.
 <numbered list from prd.json — title only>
 
 ## Next steps (automated)
-1. The agent running `/spec execute` implements the task itself, in an isolated worktree; task state moves to RUNNING.
-2. It implements the stories directly, using `/delegate` only for bounded disjoint work; it validates the stories, runs the implementation-side audit loop, and updates every knowledge page the actual diff invalidates.
-3. It runs a fresh PR audit immediately before any undraft; this PR is marked ready (`gh pr ready`) only when that audit classifies it promotable (CI green + mergeable + clean). Heartbeat stale-draft watchdog output is only a resume/investigation hint, never an undraft signal.
+1. The agent running `/spec execute` owns the task as advisor, in an isolated worktree; task state moves to RUNNING.
+2. Bounded `/delegate` workers implement the stories; the owner validates each story, runs the implementation-side audit loop, and resolves every knowledge page the actual diff invalidates.
+3. The owner runs a fresh PR audit immediately before any undraft; this PR is marked ready (`gh pr ready`) only when that audit classifies it promotable (CI green + mergeable + clean). Heartbeat stale-draft watchdog output is only a resume/investigation hint, never an undraft signal.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code) via /spec execute
 EOF
@@ -280,7 +292,8 @@ background-shell launch, and no runner selection.
 There is **no fallback runner because there is no handoff step**.
 `/spec` defines and verifies the execution contract;
 **it does not create the agent that** executes it. The agent that reached this
-line implements the task itself and carries it through every gate below.
+line owns the task, assigns its implementation to bounded workers, and carries it
+through every gate below.
 
 **Build worktree — reuse vs. create.** Isolation stays. When this run is ALREADY
 inside an isolated worktree that step 2 put on the feature branch, **reuse it** —
@@ -296,15 +309,21 @@ if [ "$(git rev-parse --abbrev-ref HEAD)" != "<prefix>/<N>-<slug>" ]; then
 fi
 ```
 
-Then implement, in this same session:
+Then orchestrate the implementation, in this same session:
 
 1. Read the rendered task prompt, `prd.md` — including the `## Knowledge Context`
    sources step 0 re-read — and `prd.json`'s story graph.
-2. Implement the dependency-ready stories directly. Use `/delegate` **only** for
-   bounded, disjoint worker tasks, and reconcile every worker result yourself. A
+2. Assign each dependency-ready story to a bounded `/delegate` worker with the
+   complete dispatch record that `.agro/skills/delegate/SKILL.md` requires.
+   Use `/delegate` **only** for bounded worker tasks: disjoint tasks run in
+   parallel in isolated worktrees, coupled work stays with one continuing
+   worker, and shared-file work runs serially. Those workers perform every
+   tracked implementation edit; reconcile every worker result yourself. A
    delegated worker **never becomes a second supervisor**, never owns the whole
-   task, and never finalizes the PR.
-3. Validate every acceptance criterion against the repository, flip each story's
+   task, and never finalizes the PR. Write no tracked implementation edit
+   yourself unless `progress.txt` already records the operator exception.
+3. Validate every acceptance criterion against the repository, route a failed
+   criterion back to the worker that owns the affected files, flip each story's
    `passes` to `true` only after that validation, and append a dated
    `progress.txt` entry naming the files, the commit, the result, and the
    learnings.
@@ -339,24 +358,39 @@ When implementation is complete, run the per-unit verdict gate:
 regression floor + the PR promotable classification (+ `/agent-browser` for UI
 stories, + the gate-5 slop check) into one verdict:
 
-- `AUDIT-FAIL` → loop back to implementation in this same session to finish the
-  unmet stories, then re-audit. This is the implementation-side adversary — keep
+- `AUDIT-FAIL` → loop back to implementation in this same session: the owner
+  routes each unmet story to the bounded worker that owns its files, validates
+  the repair, then re-audits. The loop is the implementation-side adversary — keep
   looping until the owner satisfies the task graph.
 - `AUDIT-PASS` → implementation is promotable; continue to the tail.
 
 **The simplify sub-loop — drive `netAdded` down.** Gate 5 asks whether the diff
-can be smaller and still satisfy every acceptance criterion. On an
-`AUDIT-FAIL (gate 5)` the owner removes the code the finding names — it does not
-argue with it — and re-audits. The owner keeps the round record; the read-only
-audit route only reads it:
+can be smaller and still satisfy every acceptance criterion. The audit route
+reads a simplicity review for `HEAD` and fails closed without one, so the owner
+produces the review before the audit. After implementation, the owner dispatches
+a fresh read-only reviewer for simplicity findings at `HEAD`. The reviewer is a
+bounded worker with no edits in the code under review. Each finding cites `file:line`, names
+the concrete simpler alternative, states the lines it removes, and marks whether
+it blocks. The owner writes the findings to `.agro/tasks/<slug>/simplicity-review.json`
+in the schema and content-head rule that `.agro/skills/audit/references/implementation.md`
+gate 5 defines, then adds the file with `git add -f`.
+
+On an `AUDIT-FAIL (gate 5)` the owner routes each blocking finding to the
+bounded worker that owns the file — the owner does not argue with the finding —
+then records the round, obtains a fresh review on the new head, and re-audits.
+The owner keeps the round record; the read-only audit route only reads it. The
+owner sets `nonReducing` to `true` when the round's `netAdded` did not strictly
+fall below the previous round's:
 
 ```bash
 COUNTER=".agro/tasks/<slug>/simplify-rounds.json"
 ROUNDS=$(jq -r '.rounds // 0' "$COUNTER" 2>/dev/null || echo 0)
+PREV=$(jq -r '.netAdded // empty' "$COUNTER" 2>/dev/null)
 NET=$(AUDIT_ROOT="$PWD" bash .agro/skills/audit/scripts/implementation-gates.sh \
         slop-metrics "$BASE" | jq -r .netAdded)
+NON_REDUCING=false; [ -n "$PREV" ] && [ "$NET" -ge "$PREV" ] && NON_REDUCING=true
 cat > "$COUNTER" <<JSON
-{ "rounds": $((ROUNDS + 1)), "netAdded": $NET, "lastCommit": "$(git rev-parse HEAD)" }
+{ "rounds": $((ROUNDS + 1)), "netAdded": $NET, "lastCommit": "$(git rev-parse HEAD)", "nonReducing": $NON_REDUCING }
 JSON
 git add -f "$COUNTER"
 ```
@@ -366,6 +400,18 @@ rounds, and a **non-reducing round** — one whose `netAdded` did not strictly f
 below the previous round's. Either way the audit stops blocking and passes with
 `SIMPLICITY-RESIDUAL`, and those residual findings go into `evidence.md` under
 *What remains unverified* for the operator to judge.
+
+**UI stories — verified browser evidence.** When a story declares browser
+verification (`Verify in browser` or `agent-browser` in `prd.json`), gate 4
+reads `.agro/tasks/<slug>/ui-evidence.json` for `HEAD` and fails closed without it.
+The owner runs `implementation-gates.sh browser-preflight` under an `AUDIT_RUN_ID`,
+drives the `/agent-browser` checks against the running application, and stores
+the screenshots under `$AUDIT_TMP_ROOT`, never in the repository. A reviewer who
+did not write the code reads each screenshot against its criterion. The owner
+writes the record for `HEAD` — the preflight run id and exit, the reviewer, and
+one entry per criterion with its `PASS`/`FAIL` result, the screenshot's sha256,
+and the observation — and adds it with `git add -f`. When the branch moves, the
+owner re-verifies and rewrites the record.
 
 **The `/eval` gate — run ONCE per cycle.** Run `/eval` while still on the work
 branch. If it updates `.agro/evals/RESULTS.md`, commit the benchmark refresh on the
@@ -436,8 +482,10 @@ explicit state**, recorded in `evidence.md`:
 `verified_at:` without re-reading launders staleness into freshness and is the
 one failure this gate cannot detect afterwards.
 
-New pages the run should create — an external source the work depended on — go
-through `/wiki ingest` here. Pattern pages are **not** written here; they are
+A page rewrite counts as a tracked implementation edit: the owner decides each page's
+state, a bounded worker performs the `UPDATED` rewrite, and the owner records
+the state in `evidence.md`. New pages the run should create — an external
+source the work depended on — go through `/wiki ingest` here. Pattern pages are **not** written here; they are
 step 9's job, because they need the retro's verdicts.
 
 Then regenerate the index and verify it:
@@ -457,7 +505,7 @@ the union is unresolved, or the index probe fails, leave the PR draft, set
 it — this artifact carries the implementation's answer to the reviewer.
 
 The operator's understanding of this work stops at the plan they approved. The
-same session implements the stories and records the result.
+same session orchestrates the stories, accepts each result, and records it.
 `evidence.md` answers back to the plan with the observed behavior, deviations,
 and remaining gaps.
 
@@ -764,7 +812,7 @@ work, but it never authorizes `gh pr ready`. Never auto-merge.
 |---|---|---|
 | Task prompt template | `.agro/skills/spec/templates/task-prompt.md` | Step 4 — rendered at execution time; never persisted |
 | `/worktrees` skill | `.agro/skills/worktrees/SKILL.md` | Step 4 — isolated `.worktrees/<branch>` for the implementation |
-| `/delegate` skill | `.agro/skills/delegate/SKILL.md` | Step 4 — optional bounded fan-out beneath the one owner |
+| `/delegate` skill | `.agro/skills/delegate/SKILL.md` | Step 4 — the bounded workers that perform tracked implementation edits beneath the one owner |
 | `/audit implementation` | `.agro/skills/audit/SKILL.md` | Step 5 — the per-unit verdict gate |
 | `/eval` skill | `.agro/skills/eval/SKILL.md` | Step 5 — probe regression floor, run once |
 | Knowledge invalidation | `.agro/skills/wiki/scripts/knowledge-impact.sh` | Step 6 — the one dependency-aware impact implementation |
