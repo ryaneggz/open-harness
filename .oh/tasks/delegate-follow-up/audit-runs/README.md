@@ -1,6 +1,6 @@
 # Audit run evidence — delegate-follow-up
 
-Eleven terminal evidence documents, one per audit run against this branch. Each is the
+Fourteen terminal evidence documents, one per audit run against this branch. Each is the
 JSON `audit-evidence.sh complete` wrote when its run finished, copied here byte for
 byte. Each file is named for the `runId` it contains; every file was checked and its
 `runId` equals its filename and its `state` is `complete`.
@@ -18,20 +18,31 @@ byte. Each file is named for the `runId` it contains; every file was checked and
 | `audit-20260907T211759Z-3792322` | pr | `PR-AUDIT-PROMOTABLE` | 2026-09-07T21:18:00Z | `79289327` |
 | `audit-20260907T214546Z-3826355` | implementation | `AUDIT-FAIL` | 2026-09-07T21:45:46Z | `040c3ca1` |
 | `audit-20260907T214554Z-3826531` | pr | `PR-AUDIT-PROMOTABLE` | 2026-09-07T21:45:55Z | `040c3ca1` |
+| `audit-20260907T222543Z-3890845` | implementation | `AUDIT-FAIL` | 2026-09-07T22:25:44Z | `b455251a` |
+| `audit-20260907T222823Z-3893530` | implementation | `AUDIT-PASS` | 2026-09-07T22:28:24Z | `d8752de4` |
+| `audit-20260907T222832Z-3893813` | pr | `PR-AUDIT-PROMOTABLE` | 2026-09-07T22:28:33Z | `d8752de4` |
 
 The *Head classified* column is taken from `../evidence.md`, not from these files.
 
-`audit-20260907T214546Z-3826355` fails at gate 1 **by design**: `prd.json` US-003 is
-`passes: false` while a required criterion is blocked, so the gate refuses to certify
-the task complete. Gate 1 fails before gates 2, 3 and 5 run, so that run carries no
-verdict on them. The last run that exercised all five is
-`audit-20260907T211751Z-3792031`.
+`audit-20260907T214546Z-3826355` fails at gate 1 **by design**: at that head `prd.json`
+US-003 was `passes: false` while the criterion was BLOCKED, so the gate refused to
+certify the task complete. Gate 1 fails before gates 2, 3 and 5 run, so that run carries
+no verdict on them.
+
+`audit-20260907T222543Z-3890845` fails at gate 5 with the message
+`no simplicity review for HEAD b455251a`, which **misdescribes its own cause**. The
+content-head check passed on that run; what failed was gate 5's schema validation
+against a record with no `schemaVersion` field. See `../evidence.md` under *Audit
+history*.
+
+`audit-20260907T222823Z-3893530` is the run that exercised all five gates and passed
+them, and `audit-20260907T222832Z-3893813` is the PR run beside it.
 
 ## Why these exist at all, and what that costs
 
 `.oh/skills/audit/scripts/audit-run.sh` creates its evidence root with `mktemp -d` and
 removes it on the EXIT trap (`cleanup(){ rm -rf "$tmp_root"; }`). A normal `/audit` run
-therefore persists no artifact of its own. These eleven survive only because
+therefore persists no artifact of its own. These fourteen survive only because
 `route-driver.sh` was invoked directly.
 
 The driver does not itself read `AUDIT_EVIDENCE_PATH`: `route-driver.sh:18` calls
@@ -51,10 +62,10 @@ These are limits of the artifacts, not doubts about the runs.
 - **The byte-for-byte copy claim is no longer independently checkable.** The scratch
   sources these were copied from are gone. The substitute check: regenerate each file
   with the exact `jq -n` filter from `audit-evidence.sh:23-26`, using the values inside
-  the file. All eleven come out byte-identical, including key order, 2-space indent and
+  the file. All fourteen come out byte-identical, including key order, 2-space indent and
   trailing newline.
 - **Every run's `finishedAt` is its run-id timestamp plus zero or one second.** Eight
-  of the eleven are +1s; `audit-20260907T211548Z-3789393`,
+  of the fourteen are +1s; `audit-20260907T211548Z-3789393`,
   `audit-20260907T211751Z-3792031` and `audit-20260907T214546Z-3826355` are +0s. An
   elapsed time that short means the
   artifacts alone do not evidence that all five gates executed. What does: the quoted
