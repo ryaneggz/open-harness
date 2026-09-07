@@ -157,7 +157,7 @@
         ".agro/tasks/agro-namespace-cutover/evidence.md"
       ],
       "acceptance": "knowledge-impact.sh resolved; wiki-readme-index PASS; evidence.md complete",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }

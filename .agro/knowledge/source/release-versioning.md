@@ -4,7 +4,7 @@ slug: release-versioning
 kind: repo
 tags: [release, versioning, semver, calver, github-actions, ghcr, tags, workflow, package-json, agro, npm]
 created: 2026-08-23
-updated: 2026-09-06
+updated: 2026-09-07
 sources:
   - raw/2026-08-23-release-versioning.md
   - package.json
@@ -18,7 +18,7 @@ sources:
   - .agro/cli/legacy/package.json
   - .agro/evals/probes/version-parity.sh
   - .agro/skills/release/SKILL.md
-verified_at: 16a399226e2d918fa63597dc00b8ccaa81c18bd9
+verified_at: a0d0437ec9819ce6ecf879cabeaefef9980cdcec
 related: [oh-cli-portable-lifecycle]
 confidence: confirmed
 ---
@@ -63,7 +63,7 @@ Under SemVer the version is an input, so `foreign-collision` maps to `already-re
 
 **Finalize.** The job rebuilds the bundles at the released commit, then uploads `agro.js`, `oh.js`, `get-agro.sh`, and `get-oh.sh` (`gh release upload --clobber`) **before** the undraft, so `releases/latest/download/<asset>` resolves once the release is public — `get-agro.sh` and `agro update` fetch there ([[oh-cli-portable-lifecycle]]). Notes come from the `## [<version>] - <date>` CHANGELOG block; `promote-release-latest.sh check` decides `make_latest` from a fresh remote read.
 
-**Four version sites.** A cut bumps root `package.json`, `.agro/cli/package.json` (with its lockfile), the shim `version`, and the shim's exact `@mifune/agro` pin; `version-parity.sh` is REGRESSION when any drifts or the CHANGELOG lacks a dated heading. The CLI no longer versions independently (`0.8.0` at this pin).
+**Four version sites.** A cut bumps root `package.json`, `.agro/cli/package.json` (with its lockfile), the shim `version`, and the shim's exact `@mifune/agro` pin; `version-parity.sh` is REGRESSION when any drifts or the CHANGELOG lacks a dated heading. The CLI no longer versions independently (`0.9.0` at this pin). #942 moved every site from `.oh/cli/` to `.agro/cli/` and left the numbers, the ordering, and the reservation model untouched; the only in-file change beyond the paths is the `repository.directory` field in each package.
 
 **Operator prerequisites** (`release/SKILL.md`): the npm token can publish `@mifune/agro`; the GHCR package `mifunedev/agro` is made public after its first push, because a new package is private by default and `agro sandbox install docker` cannot pull it until then.
 

@@ -94,7 +94,7 @@
         "`knowledge-impact.sh` on the final diff; affected pages updated or reverified; index regenerated; `wiki-readme-index.sh` PASS; `evidence.md` with commands, exit codes, Docker rehearsal logs, and unverified items."
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]
