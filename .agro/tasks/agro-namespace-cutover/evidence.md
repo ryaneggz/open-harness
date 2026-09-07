@@ -104,3 +104,20 @@ upgrade smoke invocation. The restored file passes.
 - The root checkout at `/home/sandbox/harness` still uses `.oh/`. It is the bind mount of the
   sandbox running this session, so it is migrated by the operator with `agro migrate` after the
   merge, not by this pull request.
+
+## Benchmark
+
+**Floor: held.** `eval-result.json` records 145 probes at `a0d0437e` with one
+regression, `skills-vendored`, whose row already read REGRESSION at the branch
+point `9d2fb009` and on `origin/development`. No probe went green to red because
+of this branch, and two went red to green (`oh-config-surfaces`,
+`oh-update-bootstrap`).
+
+**Ceiling: not re-scored, and not moved by construction.** The three live
+capability tasks score how the harness ships a change, walks the workflow, and
+compiles a lesson. This phase renames a namespace, flips fresh-state defaults,
+and adds one migration command; the task files changed only in their paths, and
+no workflow they score behaves differently. Re-scoring them means three full
+agent runs that would measure the same behaviour, so no run was made and no row
+was overwritten. This phase's benefit is contractual — issue #942 and the epic's
+RFC — and the capability benchmark is not the instrument that decides it.
