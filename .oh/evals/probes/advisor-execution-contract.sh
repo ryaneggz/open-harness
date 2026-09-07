@@ -93,6 +93,8 @@ need delegate/SKILL.md "$delegate_flat" \
   'inspect the persisted native worker reference and the current artifacts' \
   'never spawn a duplicate for it' \
   'retry only the incomplete scope' \
+  'Re-read the artifact references against the current tree' \
+  'returns to `running` for reconciliation' \
   'blocks every write to the affected paths' \
   'never authorizes a second writer' \
   'it never truncates it' \

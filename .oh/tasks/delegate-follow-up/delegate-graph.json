@@ -217,8 +217,8 @@
         ".oh/tasks/delegate-follow-up/simplicity-review.json reviewedAt correction",
         ".oh/tasks/delegate-follow-up/prd.md amendment note (SA-1)"
       ],
-      "usage": "217k subagent tokens, 76 tool uses across six rounds (provider-reported)",
-      "summary": "Five rounds, one continuing worker throughout, every round routed by native continuation with no duplicate ever dispatched. R1 recorded the experiment and the six audit documents and rewrote the D4 section on the measurement. R2 fixed two defects it raised against its own brief. R3 disclosed the fabricated id separately from the real-but-untracked one, corrected the mechanism description that had flattered the artifacts, and added three further runs. R4 recorded the R4 reviewer's findings, corrected two provenance stamps that postdated their own commit, and disclosed the SKILL.md resume/5d contradiction without fixing it. R5 corrected the third-recurrence wording after the advisor's own account of it proved imprecise. R6 recorded operator scope amendment SA-1 in evidence.md and prd.md, took the boundary from prd.json rather than from the advisor's message so the prose matches the authoritative file, and independently re-ran the C7 prefix proof and the case-(d) citation before writing them. The worker raised five corrections against the advisor's briefs across those rounds and every one was right: the unsourced quote, the stale bullet, the gitignored artifacts that a plain git add would have silently dropped, the plus-one-second figure that was plus-zero for two runs, and the label-keyed account of the third recurrence. It also found nine citation-drift errors where the advisor had flagged one. In R6 it caught four statements elsewhere in evidence.md that still asserted the pre-amendment state and would have contradicted the new section, an R4 verdict cell that contradicted the new overall-state line, and a C6 citation the advisor gave as a mid-sentence line number rather than the whole bullet. It also identified the single prd.md criterion SA-1 makes inaccurate and annotated it inline rather than editing the approved plan's text."
+      "usage": "242k subagent tokens, 99 tool uses across seven rounds (provider-reported)",
+      "summary": "Seven rounds, one continuing worker throughout, every round routed by native continuation with no duplicate ever dispatched. R1 recorded the experiment and the six audit documents and rewrote the D4 section on the measurement. R2 fixed two defects it raised against its own brief. R3 disclosed the fabricated id separately from the real-but-untracked one, corrected the mechanism description that had flattered the artifacts, and added three further runs. R4 recorded the R4 reviewer's findings, corrected two provenance stamps that postdated their own commit, and disclosed the SKILL.md resume/5d contradiction without fixing it. R5 corrected the third-recurrence wording after the advisor's own account of it proved imprecise. R6 recorded operator scope amendment SA-1 in evidence.md and prd.md, took the boundary from prd.json rather than from the advisor's message so the prose matches the authoritative file, and independently re-ran the C7 prefix proof and the case-(d) citation before writing them. The worker raised five corrections against the advisor's briefs across those rounds and every one was right: the unsourced quote, the stale bullet, the gitignored artifacts that a plain git add would have silently dropped, the plus-one-second figure that was plus-zero for two runs, and the label-keyed account of the third recurrence. It also found nine citation-drift errors where the advisor had flagged one. In R6 it caught four statements elsewhere in evidence.md that still asserted the pre-amendment state and would have contradicted the new section, an R4 verdict cell that contradicted the new overall-state line, and a C6 citation the advisor gave as a mid-sentence line number rather than the whole bullet. It also identified the single prd.md criterion SA-1 makes inaccurate and annotated it inline rather than editing the approved plan's text. R7 withdrew the two overstated claims the amendment reviewer defeated, corrected the experiment README where it denied a boundary its own artifacts show the session citing, and widened the provenance-stamp disclosure to the ledger. It found three further places carrying the same conflation and a leftover self-contradiction in the R4 cell, all outside the briefed list."
     },
     {
       "ownedWritePaths": [],
@@ -316,6 +316,99 @@
       ],
       "usage": "198k subagent tokens, 52 tool uses (provider-reported)",
       "summary": "Verdict DRAFT-BLOCKED, all four blocking findings in the record layer rather than the code; the implementation itself it could not fault. It ran the pattern page's own reproduction recipe against the COMMITTED tree and got two hits, not zero: T5 accepted with no ACCEPT line and no graph entry, and T3 absent from every delegation record despite authoring the gate-5 input. It built its own injection harness in scratch and independently confirmed the probe pins are real, reproduced all three disclosed paraphrase blind spots verbatim, and verified the content-head rule holds strictly at the true current head. On the interpretive question the advisor declined to settle alone, it read the plan against the advisor's interest and still reached BLOCKED."
+    },
+    {
+      "executionDirectory": "/home/sandbox/harness/.worktrees/skill/1003-delegate-follow-up",
+      "requestedModelReasoning": "opus / effort inherited (advisor judgment, recorded before dispatch)",
+      "observedSettingsProvenance": "requested opus. Observed model: unknown - not self-reported. Observed effort: inherited session level, unobserved.",
+      "acceptanceOwner": "active advisor; a worker never accepts its own result",
+      "maxDepth": 1,
+      "id": "T8",
+      "title": "Fresh independent review of the SA-1 amendment and the US-003 flip",
+      "description": "Treat US-003 passes=true as the weak point and try to prove it was flipped too easily. Check the amendment is applied strictly to its stated boundary, re-verify every remaining criterion independently, confirm nothing was rewritten as a prior pass, reconcile the ledger at the committed revision keyed on worker ids, and read the implementation rather than the prose about it.",
+      "dependsOn": [
+        "T4"
+      ],
+      "complexity": "medium-high - adversarial review of a gate flip the advisor has an interest in",
+      "selectionReason": "The advisor benefits from this flip standing, so the check belongs to a fresh reader with no stake; hardest supported non-Sonnet model. Never Sonnet, never max.",
+      "readScope": "the complete diff, the approved plan, prd.md, prd.json, all task records, xsession-experiment/, audit-runs/, the audit driver, git and gh read-only",
+      "ownedWritePaths": [],
+      "exclusions": [
+        "all writes to the worktree",
+        "dispatch",
+        "implementation",
+        "session steering",
+        "the deferred register"
+      ],
+      "worktreeIsolation": "same worktree, read-only brief; scratch copies permitted for injection testing",
+      "workerType": "general-purpose (read-only brief), fresh, no prior context on this work",
+      "continuationMethod": "checkpoint-and-rebrief",
+      "searchOutputLimits": "the diff against the approved base, the plan, the task records, and scratch copies for injection tests",
+      "stoppingCondition": "a verdict on whether US-003 passes=true is honest under SA-1, with findings separated blocking from non-blocking",
+      "deliverable": "verdict, findings by severity, per-criterion verification, and what it checked and could not fault",
+      "verification": "advisor re-checks each finding against the source before routing it",
+      "evidenceDestinations": "evidence.md, prd.json, progress.txt",
+      "coveredDoDIds": [
+        "D4",
+        "D6",
+        "R2",
+        "R4",
+        "SA-1"
+      ],
+      "failureRepairRoute": "record findings to T4, implementation findings to T7",
+      "nativeWorkerId": "ac8632ed54cd27ed7",
+      "status": "completed",
+      "artifactReferences": [
+        "3 blocking (B1 case-(d) conflation, B2 README contradicts its own artifacts, B3 stale-completed contract shipped unpinned), 5 non-blocking",
+        "verdict: the flip is defensible and correctly bounded; two claims added in the flip commit do not survive"
+      ],
+      "usage": "197k subagent tokens, 49 tool uses (provider-reported)",
+      "summary": "Confirmed the advisor's own stated suspicion. B1: the claimed live observation for case (d) was the deferred unavailable-handle condition relabelled as the unknown-status condition, and its fail-closed half was confounded because the experiment's brief independently forbade dispatch and writes - drawing a strengthened pass out of the very measurement that justifies the deferral. B2: the experiment README denied that the brief imposed a boundary its own artifacts show the session citing. B3: deleting the shipped stale-completed contract left both probes green, so US-005's guarantee was false as shipped. It verified the amendment diff touches only US-003 and scopeAmendments, found no fourth ledger recurrence keyed on worker ids at the committed revision, confirmed the content-head rule holds, verified all eleven audit artifacts, and injection-tested the probes itself."
+    },
+    {
+      "executionDirectory": "/home/sandbox/harness/.worktrees/skill/1003-delegate-follow-up",
+      "requestedModelReasoning": "opus / effort inherited (advisor judgment, recorded before dispatch)",
+      "observedSettingsProvenance": "requested opus. Observed model: unknown - not self-reported. Observed effort: inherited session level, unobserved.",
+      "acceptanceOwner": "active advisor; a worker never accepts its own result",
+      "maxDepth": 1,
+      "id": "T7",
+      "title": "Pin the stale-completed resume contract that shipped unpinned",
+      "description": "Reproduce the gap independently, then add the minimum probe check that closes it, fault-injection tested in both directions.",
+      "dependsOn": [
+        "T8"
+      ],
+      "complexity": "small-medium - one file, one assertion list, but the both-direction injection matrix is the substance",
+      "selectionReason": "A contract-semantics choice about which literal to pin; hardest supported non-Sonnet model. Never Sonnet, never max.",
+      "readScope": ".oh/evals/probes/advisor-execution-contract.sh, .oh/skills/delegate/SKILL.md (read-only), the approved plan's gap 3",
+      "ownedWritePaths": [
+        ".oh/evals/probes/advisor-execution-contract.sh"
+      ],
+      "exclusions": [
+        ".oh/skills/** including SKILL.md - the contract text is not to be edited, only the probe that pins it",
+        ".oh/evals/probes/delegate-worker-boundary.sh",
+        ".oh/tasks/**, .oh/knowledge/**, root instructions, every provider mirror",
+        "git commit, git push, gh, nested Agent dispatch"
+      ],
+      "worktreeIsolation": "same worktree for the fix; all injections in a scratch copy so the worktree is never left mutated",
+      "workerType": "general-purpose (provider built-in, write-capable)",
+      "continuationMethod": "native continuation via SendMessage to the same worker",
+      "searchOutputLimits": "the one probe file, the bullet it must pin, and a scratch copy of the tree for injections",
+      "stoppingCondition": "the gap reproduces, the added check closes it, both-direction injection passes, and the full local check list exits 0",
+      "deliverable": "the diff, the chosen literals with reasoning, the full injection matrix with real exit codes, and the check list",
+      "verification": "advisor re-runs the check list and the reproduction before acceptance",
+      "evidenceDestinations": "evidence.md, prd.json US-005 notes, progress.txt",
+      "coveredDoDIds": [
+        "D4",
+        "D6"
+      ],
+      "failureRepairRoute": "failed checks return to T7",
+      "nativeWorkerId": "a8e3020b5f489db59",
+      "status": "completed",
+      "artifactReferences": [
+        ".oh/evals/probes/advisor-execution-contract.sh +2"
+      ],
+      "usage": "70k subagent tokens, 14 tool uses (provider-reported)",
+      "summary": "Reproduced the gap before fixing it, as briefed: deleting the whole bullet left both probes at exit 0. Added TWO literals rather than one - the required action and the required consequence - because a variant with a token re-read sentence and no demotion passes the first and is caught only by the second. Injection matrix run in both directions: four must-fail variants exit 1 naming the missing literal, two full rewordings and the unmodified tree exit 0. It also corrected the advisor's brief: the need-list is fed a whitespace-flattened document, so a literal spanning a line break matches fine and the check is more rewrap-stable than the advisor assumed. Noted that the probe's own desc header already claimed to check stale completion evidence, describing a check that did not exist until this repair."
     }
   ],
   "waves": [
@@ -359,6 +452,15 @@
       ],
       "parallelism": 1,
       "reason": "provenance review first, then final content review over the corrected record"
+    },
+    {
+      "wave": 5,
+      "tasks": [
+        "T8",
+        "T7"
+      ],
+      "parallelism": 1,
+      "reason": "amendment review first; the probe repair is a finding from it and depends on it"
     }
   ],
   "reconciliation": {

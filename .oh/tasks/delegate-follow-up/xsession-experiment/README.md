@@ -54,8 +54,21 @@ supported native mechanism, and never spawn a duplicate for it."*
 
 It loaded `SendMessage`'s schema and then chose not to call it, reasoning that a send
 to an agent *"resumes it from its transcript"*, which could produce a write to X1's
-owned path and so conflict with the no-second-writer boundary. That was the second
-session's own decision. The brief did not instruct it.
+owned path and so *"conflicts with the hard boundary against a second writer, so I
+declined to use it"* (`session2-report.md:44-46`).
+
+**That boundary came from the brief.** `session2-prompt.txt:10` instructs *"Do NOT
+dispatch, spawn, or launch any agent, subagent, worker, or process to do X1's work.
+Under no circumstances create a second writer for X1."* The session applied a
+constraint the experiment gave it; it did not arrive at the restraint independently.
+An earlier version of this file said the brief did not instruct it. That was wrong.
+
+**This is a limit of the experiment's design, and it matters.** `SendMessage` addressed
+to a worker is the one cross-session surface the experiment does not cover, and the
+brief is why. So *"measured unavailable on this provider"* rests on `ListAgents` and
+`TaskOutput`, **not** on a `SendMessage` attempt. `ListAgents` showed no addressable
+worker to send to in any case, but that is a separate observation, not a substitute for
+the untried one.
 
 ## Its conclusion
 
@@ -90,8 +103,15 @@ artifact: the runtime persisted no readable file of a worker's returned report.
 A genuine cross-session attempt produced a genuine *unavailable/unknown* result. The
 persisted `nativeWorkerId` does not resolve from another session by any mechanism
 available: it is not a task id `TaskOutput` recognises, and it is not an addressable
-name in `ListAgents`. The procedure's ambiguity branch was reached and behaved
-correctly — it blocked writes and authorised no second writer.
+name in `ListAgents`. No second writer was created and nothing was written to the
+protected path.
+
+**That last part cannot be credited to the procedure's ambiguity clause.** The brief
+forbade dispatch and every write outside the report file (`session2-prompt.txt:10-16`),
+so the run cannot discriminate compliance with the clause from compliance with the
+brief. `subagent_stats {"spawned":0}` is consistent with either. The experiment
+establishes that the handle does not resolve; it does not establish that the clause
+blocks writes.
 
 **This is not a demonstration that reconnection works.** Fail-closed safety under an
 unavailable handle is not a successful reconnect. This document must never be read as
@@ -99,10 +119,12 @@ claiming otherwise.
 
 ## Limits
 
-One experiment, no retries. The second session did not exercise `SendMessage`, so the
-only untested cross-session surface is a send addressed to a peer *session* — not to a
-worker — and `ListAgents` showed no addressable worker to send to in any case. The
-result generalises to this provider and this runtime only.
+One experiment, no retries. The second session did not exercise `SendMessage` at all,
+and the brief is why — its no-second-writer boundary is what the session cited when it
+declined. So `SendMessage` is untested cross-session in both forms: addressed to a
+worker, and addressed to a peer session. `ListAgents` showed no addressable worker to
+send to in any case, but that does not make the surface tested. The result generalises
+to this provider and this runtime only.
 
 ## Files
 
