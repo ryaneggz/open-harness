@@ -160,19 +160,10 @@ delegate_mermaid="$(awk '/^```mermaid$/{f=1; next} f && /^```$/{f=0} f{print}' "
 if [[ -z "${delegate_mermaid//[[:space:]]/}" ]]; then
   problems+=("/delegate has no Decision Flow mermaid diagram")
 else
-  dry_nodes="$(grep -cF -- '--dry-run?' <<<"$delegate_mermaid" || true)"
-  ledger_nodes="$(grep -cF 'Write run ledger' <<<"$delegate_mermaid" || true)"
-  if (( dry_nodes == 0 || ledger_nodes == 0 )); then
-    problems+=("the Decision Flow diagram lost its --dry-run branch or its run-ledger write")
-  else
-    edges=()
-    grep -qF 'D --> F{--dry-run?}' <<<"$delegate_mermaid" \
-      || edges+=("the graph edge that reaches --dry-run straight from the dependency graph")
-    grep -qF 'F -->|No| E["Step 4: Write run ledger' <<<"$delegate_mermaid" \
-      || edges+=("the run-ledger write on the --dry-run false edge")
-    (( ${#edges[@]} == 0 )) \
-      || problems+=("the Decision Flow diagram writes the run ledger before it branches on --dry-run; missing: ${edges[*]}")
-  fi
+  grep -qF 'D --> F{--dry-run?}' <<<"$delegate_mermaid" \
+    || problems+=("the Decision Flow diagram is missing the dependency-graph edge to --dry-run")
+  grep -qF 'F -->|No| E["Step 4: Write run ledger' <<<"$delegate_mermaid" \
+    || problems+=("the Decision Flow diagram is missing the --dry-run false edge to the run-ledger write")
   if grep -qiE 'MEM_|Memory Protocol' <<<"$delegate_mermaid"; then
     problems+=("the Decision Flow diagram still routes to the undefined Memory Protocol")
   fi

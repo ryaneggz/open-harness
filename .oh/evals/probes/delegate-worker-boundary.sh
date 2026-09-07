@@ -115,9 +115,6 @@ grep -qiF 'accepted evidence' <<<"$eligibility"                    || missing+=(
 grep -qiF 'required artifact revision' <<<"$eligibility"           || missing+=("current dependency evidence")
 grep -qiF 'established provenance' <<<"$eligibility"               || missing+=("established dependency provenance")
 grep -qiF 'required model, control, and capability' <<<"$eligibility" || missing+=("required controls")
-grep -qiF 'unresolved native worker status' <<<"$eligibility"      || missing+=("unresolved native status")
-grep -qiF 'artifact provenance' <<<"$eligibility"                  || missing+=("unresolved artifact provenance")
-grep -qiF 'owned-path ambiguity' <<<"$eligibility"                 || missing+=("unresolved path ownership")
 grep -qiF 'no unresolved native worker status, artifact provenance, or owned-path ambiguity' <<<"$eligibility" \
   || missing+=("unresolved status and provenance must be absent")
 grep -qF 'record `running`' <<<"$eligibility"                      || missing+=("running recorded before dispatch")
