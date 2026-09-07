@@ -3,7 +3,7 @@
 - **PR**: #1004 (mifunedev/openharness, base `development`) · **Branch**: `skill/1003-delegate-follow-up`
 - **Scope**: one criterion — D4 cross-session reconnection — is **deferred under operator scope amendment SA-1**. It was measured unavailable on this provider and is **deferred, never satisfied**. See *D4 cross-session reconnect*.
 - **State**: **READY FOR REVIEW.** The PR will be undrafted on this evidence.
-- **Audit run**: `audit-20260907T222823Z-3893530` classified `d8752de4` -> `AUDIT-PASS` (state `complete`), all five gates. PR audit `audit-20260907T222832Z-3893813` classified `d8752de4` -> `PR-AUDIT-PROMOTABLE`. All fourteen runs, including all four `AUDIT-FAIL`s, are listed under *Audit history*, and the runs above necessarily name the head before the commit that records them — explained there.
+- **Audit run**: `audit-20260907T223520Z-3901127` classified `800a60ad` -> `AUDIT-PASS` (state `complete`), all five gates. PR audit `audit-20260907T223521Z-3901127b` classified `800a60ad` -> `PR-AUDIT-PROMOTABLE`. All sixteen runs against this branch, including all four `AUDIT-FAIL`s, are listed under *Audit history*.
 - **Retained history**: the PR was **DRAFT-BLOCKED** before SA-1, and `audit-20260907T214546Z-3826355` failed gate 1 closed at `040c3ca1` while US-003 stood `passes: false` on the blocked criterion. **That state and every `AUDIT-FAIL` are retained as historical evidence; SA-1 came afterwards and turns none of them into a prior pass.**
 - **Approved baseline**: `56ab2bab894e43073bf79edc43f70fe3ddd6d6de` · **Last non-record commit**: `6324e09f` (the head the gate records key to)
 - **Predecessor**: #988 / PR #991, merged at `e90bbed8`
@@ -98,6 +98,8 @@ classified. **No run id appears anywhere in this document that did not actually 
 | `audit-20260907T222543Z-3890845` | implementation | `b455251a` | **`AUDIT-FAIL`** — gate 5, and **the message misdescribes the cause**. See below. |
 | `audit-20260907T222823Z-3893530` | implementation | `d8752de4` | `AUDIT-PASS` — all five gates: gate 1 PASS (`task-graph: 7/7 stories pass`), gate 2 PASS (fresh `eval-result.json` keyed to `9962d68b`, `runnerExit=0`, reused for this head under the content-head rule), gate 3 PASS, gate 4 not applicable, gate 5 PASS with 8 findings, none blocking open. **The run this document reports** |
 | `audit-20260907T222832Z-3893813` | pr | `d8752de4` | `PR-AUDIT-PROMOTABLE` — `ci: PASS`, `MERGEABLE`, `CLEAN`, `promotable: true`, `evidenceComplete: true`. **The run that gates the undraft** |
+| `audit-20260907T223520Z-3901127` | implementation | `800a60ad` | `AUDIT-PASS` — **the run that reports this work**, at the head the PR was undrafted on. All five gates. |
+| `audit-20260907T223521Z-3901127b` | pr | `800a60ad` | `PR-AUDIT-PROMOTABLE` — **the run that gates the undraft.** |
 
 **The most recent audited head named above is `d8752de4`.** Where the PR head has moved past a run's
 head, the content-head rule (checked under *Where it diverged from the plan*) is what carries gates 2
@@ -176,7 +178,7 @@ AUDIT-EVIDENCE: AUDIT-PASS
 `194250Z` run as its headline verdict long after three non-record commits had landed past
 `8ba02851`, and the later runs appeared in no tracked file at all — so the PR did not carry its own
 coverage. A fresh independent reviewer caught it. The whole sequence is recorded here so a reader can
-see which head each verdict actually describes, rather than having to trust one summary line. All fourteen
+see which head each verdict actually describes, rather than having to trust one summary line. All sixteen
 terminal evidence documents are now committed under `audit-runs/`, one file per run. That makes the
 ids openable, but it is not what makes them trustworthy: the artifacts are caller-written and unsigned,
 so what actually rescues these ids is the external corroboration — the quoted gate output below, the
@@ -198,7 +200,7 @@ audit citations, and earlier prose blurred them in a way that softened the worse
    `audit-run.sh` persists no artifact.
 
 **What those artifacts do and do not prove.** `audit-run.sh` creates its evidence root with
-`mktemp -d` and deletes it on the EXIT trap, so a normal run persists no artifact at all. These fourteen
+`mktemp -d` and deletes it on the EXIT trap, so a normal run persists no artifact at all. These sixteen
 survive only because `route-driver.sh` was invoked directly. The driver never reads
 `AUDIT_EVIDENCE_PATH` itself — `route-driver.sh:18` calls `audit-evidence.sh complete "$1"`, and
 `audit-evidence.sh:7` is what requires the path. The consequence matters more than the mechanism:
@@ -209,6 +211,14 @@ the run id is caller-chosen, the JSON is unsigned and sits at a caller-chosen pa
 never ran — **no exit status was captured for any of these runs.** Each file records the run's id,
 target, state and verdict. It does **not** record the commit the run classified; the *Head
 classified* column above is this document's claim, not the artifact's.
+
+**The last two runs, and where the chain stops.** `audit-20260907T223520Z-3901127` and
+`audit-20260907T223521Z-3901127b` classified `800a60ad`, and their artifacts are committed here like
+every other run. The commit that adds those two artifacts is the last one: it changes only files under
+`.oh/tasks/delegate-follow-up/`, so the content-head rule covers gates 2 and 5 across it, and gate 3
+classified the live pull request rather than a tree. No further audit was run, because each one would
+produce artifacts that need recording, and recording them would move the head again. The chain is cut
+here deliberately and the cut is stated rather than left for a reader to notice.
 
 ## Proof by gate
 
@@ -500,7 +510,7 @@ they were recorded.
 |---|---|---|
 | **R1** real recovery evidence | `xsession-experiment/` — the ledger and procedure the second session was given, its brief, its own report, its raw stream log, and the original worker's heartbeat; summarised in *Cross-session recovery experiment — R1*. The worker was independently confirmed active (heartbeat on disk, `ListAgents` in the dispatching session, `ps` run by the second session). The attempt produced a genuine unavailable/unknown result. No duplicate was dispatched (`subagent_stats` `"spawned":0`) and the protected path's sha256 was unchanged until the original worker wrote it. | **Satisfied** |
 | **R2** honest D4 disposition | *D4 cross-session reconnect — DEFERRED under operator scope amendment SA-1*, rewritten on the experiment and then on the amendment. Fail-closed behaviour is named as fail-closed and never as reconnection; the capability boundary is stated exactly; SA-1's four "what it is not" points are carried verbatim. | **Satisfied under SA-1 — not satisfied on the merits.** The cross-session branch was measured unavailable and is deferred by operator scope amendment, never met. Earlier in this document's history the R4 reviewer judged the D4 prose exemplary but found the disposition undermined by `prd.json`, whose US-003 read `passes: true` while the prose said BLOCKED. That was corrected to `passes: false`, gate 1 failed closed at `audit-20260907T214546Z-3826355`, and the PR was DRAFT-BLOCKED until the operator granted SA-1. All of that is retained as evidence. |
-| **R3** audit provenance | `audit-runs/` — the fourteen terminal evidence documents, each checked to carry a `runId` equal to its filename and `state: complete`; *Audit history* maps each id to the head this document claims it classified, discloses that the artifact does not itself record that head, and records the fabricated-id incident and the real-but-untracked incident as two separate corrected failures. | **Satisfied with a correction.** A fresh independent reviewer opened the artifacts and confirmed the coverage claim holds: every cited id names a run that executed, every verdict matches its artifact, and every *Head classified* value is corroborated by commit-time interleaving and monotonic PID continuity rather than merely plausible. It found no run against the wrong PR and no softened `AUDIT-FAIL`. It also raised one blocking finding — this document asserted a fabricated-id disclosure it did not actually contain — which is why the disclosure now exists. The criterion is met because that finding was made and fixed, not in spite of it. |
+| **R3** audit provenance | `audit-runs/` — the sixteen terminal evidence documents, each checked to carry a `runId` equal to its filename and `state: complete`; *Audit history* maps each id to the head this document claims it classified, discloses that the artifact does not itself record that head, and records the fabricated-id incident and the real-but-untracked incident as two separate corrected failures. | **Satisfied with a correction.** A fresh independent reviewer opened the artifacts and confirmed the coverage claim holds: every cited id names a run that executed, every verdict matches its artifact, and every *Head classified* value is corroborated by commit-time interleaving and monotonic PID continuity rather than merely plausible. It found no run against the wrong PR and no softened `AUDIT-FAIL`. It also raised one blocking finding — this document asserted a fabricated-id disclosure it did not actually contain — which is why the disclosure now exists. The criterion is met because that finding was made and fixed, not in spite of it. |
 | **R4** final content and state | *What was built*, *Where it diverged from the plan, and why*, *What remains unverified*, *Proof by gate*, *Observed output*, *Acceptance criteria → proof*, *Deferred register*, and this table; `delegate-graph.json`, `delegate-log.txt` and `progress.txt` now carry the reconciled worker state, including all three stale-ledger recurrences and the separately unrecorded T3. | **Satisfied, after its four blocking findings were fixed.** The reviewer's verdict at the time was **DRAFT-BLOCKED**, and that verdict stands as history. It returned four blocking findings, **all in the record layer — it found no fault in the implementation itself.** It independently confirmed the probe pins are real using its own injection harness, reproduced all three disclosed paraphrase blind spots verbatim, confirmed the content-head rule holds strictly at the true head, and confirmed no document describes the fail-closed cross-session result as a reconnection. The blocking findings were: two remediation claims the record falsified (the recurrence count and the "every commit" recipe claim), a stale head written by the commit that made it stale, the `prd.json` / `prd.md` divergence, and two provenance stamps postdating their own commits. All are now disclosed above. The criterion is met because those findings were made and fixed, not in spite of them. |
 
 R3 and R4 are for a fresh independent reviewer to decide. This document does not assign them a

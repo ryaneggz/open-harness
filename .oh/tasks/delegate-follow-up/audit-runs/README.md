@@ -37,12 +37,14 @@ history*.
 
 `audit-20260907T222823Z-3893530` is the run that exercised all five gates and passed
 them, and `audit-20260907T222832Z-3893813` is the PR run beside it.
+| `audit-20260907T223520Z-3901127` | implementation | `AUDIT-PASS` | 2026-09-07T22:35:20Z |
+| `audit-20260907T223521Z-3901127b` | pr | `PR-AUDIT-PROMOTABLE` | 2026-09-07T22:35:21Z |
 
 ## Why these exist at all, and what that costs
 
 `.oh/skills/audit/scripts/audit-run.sh` creates its evidence root with `mktemp -d` and
 removes it on the EXIT trap (`cleanup(){ rm -rf "$tmp_root"; }`). A normal `/audit` run
-therefore persists no artifact of its own. These fourteen survive only because
+therefore persists no artifact of its own. These sixteen survive only because
 `route-driver.sh` was invoked directly.
 
 The driver does not itself read `AUDIT_EVIDENCE_PATH`: `route-driver.sh:18` calls
@@ -62,10 +64,10 @@ These are limits of the artifacts, not doubts about the runs.
 - **The byte-for-byte copy claim is no longer independently checkable.** The scratch
   sources these were copied from are gone. The substitute check: regenerate each file
   with the exact `jq -n` filter from `audit-evidence.sh:23-26`, using the values inside
-  the file. All fourteen come out byte-identical, including key order, 2-space indent and
+  the file. All sixteen come out byte-identical, including key order, 2-space indent and
   trailing newline.
 - **Every run's `finishedAt` is its run-id timestamp plus zero or one second.** Eight
-  of the fourteen are +1s; `audit-20260907T211548Z-3789393`,
+  of the sixteen are +1s; `audit-20260907T211548Z-3789393`,
   `audit-20260907T211751Z-3792031` and `audit-20260907T214546Z-3826355` are +0s. An
   elapsed time that short means the
   artifacts alone do not evidence that all five gates executed. What does: the quoted
