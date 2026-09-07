@@ -54,6 +54,8 @@ Schema, frontmatter spec, provenance kinds, and every authoring rule:
 
 | Slug | Title | Tags | Updated |
 | --- | --- | --- | --- |
+| pattern-evals-probe-failure-path-untested | A probe's failure branch is unexecuted code until something injects the fault | [evals, probes, fault-injection, false-pass, exit-code, anchors] | 2026-09-07 |
+| pattern-delegate-ledger-stale-at-acceptance | A run ledger written at dispatch and not updated at acceptance is itself the duplicate-worker hazard | [delegate, resume, ledger, duplicate-worker, acceptance, evidence] | 2026-09-07 |
 | release-versioning | Release Versioning | [release, versioning, semver, calver, github-actions, ghcr, tags, workflow, package-json, agro, npm] | 2026-09-06 |
 | plan-vs-built-reconciliation | Plan-vs-Built Reconciliation | [spec-execute, evidence, merge-gate, comprehension, audit, task-folder, review] | 2026-09-06 |
 | pattern-scripts-sibling-dependency-standalone-copies | A script that gains a sourced sibling breaks every test and probe that copies it alone | [scripts, compose, testing, probes, bundling, registry, boot] | 2026-09-06 |
