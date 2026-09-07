@@ -18,8 +18,8 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Skill 5b/5c/5d + Status field revised; advisor-run injection: old 5d text -> exit 1. D2 runtime row observed in a disposable context: dependent releasable False (returned, unverified) -> False (verification failed, exit 0 but wrong output) -> True (verified acceptance). Repair routed to the same worker by native continuation."
     },
     {
       "id": "US-002",
@@ -29,14 +29,14 @@
         "The core principle at delegate/SKILL.md:19 no longer instructs the advisor to maximize parallelism; dependency order remains absolute",
         "The decomposition rule at :199 no longer prefers more smaller tasks by default; complexity, briefing overhead, shared context, and verification cost decide the boundary, and one continuing bounded worker is a valid answer",
         "Max 5 concurrent agents per wave and the recursion-authorization limits are unchanged",
-        "The dispatch record still requires scope, selection reason, search/output limits, expected evidence, and a stopping condition in the worker brief",
+        "The dispatch record requires scope, selection reason, search/output limits, expected evidence, and a stopping condition in the worker brief; the search/output-limits and stopping-condition fields are ADDED by this change (independent review established they were absent at the base, so the earlier 'still requires' wording was false)",
         "No scheduler, no new machinery, and no unmeasured efficiency or token-savings claim is added",
         "One coupled, one independent, and one mechanical brief are reviewed against the revised skill and recorded in evidence.md",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Core principle and decomposition rule rewritten; Search / output limits and Stopping condition added to the dispatch record (R3). Concurrency and recursion caps pinned. D3 three-brief review performed and recorded, including a finding against the advisor's own briefs."
     },
     {
       "id": "US-003",
@@ -53,8 +53,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Resume rule now covers pending/BLOCKED, FAIL (incomplete scope only), running (reconnect, never duplicate), completed (stale-evidence check) and unknown provenance. Five cases exercised; a real end-to-end resume reconciliation found and fixed defect A-1."
     },
     {
       "id": "US-004",
@@ -69,8 +69,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Memory Protocol references 0; frontmatter trigger no longer fires on /prd or plan creation and resists sibling-command evasion; diagram branches on --dry-run before the ledger write, pinned by literal-edge assertions. Dry-run observed: 0 execution-state files and no dispatch event before or after."
     },
     {
       "id": "US-005",
@@ -85,8 +85,8 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Both probes extended; advisor ran 8 independent injections (all mutated exit 1 / restored exit 0, plus an unmodified control at 0); T1 reports 31 round-1 and 17 repair-round injections with raw output retained; T2 independently confirmed 4. shellcheck absent from the sandbox \u2014 recorded as a gap."
     },
     {
       "id": "US-006",
@@ -102,8 +102,8 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Six named probes plus five more exit 0; link-providers --check 0; eval runner exit 0 on base 56ab2bab (137 PASS/7 SKIPPED/1 RED, retained as a committed artifact) and on the final head (138 PASS/6 SKIPPED/1 RED). No new green->red. Eight merged contracts verified present."
     },
     {
       "id": "US-007",
@@ -118,8 +118,8 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Every retained register row dispositioned in evidence.md; diff touches no deferred surface; historical unknown model/effort observations preserved as unknown."
     }
   ]
 }

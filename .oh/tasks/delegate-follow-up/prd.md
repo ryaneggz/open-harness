@@ -73,8 +73,11 @@ sequential task does not need.
       decide the boundary, and that one continuing bounded worker is a valid answer
 - [ ] Existing concurrency (max 5 per wave) and recursion-authorization limits are
       unchanged
-- [ ] The dispatch record still requires scope, selection reason, search/output limits,
-      expected evidence, and a stopping condition in the worker brief
+- [ ] The dispatch record requires scope, selection reason, search/output limits, expected
+      evidence, and a stopping condition in the worker brief. The search/output-limits and
+      stopping-condition fields are ADDED by this change: independent review established that
+      neither existed in the dispatch-record table at the approved base, so the earlier
+      "still requires" wording was false
 - [ ] No scheduler, no new machinery, and no unmeasured efficiency or token-savings claim
       is added
 - [ ] One coupled, one independent, and one mechanical brief are reviewed against the
