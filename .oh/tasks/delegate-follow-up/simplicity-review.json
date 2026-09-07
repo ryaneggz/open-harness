@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "commit": "9962d68bd18f7d61f6e1e5dcea63b8ba342a7807",
   "reviewer": "Fresh independent simplicity reviewer with no prior context on this task or branch, running as Claude (model id claude-fable-5-1); read-only review of the implementation diff against 56ab2bab. Dispatched fresh at this head because a probe changed in this commit, so the record keyed to 6324e09f no longer described the head content and was not reused.",
   "reviewedAt": "2026-09-07T22:20:09Z",
