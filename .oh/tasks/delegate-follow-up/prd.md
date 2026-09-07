@@ -108,6 +108,42 @@ accept a completion label whose evidence has gone stale.
       summarised in `evidence.md`. Each case states whether it is a **live native
       observation** or a **fixture**, and the cross-session reconnect branch is recorded
       **BLOCKED on a missing native capability** rather than silently satisfied
+      *(amended by SA-1 — see the note below; the branch is now recorded* **DEFERRED** *rather
+      than* **BLOCKED**, *and is still not recorded as satisfied)*
+
+> **AMENDMENT NOTE — operator scope amendment SA-1 (2026-09-07).**
+>
+> This document is the approved plan **as written**, and its criteria above are left
+> unticked and undeleted on purpose. `prd.json` carries the authoritative completion
+> state; where the two differ, `prd.json` decides.
+>
+> **Deferred, and only this:** D4 cross-session reconnection on the tested provider —
+> that a still-active worker can be reconnected to or observed *across sessions*, from
+> persisted state alone, through a supported native mechanism.
+>
+> **Still required, and verified:** within-session recovery (reconnect to or observe a
+> still-active worker without spawning a duplicate); and cross-session **fail-closed**
+> behaviour (no duplicate writer, no unauthorized writes when the handle cannot be
+> resolved).
+>
+> **What SA-1 is not:** not evidence that cross-session reconnection works; not a blanket
+> waiver of US-003 or D4; not a waiver of any other criterion; not authorization for new
+> infrastructure or a repeat experiment.
+>
+> **Retained as:** a deferred provider-capability item. Closing it needs a provider surface
+> exposing a durable worker handle that survives the dispatching session.
+>
+> **Two criteria above are affected.** The second criterion — *"A worker still active is
+> reconnected to or observed through the supported native mechanism"* — did not distinguish
+> within-session from cross-session recovery. `prd.json` now splits it: the within-session
+> half is verified live; the cross-session half is marked in place with the prefix
+> `[DEFERRED BY OPERATOR SCOPE AMENDMENT SA-1 - NOT SATISFIED, NOT CLAIMED]`. The final
+> criterion's requirement that the branch be recorded **BLOCKED** was accurate when written
+> and was met — the branch stood BLOCKED, audit `audit-20260907T214546Z-3826355` failed gate
+> 1 closed, and the PR was DRAFT-BLOCKED. SA-1 came afterwards and changes that record from
+> BLOCKED to DEFERRED. **Neither state is "satisfied", and none of that history is rewritten
+> as a prior pass.** The full boundary and the measurement it rests on are in
+> `evidence.md` under *D4 cross-session reconnect*.
 
 ### US-004: Remove the undefined Memory Protocol and the accidental execution trigger
 

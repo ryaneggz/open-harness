@@ -45,7 +45,7 @@
       "acceptanceCriteria": [
         "Step 4's resume rule covers running: inspect the persisted native worker reference and current artifacts before any retry",
         "WITHIN A SESSION: a worker still active is reconnected to or observed through the supported native mechanism; spawning a duplicate for it is forbidden",
-        "ACROSS SESSIONS: a worker still active is reconnected to or observed through the supported native mechanism from persisted state alone; spawning a duplicate for it is forbidden",
+        "[DEFERRED BY OPERATOR SCOPE AMENDMENT SA-1 - NOT SATISFIED, NOT CLAIMED] ACROSS SESSIONS: a worker still active is reconnected to or observed through the supported native mechanism from persisted state alone; spawning a duplicate for it is forbidden",
         "A worker that ended has its artifacts validated before the advisor decides to accept, resume, or retry only the incomplete scope",
         "Unknown native status or unknown artifact provenance is reported as ambiguity and blocks duplicate writes",
         "A saved completed label whose evidence no longer describes the required artifact revision is not trusted",
@@ -54,11 +54,30 @@
         "Typecheck passes (satisfied by CI's \"Lint, Typecheck, Build & Test\" check, SUCCESS on the final pushed head; the diff touches no TypeScript. Cited after independent review found the criterion marked passing but uncited)"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": "Resume rule now covers pending/BLOCKED, FAIL (incomplete scope only), running (reconnect, never duplicate), completed (stale-evidence check) and unknown provenance. Five cases exercised; a real end-to-end resume reconciliation found and fixed defect A-1. | CORRECTION after independent review B-4: the earlier case-(a) record described an ENDED worker awaiting verification, not a reconnect to a still-active one. The still-active branch was then exercised properly and is live within a session (SendMessage to a genuinely running worker returned \"Message queued for delivery ... at its next tool round\", distinct from \"Resuming agent\", with no duplicate dispatched). Case (d) unknown-status remains a fixture. | passes SET TO FALSE after independent review R4 finding B-3. The cross-session criterion is BLOCKED on a missing native capability, measured by the operator-authorized experiment recorded in xsession-experiment/: a separate session given only the persisted ledger could not resolve the persisted nativeWorkerId by any available mechanism. Until this round the story carried passes=true with a note saying the branch was blocked. That boolean is what audit gate 1 reads, so the prose said blocked while the machine-readable state said passed, and three AUDIT-PASS verdicts rested on it. It was the one place in this PR where the tension was resolved in the PR's own favour, and it is corrected here rather than argued. Gate 1 now fails closed, which is the honest state while the criterion is blocked. Setting this back to true requires either a native cross-session worker handle or an explicit operator waiver or deferral for this sub-branch; the advisor will not flip it on its own judgment.",
-      "blockedCriteria": [
-        "ACROSS SESSIONS: a worker still active is reconnected to or observed through the supported native mechanism from persisted state alone; spawning a duplicate for it is forbidden"
-      ]
+      "passes": true,
+      "notes": "Resume rule covers pending/BLOCKED, FAIL (incomplete scope only), running (reconnect, never duplicate), completed (stale-evidence check) and unknown provenance. | CORRECTION after independent review B-4: the earlier case-(a) record described an ENDED worker awaiting verification, not a reconnect to a still-active one; the still-active branch was then exercised properly and is live within a session. | HISTORY, PRESERVED DELIBERATELY: this story was set passes=false after independent review R4 finding B-3, because it had carried passes=true while its own note said the cross-session criterion was BLOCKED - and that boolean is the single input audit gate 1 reads. Gate 1 then failed closed, correctly, at audit-20260907T214546Z-3826355. That failure and the prior blocked state are historical evidence and are NOT rewritten as prior passes. | passes RESTORED TO TRUE under operator scope amendment SA-1, which defers the cross-session reconnection criterion ONLY. It is deferred, not satisfied: the authorized experiment measured it unavailable on this provider. Every remaining criterion was re-verified against its source before this flip - see remainingCriteriaVerification - rather than inherited from an earlier verdict. Two came out stronger than before: C7 is now proven by prefix preservation across five committed revisions, and case (d) unknown-status gained a live cross-session observation to sit beside its disclosed fixture.",
+      "deferredCriteria": [
+        {
+          "criterion": "ACROSS SESSIONS: a worker still active is reconnected to or observed through the supported native mechanism from persisted state alone; spawning a duplicate for it is forbidden",
+          "amendment": "SA-1",
+          "status": "deferred by operator scope amendment; measured unavailable on this provider, never satisfied",
+          "evidence": ".oh/tasks/delegate-follow-up/xsession-experiment/ - one authorized experiment returned a genuine unavailable result"
+        }
+      ],
+      "remainingCriteriaVerification": {
+        "verifiedAt": "6a9b6c07f6649ad371816c1a3607b5098df84ed8",
+        "method": "the advisor re-ran each check against the source before flipping this story, rather than inheriting an earlier verdict",
+        "results": [
+          "C1 resume rule covers running: SKILL.md:265 carries the literal 'inspect the persisted native worker reference and the current artifacts'.",
+          "C2 WITHIN A SESSION reconnect: live. SendMessage to a genuinely running worker returned 'Message queued for delivery ... at its next tool round', distinct from the 'Resuming agent' returned for an ended worker; ListAgents showed exactly one subagent throughout and no duplicate was dispatched.",
+          "C4 ended worker artifacts validated before acceptance: exercised live in the D2 acceptance-ordering run, where a worker returned sum.sh printing 9 with exit 0 and the dependent stayed unreleased until the repair was accepted.",
+          "C5 unknown status reported as ambiguity and blocks duplicate writes: SKILL.md:275. Now observed LIVE ACROSS A SESSION BOUNDARY by the authorized experiment - the second session classified the status unknown, applied the clause, dispatched nothing and wrote nothing to the owned path.",
+          "C6 stale completed label not trusted: SKILL.md:272. Found live twice against this task's own ledger.",
+          "C7 resume path appends and never truncates: SKILL.md:278, and proven against the committed record rather than asserted - delegate-log.txt at 8ba02851, b61dad88, 79289327, 040c3ca1 and 6a9b6c07 is a strict PREFIX of each successor, verified with head -n | cmp.",
+          "C8 five cases exercised and recorded: (a) active reconnect live, (b) ended-with-valid-artifacts live, (c) interrupted-incomplete live, (e) stale-evidence live. (d) unknown-status was a disclosed FIXTURE and now ALSO has a live observation: the second session's own committed report classifies the worker status as 'unknown', a genuinely indeterminate status that could not be manufactured in-session. The fixture record is retained as history rather than replaced.",
+          "C9 typecheck: CI 'Lint, Typecheck, Build & Test' PASS on the final pushed head; the diff touches no TypeScript."
+        ]
+      }
     },
     {
       "id": "US-004",
@@ -126,5 +145,27 @@
       "notes": "Every retained register row dispositioned in evidence.md; diff touches no deferred surface; historical unknown model/effort observations preserved as unknown."
     }
   ],
-  "completionAuthority": "prd.json is the authoritative completion state per .oh/skills/spec/SKILL.md (\"Completion is structured state... There is no prose sentinel\"). The unticked checkboxes in prd.md are the approved plan as written and are deliberately not edited to mark completion; this file is the record that decides it."
+  "completionAuthority": "prd.json is the authoritative completion state per .oh/skills/spec/SKILL.md (\"Completion is structured state... There is no prose sentinel\"). The unticked checkboxes in prd.md are the approved plan as written and are deliberately not edited to mark completion; this file is the record that decides it.",
+  "scopeAmendments": [
+    {
+      "id": "SA-1",
+      "date": "2026-09-07",
+      "grantedBy": "operator, explicitly, in response to the DRAFT-BLOCKED report at 6a9b6c07",
+      "type": "deferral (scope amendment)",
+      "defers": "D4 cross-session reconnection on the tested provider, and only that",
+      "exactBoundary": [
+        "DEFERRED: that a still-active worker can be reconnected to or observed ACROSS SESSIONS, from persisted state alone, through a supported native mechanism. No durable worker handle survives the dispatching session on this provider.",
+        "STILL REQUIRED AND VERIFIED: within-session recovery - reconnecting to or observing a still-active worker without spawning a duplicate.",
+        "STILL REQUIRED AND VERIFIED: cross-session fail-closed behaviour - no duplicate writer and no unauthorized writes when the handle cannot be resolved."
+      ],
+      "isNot": [
+        "NOT evidence that cross-session reconnection works. The operator stated this explicitly and it is restated here so no reader can mistake the amendment for a result.",
+        "NOT a blanket waiver of D4.",
+        "NOT a waiver of any other criterion.",
+        "NOT authorization for new infrastructure or a repeat experiment."
+      ],
+      "retainedAs": "deferred provider-capability item in the register; closing it requires a provider surface exposing a durable worker handle that survives the dispatching session.",
+      "historyPreserved": "The experiment, the prior BLOCKED state, all three AUDIT-FAIL runs, and the corrected evidence and ledger incidents are retained as historical evidence and are NOT rewritten as prior passes."
+    }
+  ]
 }

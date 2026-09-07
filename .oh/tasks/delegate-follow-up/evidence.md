@@ -1,7 +1,8 @@
 # Evidence — delegate-follow-up
 
 - **PR**: #1004 (mifunedev/openharness, base `development`) · **Branch**: `skill/1003-delegate-follow-up`
-- **Audit run**: `audit-20260907T214546Z-3826355` classified `040c3ca1` -> **`AUDIT-FAIL`** (state `complete`), at gate 1, **by design** — `prd.json` US-003 is `passes: false` because a required criterion is blocked, and the gate correctly refuses to certify the task complete. PR audit `audit-20260907T214554Z-3826531` classified `040c3ca1` -> `PR-AUDIT-PROMOTABLE`. Those are the newest runs in *Audit history*; they are not a claim about the current head. **The two verdicts are not in conflict, and `PR-AUDIT-PROMOTABLE` is not permission to merge** — see *Audit history*. All eleven runs, including all three `AUDIT-FAIL`s, are listed there. **This PR is deliberately held in draft.**
+- **Scope**: one criterion — D4 cross-session reconnection — is **deferred under operator scope amendment SA-1**. It was measured unavailable on this provider and is **deferred, never satisfied**. See *D4 cross-session reconnect*.
+- **Audit run**: `audit-20260907T214546Z-3826355` classified `040c3ca1` -> **`AUDIT-FAIL`** (state `complete`), at gate 1, **by design** — at that head `prd.json` US-003 was `passes: false` because the criterion was BLOCKED, and the gate correctly refused to certify the task complete. That run and the DRAFT-BLOCKED state it recorded are **retained as historical evidence**; SA-1 came afterwards and does not turn them into a prior pass. PR audit `audit-20260907T214554Z-3826531` classified `040c3ca1` -> `PR-AUDIT-PROMOTABLE`. Those are the newest runs in *Audit history*; they are not a claim about the current head, and a PR-audit verdict describes the pull request's mechanical state, not whether the work is certified complete. All eleven runs, including all three `AUDIT-FAIL`s, are listed there.
 - **Approved baseline**: `56ab2bab894e43073bf79edc43f70fe3ddd6d6de` · **Last non-record commit**: `6324e09f` (the head the gate records key to)
 - **Predecessor**: #988 / PR #991, merged at `e90bbed8`
 
@@ -61,13 +62,13 @@ Close the four instruction gaps the advisor-orchestration work left in `.oh/skil
 - **Everything in `SKILL.md` is prose, not an enforced gate.** The probes assert instruction text. The D2/D4 rows show a compliant advisor doing the right thing; nothing in the system forces it. Finding A-1 is precisely what that gap looks like in practice.
 - **`plan-vs-built-reconciliation` remains `NEEDS-REVIEW`** against upstream `execute.md` changes that predate this PR. Not resolved here; `verified_at` deliberately not advanced.
 - **Non-record content landed after the first audit, and the earlier version of this document misdescribed it.** That sentence claimed the three implementation files were "untouched since `c879ad80`". **That was false.** `d390ebe3` rewrote `unnegated_hits()` in `.oh/evals/probes/advisor-execution-contract.sh` — one of the three owned implementation files — changing the negation split and window. `7ecb933c` added two knowledge pattern pages and the regenerated index. Neither is a record file, so neither could be excused by the content-head rule, and the sentence was written in the very commit that followed `d390ebe3`. Independent review caught it. `audit-20260907T211751Z-3792031` classified `79289327`, and both commits are ancestors of it, so that run covered them. Everything committed since is record-only, which is what carries the coverage forward: `git diff --name-only 6324e09f HEAD` is empty outside `.oh/tasks/` and `.oh/evals/RESULTS.md`, so the content-head rule holds and the gate records keyed to `6324e09f` still describe the current content. That check is what a reader should re-run; it does not go stale the way naming a head does. **It does not extend to gate 3**, which re-classifies the live PR at run time — a gate-3 result describes the head that was live when that run executed and nothing later.
-- **Cross-session reconnect is unreachable on this provider — a capability gap, not a passing check.** `ListAgents` does not enumerate an ended subagent: T1 and T2 were both absent from the listing after completing, in the same session that dispatched them. It exposes no other session's subagents at all, and `SendMessage` addresses sessions, not another session's workers. The handle exists only in the dispatching session's transcript, so a new session reading `delegate-graph.json` alone cannot address a prior session's worker; such a task always lands in the ambiguity branch, which blocks writes and dispatches no second writer. **That branch is no longer argued — it is measured.** An operator-authorized second session attempted the resume from the ledger alone against a worker independently confirmed live, and could not resolve the persisted handle: `ListAgents` returned no subagents section and no matching entry, and `TaskOutput` returned `No task found with ID: a28a5c1948d75fb02`. It classified the status unknown, held, and dispatched nothing. **That is fail-closed, and fail-closed is useful evidence — but it is not proof that a cross-session reconnect works, because no cross-session reconnect path exists to exercise.** The required runtime criterion for that branch is therefore recorded as **BLOCKED on a missing native capability**, per the approved plan's rule that a missing prerequisite blocks its gate rather than being satisfied by a static check. Closing it now requires a provider surface exposing a durable worker handle that survives the dispatching session. The remaining decision is the narrowly scoped operator waiver or deferral described under *D4 cross-session reconnect*.
+- **Cross-session reconnect is unreachable on this provider — a capability gap, not a passing check.** `ListAgents` does not enumerate an ended subagent: T1 and T2 were both absent from the listing after completing, in the same session that dispatched them. It exposes no other session's subagents at all, and `SendMessage` addresses sessions, not another session's workers. The handle exists only in the dispatching session's transcript, so a new session reading `delegate-graph.json` alone cannot address a prior session's worker; such a task always lands in the ambiguity branch, which blocks writes and dispatches no second writer. **That branch is no longer argued — it is measured.** An operator-authorized second session attempted the resume from the ledger alone against a worker independently confirmed live, and could not resolve the persisted handle: `ListAgents` returned no subagents section and no matching entry, and `TaskOutput` returned `No task found with ID: a28a5c1948d75fb02`. It classified the status unknown, held, and dispatched nothing. **That is fail-closed, and fail-closed is useful evidence — but it is not proof that a cross-session reconnect works, because no cross-session reconnect path exists to exercise.** The required runtime criterion for that branch was therefore recorded as **BLOCKED on a missing native capability**, per the approved plan's rule that a missing prerequisite blocks its gate rather than being satisfied by a static check. The operator has since granted scope amendment **SA-1**, which **defers** that branch — it is deferred, not satisfied, and SA-1 is explicitly not evidence that cross-session reconnection works. Closing it still requires a provider surface exposing a durable worker handle that survives the dispatching session. Boundary and full terms under *D4 cross-session reconnect*.
 - **The must-pass test class was missing until the last round — now closed, recorded as history.** The re-review found five plainly-correct negated rewordings of the frontmatter description that still produced a `REGRESSION`, because the negation had to precede the token and sit in the same comma-delimited segment. It failed closed, so no defect ever passed. A follow-up round (`d390ebe3`) widened the window to the sentence, allowed the negation on either side of the token, and reset it on an adversative. **Verified closed by both the advisor and the reviewer independently**, each running a both-class matrix: all five rewordings now exit 0, and second-sentence inheritance, an adversative reset, the sibling-command trigger, a bare `/prd` and a bare plan-creation trigger all still exit 1. The lesson stands: until that round every recorded injection asserted only that a defect fails, and none asserted that correct prose passes — which is exactly what this run's own `pattern-evals-probe-failure-path-untested` page prescribes, and following it would have caught the shortfall a round earlier.
 - **The approved plan is not carried by the PR.** `.oh/plans/` is gitignored, so `.oh/plans/delegate-follow-up/plan.md` is unavailable to a reviewer without host filesystem access. `prd.md` carries its substance.
-- **D4 case labelling was wrong and is corrected.** An earlier version called the disposable acceptance-ordering worker a live observation of the *active-worker reconnect* branch. Independent review established it was not: that worker had already **returned** and was awaiting verification, which under this PR's own `SKILL.md` is the **ended** sub-case. The reconnect-to-still-active branch was then exercised properly (block below, and the full record in `progress.txt`), so it is now live — but the mislabelling stood in the record until a reviewer caught it. Case (d), unknown native status, remains a **fixture**: a constructed graph row, not a live observation, because a genuinely indeterminate status cannot be manufactured in-session while the advisor still holds the transcript.
+- **D4 case labelling was wrong and is corrected.** An earlier version called the disposable acceptance-ordering worker a live observation of the *active-worker reconnect* branch. Independent review established it was not: that worker had already **returned** and was awaiting verification, which under this PR's own `SKILL.md` is the **ended** sub-case. The reconnect-to-still-active branch was then exercised properly (block below, and the full record in `progress.txt`), so it is now live — but the mislabelling stood in the record until a reviewer caught it. Case (d), unknown native status, was recorded as a **fixture**: a constructed graph row, not a live observation, because a genuinely indeterminate status cannot be manufactured in-session while the advisor still holds the transcript. **That fixture record stands as history. A live observation has since been added beside it, not in place of it**: the second session's own committed report classifies the worker's status as `unknown` (`xsession-experiment/session2-report.md:63`) — a genuinely indeterminate status that arose naturally across a session boundary, which is exactly what could not be manufactured in-session. The fixture exercised the decision rule; the experiment exercised the condition.
 - **Two gate-record provenance stamps postdated their own commits, and were not observed.** Both were hand-written and rounded to `:00`. `eval-result.json` carried `"ranAt": "2026-09-07T20:35:00Z"` but was added in `3dc561be`, committed `20:33:07Z` — two minutes before the stamp. `simplicity-review.json` carried `"reviewedAt": "2026-09-07T20:50:00Z"` in that same commit, seventeen minutes in the future. This is the same class of unasserted claim this PR exists to police, in the records the gates read. `ranAt` is corrected to `2026-09-07T20:28:00Z`; that minute is taken from `.oh/evals/RESULTS.md`, which `/eval` writes itself, not from a captured timestamp. `reviewedAt` cannot be substantiated to a precise time and is set to `2026-09-07T20:33:00Z` — **an advisor-recorded approximation bounded above by its own commit, not an observed timestamp.** `commit`, `runnerExit`, `findings` and `reviewer` are unchanged in both files; those are what the gates read and they were correct.
 - **`SKILL.md` contradicts itself on the resume path for `BLOCKED`, and this PR created the tension.** `SKILL.md:261` says `` `pending`, `BLOCKED`: re-run the task under its dispatch record ``, while the step 5d this PR wrote, at `:350-353`, says a dependency that is `running`, `FAIL`, or `BLOCKED` "is not accepted: its dependents stay `BLOCKED`". A resume would therefore dispatch a worker onto a task 5d says must not start — the D2 hazard reappearing on the resume path. The `BLOCKED` bullet is inherited from the approved base, but 5d is new here, so the contradiction is this change's. The reconciliation it needs: the resume bullet must re-run `pending` only, and treat `BLOCKED` as re-evaluating the blocking dependency's acceptance state first, dispatching only if that dependency is now `completed`. **Not fixed here** — see the deferred register for why.
-- **`prd.md` and `prd.json` diverged on the cross-session criterion, and the authoritative file was the weaker one.** `prd.md:107-110` requires that the cross-session branch be "recorded BLOCKED on a missing native capability rather than silently satisfied". `prd.json`'s criterion had dropped that clause, and under `completionAuthority` it is `prd.json` that decides completion — so the file with authority was the one missing the requirement. It is now corrected: the criterion is split into a within-session criterion and a cross-session criterion, and US-003 is `passes: false`. Recorded rather than presented as having always been consistent.
+- **`prd.md` and `prd.json` diverged on the cross-session criterion, and the authoritative file was the weaker one.** `prd.md:107-110` requires that the cross-session branch be "recorded BLOCKED on a missing native capability rather than silently satisfied". `prd.json`'s criterion had dropped that clause, and under `completionAuthority` it is `prd.json` that decides completion — so the file with authority was the one missing the requirement. It was corrected: the criterion was split into a within-session criterion and a cross-session criterion, and US-003 was set `passes: false`. Under SA-1 the cross-session criterion is now marked in place with the prefix `[DEFERRED BY OPERATOR SCOPE AMENDMENT SA-1 - NOT SATISFIED, NOT CLAIMED]` rather than deleted, and `passes` is `true` again — on the deferral, not on the merits. Recorded rather than presented as having always been consistent.
 - **`skills-vendored` is red** and stays red: `cc-safety-net binary not found on PATH (expected @1.0.6)`. Reproduced identically on the approved base, so it is environmental and not attributable to this diff.
 - **`netAdded` reported by gate 5 is 1493**, which counts the whole task folder and both knowledge pages. The implementation itself is **+205 / −40** across three files.
 
@@ -118,8 +119,10 @@ exercised all five was `audit-20260907T211751Z-3792031` on `79289327`, and it pa
 the *pull request's* state — CI, mergeability, draft status, evidence completeness. Gate 1 classifies
 whether the *task's* stories are all complete. So: the PR is mechanically ready to merge, and the work
 is not certified complete, because a required criterion is blocked. **`PR-AUDIT-PROMOTABLE` is not
-permission to merge.** The PR is held in draft on purpose, and stays there until the operator decides
-the D4 cross-session sub-branch.
+permission to merge.** At the time of these runs the PR was held in draft on purpose, pending the
+operator's decision on the D4 cross-session sub-branch. That decision has since been made — scope
+amendment SA-1, which defers the branch rather than satisfying it. **These two verdicts and the
+DRAFT-BLOCKED state they record are historical and are not restated as passes.**
 
 Observed output of the `203507Z` implementation run:
 
@@ -320,6 +323,7 @@ None of these was implemented. None is claimed as done.
 | `mifunedev/openharness-web` public documentation | **Deferred to a separately authorized owner.** Impact review performed: this change alters no user-facing behavior or terminology — it corrects internal delegation procedure text — so no published claim is known to be invalidated. No external change was made or requested. No follow-up artifact exists to cite, so nothing is claimed as satisfied elsewhere. |
 | Probe robustness / paraphrase blind spots | **Deferred by the plan's non-goal.** Three concrete failing examples are now documented above with the exact evading text. This is stronger than the plan's starting position, which had no demonstrated example. Not fixed. |
 | Environment failures (`curl-bash-safe-alternatives`, `oh-config-surfaces`, `skills-vendored`) | **Deferred triage, with a real finding.** Reproduced on the approved base first: **two of the three are green** — `curl-bash-safe-alternatives` ERROR→PASS and `oh-config-surfaces` REGRESSION→PASS. Only `skills-vendored` is still red, cause `cc-safety-net binary not found on PATH`, reproduced identically on the base. The base run is committed at `eval-base-56ab2bab.txt` so this is reproducible rather than narrative. |
+| D4 cross-session reconnection | **Deferred provider-capability item, under operator scope amendment SA-1.** Deferred, never satisfied: one authorized experiment measured it unavailable on this provider, because no durable worker handle survives the dispatching session. Closing it requires a provider surface exposing such a handle. SA-1 defers this sub-branch only — within-session recovery and cross-session fail-closed behaviour remain required, and both are verified. See *D4 cross-session reconnect* for the full boundary. |
 | `SKILL.md` `BLOCKED` resume vs. step 5d contradiction | **Not fixed here.** Reconciling it edits `SKILL.md`, which would invalidate the content-head reuse of both gate records and require a fresh eval and simplicity review — a scope expansion the operator did not authorise. Raised for the register with the exact fix named: the resume bullet re-runs `pending` only, and treats `BLOCKED` as re-evaluating the blocking dependency's acceptance state first, dispatching only if that dependency is now `completed`. Described in full under *What remains unverified*. |
 | Efficiency comparison | **Not run. No budget requested, none spent.** No efficiency or token-savings claim appears anywhere in this PR. |
 | Live transfer testing | **Not run.** Ownership stayed in one session throughout; no handoff was needed or performed, and handoff remains optional. |
@@ -347,12 +351,43 @@ process it found as contact — *"That is not the recorded worker and I have no 
 `a28a5c1948d75fb02`."* One experiment, no retries; the result holds for this provider and runtime
 only.
 
-## D4 cross-session reconnect — BLOCKED, operator decision required
+## D4 cross-session reconnect — DEFERRED under operator scope amendment SA-1
 
-The approved plan requires D4's five resume cases and states that a missing prerequisite **blocks**
-its required gate rather than being satisfied by a static check. Four of five cases are live
-within-session observations; case (d) is an honestly-labelled fixture. One branch cannot be closed
-here.
+**This branch was measured unavailable and is deferred. It was never satisfied.** The distinction is
+the whole point of this section: an operator deferral records that a requirement will not be met on
+this provider, not that it was met.
+
+The approved plan requires D4's five resume cases and states that a missing prerequisite blocks its
+required gate rather than being satisfied by a static check. That is what happened: the criterion
+stood **BLOCKED**, gate 1 failed closed at `audit-20260907T214546Z-3826355`, and the PR was
+DRAFT-BLOCKED. The operator then granted SA-1. **That history is retained as evidence and is not
+rewritten as a prior pass.**
+
+### SA-1 — the exact boundary
+
+**Deferred, and only this:** D4 cross-session reconnection on the tested provider — that a
+still-active worker can be reconnected to or observed *across sessions*, from persisted state alone,
+through a supported native mechanism.
+
+**Still required, and verified:**
+
+- within-session recovery — reconnect to or observe a still-active worker without spawning a
+  duplicate;
+- cross-session **fail-closed** behaviour — no duplicate writer, and no unauthorized writes, when the
+  handle cannot be resolved.
+
+**What SA-1 is not:**
+
+1. **Not evidence that cross-session reconnection works.** The operator stated this explicitly, and
+   it is restated here so no reader can mistake the amendment for a result.
+2. **Not a blanket waiver of D4.**
+3. **Not a waiver of any other criterion.**
+4. **Not authorization for new infrastructure or a repeat experiment.**
+
+**Retained as:** a deferred provider-capability item in the register. Closing it needs a provider
+surface exposing a durable worker handle that survives the dispatching session.
+
+### The measurement the deferral rests on
 
 **The experiment, and what the authorisation was.** The operator authorised exactly one bounded
 cross-session recovery experiment. That authorisation was **not** a waiver of the criterion. A second
@@ -366,7 +401,7 @@ itself. Record and raw artifacts: `xsession-experiment/`, summarised above as R1
 **The two runtime strings, verbatim.** `ListAgents` returned `Peer sessions (2)` with no subagents
 section at all. `TaskOutput` with that id returned `No task found with ID: a28a5c1948d75fb02`.
 
-**What is blocked.** The `running` resume rule says a still-active worker is reconnected to or
+**What is deferred.** The `running` resume rule says a still-active worker is reconnected to or
 observed *"through the supported native mechanism"*. Within a session that is verified live:
 `SendMessage` to a genuinely running worker returns `Message queued for delivery … at its next tool
 round`, distinct from the `Resuming agent` returned for an ended worker, with no duplicate dispatched.
@@ -374,38 +409,49 @@ Across sessions there is no such mechanism. No durable worker handle survives th
 session: the id in the ledger is neither a task id `TaskOutput` recognises nor an addressable name in
 `ListAgents`.
 
-**Why that is still not satisfied.** The fail-closed behaviour is real, it is useful, and it is now
+**Why the deferral is not a pass.** The fail-closed behaviour is real, it is useful, and it is
 **observed across a genuine session boundary** rather than inferred. It is still not proof of
 reconnection. An unavailable handle that correctly blocks writes is a safe failure, not a successful
-reconnect, and recording it as satisfied would weaken the approved requirement.
+reconnect. SA-1 does not change that; it records that the requirement is set aside, with the
+measurement standing as the reason. `prd.json` marks the criterion in place with the prefix
+`[DEFERRED BY OPERATOR SCOPE AMENDMENT SA-1 - NOT SATISFIED, NOT CLAIMED]` rather than deleting it,
+and carries the authoritative state.
 
-**The decision now needed.** One narrowly scoped item: **an explicit operator waiver or deferral for
-the cross-session sub-branch of D4's `running` case.**
+### US-003's remaining criteria, re-verified before the flip
 
-- **What would be waived:** that the `running` branch's *"reconnect to it or observe it through the
-  supported native mechanism"* cannot be exercised across sessions on this provider, because no
-  durable worker handle survives the dispatching session.
-- **What remains proven either way:** the within-session branch, live; and the ambiguity branch, now
-  live across sessions.
+Every remaining criterion was re-run against its source before `prd.json` set `passes: true`, rather
+than inheriting an earlier verdict. Verified at `6a9b6c07`.
 
-Until such a waiver or deferral is granted, D4's cross-session reconnect criterion stands **BLOCKED**,
-this PR does not claim it, and the PR stays draft.
+| Criterion | Check a reader can re-run | Result |
+|---|---|---|
+| C1 resume rule covers `running` | `SKILL.md:265` carries the literal *"inspect the persisted native worker reference and the current artifacts"* | PASS |
+| C2 within-session reconnect | live: `SendMessage` to a running worker returned `Message queued for delivery … at its next tool round`, distinct from `Resuming agent` for an ended one; `ListAgents` showed one subagent throughout, no duplicate | PASS |
+| C3 across-session reconnect | — | **DEFERRED under SA-1. Measured unavailable, not satisfied, not claimed.** |
+| C4 ended worker's artifacts validated before acceptance | live in the D2 acceptance-ordering run: a worker returned `sum.sh` printing 9 at exit 0, and the dependent stayed unreleased until the repair was accepted | PASS |
+| C5 unknown status reported as ambiguity, blocks duplicate writes | `SKILL.md:275`; **now observed live across a session boundary** — the second session classified the status unknown, applied the clause, dispatched nothing, wrote nothing to the owned path | PASS, strengthened |
+| C6 stale `completed` label not trusted | `SKILL.md:270-273`; found live twice against this task's own ledger | PASS |
+| C7 resume path appends, never truncates | `SKILL.md:278`, and **proven against the committed record rather than asserted**: `delegate-log.txt` at `8ba02851`, `b61dad88`, `79289327`, `040c3ca1` and `6a9b6c07` is a strict **prefix** of each successor, checked with `head -n \| cmp` rather than by comparing line counts | PASS, strengthened |
+| C8 five cases exercised and recorded | (a) active reconnect live, (b) ended-with-valid-artifacts live, (c) interrupted-incomplete live, (e) stale-evidence live; (d) unknown-status was a disclosed fixture and **now also has a live observation** — see *Where it diverged from the plan*, item on case labelling. The fixture record is retained as history rather than replaced | PASS |
+| C9 typecheck | CI `Lint, Typecheck, Build & Test` PASS on the final pushed head; the diff touches no TypeScript | PASS |
+
+Two of these came out stronger than they had been. **C7 is now proven, not asserted** — the
+append-never-truncate rule holds against the committed record, by prefix, across five revisions.
+**Case (d) is no longer only a fixture** — the condition it models occurred for real.
 
 ## Operator continuation criteria R1–R4 → evidence
 
-**Overall state: DRAFT-BLOCKED.** R1, R3 and R4 are satisfied — R4 after its four blocking findings
-were fixed. R2 is blocked, pending one narrowly scoped operator waiver or deferral for the
-cross-session sub-branch of D4's `running` case. **This PR is deliberately held in draft, and
-`PR-AUDIT-PROMOTABLE` on `audit-20260907T214554Z-3826531` is not permission to merge it** — that
-verdict describes the pull request's mechanical state, not whether the work is certified complete.
-Gate 1 says it is not.
+**Overall state: all four criteria met, R2 under operator scope amendment SA-1.** R1, R3 and R4 are
+satisfied — R4 after its four blocking findings were fixed. R2 is satisfied **only because SA-1 defers
+the cross-session sub-branch of D4's `running` case**; that branch was measured unavailable and is
+deferred, never satisfied. The document's DRAFT-BLOCKED history, the three `AUDIT-FAIL` runs and the
+prior BLOCKED state are retained as evidence and are not rewritten as prior passes.
 
 | Criterion | Evidence in this repository | Verdict |
 |---|---|---|
 | **R1** real recovery evidence | `xsession-experiment/` — the ledger and procedure the second session was given, its brief, its own report, its raw stream log, and the original worker's heartbeat; summarised in *Cross-session recovery experiment — R1*. The worker was independently confirmed active (heartbeat on disk, `ListAgents` in the dispatching session, `ps` run by the second session). The attempt produced a genuine unavailable/unknown result. No duplicate was dispatched (`subagent_stats` `"spawned":0`) and the protected path's sha256 was unchanged until the original worker wrote it. | **Satisfied** |
-| **R2** honest D4 disposition | *D4 cross-session reconnect — BLOCKED, operator decision required*, rewritten on the experiment. Fail-closed behaviour is named as fail-closed and never as reconnection; the capability boundary is stated exactly; a single narrowly scoped waiver or deferral is requested. | **BLOCKED**, pending that waiver. The R4 reviewer judged the D4 prose exemplary but found the disposition undermined by `prd.json`, whose US-003 read `passes: true` while the prose said BLOCKED — the machine-readable state contradicting the disclosure. That is corrected: US-003 is now `passes: false` and gate 1 fails accordingly. The PR stays draft. |
+| **R2** honest D4 disposition | *D4 cross-session reconnect — DEFERRED under operator scope amendment SA-1*, rewritten on the experiment and then on the amendment. Fail-closed behaviour is named as fail-closed and never as reconnection; the capability boundary is stated exactly; SA-1's four "what it is not" points are carried verbatim. | **Satisfied under SA-1 — not satisfied on the merits.** The cross-session branch was measured unavailable and is deferred by operator scope amendment, never met. Earlier in this document's history the R4 reviewer judged the D4 prose exemplary but found the disposition undermined by `prd.json`, whose US-003 read `passes: true` while the prose said BLOCKED. That was corrected to `passes: false`, gate 1 failed closed at `audit-20260907T214546Z-3826355`, and the PR was DRAFT-BLOCKED until the operator granted SA-1. All of that is retained as evidence. |
 | **R3** audit provenance | `audit-runs/` — the eleven terminal evidence documents, each checked to carry a `runId` equal to its filename and `state: complete`; *Audit history* maps each id to the head this document claims it classified, discloses that the artifact does not itself record that head, and records the fabricated-id incident and the real-but-untracked incident as two separate corrected failures. | **Satisfied with a correction.** A fresh independent reviewer opened the artifacts and confirmed the coverage claim holds: every cited id names a run that executed, every verdict matches its artifact, and every *Head classified* value is corroborated by commit-time interleaving and monotonic PID continuity rather than merely plausible. It found no run against the wrong PR and no softened `AUDIT-FAIL`. It also raised one blocking finding — this document asserted a fabricated-id disclosure it did not actually contain — which is why the disclosure now exists. The criterion is met because that finding was made and fixed, not in spite of it. |
-| **R4** final content and state | *What was built*, *Where it diverged from the plan, and why*, *What remains unverified*, *Proof by gate*, *Observed output*, *Acceptance criteria → proof*, *Deferred register*, and this table; `delegate-graph.json`, `delegate-log.txt` and `progress.txt` now carry the reconciled worker state, including all three stale-ledger recurrences and the separately unrecorded T3. | **DRAFT-BLOCKED.** The reviewer returned four blocking findings, **all in the record layer — it found no fault in the implementation itself.** It independently confirmed the probe pins are real using its own injection harness, reproduced all three disclosed paraphrase blind spots verbatim, confirmed the content-head rule holds strictly at the true head, and confirmed no document describes the fail-closed cross-session result as a reconnection. The blocking findings were: two remediation claims the record falsified (the recurrence count and the "every commit" recipe claim), a stale head written by the commit that made it stale, the `prd.json` / `prd.md` divergence, and two provenance stamps postdating their own commits. All are now disclosed above. The verdict is DRAFT-BLOCKED because those findings were made, not in spite of them. |
+| **R4** final content and state | *What was built*, *Where it diverged from the plan, and why*, *What remains unverified*, *Proof by gate*, *Observed output*, *Acceptance criteria → proof*, *Deferred register*, and this table; `delegate-graph.json`, `delegate-log.txt` and `progress.txt` now carry the reconciled worker state, including all three stale-ledger recurrences and the separately unrecorded T3. | **Satisfied, after its four blocking findings were fixed.** The reviewer's verdict at the time was **DRAFT-BLOCKED**, and that verdict stands as history. It returned four blocking findings, **all in the record layer — it found no fault in the implementation itself.** It independently confirmed the probe pins are real using its own injection harness, reproduced all three disclosed paraphrase blind spots verbatim, confirmed the content-head rule holds strictly at the true head, and confirmed no document describes the fail-closed cross-session result as a reconnection. The blocking findings were: two remediation claims the record falsified (the recurrence count and the "every commit" recipe claim), a stale head written by the commit that made it stale, the `prd.json` / `prd.md` divergence, and two provenance stamps postdating their own commits. All are now disclosed above. The verdict is DRAFT-BLOCKED because those findings were made, not in spite of them. |
 
 R3 and R4 are for a fresh independent reviewer to decide. This document does not assign them a
 verdict.
