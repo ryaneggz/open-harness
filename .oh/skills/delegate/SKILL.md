@@ -177,6 +177,7 @@ record with every field below; a record with a missing field is not ready to dis
 | **Requested model / reasoning** | The exact model and reasoning setting requested, or `inherit` when the operator selected no preference for this class |
 | **Observed settings + provenance** | The effective model and reasoning setting the native surface reported, each with its source; `unknown` when unobserved |
 | **Read scope** | Files and directories the worker reads |
+| **Search / output limits** | The search breadth and the output volume the worker stays inside, so verbose disposable output stays bounded |
 | **Owned write paths** | The only paths the worker edits |
 | **Exclusions** | Paths, actions, and settings the worker must not touch |
 | **Execution directory** | The absolute directory the worker runs in |
@@ -185,6 +186,7 @@ record with every field below; a record with a missing field is not ready to dis
 | **Continuation method** | Native continuation, or checkpoint-and-rebrief with the checkpoint artifacts |
 | **Deliverable** | The concrete artifact, patch, or commit the worker returns |
 | **Verification** | Commands or exact review procedure, with expected results |
+| **Stopping condition** | The observable state at which the worker stops and reports, including the blocked case |
 | **Evidence destinations** | The paths that receive outputs, logs, and artifacts |
 | **Covered DoD IDs** | The Definition of Done criteria this task covers |
 | **Acceptance owner** | The advisor; a worker never accepts its own result |
@@ -256,7 +258,10 @@ Stage them with `git add -f` only when a PR must carry the delegation as evidenc
 directory, read it first and reconcile every task against real state before any
 dispatch.
 
-- `pending`, `FAIL`, `BLOCKED`: re-run the task under its dispatch record.
+- `pending`, `BLOCKED`: re-run the task under its dispatch record.
+- `FAIL`: read the failed task's current artifacts before any retry, then retry only
+  the incomplete scope under its dispatch record. Never replay work that is already
+  correct.
 - `running`: inspect the persisted native worker reference and the current artifacts
   before any retry. While the worker is still active, reconnect to it or observe it
   through the supported native mechanism, and never spawn a duplicate for it. Once it
@@ -421,7 +426,7 @@ worker reports it, and do not record the request as confirmed.
 |------|-------|
 | Max concurrent agents per wave | 5 (split larger waves) |
 | Failure handling | Mark dependent tasks BLOCKED, continue independent ones; the named repair worker repairs |
-| Context passing | Prior wave summaries, not full output |
+| Context passing | Accepted prior-wave artifact references and summaries, not full output |
 | Model, reasoning, and settings evidence | See `## Worker model and reasoning policy` |
 
 ### Key Resources

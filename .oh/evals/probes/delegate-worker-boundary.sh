@@ -90,6 +90,17 @@ smaller="$(grep -niE 'prefer[a-z]*( [a-z]+){0,3} smaller (tasks|units|pieces)|sm
 unmeasured="$(grep -niE '[0-9]+ ?% ?(faster|fewer|less|cheaper|savings)|saves? [0-9]+ ?(%|x|tokens)|[0-9]+ ?x (faster|speedup)|token savings' "$SKILL" || true)"
 [[ -z "$unmeasured" ]] || fail "/delegate makes an unmeasured efficiency or token-savings claim: $unmeasured"
 
+brief="$(awk '/^\| Field \| Description \|$/{f=1} f && /^$/{exit} f{print}' "$SKILL")"
+[[ -n "${brief//[[:space:]]/}" ]] || fail "the dispatch-record field table could not be located"
+
+missing=()
+grep -qF '| **Read scope** |' <<<"$brief"            || missing+=("Read scope")
+grep -qF '| **Selection reason** |' <<<"$brief"      || missing+=("Selection reason")
+grep -qF '| **Search / output limits** |' <<<"$brief" || missing+=("Search / output limits")
+grep -qF '| **Evidence destinations** |' <<<"$brief" || missing+=("Evidence destinations")
+grep -qF '| **Stopping condition** |' <<<"$brief"    || missing+=("Stopping condition")
+(( ${#missing[@]} == 0 )) || fail "the dispatch record no longer requires every worker-brief field: ${missing[*]}"
+
 missing=()
 grep -qF 'Max 5 concurrent agents per wave' <<<"$skill_flat"   || missing+=("the max-5-per-wave wave cap")
 grep -qF 'Max concurrent agents per wave | 5' <<<"$skill_flat" || missing+=("the max-5-per-wave reference row")

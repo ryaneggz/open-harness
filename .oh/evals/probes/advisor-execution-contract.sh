@@ -11,7 +11,7 @@
 #       issue #1003 for /delegate: acceptance is recorded before a dependent is released, resume
 #       reconciles `running` tasks and stale completion evidence, every procedure reference
 #       resolves (no Memory Protocol), planning alone is not a trigger, and the diagram branches
-#       on --dry-run before the run-ledger write. This probe inspects instruction text; it does
+#       on --dry-run before the run-ledger write (asserted as graph edges, not text order). This probe inspects instruction text; it does
 #       not verify runtime delegation or model settings.
 set -euo pipefail
 
@@ -97,7 +97,11 @@ need delegate/SKILL.md "$delegate_flat" \
   'never authorizes a second writer' \
   'it never truncates it' \
   'write neither file' \
-  'dispatch no worker, create no execution state'
+  'dispatch no worker, create no execution state' \
+  'is not a trigger' \
+  'authorizes no dispatch and creates no execution state' \
+  '- `FAIL`: read the failed task' \
+  'Accepted prior-wave artifact references and summaries, not full output'
 
 if grep -qiF 'Memory Protocol' "$DELEGATE"; then
   problems+=("/delegate still calls the undefined Memory Protocol")
@@ -117,27 +121,40 @@ delegate_desc="$(awk '/^description: \|$/{f=1; next} f && /^[a-z][a-z-]*:/{exit}
 for key in name description argument-hint; do
   grep -qE "^${key}:" <<<"$delegate_frontmatter" || problems+=("/delegate frontmatter lacks '${key}:'")
 done
+unnegated_hits() {
+  local text="$1" token="$2"
+  printf '%s\n' "$text" | sed 's/[.;:,] /&\n/g' \
+    | grep -iE -- "${token}" \
+    | grep -viE -- "\\b(not|never|no|neither|without)\\b[^.;:,]{0,60}${token}" || true
+}
+
 if [[ -z "${delegate_desc//[[:space:]]/}" ]]; then
   problems+=("/delegate frontmatter has no description block scalar")
 else
-  if grep -qF '/prd' <<<"$delegate_desc"; then
-    problems+=("/delegate still triggers on /prd, so planning alone would authorize dispatch")
-  fi
-  if grep -qiE 'plan creation|plan is (created|written|finished)|after (writing|creating|finishing) a plan' <<<"$delegate_desc"; then
-    problems+=("/delegate still triggers on plan creation, so finishing a plan would authorize dispatch")
-  fi
+  planning_command='/(prd|plan|imagine|spec)\b'
+  planning_event='(plan creation|plan is (created|written|finished)|after (writing|creating|finishing) a plan)'
+  cmd_hits="$(unnegated_hits "$delegate_desc" "$planning_command")"
+  [[ -z "$cmd_hits" ]] || problems+=("/delegate names a planning command as a trigger, so planning alone would authorize dispatch: $cmd_hits")
+  event_hits="$(unnegated_hits "$delegate_desc" "$planning_event")"
+  [[ -z "$event_hits" ]] || problems+=("/delegate triggers on plan creation, so finishing a plan would authorize dispatch: $event_hits")
 fi
 
 delegate_mermaid="$(awk '/^```mermaid$/{f=1; next} f && /^```$/{f=0} f{print}' "$DELEGATE")"
 if [[ -z "${delegate_mermaid//[[:space:]]/}" ]]; then
   problems+=("/delegate has no Decision Flow mermaid diagram")
 else
-  dry_ln="$(grep -n -- '--dry-run?' <<<"$delegate_mermaid" | head -1 | cut -d: -f1 || true)"
-  ledger_ln="$(grep -n 'run ledger' <<<"$delegate_mermaid" | head -1 | cut -d: -f1 || true)"
-  if [[ -z "$dry_ln" || -z "$ledger_ln" ]]; then
+  dry_nodes="$(grep -cF -- '--dry-run?' <<<"$delegate_mermaid" || true)"
+  ledger_nodes="$(grep -cF 'Write run ledger' <<<"$delegate_mermaid" || true)"
+  if (( dry_nodes == 0 || ledger_nodes == 0 )); then
     problems+=("the Decision Flow diagram lost its --dry-run branch or its run-ledger write")
-  elif (( dry_ln >= ledger_ln )); then
-    problems+=("the Decision Flow diagram writes the run ledger before it branches on --dry-run")
+  else
+    edges=()
+    grep -qF 'D --> F{--dry-run?}' <<<"$delegate_mermaid" \
+      || edges+=("the graph edge that reaches --dry-run straight from the dependency graph")
+    grep -qF 'F -->|No| E["Step 4: Write run ledger' <<<"$delegate_mermaid" \
+      || edges+=("the run-ledger write on the --dry-run false edge")
+    (( ${#edges[@]} == 0 )) \
+      || problems+=("the Decision Flow diagram writes the run ledger before it branches on --dry-run; missing: ${edges[*]}")
   fi
   if grep -qiE 'MEM_|Memory Protocol' <<<"$delegate_mermaid"; then
     problems+=("the Decision Flow diagram still routes to the undefined Memory Protocol")
