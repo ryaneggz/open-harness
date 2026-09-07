@@ -5,7 +5,8 @@ description: |
   plan", "delegate this", or after /prd or plan creation. Decomposes work by
   dependency, launches bounded provider-native workers in parallel waves, validates
   completion, and reports results while preserving failure isolation and recursion
-  limits. Keeps work in the active session when phases share substantial context.
+  limits. Keeps judgment in the active session and coupled implementation with one
+  continuing worker.
 argument-hint: "[--plan <path>] [--dry-run]"
 ---
 
@@ -21,42 +22,99 @@ completes before the next begins. Results are collected, validated, and reported
 
 > Use a worker only when the task is self-contained and gains from parallelism,
 > isolated context, restricted tools, or containment of verbose disposable output.
-> Keep work in the active session when phases share substantial context or require
-> iterative refinement.
+> Keep judgment in the active session when phases share substantial context or require
+> iterative refinement; keep coupled implementation with one continuing worker.
 
 A worker is a **bounded execution context**, not a project role. The active coding
 agent is the runtime and stays the owner of the work; skills — `/architect`,
-`/spec`, `/audit`, `/retro` — are how it adopts a role. Delegation buys isolation
-or parallelism and nothing else.
+`/spec`, `/audit`, `/retro` — are how it adopts a role. The active session acts as
+advisor: it keeps goal interpretation, architecture, decomposition, verification,
+and acceptance, and it assigns bounded implementation to workers. Delegation buys
+isolation, parallelism, and bounded implementation, and nothing else.
 
-| Delegate it | Keep it in the active session |
+| Assign it to a worker | Keep it in the active session |
 |---|---|
-| Independent parallel research or source sweeps | Planning, implementation, and testing that share one evolving picture |
-| Verbose disposable output — logs, search dumps, test runs | Work that needs iterative refinement against operator feedback |
-| Disjoint file ownership with no shared mutable state | Two tasks that touch the same file |
-| A deliberate tool or permission restriction | Anything whose result you would have to re-derive to use |
+| Tracked implementation edits: code, tests, docs, integration fixes, repair | Goal interpretation, architecture, decomposition, verification, acceptance |
+| Coupled implementation, in one continuing worker | Reconciliation of results that share substantial context |
+| Independent parallel research or source sweeps | Iterative refinement against operator feedback |
+| Verbose disposable output — logs, search dumps, test runs | A result you would have to re-derive to use |
+| Disjoint file ownership with no shared mutable state | The second of two tasks that touch the same file, until the first completes |
+| A deliberate tool or permission restriction | Task state: `prd.json`, `progress.txt`, and acceptance records |
 
-Do not invent named architectural roles for workers. `/delegate` owns fan-out
-policy; other skills must not grow a competing worker hierarchy beside it.
+A small task can use one worker; parallelism is not mandatory. A factual question
+or a plan-only request needs no worker. Do not invent named architectural roles for
+workers. `/delegate` owns fan-out policy; other skills must not grow a competing
+worker hierarchy beside it.
 
-## Worker model and thinking policy
+## Complexity classification
+
+Classify each subtask by uncertainty, blast radius, security exposure, reversibility,
+context requirements, and acceptance clarity. Line count alone does not determine
+complexity. Mechanical work has known transformations and decisive checks. Ambiguous
+requirements, cross-boundary changes, migrations, and uncertain debugging warrant
+stronger reasoning before a worker writes. The advisor resolves architecture; even a
+high-capability worker receives bounded implementation scope, never an instruction
+to redesign the architecture.
+
+Coupled implementation stays with one continuing worker. Use the provider's native
+continuation when it exists; otherwise checkpoint the artifacts and rebrief the next
+bounded worker with only the incomplete scope. Never replay completed work. Parallel
+writers get isolated worktrees. Serialize shared-file work. Workers stay flat
+unless the recursion-authorization gate in step 5 authorizes recursion.
+
+## Worker model and reasoning policy
 
 Apply this policy to every worker:
 
-1. **Inherit the parent/session model by default.** Omit the Agent tool's `model`
-   argument. Do not route routine or simple work to a weaker model tier.
-2. Set the Agent tool's `thinking` parameter from task complexity:
-   **simple/mechanical → `low`**, **standard → `medium`**, **complex → `high`**,
-   and **architecture or debugging with substantial uncertainty → `xhigh`**.
-   Supported levels are `off`, `minimal`, `low`, `medium`, `high`, and `xhigh`;
-   never use `max`.
-3. If the selected thinking level is unsupported by the inherited model/provider,
-   use the nearest supported level. Do not switch models merely to obtain a thinking
-   level.
-4. Override `model` only with an explicit task-specific reason: an operator request,
-   an unavailable required capability/context, a strict latency or budget constraint,
-   or local benchmark evidence. Record that reason in the task graph and pass the
-   override only for that worker.
+1. **Explicit operator selections and exclusions are binding.** Pass a selected model
+   unchanged; never dispatch to an excluded model.
+2. **Select unspecified settings per task.** Choose the model and reasoning setting
+   from the task's complexity, risk, and the authorized budget. Record the selection
+   reason in the dispatch record before dispatch.
+3. **Perform a native capability check first.** Before the first dispatch, confirm
+   which model and reasoning controls the running provider's worker tool exposes.
+   Record the requested settings and the observed settings separately, each with its
+   provenance. An unknown value stays `unknown`; never record it as confirmed or zero.
+   A display name or an accepted request does not prove the effective configuration.
+4. **An unsupported required control blocks.** When a required model or reasoning
+   control is unavailable, mark the affected worker and its dependents `BLOCKED` and
+   ask the operator for an authorized alternative. Never substitute a model, lower a
+   setting, change shared or parent settings, or call a nested inference CLI to obtain
+   the control.
+5. **Escalate reasoning only on evidence.** Raise a worker's reasoning setting only
+   when evidence shows uncertainty or repeated failure, never because a tool or a
+   credential is missing.
+6. **Stop at the declared budget.** When a task reaches its declared budget, stop and
+   ask the operator; do not retry indefinitely.
+
+### Provider-specific preferences (Claude Code)
+
+The preferences below are operator preferences, not the portable role definition.
+Each one requires native verification before use.
+
+- The advisor session runs on Fable 5.1 with the operator-selected effort.
+- A low-complexity worker runs on Opus.
+- The advisor judges the effort level for each worker task: `low` for mechanical work,
+  `medium` for standard work, `high` or `xhigh` for high-uncertainty work, never `max`.
+  Record the selected effort and its reason in the dispatch record before dispatch.
+- Never route work to Sonnet, as a primary, intermediate, or fallback tier.
+- Select the hardest worker per task from supported non-Sonnet models; record the
+  selection reason.
+- On a native surface that exposes them, Luna at Max serves the least complex work and
+  Astra at high serves the hardest work.
+
+The per-call Agent tool on Claude Code exposes `model` and has no effort argument.
+The documented per-worker effort control is subagent definition frontmatter
+(`effort: low|medium|high|xhigh|max`; never pass `max`), hot-reloaded from a subagent
+definition at the scope the operator chooses. Apply the selected effort through that
+control when one exists, after native verification. When no per-worker control is
+available at dispatch time, the worker runs at the inherited session effort and the
+record says so: `observed effort: inherited session level, unobserved`. Confirm an
+effective effort only from the runtime's own display or the worker's self-report;
+never assume it from the request. Effort is an advisor judgment, so a missing effort
+control never blocks a worker and never justifies a model substitution. Rule 4 applies
+to the model, to explicit operator selections and exclusions, and to any control the
+operator marks required.
 
 ## Decision Flow
 
@@ -105,7 +163,8 @@ Run Memory Protocol and stop.
 
 ### 2. Decompose into tasks (reason according to complexity)
 
-Analyze the plan deeply and produce a structured task list. For each task, determine:
+Analyze the plan deeply and produce a structured task list. Each task is one dispatch
+record with every field below; a record with a missing field is not ready to dispatch.
 
 | Field | Description |
 |-------|-------------|
@@ -113,20 +172,38 @@ Analyze the plan deeply and produce a structured task list. For each task, deter
 | **Title** | Short imperative description |
 | **Description** | What the worker agent needs to do (2-3 sentences, include file paths) |
 | **Depends On** | Task IDs this requires first, or "none" |
-| **Files** | Key files the worker will read or modify |
-| **Complexity** | `simple/mechanical`, `standard`, `complex`, or `architecture/debugging with substantial uncertainty` |
-| **Model override** | `none (inherit)` by default; otherwise the exact model plus one allowed explicit reason |
-| **Thinking** | `low`, `medium`, `high`, or `xhigh`, derived from Complexity and passed as the Agent `thinking` parameter |
-| **Acceptance** | How to verify the task is done (objectively checkable) |
+| **Complexity** | The classification from **Complexity classification**, with the deciding factors |
+| **Selection reason** | Why the requested model and reasoning fit this task, recorded before dispatch |
+| **Requested model / reasoning** | The exact model and reasoning setting requested, or `inherit` when the operator selected no preference for this class |
+| **Observed settings + provenance** | The effective model and reasoning setting the native surface reported, each with its source; `unknown` when unobserved |
+| **Read scope** | Files and directories the worker reads |
+| **Owned write paths** | The only paths the worker edits |
+| **Exclusions** | Paths, actions, and settings the worker must not touch |
+| **Execution directory** | The absolute directory the worker runs in |
+| **Worktree isolation** | The isolated worktree for a parallel writer, or the reason a serialized worker shares one |
+| **Worker type** | The provider built-in `subagent_type` |
+| **Continuation method** | Native continuation, or checkpoint-and-rebrief with the checkpoint artifacts |
+| **Deliverable** | The concrete artifact, patch, or commit the worker returns |
+| **Verification** | Commands or exact review procedure, with expected results |
+| **Evidence destinations** | The paths that receive outputs, logs, and artifacts |
+| **Covered DoD IDs** | The Definition of Done criteria this task covers |
+| **Acceptance owner** | The advisor; a worker never accepts its own result |
+| **Failure / repair route** | Which worker repairs a failed check, and what returns to the advisor |
+| **Native worker ID** | Assigned at dispatch |
+| **Status** | `pending`/`running`/`completed`/`FAIL`/`BLOCKED` |
+| **Artifact references** | Paths, commits, or logs the worker produced |
+| **Usage** | Token or cost usage when the provider reports it; otherwise `unknown` |
 
 **Decomposition rules:**
 - Each task must be completable by a single sub-agent in one session
-- Prefer more smaller tasks over fewer larger ones
+- Prefer more smaller tasks over fewer larger ones, except that coupled implementation stays in one continuing worker
 - Schema/infrastructure before backend, backend before frontend
 - Tasks that touch different files with no shared state CAN be parallel
 - Tasks that modify the same file or depend on another's output MUST be sequential
 - Every task must have at least one verifiable acceptance criterion
 - Each task must have a **distinct, non-overlapping scope** — do not spawn redundant workers for the same files
+- A task must not say only "implement the plan"; it names its owned write paths and covered DoD IDs
+- A read-only worker never owns write paths
 - A task that is itself multi-step and parallelizable MAY recursively delegate via the `Agent` tool — but only if the worker's task description includes explicit `Max depth: N` and `Step budget: N` fields (see **Recursion-authorization gate** in step 5). Absent those fields, workers stay flat.
 
 ### 3. Build dependency graph and compute waves
@@ -165,8 +242,8 @@ can pick up the worktree. Write the graph to disk before spawning any worker.
 
 | File | Contents |
 |------|----------|
-| `delegate-graph.json` | Every task's ID, title, description, `dependsOn`, files, complexity, model override plus its reason, thinking level, acceptance criteria, assigned wave, and `status` (`pending`/`running`/`completed`/`FAIL`/`BLOCKED`) |
-| `delegate-log.txt` | Append-only run log; one line per wave boundary and per status change |
+| `delegate-graph.json` | Every task's complete dispatch record from step 2, its assigned wave, and its `status` (`pending`/`running`/`completed`/`FAIL`/`BLOCKED`) |
+| `delegate-log.txt` | Append-only run log; one line per wave boundary, per status change, per capability check, and per blocked control |
 
 Never write `prd.json` or `progress.txt`. Those belong to the implementation owner
 (`.oh/tasks/README.md`), and `progress.txt` in particular must not be edited by hand.
@@ -190,17 +267,13 @@ For each wave, starting from Wave 1:
 **a) Spawn worker agents in ONE message (parallel)**
 
 Launch N `Agent` tool calls **in a single message** for parallel execution. Each worker receives:
-- Task ID, title, description, files, and acceptance criteria
+- Task ID, title, description, read scope, owned write paths, exclusions, execution directory, and acceptance criteria
 - Summaries of completed prior-wave results (not full output)
 - Instruction: report what was done, what files changed, whether acceptance criteria are met
 
 Worker configuration:
-- **Model**: omit the Agent `model` argument so the worker inherits the parent/session
-  model. Include `model` only when the task graph records an allowed explicit override
-  and its reason; pass that exact override unchanged.
-- **Thinking**: pass `thinking` derived from Complexity (`low`, `medium`, `high`,
-  or `xhigh`). Never pass `max`. If unsupported, use the nearest supported thinking
-  level while keeping the inherited or explicitly overridden model unchanged.
+- **Model and reasoning**: apply the dispatch record per `## Worker model and reasoning
+  policy`; record observed settings and provenance after dispatch.
 - **run_in_background**: true (for waves with 2+ tasks)
 - **subagent_type**: use a **provider-native built-in** type only. This repository defines no project agents, so no `subagent_type` resolves to a repository file. For a worker that must `Write`/`Edit`, use `general-purpose` (or `claude`); for a read-only sweep whose verbose output should stay out of this context, use a read-only built-in such as `Explore`. Verify a type is offered by the running provider before naming it — an unrecognized `subagent_type` either errors or silently degrades. Never name a type on the assumption that a repository agent definition backs it.
 
@@ -220,9 +293,12 @@ If any field is missing, either add it or downgrade the task to flat execution (
 
 **b) Collect results**
 
-After all agents in the wave complete, set each task's `status` and `summary` in
-`delegate-graph.json`, then append the wave's outcome to `delegate-log.txt`. Write both
-before spawning the next wave — a crash between waves must leave the graph readable.
+After all agents in the wave complete, set each task's `status`, `summary`, native
+worker ID, artifact references, observed settings, and usage in
+`delegate-graph.json`, then append the wave's outcome to `delegate-log.txt`. Write
+both before spawning the next wave — a crash between waves must leave the graph
+readable. A worker's completed status is a report, not acceptance; the advisor
+inspects the artifact and runs the verification before it records acceptance.
 
 | Task | Status | Summary | Files Changed |
 |------|--------|---------|---------------|
@@ -237,6 +313,7 @@ If any task fails:
 - Check if tasks in subsequent waves depend on the failed task
 - Mark dependent tasks as BLOCKED (do not execute them)
 - Continue with non-dependent tasks in the next wave
+- Route the repair to the worker named in the task's failure / repair route; the advisor does not perform the repair itself
 
 **d) Advance to next wave**
 
@@ -278,6 +355,11 @@ Output a structured summary:
 - Waves executed: N
 - Max parallelism: N agents
 
+### Worker settings
+| Task | Requested model / reasoning | Observed settings | Provenance | Usage |
+|------|-----------------------------|-------------------|------------|-------|
+| T1   | <model> / <reasoning>       | <observed or unknown> | <source> | <usage or unknown> |
+
 ### Validation
 | Command | Scope | Exit status | Result |
 |---------|-------|-------------|--------|
@@ -289,10 +371,16 @@ Output a structured summary:
 
 ### 8. Example
 
-For a standard API task, record `Complexity: standard`, `Model override: none
-(inherit)`, and `Thinking: medium`; call Agent with `thinking: medium` and no
-`model` argument. If `medium` is unsupported, use the nearest supported thinking
-level without changing models.
+For a mechanical rename across three files under the Claude Code preferences, record
+`Complexity: mechanical (known transformation, decisive check, low blast radius)`,
+`Selection reason: operator low-complexity preference; mechanical work takes low
+effort (advisor judgment)`, and
+`Requested model / reasoning: opus / effort low (advisor judgment)`. Dispatch with
+`model: opus`. Apply the effort through a subagent definition with `effort: low` when
+one exists at the operator-chosen scope; when none exists, record
+`Observed settings: effort inherited session level, unobserved (no per-worker
+control)`. Record the effort as observed only when the runtime displays it or the
+worker reports it, and do not record the request as confirmed.
 
 ## Reference
 
@@ -301,10 +389,9 @@ level without changing models.
 | Rule | Value |
 |------|-------|
 | Max concurrent agents per wave | 5 (split larger waves) |
-| Failure handling | Mark dependent tasks BLOCKED, continue independent ones |
+| Failure handling | Mark dependent tasks BLOCKED, continue independent ones; the named repair worker repairs |
 | Context passing | Prior wave summaries, not full output |
-| Model selection | Omit Agent `model` to inherit by default. Override only for an operator request, unavailable required capability/context, strict latency/budget, or local benchmark evidence; record the reason. Unsupported thinking falls back to the nearest supported level, never a model switch. |
-| Thinking selection | Pass Agent `thinking`: simple/mechanical=`low`; standard=`medium`; complex=`high`; architecture/debugging with substantial uncertainty=`xhigh`; never `max`. |
+| Model, reasoning, and settings evidence | See `## Worker model and reasoning policy` |
 
 ### Key Resources
 

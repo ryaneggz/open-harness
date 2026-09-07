@@ -185,6 +185,7 @@ because implementation reaches paths the planner never saw.
 - **Intent preserved**: YES | NO
 - **Material deviations**: `none` or list
 - **Constraints discovered during grounding**: `none` or list
+- **Orchestration preserved**: YES | NO | NOT-APPLICABLE
 ```
 
 **The gate.** Passing a plan file satisfies the commitment gate only while
@@ -199,6 +200,20 @@ the folder in place, and require operator re-approval. Do not silently convert a
 approved plan into a materially different PRD and treat the original approval as
 covering it. With no `--plan` file the field is `Source plan: none` and the PRD
 itself is the first artifact anyone could approve.
+
+**The orchestration-transfer check.** A source plan that carries an
+`## advisor orchestration strategy` (`.oh/skills/plan/SKILL.md`) states worker
+scope, model constraints, evidence gates, and recorded exceptions. Confirm that
+each of them survives conversion: the bounded assignments, their owned write
+paths and exclusions, their requested model and reasoning constraints, their
+verification commands and evidence destinations, and every operator exception
+appear in `prd.md` and reach the rendered task prompt through it. A lost worker
+scope, a dropped model constraint, a weakened evidence gate, or a missing
+exception is a material deviation: write `Orchestration preserved: NO`, set
+`Intent preserved: NO`, and stop. Write `NOT-APPLICABLE` only when the source
+plan has no orchestration strategy. The check confirms that the strategy
+survived; it never converts a same-session plan into a handoff, and a plan
+without a handoff prompt passes.
 
 `## Wiki Alignment` is superseded by these three sections. Do not write it.
 

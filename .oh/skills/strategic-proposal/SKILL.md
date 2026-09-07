@@ -41,7 +41,7 @@ flowchart TD
 
     B -->|Yes| C["Gather context: IDENTITY, schema, routes, issues"]
     C --> D["Compose Current State Briefing"]
-    D --> E["Spawn 5 experts IN ONE MESSAGE (parallel sonnet)"]
+    D --> E["Spawn 5 experts IN ONE MESSAGE (parallel)"]
 
     E --> E1["Expert: Product"]
     E --> E2["Expert: Docs"]
@@ -50,7 +50,7 @@ flowchart TD
     E --> E5["Expert: Agent Systems"]
 
     E1 & E2 & E3 & E4 & E5 --> F["Strategic Council DRAFT (opus)"]
-    F --> CRITIC["Strategic Critic (sonnet)<br>Challenge signal, feasibility,<br>phase assignments, dependencies"]
+    F --> CRITIC["Strategic Critic<br>Challenge signal, feasibility,<br>phase assignments, dependencies"]
     CRITIC --> F2["Strategic Council FINAL (opus)<br>Incorporate critique, revise or defend"]
     F2 --> G["Find/create pinned issue (label: roadmap)"]
     G --> H["Update pinned issue body"]
@@ -121,13 +121,16 @@ Assemble a structured markdown briefing to pass to ALL 5 experts:
 
 Launch 5 Agent tool calls **in a single message** for parallel execution:
 
-| Expert | Perspective | Model |
-|--------|-------------|-------|
-| **Product** | Data models, APIs, features | sonnet |
-| **Docs** | Documentation, fork showcase UX | sonnet |
-| **Security** | Auth, headers, access control | sonnet |
-| **Registry** | Docker registry, licensing | sonnet |
-| **Agent Systems** | Agent autonomy, Ralph loop | sonnet |
+| Expert | Perspective |
+|--------|-------------|
+| **Product** | Data models, APIs, features |
+| **Docs** | Documentation, fork showcase UX |
+| **Security** | Auth, headers, access control |
+| **Registry** | Docker registry, licensing |
+| **Agent Systems** | Agent autonomy, Ralph loop |
+
+Worker model and effort follow `.oh/skills/delegate/SKILL.md`: operator selections and
+exclusions bind, and the advisor selects and records unspecified settings per task.
 
 Each expert is a **prompt for a bounded provider-native worker**, not a repository
 agent definition. Use `subagent_type: general-purpose` (or a read-only built-in when

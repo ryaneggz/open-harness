@@ -4,12 +4,12 @@ slug: pattern-audit-driver-tool-allowlist
 kind: pattern
 tags: [audit, spec, claude-p, permissions, allowlist, false-failure, verification-environment]
 created: 2026-09-02
-updated: 2026-09-02
+updated: 2026-09-06
 sources:
   - .oh/skills/audit/SKILL.md@0fe00420
   - .oh/skills/audit/scripts/route-driver.sh@0fe00420
   - .oh/tasks/one-door/evidence.md@c20ea4b8
-confidence: provisional
+confidence: deprecated
 ---
 
 # A non-interactive audit driver without a tool allowlist reports every gate as unobtainable
@@ -20,6 +20,11 @@ confidence: provisional
 - `.oh/tasks/one-door/evidence.md` — the run that hit it: two failed audits, one pass.
 
 ## Summary
+**Retired 2026-09-06 (#993, PR #991).** Issue #993 replaced the nested-agent
+driver: `route-driver.sh` now runs the deterministic gates itself and launches no
+agent. The allowlist failure mode below no longer exists. This page stays as the
+record of why the driver changed.
+
 The audit boundary launches the route in a fresh `claude -p` process with the
 lifecycle variables scrubbed. Without an explicit tool allowlist that process
 cannot run `bash` or `gh`, so the eval floor, the PR classifier, and the slop
