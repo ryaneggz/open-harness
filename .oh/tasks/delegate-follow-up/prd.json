@@ -31,7 +31,7 @@
         "Max 5 concurrent agents per wave and the recursion-authorization limits are unchanged",
         "The dispatch record requires scope, selection reason, search/output limits, expected evidence, and a stopping condition in the worker brief; the search/output-limits and stopping-condition fields are ADDED by this change (independent review established they were absent at the base, so the earlier 'still requires' wording was false)",
         "No scheduler, no new machinery, and no unmeasured efficiency or token-savings claim is added",
-        "One coupled, one independent, and one mechanical brief are reviewed against the revised skill and recorded in evidence.md",
+        "One coupled, one independent, and one mechanical brief are reviewed against the revised skill; the full review is recorded in progress.txt with a summary and pointer in evidence.md",
         "Typecheck passes"
       ],
       "priority": 2,
@@ -121,5 +121,6 @@
       "passes": true,
       "notes": "Every retained register row dispositioned in evidence.md; diff touches no deferred surface; historical unknown model/effort observations preserved as unknown."
     }
-  ]
+  ],
+  "completionAuthority": "prd.json is the authoritative completion state per .oh/skills/spec/SKILL.md (\"Completion is structured state... There is no prose sentinel\"). The unticked checkboxes in prd.md are the approved plan as written and are deliberately not edited to mark completion; this file is the record that decides it."
 }

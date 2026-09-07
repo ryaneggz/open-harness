@@ -62,12 +62,14 @@
       "failureRepairRoute": "failed checks return to T1; the advisor rechecks the repair before fresh independent review",
       "maxDepth": 1,
       "nativeWorkerId": "general-purpose worker, session-scoped native reference held by the advisor; the provider surface exposes no durable id to persist, recorded as such rather than as unknown",
-      "status": "running",
+      "status": "completed",
       "artifactReferences": [
-        "3ddb06b15bc20148bdf08dd1caf1a7b8a56a8103"
+        "3ddb06b15bc20148bdf08dd1caf1a7b8a56a8103",
+        "c879ad800c76353f66a020af27ce161aea87aa40",
+        "d390ebe387199d123c0c2ba44bf65039d6f81a38"
       ],
-      "usage": "124628 subagent tokens, 19 tool uses, 470s (round 1, provider-reported)",
-      "summary": "Round 1 returned commit 3ddb06b1 touching exactly the three owned paths; ACCEPTED by the advisor after it re-ran all 14 checks itself. Round 2 (repair R1-R5 from the independent review) dispatched to the SAME worker by native continuation; status is running until the advisor accepts that round."
+      "usage": "480k subagent tokens, 81 tool uses across three rounds (provider-reported)",
+      "summary": "Three rounds, one continuing worker throughout, every round routed by native continuation with no duplicate ever dispatched. R1 3ddb06b1 (the four corrections plus the first probe checks), R2 c879ad80 (five review repairs), R3 d390ebe3 (widened negation window plus the must-pass injection class). Each round ACCEPTED only after the advisor re-ran the full check list itself. Total +205 / -40 across exactly the three owned paths."
     },
     {
       "id": "T2",
@@ -110,10 +112,12 @@
       "nativeWorkerId": "general-purpose read-only reviewer, session-scoped native reference held by the advisor",
       "status": "completed",
       "artifactReferences": [
-        "review round 1: 4 blocking findings (A-1/A-8 ledger, A-5 D3 row, A-18 fault-injection evidence, A-23 evidence.md), 22 non-blocking; simplicity findings returned as 3 non-blocking rows"
+        "round 1: 4 blocking / 22 non-blocking + 3 simplicity findings",
+        "round 2: 1 blocking (B-1 stale ledger) / 7 non-blocking + 5 simplicity findings at 263b9d52",
+        "round 3: no new blocking finding; B-1 confirmed closed; gate-5 record keyed to d390ebe3 with 5 non-blocking findings"
       ],
-      "usage": "144881 subagent tokens, 29 tool uses, 616s (round 1, provider-reported)",
-      "summary": "Round-1 independent review ACCEPTED by the advisor. Re-review of the repair round is pending."
+      "usage": "588k subagent tokens, 86 tool uses across three rounds (provider-reported)",
+      "summary": "Three review rounds, all ACCEPTED. Round 1: 4 blocking / 22 non-blocking. Round 2 (re-review of the repair): 1 blocking (B-1, the stale ledger recurrence) / 7 non-blocking. Round 3: no new blocking finding, B-1 confirmed closed by re-running the pattern page's own recipe, and the gate-5 record keyed to the last implementation commit."
     }
   ],
   "waves": [
@@ -138,6 +142,13 @@
     "at": "2026-09-07",
     "trigger": "independent review finding A-1/A-8: the persisted ledger recorded T1 as pending with no artifacts after it had been dispatched, returned, and been accepted",
     "whatARessumeWouldHaveDone": "read status pending and re-run T1 under its dispatch record, dispatching a SECOND writer onto .oh/skills/delegate/SKILL.md over already-accepted work",
-    "action": "the advisor re-read the persisted graph against real state and reconciled it; this is the end-to-end resume the review recorded as never exercised"
+    "action": "the advisor re-read the persisted graph against real state and reconciled it; this is the end-to-end resume the review recorded as never exercised",
+    "secondOccurrence": {
+      "at": "2026-09-07",
+      "finding": "B-1 \u2014 the same defect recurred one round later: progress.txt recorded the repair round as accepted while the graph still said running and the log had no round-2 acceptance line",
+      "foundBy": "the independent reviewer, by running the reproduction recipe from pattern-delegate-ledger-stale-at-acceptance.md, which this run itself wrote",
+      "severityDifference": "milder than the first occurrence: nativeWorkerId is non-null, so a resume reaches the ambiguity branch and blocks writes rather than dispatching a duplicate",
+      "action": "acceptance written back to both the graph and the log; the page's own recipe is now run before each commit that follows an acceptance"
+    }
   }
 }

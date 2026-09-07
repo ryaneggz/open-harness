@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "commit": "c879ad800c76353f66a020af27ce161aea87aa40",
-  "reviewer": "T2 — bounded read-only reviewer, general-purpose built-in, wrote none of the code under review",
-  "reviewedAt": "2026-09-07T19:45:00Z",
+  "commit": "d390ebe387199d123c0c2ba44bf65039d6f81a38",
+  "reviewer": "T2 - bounded read-only reviewer, general-purpose built-in, wrote none of the code under review; three review rounds, findings re-keyed to this commit",
+  "reviewedAt": "2026-09-07T20:40:00Z",
   "findings": [
     {
       "file": ".oh/skills/delegate/SKILL.md",
-      "line": 318,
-      "simplerAlternative": "Delete the first sentence of the 5b paragraph (\"The `status` field carries the advisor's acceptance decision, never a worker's claim, and it stays inside the existing pending/running/completed/FAIL/BLOCKED values.\") and its closing sentence (\"No worker records this decision for itself.\"); begin the paragraph at \"Keep the worker's own claim in `summary`.\" Both restate rules already stated three times in the same file: the Status field row, the Acceptance owner row (\"a worker never accepts its own result\"), and the predecessor sentence (\"A worker's completed status is a report, not acceptance\"). The operative new content — the summary/status split, the running default, the FAIL rule, and the log append — survives intact and still satisfies US-001 criterion 1.",
+      "line": 323,
+      "simplerAlternative": "Delete the first sentence of the 5b paragraph (\"The `status` field carries the advisor's acceptance decision, never a worker's claim, and it stays inside the existing pending/running/completed/FAIL/BLOCKED values.\") and its closing sentence (\"No worker records this decision for itself.\"); begin the paragraph at \"Keep the worker's own claim in `summary`.\" Both restate rules already stated three times in the same file: the Status field row, the Acceptance owner row (\"a worker never accepts its own result\"), and the predecessor sentence (\"A worker's completed status is a report, not acceptance\"). The operative new content \u2014 the summary/status split, the running default, the FAIL rule, and the log append \u2014 survives intact and still satisfies US-001 criterion 1.",
       "removesLines": 3,
       "blocking": false,
       "status": "open",
@@ -25,8 +25,26 @@
     {
       "file": ".oh/skills/delegate/SKILL.md",
       "line": 161,
-      "simplerAlternative": "Drop the trailing sentence \"This path writes no file, dispatches no worker, and creates no execution state.\" from the no-plan-found path, keeping only \"Then stop.\" The guarantee is already stated for the skill-loading and plan-finishing paths and for --dry-run, and no probe literal pins this occurrence. Marked non-blocking because this is the sole statement of the guarantee on that specific control path — the one that previously ended in the undefined Memory Protocol — so removing it trades two lines for a real, if redundant, guarantee.",
+      "simplerAlternative": "Drop the trailing sentence \"This path writes no file, dispatches no worker, and creates no execution state.\" from the no-plan-found path, keeping only \"Then stop.\" The guarantee is already stated for the skill-loading and plan-finishing paths and for --dry-run, and no probe literal pins this occurrence. Marked non-blocking because this is the sole statement of the guarantee on that specific control path \u2014 the one that previously ended in the undefined Memory Protocol \u2014 so removing it trades two lines for a real, if redundant, guarantee.",
       "removesLines": 2,
+      "blocking": false,
+      "status": "open",
+      "resolvedIn": null
+    },
+    {
+      "file": ".oh/tasks/delegate-follow-up/delegate-graph.json",
+      "line": 1,
+      "simplerAlternative": "Edit the reconciled fields in place instead of re-serializing the whole file. The reconciliation changed roughly 15 lines of real content, but the commit is much larger because a JSON serializer also expanded every compact array onto one element per line and escaped every literal em-dash. Keeping the original compact array style leaves the semantic change visible and drops the churn.",
+      "removesLines": 30,
+      "blocking": false,
+      "status": "open",
+      "resolvedIn": null
+    },
+    {
+      "file": ".oh/evals/probes/delegate-worker-boundary.sh",
+      "line": 96,
+      "simplerAlternative": "Collapse the five unrolled field greps into one loop over the field names, so the field list becomes the data it already is. Behavior is identical. Non-blocking: a style choice at 12 lines versus 8, not unnecessary machinery.",
+      "removesLines": 4,
       "blocking": false,
       "status": "open",
       "resolvedIn": null
