@@ -13,6 +13,7 @@ on:
       - "packages/oh/**"
       - ".agro/scripts/docker-compose.sh"
       - ".agro/scripts/sandbox-boot-smoke.sh"
+      - ".agro/scripts/sandbox-upgrade-smoke.sh"
       - ".agro/scripts/harness-config.sh"
       - "agro.json"
       - "oh.json"
@@ -28,6 +29,7 @@ on:
       - "packages/oh/**"
       - ".agro/scripts/docker-compose.sh"
       - ".agro/scripts/sandbox-boot-smoke.sh"
+      - ".agro/scripts/sandbox-upgrade-smoke.sh"
       - ".agro/scripts/harness-config.sh"
       - "agro.json"
       - "oh.json"
@@ -160,3 +162,40 @@ jobs:
           BOOT_SMOKE_TIMEOUT_SECONDS: "1200"
           BOOT_SMOKE_INTERVAL_SECONDS: "10"
         run: bash .agro/scripts/sandbox-boot-smoke.sh
+
+  sandbox-upgrade-guard:
+    name: Boot a legacy volume against the fresh image
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Ensure Mifune submodule
+        run: bash .agro/scripts/link-providers.sh --init
+
+      - name: Docker diagnostics
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Upgrade a legacy workspace volume to the freshly built image
+        env:
+          LEGACY_IMAGE: ghcr.io/mifunedev/openharness:0.9.0
+          UPGRADE_SMOKE_PROJECT: agro-upgrade-${{ github.run_id }}
+          UPGRADE_SMOKE_TIMEOUT_SECONDS: "1200"
+          UPGRADE_SMOKE_INTERVAL_SECONDS: "10"
+        run: |
+          set -o pipefail
+          bash .agro/scripts/sandbox-upgrade-smoke.sh 2>&1 | tee sandbox-upgrade-smoke.log
+
+      - name: Upload the upgrade smoke log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-upgrade-smoke-log-${{ github.run_id }}
+          path: sandbox-upgrade-smoke.log
+          if-no-files-found: warn

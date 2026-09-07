@@ -70,7 +70,7 @@
         "A migration rehearsal (test or script) on a checkout-backed fixture: `agro migrate --check`, `agro migrate`, provider links resolve, `agro ps` and `oh ps` succeed against the migrated checkout, second run noop."
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

@@ -113,7 +113,7 @@
         "migration rehearsal test"
       ],
       "acceptance": "script runs locally against ghcr.io/mifunedev/openharness:0.9.0 volume + fresh image; rehearsal test passes",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "T6",
