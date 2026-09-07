@@ -121,11 +121,15 @@ delegate_desc="$(awk '/^description: \|$/{f=1; next} f && /^[a-z][a-z-]*:/{exit}
 for key in name description argument-hint; do
   grep -qE "^${key}:" <<<"$delegate_frontmatter" || problems+=("/delegate frontmatter lacks '${key}:'")
 done
+negation_word='\b(not|never|no|neither|nor|without)\b'
+
 unnegated_hits() {
   local text="$1" token="$2"
-  printf '%s\n' "$text" | sed 's/[.;:,] /&\n/g' \
+  printf '%s\n' "$text" \
+    | sed -E 's/([.!?]) /\1\n/g' \
+    | sed -E 's/\b(but|however|whereas|yet|though|although|while)\b/\n&/gI' \
     | grep -iE -- "${token}" \
-    | grep -viE -- "\\b(not|never|no|neither|without)\\b[^.;:,]{0,60}${token}" || true
+    | grep -viE -- "(${negation_word}.{0,80}${token}|${token}.{0,80}${negation_word})" || true
 }
 
 if [[ -z "${delegate_desc//[[:space:]]/}" ]]; then
