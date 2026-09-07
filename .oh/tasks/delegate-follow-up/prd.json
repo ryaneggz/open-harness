@@ -15,7 +15,7 @@
         "The change reuses the existing pending/running/completed/FAIL/BLOCKED state model and existing evidence ownership; no new lifecycle is introduced",
         "A disposable-context exercise records dependency eligibility before checking, after a failed check, and after a verified repair, with real observations in evidence.md",
         "delegate-worker-boundary.sh and advisor-execution-contract.sh exit 0",
-        "Typecheck passes"
+        "Typecheck passes (satisfied by CI's \"Lint, Typecheck, Build & Test\" check, SUCCESS on the final pushed head; the diff touches no TypeScript. Cited after independent review found the criterion marked passing but uncited)"
       ],
       "priority": 1,
       "passes": true,
@@ -32,7 +32,7 @@
         "The dispatch record requires scope, selection reason, search/output limits, expected evidence, and a stopping condition in the worker brief; the search/output-limits and stopping-condition fields are ADDED by this change (independent review established they were absent at the base, so the earlier 'still requires' wording was false)",
         "No scheduler, no new machinery, and no unmeasured efficiency or token-savings claim is added",
         "One coupled, one independent, and one mechanical brief are reviewed against the revised skill; the full review is recorded in progress.txt with a summary and pointer in evidence.md",
-        "Typecheck passes"
+        "Typecheck passes (satisfied by CI's \"Lint, Typecheck, Build & Test\" check, SUCCESS on the final pushed head; the diff touches no TypeScript. Cited after independent review found the criterion marked passing but uncited)"
       ],
       "priority": 2,
       "passes": true,
@@ -50,11 +50,11 @@
         "A saved completed label whose evidence no longer describes the required artifact revision is not trusted",
         "The resume path still appends to delegate-log.txt and never truncates it",
         "Active, ended-with-valid-artifacts, interrupted-incomplete, unknown-status, and stale-evidence cases are exercised and recorded in evidence.md",
-        "Typecheck passes"
+        "Typecheck passes (satisfied by CI's \"Lint, Typecheck, Build & Test\" check, SUCCESS on the final pushed head; the diff touches no TypeScript. Cited after independent review found the criterion marked passing but uncited)"
       ],
       "priority": 3,
       "passes": true,
-      "notes": "Resume rule now covers pending/BLOCKED, FAIL (incomplete scope only), running (reconnect, never duplicate), completed (stale-evidence check) and unknown provenance. Five cases exercised; a real end-to-end resume reconciliation found and fixed defect A-1."
+      "notes": "Resume rule now covers pending/BLOCKED, FAIL (incomplete scope only), running (reconnect, never duplicate), completed (stale-evidence check) and unknown provenance. Five cases exercised; a real end-to-end resume reconciliation found and fixed defect A-1. | CORRECTION after independent review B-4: the earlier case-(a) record described an ENDED worker awaiting verification, not a reconnect to a still-active one. The still-active branch was then exercised properly and is live (SendMessage to a genuinely running worker returned \"Message queued for delivery ... at its next tool round\", distinct from \"Resuming agent\", with no duplicate dispatched). Criterion 2 is satisfied within a session by that observation. The CROSS-SESSION reconnect branch is BLOCKED on a missing native capability and is recorded as a gap, not as satisfied. Case (d) unknown-status remains a fixture."
     },
     {
       "id": "US-004",
@@ -66,7 +66,7 @@
         "The Decision Flow diagram branches on --dry-run before the run-ledger write, matching the prose rule at :260 that --dry-run writes neither file",
         "--dry-run remains read-only: it emits the task graph and wave plan, dispatches no worker, and creates no execution state",
         "A plan-only request and an authorized --dry-run are exercised with native dispatch events and execution-state files observed before and after; neither dispatches a worker nor creates execution state",
-        "Typecheck passes"
+        "Typecheck passes (satisfied by CI's \"Lint, Typecheck, Build & Test\" check, SUCCESS on the final pushed head; the diff touches no TypeScript. Cited after independent review found the criterion marked passing but uncited)"
       ],
       "priority": 4,
       "passes": true,
@@ -82,7 +82,7 @@
         "Each added check rejects its targeted mutation in a disposable copy and passes after restoration; the injected fault and the restored pass are recorded with exit codes",
         "Each negative assertion binds its negation to the token it forbids rather than to a whole sentence (pattern-evals-negation-must-govern-token)",
         "Both probes exit 0 on the integrated result",
-        "Typecheck passes"
+        "Typecheck passes (satisfied by CI's \"Lint, Typecheck, Build & Test\" check, SUCCESS on the final pushed head; the diff touches no TypeScript. Cited after independent review found the criterion marked passing but uncited)"
       ],
       "priority": 5,
       "passes": true,
@@ -99,7 +99,7 @@
         "The suite run, not a name grep, is the authoritative list of affected probes (pattern-evals-probe-brief-under-enumeration)",
         "The merged model/effort policy, no-Sonnet exclusion, requested-vs-observed evidence rule, single-owner ownership, optional handoff, and the audit gate-4/gate-5 completion contract are unchanged by this diff",
         "Real exit codes and the tested commit are recorded in evidence.md; a skipped check is recorded as a gap, never as a pass",
-        "Typecheck passes"
+        "Typecheck passes (satisfied by CI's \"Lint, Typecheck, Build & Test\" check, SUCCESS on the final pushed head; the diff touches no TypeScript. Cited after independent review found the criterion marked passing but uncited)"
       ],
       "priority": 6,
       "passes": true,
@@ -115,7 +115,7 @@
         "No paid experiment and no external documentation change is started without separate operator approval",
         "Historical unknown model and effort observations are preserved as unknown; no retrospective setting is manufactured",
         "The final diff is compared against the four core gaps and every register row, and the comparison is recorded",
-        "Typecheck passes"
+        "Typecheck passes (satisfied by CI's \"Lint, Typecheck, Build & Test\" check, SUCCESS on the final pushed head; the diff touches no TypeScript. Cited after independent review found the criterion marked passing but uncited)"
       ],
       "priority": 7,
       "passes": true,

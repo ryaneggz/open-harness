@@ -81,7 +81,8 @@ sequential task does not need.
 - [ ] No scheduler, no new machinery, and no unmeasured efficiency or token-savings claim
       is added
 - [ ] One coupled, one independent, and one mechanical brief are reviewed against the
-      revised skill and recorded in `evidence.md`
+      revised skill; the full review is recorded in `progress.txt`, with a summary and
+      pointer in `evidence.md`
 
 ### US-003: Reconcile interrupted `running` tasks on resume
 
@@ -103,7 +104,10 @@ accept a completion label whose evidence has gone stale.
       revision is not trusted
 - [ ] The resume path still appends to `delegate-log.txt` and never truncates it
 - [ ] Active, ended-with-valid-artifacts, interrupted-incomplete, unknown-status, and
-      stale-evidence cases are exercised and recorded in `evidence.md`
+      stale-evidence cases are exercised; the case-by-case record is in `progress.txt`,
+      summarised in `evidence.md`. Each case states whether it is a **live native
+      observation** or a **fixture**, and the cross-session reconnect branch is recorded
+      **BLOCKED on a missing native capability** rather than silently satisfied
 
 ### US-004: Remove the undefined Memory Protocol and the accidental execution trigger
 
