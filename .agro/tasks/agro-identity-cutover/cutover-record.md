@@ -94,3 +94,29 @@ https://github.com/mifunedev/agro-web/pull/47
 in_progress  https://github.com/mifunedev/agro-web/actions/runs/34183795746
 ## ghcr agro package
 {"name":"agro","visibility":"public"}
+
+## Post-cutover verification (advisor, 2026-09-08)
+
+| Check | Result |
+|---|---|
+| `git ls-remote https://github.com/mifunedev/openharness.git HEAD` | works (823aabbd) |
+| `git ls-remote https://github.com/mifunedev/openharness-web.git HEAD` | works (4f26a559) |
+| `gh repo view mifunedev/openharness --json nameWithOwner` | `mifunedev/agro` |
+| `gh repo view mifunedev/openharness-web --json nameWithOwner` | `mifunedev/agro-web` |
+| GHCR package `mifunedev/agro` | public |
+| `pages.yml` on `main` after the #46 merge | completed success, run 34183795746 |
+| `pages.yml` `workflow_dispatch` stand-in (`ref=main`) | completed success, run 34184320927 |
+| `oh.mifune.dev/get-oh.sh` | 200, body starts `#!` |
+| `oh.mifune.dev/oh.js` | 200 |
+| `oh.mifune.dev/get-agro.sh` | 200, body starts `#!` (new, mirrored after #46) |
+| `oh.mifune.dev/agro.js` | 200 uncached; a stale Cloudflare 404 (age 158 s) still served on the plain URL at check time |
+| `oh.mifune.dev/install.sh` | 302 to raw `mifunedev/openharness` `main` `.oh/scripts/install.sh` (unchanged; retargeted in operator step 6) |
+| `agro.mifune.dev/*` | 421 (no origin until the operator performs step 5) |
+| Clean `node:22-slim`: `curl -fsSL https://oh.mifune.dev/get-oh.sh \| bash` | installed `oh 0.9.0` from the prebuilt `oh.js` |
+| Clean `node:22-slim`: `curl -fsSL https://oh.mifune.dev/get-agro.sh \| bash` | installed `agro 0.9.0` from the GitHub release asset |
+| `sandbox-boot-guard.yml` `LEGACY_IMAGE` | still `ghcr.io/mifunedev/openharness:0.9.0` on purpose; `sandbox-boot-guard-ci` probe exit 0 |
+
+Not verified, because they wait on the operator: `agro.mifune.dev` serving the
+site, the five `oh.mifune.dev` executable paths after the Cloudflare rules, the
+`README` one-liner against `agro.mifune.dev/get-agro.sh`, the real release
+dispatch (needs `AGRO_WEB_DISPATCH_TOKEN`), and the merge of web PR #47.

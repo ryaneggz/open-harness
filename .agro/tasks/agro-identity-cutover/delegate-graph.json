@@ -391,7 +391,7 @@
       "failureRepairRoute": "rebrief",
       "nativeWorkerId": null,
       "status": "running",
-      "summary": "Operator authorized the gh steps; advisor performed steps 1,2,3,4,7b,8 and merged #46 (recorded in cutover-record.md). Steps 5, 6, 7a stay with the operator. Dispatching the default flips: T6a core CLI defaults (remote.ts, self-upgrade.ts, docs.ts, service Documentation=, lifecycle-commands.md) and T6b web oh-source.mjs default on the #47 branch.",
+      "summary": "Operator authorized the gh steps; advisor performed steps 1,2,3,4,7b,8 and merged #46 (recorded in cutover-record.md). Steps 5, 6, 7a stay with the operator. Dispatching the default flips: T6a core CLI defaults (remote.ts, self-upgrade.ts, docs.ts, service Documentation=, lifecycle-commands.md) and T6b web oh-source.mjs default on the #47 branch. Steps 5, 6, 7a remain with the operator; story cannot pass.",
       "artifactReferences": [],
       "usage": "unknown"
     },
@@ -443,8 +443,8 @@
       "acceptanceOwner": "advisor",
       "failureRepairRoute": "T7 worker repairs; owner commits and writes evidence.md (US-007 AC5)",
       "nativeWorkerId": "a03947e3ac3cca274",
-      "status": "running",
-      "summary": "Knowledge portion accepted: release-versioning, fresh-machine-setup, oh-cli-portable-lifecycle UPDATED; compose-env-boundary, managed-agents, plan-vs-built-reconciliation REVERIFIED; new agro-web-pipeline page; index regenerated; CHANGELOG entry (248 chars after one repair). Remaining for T7: post-cutover REVERIFY pass and evidence.md (blocked on T6).",
+      "status": "completed",
+      "summary": "Knowledge portion accepted: release-versioning, fresh-machine-setup, oh-cli-portable-lifecycle UPDATED; compose-env-boundary, managed-agents, plan-vs-built-reconciliation REVERIFIED; new agro-web-pipeline page; index regenerated; CHANGELOG entry (248 chars after one repair). Remaining for T7: post-cutover REVERIFY pass and evidence.md (blocked on T6). Step 9 compile: pattern-evals-tracked-only-scan-misses-uncommitted gained this run occurrence; new pattern-wiki-frontmatter-edit-without-reindex; index 41 entries; all wiki probes 0.",
       "artifactReferences": [
         ".agro/knowledge/source/agro-web-pipeline.md",
         "CHANGELOG.md"
