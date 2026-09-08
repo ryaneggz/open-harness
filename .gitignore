@@ -57,6 +57,7 @@ crons/*.log
 
 **/.pnpm-store
 **/.claude/plans
+**/.oh/plans/
 **/.claude/specs/*
 **/.claude/settings.local.json
 **/auth.json
