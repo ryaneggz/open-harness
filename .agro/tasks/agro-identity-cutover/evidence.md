@@ -1,6 +1,6 @@
 # Evidence — agro-identity-cutover (#943)
 
-Written at commit `a18e421a`, after the GitHub-side cutover. Correlates to the
+Written at commit `9a7de4f7`, after the GitHub-side cutover. Correlates to the
 eval run recorded in `eval-result.json` and the simplicity review in
 `simplicity-review.json`, both keyed to that commit.
 

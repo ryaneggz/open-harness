@@ -486,7 +486,7 @@
       "dependsOn": [
         "T6"
       ],
-      "status": "running",
+      "status": "completed",
       "nativeWorkerId": "a153b245e07756a76",
       "workerType": "general-purpose",
       "executionDirectory": "/home/sandbox/harness/projects/mifunedev/openharness-web/.worktrees/feat-943-agro-web-identity",
