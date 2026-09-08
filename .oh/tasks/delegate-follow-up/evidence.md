@@ -2,7 +2,7 @@
 
 ## Current parent-owned acceptance epoch
 
-Status: RUNNING. PR #1004 remains draft. No merge is authorized.
+Status: CONTENT ACCEPTED. Undraft only after the finalization checks below. No merge is authorized.
 
 The operator retained acceptance in the requesting Pi session and assigned Sol only bounded implementation and verification work.
 The parent accepted Sol patch `c6704966c023ffc719797f54e232178eb914a318` after source inspection and independent review `3e4aed67-cd93-4fd`.
@@ -21,7 +21,12 @@ Content reviewer `bf04e00c-ba8f-4fa` found no correctness blocker and identified
 Sol implemented both simplifications and the missing changelog entry. Independent reviewer `7c3b8668-b6b9-485` verified the final diff and all 17 mutation outcomes.
 `simplicity-review.json` records both blocking findings resolved and four retained nonblocking findings.
 The parent corrected current US-003 C5/C8 verification and narrowed provider claims as requested by that reviewer; prior claims remain in explicitly historical fields.
-All content criteria are accepted, including D4 under unchanged SA-1. Each story's `passes` remains false until its final pushed-head typecheck criterion is verified; `parentContentAccepted` is not a substitute for completion.
+All seven stories are accepted, including D4 under unchanged SA-1. All four CI checks succeeded at `a89f07c8c34df7b4b21a02f89d3846368ae40e4a`; `parent-verification/ci-content-record-head.json` records the actual checks and URLs.
+Actual preliminary audits passed: `audit-20260908T001250Z-4036385` (`AUDIT-PASS`) and `audit-20260908T001251Z-4036476` (`PR-AUDIT-PROMOTABLE`).
+They ran at `a89f07c8` with completion records uncommitted; this is not final committed-state coverage. Raw logs and exits are under `parent-verification/`.
+The production boundary removed its temporary JSON on exit. These raw logs are retained as logs, not reconstructed boundary artifacts.
+Finalization must recheck CI and rerun both actual audits on the clean, matching local/remote final record head before undrafting.
+The final boundary artifacts must be preserved before cleanup. Their run IDs and exact audited head must be reported in the parent handback without requiring another content change.
 
 The final repaired content is `23e409e6ab9193f9c1cac5fb0977c0e07215c623`, including the changelog and two probe simplifications.
 Its fresh eval exited 0: 138 PASS, six unchanged environment skips, and one unchanged `skills-vendored` regression.
@@ -29,7 +34,9 @@ Its fresh eval exited 0: 138 PASS, six unchanged environment skips, and one unch
 The parent independently reproduced the missing `cc-safety-net` failure at approved base `56ab2bab`; the base log is archived alongside the final eval.
 `parent-verification/final/knowledge-impact.tsv` reports no declared knowledge source affected by the repair and changelog.
 Independent final repair review `7c3b8668-b6b9-485` completed at `2026-09-08T00:06:32Z`. Its required current-record corrections are now applied.
-Final independent review, actual implementation/PR audits, and final pushed-head CI remain required.
+Final source review and preliminary audits are complete. Four nonblocking simplification findings remain disclosed; none is an unimplemented blocking alternative.
+Preliminary metrics: +6317/-41 lines, shell-branch proxy 94 (not CCN), ccnMax 10; lizard reports no analysable changed files. Final audit metrics may differ as evidence records grow.
+Final pushed-head CI and repeated clean-head audits remain the undraft gate.
 
 SA-1 remains unchanged: defer only cross-session reconnection success on the tested provider.
 A failed lookup of one native handle does not establish a universal provider limitation.

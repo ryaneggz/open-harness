@@ -581,13 +581,18 @@
   },
   "parentAcceptance": {
     "owner": "requesting Pi session; operator retained acceptance here; Sol is a bounded worker",
-    "recordedAt": "2026-09-07T23:44:13.386427+00:00",
+    "recordedAt": "2026-09-08T00:14:46.470984+00:00",
     "recordTiming": "Retrospective durable reconciliation of actual dispatch/acceptance in parent conversation, not a claim this ledger preceded dispatch.",
     "sourceHead": "6fddd9d6a3fd053c613a71fcc0f0b1b8b3ba78c4",
     "acceptedPatch": "c6704966c023ffc719797f54e232178eb914a318",
     "integratedCommit": "1fd401cc",
     "scopeAmendment": "SA-1 only; cross-session reconnect success remains deferred",
-    "readiness": "RUNNING: content, runtime and simplifications accepted; final CI and audits pending",
-    "runtimeAcceptedAt": "2026-09-07T23:49:08.641668+00:00"
+    "runtimeAcceptedAt": "2026-09-07T23:49:08.641668+00:00",
+    "state": "CONTENT_ACCEPTED",
+    "finalization": "All content criteria and preliminary audits accepted; final record commit must pass CI and repeated actual audits at matching clean local/remote head before undraft. No merge authorized.",
+    "auditRuns": [
+      "audit-20260908T001250Z-4036385",
+      "audit-20260908T001251Z-4036476"
+    ]
   }
 }
