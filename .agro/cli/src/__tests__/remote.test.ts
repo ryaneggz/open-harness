@@ -116,7 +116,7 @@ describe("fetchRemoteSource", () => {
     const dest = mkTmp("oh-remote-dest-");
 
     expect(() => fetchRemoteSource({ destDir: dest, run })).toThrowError(
-      /git is required to fetch https:\/\/github\.com\/mifunedev\/openharness.*--from <dir>/,
+      /git is required to fetch https:\/\/github\.com\/mifunedev\/agro.*--from <dir>/,
     );
     expect(calls).toHaveLength(1);
   });
@@ -181,7 +181,7 @@ describe("fetchRemoteSource", () => {
     expect(() =>
       fetchRemoteSource({ destDir: dest, run }),
     ).toThrowError(
-      /git clone of https:\/\/github\.com\/mifunedev\/openharness failed to start.*--from <dir>/,
+      /git clone of https:\/\/github\.com\/mifunedev\/agro failed to start.*--from <dir>/,
     );
   });
 });

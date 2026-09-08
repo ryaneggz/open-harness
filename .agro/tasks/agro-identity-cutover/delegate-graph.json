@@ -390,8 +390,8 @@
       "acceptanceOwner": "advisor",
       "failureRepairRoute": "rebrief",
       "nativeWorkerId": null,
-      "status": "BLOCKED",
-      "summary": "blocked on the operator performing the external actions",
+      "status": "running",
+      "summary": "Operator authorized the gh steps; advisor performed steps 1,2,3,4,7b,8 and merged #46 (recorded in cutover-record.md). Steps 5, 6, 7a stay with the operator. Dispatching the default flips: T6a core CLI defaults (remote.ts, self-upgrade.ts, docs.ts, service Documentation=, lifecycle-commands.md) and T6b web oh-source.mjs default on the #47 branch.",
       "artifactReferences": [],
       "usage": "unknown"
     },
@@ -450,6 +450,50 @@
         "CHANGELOG.md"
       ],
       "usage": "148844 tokens, 29 tool uses, 431 s"
+    },
+    {
+      "id": "T6a",
+      "title": "Core CLI defaults name mifunedev/agro (US-006)",
+      "dependsOn": [
+        "T6"
+      ],
+      "status": "running",
+      "nativeWorkerId": "ae99bf85d391ab68e",
+      "workerType": "general-purpose",
+      "executionDirectory": "/home/sandbox/harness/.worktrees/feat/943-agro-identity-cutover",
+      "ownedWritePaths": [
+        ".agro/cli/src/lib/remote.ts",
+        ".agro/cli/src/commands/self-upgrade.ts",
+        ".agro/cli/src/lib/docs.ts",
+        ".devcontainer/openharness-cron.service",
+        ".devcontainer/openharness-bootstrap.service",
+        "docs/lifecycle-commands.md",
+        "tests pinning those defaults",
+        "reference-classification.md rows",
+        "oh-cli-portable-lifecycle.md sentence"
+      ],
+      "verification": "pnpm test, typechecks, six probes",
+      "acceptanceOwner": "advisor",
+      "summary": ""
+    },
+    {
+      "id": "T6b",
+      "title": "Web default source becomes mifunedev/agro (US-006)",
+      "dependsOn": [
+        "T6"
+      ],
+      "status": "running",
+      "nativeWorkerId": "a153b245e07756a76",
+      "workerType": "general-purpose",
+      "executionDirectory": "/home/sandbox/harness/projects/mifunedev/openharness-web/.worktrees/feat-943-agro-web-identity",
+      "ownedWritePaths": [
+        "scripts/oh-source.mjs",
+        "README.md",
+        "script headers"
+      ],
+      "verification": "resolver prints mifunedev/agro main; pnpm run build; drift check",
+      "acceptanceOwner": "advisor",
+      "summary": ""
     }
   ]
 }

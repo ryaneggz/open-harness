@@ -1,4 +1,4 @@
-const SOURCE_DOCS_BASE = "https://github.com/mifunedev/openharness/blob/main/";
+const SOURCE_DOCS_BASE = "https://github.com/mifunedev/agro/blob/main/";
 
 export function sourceDocsUrl(docsPath: string): string {
   const segments = docsPath.split("/");

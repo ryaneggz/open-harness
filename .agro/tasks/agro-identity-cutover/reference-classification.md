@@ -3,24 +3,25 @@
 Every remaining hit of `mifunedev/openharness` or `oh.mifune.dev` in tracked files after the US-002 sweep, grouped by file.
 Command: `git grep -n -E 'mifunedev/openharness|oh\.mifune\.dev' -- . ':!.agro/tasks/agro-identity-cutover'`.
 
-Classes: `historical` (records what happened under the old name; not rewritten, FR-5), `compatibility` (a retained SLA surface, alias, or redirecting default), `test-fixture` (test input or an assertion of a retained default), `generic` (owned by another story, or kept on purpose for a reason unrelated to the rename).
+Classes: `historical` (records what happened under the old name; not rewritten, FR-5), `compatibility` (a retained SLA surface, alias, or redirecting default), `test-fixture` (test input or an assertion of a retained default), `generic` (owned by another story, or kept on purpose for a reason unrelated to the rename), `flipped` (a `compatibility` or `test-fixture` hit that US-006 rewrote to the canonical name; the hit count is now 0).
 
-Files: 115. Hits: 781.
+Files: 115. Hits: 781. After US-006 (same command at the tree that story changed): 107 files, 811 hits.
 
 | File | Hits | Class (lines) | Reason |
 |---|---|---|---|
-| `.agro/cli/src/__tests__/compose-verbs.test.ts` | 1 | `test-fixture` | test fixture or assertion of a retained default |
+| `.agro/cli/src/__tests__/compose-verbs.test.ts` | 0 (was 1) | `flipped` | asserts the `SOURCE_DOCS_BASE` output, which US-006 flipped to `mifunedev/agro` |
 | `.agro/cli/src/__tests__/config-repo.test.ts` | 1 | `test-fixture` | test fixture or assertion of a retained default |
-| `.agro/cli/src/__tests__/docs.test.ts` | 2 | `test-fixture` | test fixture or assertion of a retained default |
-| `.agro/cli/src/__tests__/harness.test.ts` | 2 | `test-fixture` | test fixture or assertion of a retained default |
+| `.agro/cli/src/__tests__/docs.test.ts` | 0 (was 2) | `flipped` | asserts the `SOURCE_DOCS_BASE` output, which US-006 flipped to `mifunedev/agro` |
+| `.agro/cli/src/__tests__/harness.test.ts` | 0 (was 2) | `flipped` | asserts the `SOURCE_DOCS_BASE` output, which US-006 flipped to `mifunedev/agro` |
 | `.agro/cli/src/__tests__/lifecycle.test.ts` | 1 | `test-fixture` | test fixture or assertion of a retained default |
-| `.agro/cli/src/__tests__/tool.test.ts` | 2 | `test-fixture` | test fixture or assertion of a retained default |
+| `.agro/cli/src/__tests__/tool.test.ts` | 0 (was 2) | `flipped` | asserts the `SOURCE_DOCS_BASE` output, which US-006 flipped to `mifunedev/agro` |
+| `.agro/cli/src/__tests__/remote.test.ts` | 0 (was 2, regex-escaped so the sweep command missed them) | `flipped` | asserts error text that names `DEFAULT_REPO_URL`, which US-006 flipped to `mifunedev/agro` |
 | `.agro/cli/src/cli.ts` | 1 | `compatibility` | legacy GHCR image name; the default image reference is unchanged in Phase 3 and both names share a digest |
 | `.agro/cli/src/commands/lifecycle.ts` | 1 | `compatibility` | legacy GHCR image name; the default image reference is unchanged in Phase 3 and both names share a digest |
-| `.agro/cli/src/commands/self-upgrade.ts` | 1 | `compatibility` | CLI default that GitHub redirects or a dual-published image; candidate for the US-006 canonical-defaults flip |
+| `.agro/cli/src/commands/self-upgrade.ts` | 0 (was 1) | `flipped` | `DEFAULT_ARTIFACT_URL` flipped to `mifunedev/agro` in US-006 |
 | `.agro/cli/src/lib/__tests__/config-render.test.ts` | 2 | `test-fixture` | test fixture or assertion of a retained default |
-| `.agro/cli/src/lib/docs.ts` | 1 | `compatibility` | CLI default that GitHub redirects or a dual-published image; candidate for the US-006 canonical-defaults flip |
-| `.agro/cli/src/lib/remote.ts` | 1 | `compatibility` | CLI default that GitHub redirects or a dual-published image; candidate for the US-006 canonical-defaults flip |
+| `.agro/cli/src/lib/docs.ts` | 0 (was 1) | `flipped` | `SOURCE_DOCS_BASE` flipped to `mifunedev/agro` in US-006 |
+| `.agro/cli/src/lib/remote.ts` | 0 (was 1) | `flipped` | `DEFAULT_REPO_URL` flipped to `mifunedev/agro` in US-006 |
 | `.agro/compat-inventory.json` | 1 | `compatibility` | the alias-sla inventory entry for the image name |
 | `.agro/evals/probes/get-oh-bootstrap.sh` | 1 | `compatibility` | probe that guards a retained compatibility surface |
 | `.agro/evals/probes/oh-sandbox-image-mode.sh` | 3 | `compatibility` | legacy GHCR image name; the default image reference is unchanged in Phase 3 and both names share a digest |
@@ -101,8 +102,8 @@ Files: 115. Hits: 781.
 | `.agro/tasks/sandbox-registry/prd.md` | 2 | `historical` | dated task folder evidence |
 | `.agro/tasks/slim-sandbox-image/prd.md` | 1 | `historical` | dated task folder evidence |
 | `.devcontainer/docker-compose.image-only.yml` | 1 | `compatibility` | legacy GHCR image name; the default image reference is unchanged in Phase 3 and both names share a digest |
-| `.devcontainer/openharness-bootstrap.service` | 1 | `compatibility` | unit Documentation URL or image default that redirects or is dual-published |
-| `.devcontainer/openharness-cron.service` | 1 | `compatibility` | unit Documentation URL or image default that redirects or is dual-published |
+| `.devcontainer/openharness-bootstrap.service` | 0 (was 1) | `flipped` | unit `Documentation=` flipped to `mifunedev/agro` in US-006 |
+| `.devcontainer/openharness-cron.service` | 0 (was 1) | `flipped` | unit `Documentation=` flipped to `mifunedev/agro` in US-006 |
 | `.github/workflows/release.yml` | 6 | `compatibility` (196-197,239-240,249); `generic` (389) | legacy GHCR tag, dual-published from one digest (US-003 owns); US-003 owns (web repository dispatch default) |
 | `.github/workflows/sandbox-boot-guard.yml` | 1 | `generic` | LEGACY_IMAGE stays on purpose (US-006 compatibility evidence) |
 | `CHANGELOG.md` | 498 | `historical` | changelog, RFC, or cron history entry |
@@ -111,7 +112,7 @@ Files: 115. Hits: 781.
 | `docs/configuration.md` | 1 | `compatibility` | legacy GHCR image name; the default image reference is unchanged in Phase 3 and both names share a digest |
 | `docs/deployment-prebuilt-image.md` | 12 | `compatibility` | legacy GHCR image name; the default image reference is unchanged in Phase 3 and both names share a digest |
 | `docs/installation.md` | 4 | `compatibility` (74,77,80); `compatibility` (174) | legacy get-oh.sh one-liner on its retained endpoint; legacy GHCR image name; the default image reference is unchanged in Phase 3 and both names share a digest |
-| `docs/lifecycle-commands.md` | 1 | `compatibility` | documents the agro update default in self-upgrade.ts, which redirects |
+| `docs/lifecycle-commands.md` | 0 (was 1) | `flipped` | documents the agro update default in self-upgrade.ts, flipped to `mifunedev/agro` in US-006 |
 | `docs/quickstart.md` | 4 | `compatibility` (64,67,69); `compatibility` (89) | legacy get-oh.sh one-liner on its retained endpoint; legacy GHCR image name; the default image reference is unchanged in Phase 3 and both names share a digest |
 | `docs/rfcs/README.md` | 8 | `historical` | changelog, RFC, or cron history entry |
 | `docs/rfcs/adr-0001-standards-scope.md` | 1 | `historical` | changelog, RFC, or cron history entry |

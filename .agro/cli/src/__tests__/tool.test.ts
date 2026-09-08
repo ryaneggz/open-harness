@@ -204,7 +204,7 @@ describe("oh tool list / status", () => {
     const status = JSON.parse(out.join(""));
     expect(status.version).toContain("2.63.2");
     expect(status.docs).toBe(
-      "https://github.com/mifunedev/openharness/blob/main/docs/installation.md",
+      "https://github.com/mifunedev/agro/blob/main/docs/installation.md",
     );
   });
 
@@ -279,7 +279,7 @@ describe("oh tool install — the ~1 GB download gate", () => {
     expect(await runToolInstall("agent-browser", { cwd: root, run }, io)).toBe(0);
     expect(calls.some(isInstallCall)).toBe(true);
     expect(out.join("")).toContain(
-      "https://github.com/mifunedev/openharness/blob/main/docs/installation.md",
+      "https://github.com/mifunedev/agro/blob/main/docs/installation.md",
     );
   });
 

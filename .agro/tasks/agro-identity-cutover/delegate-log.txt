@@ -12,3 +12,6 @@
 2026-09-08T03:18:05Z T5 accepted: ste-check exit 0, links at agro-compatibility.md:263 and docs/README.md:42, curl-bash-safe-alternatives exit 0; status completed. T6 stays BLOCKED on the operator report (runbook steps 1-8); T7 stays BLOCKED on T6.
 2026-09-08T03:19:14Z T7 partially released ahead of T6 (advisor decision): knowledge pages, new agro-web-pipeline page, index, CHANGELOG describe repository state at HEAD and need only a REVERIFIED pass after the cutover; evidence.md (US-007 AC5) stays blocked on T6 -> running
 2026-09-08T03:27:38Z T7 knowledge portion accepted: knowledge-impact --verified 0 NEEDS-REVIEW, wiki probes exit 0, knowledge-source-freshness 0, changelog-entry-length 0 after repair (461 -> 248 chars); committed with the early eval RESULTS.md refresh; T7 stays running for the post-cutover reverify + evidence.md
+2026-09-08T03:32:32Z T6 partially performed by the owner under operator authorization (gh steps); cutover-record.md written; T6a/T6b default-flip workers dispatched -> running
+2026-09-08T03:33:16Z T6a (ae99bf85d391ab68e) and T6b (a153b245e07756a76) dispatched in parallel: disjoint repositories
+2026-09-08T03:35:07Z T6b accepted: resolver prints mifunedev/agro main, check:docs-drift exit 0; commit 4c5958f pushed to PR #47 (base main, MERGEABLE)
