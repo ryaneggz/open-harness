@@ -1,5 +1,49 @@
 # Evidence — delegate-follow-up
 
+## Current parent-owned acceptance epoch
+
+Status: RUNNING. PR #1004 remains draft. No merge is authorized.
+
+The operator retained acceptance in the requesting Pi session and assigned Sol only bounded implementation and verification work.
+The parent accepted Sol patch `c6704966c023ffc719797f54e232178eb914a318` after source inspection and independent review `3e4aed67-cd93-4fd`.
+The PR branch contains that patch at `1fd401cc5dcd920bbe0ab76ddf61076512ffd764`.
+The patch reconciles initial and resumed eligibility across all dependencies, prerequisites, required controls, and provenance conditions.
+The reviewer independently repeated the focused checks and twelve mutation cases. Text probes do not prove runtime enforcement.
+
+The new disposable runtime artifacts are archived byte-for-byte under `sol-runtime-proof/`.
+The experiment uses two distinct Claude Code 2.1.260 sessions and permits disposable dispatch and task-path writes when the frozen procedure authorizes them.
+The parent accepted the narrow runtime observation after independent raw-artifact review `c67fc8a2-0100-4f7` found no blocker.
+The reviewer verified all 37 manifest entries, the frozen source, native worker liveness, separate sessions, failed handle lookup, and zero duplicate dispatches.
+Session B explicitly applied the ambiguity clause and left task hashes unchanged without an independent no-write/no-dispatch restriction.
+This supplies the live unknown-status and cross-session fail-closed observation; it does not establish reconnect success or universal provider limits.
+The original confounded experiment and withdrawn claims remain historical, not retroactively validated.
+Content reviewer `bf04e00c-ba8f-4fa` found no correctness blocker and identified two blocking probe redundancies at `1fd401cc`.
+Sol implemented both simplifications and the missing changelog entry. Independent reviewer `7c3b8668-b6b9-485` verified the final diff and all 17 mutation outcomes.
+`simplicity-review.json` records both blocking findings resolved and four retained nonblocking findings.
+The parent corrected current US-003 C5/C8 verification and narrowed provider claims as requested by that reviewer; prior claims remain in explicitly historical fields.
+All content criteria are accepted, including D4 under unchanged SA-1. Each story's `passes` remains false until its final pushed-head typecheck criterion is verified; `parentContentAccepted` is not a substitute for completion.
+
+The final repaired content is `23e409e6ab9193f9c1cac5fb0977c0e07215c623`, including the changelog and two probe simplifications.
+Its fresh eval exited 0: 138 PASS, six unchanged environment skips, and one unchanged `skills-vendored` regression.
+`parent-verification/final/eval.log` contains the actual output; no new green-to-red regression occurred.
+The parent independently reproduced the missing `cc-safety-net` failure at approved base `56ab2bab`; the base log is archived alongside the final eval.
+`parent-verification/final/knowledge-impact.tsv` reports no declared knowledge source affected by the repair and changelog.
+Independent final repair review `7c3b8668-b6b9-485` completed at `2026-09-08T00:06:32Z`. Its required current-record corrections are now applied.
+Final independent review, actual implementation/PR audits, and final pushed-head CI remain required.
+
+SA-1 remains unchanged: defer only cross-session reconnection success on the tested provider.
+A failed lookup of one native handle does not establish a universal provider limitation.
+A live worker can have unknown status to another session; unknown is an observation limit, not a third ground-truth worker state.
+No additional waiver applies to unknown-status handling or fail-closed behavior.
+
+## Prior advisor record — historical, not current acceptance
+
+The record below preserves earlier claims, corrections, and incidents. Current parent acceptance above supersedes its readiness claims.
+The old resume/step-5d contradiction is now repaired by the accepted Sol patch, not deferred as a scope expansion.
+The earlier experiment remains confounded for procedure-caused restraint; its prompt independently prohibited writes and dispatch.
+The new experiment does not retroactively validate that earlier claim or establish cross-session reconnect success.
+
+
 - **PR**: #1004 (mifunedev/openharness, base `development`) · **Branch**: `skill/1003-delegate-follow-up`
 - **Scope**: one criterion — D4 cross-session reconnection — is **deferred under operator scope amendment SA-1**. It was measured unavailable on this provider and is **deferred, never satisfied**. See *D4 cross-session reconnect*.
 - **State**: **READY FOR REVIEW.** The PR will be undrafted on this evidence.

@@ -1,12 +1,14 @@
 {
-  "commit": "9962d68bd18f7d61f6e1e5dcea63b8ba342a7807",
+  "schemaVersion": 1,
+  "commit": "23e409e6ab9193f9c1cac5fb0977c0e07215c623",
+  "ranAt": "2026-09-08T00:04:53Z",
+  "completedAt": "2026-09-08T00:05:16Z",
   "runnerExit": 0,
-  "ranAt": "2026-09-07T22:19:00Z",
-  "ranAtProvenance": "taken from the machine-written last-run column in .oh/evals/RESULTS.md, which /eval writes itself; minute precision. Not a hand-entered time.",
-  "newRegressions": [],
-  "preExistingReds": [
-    "skills-vendored"
-  ],
-  "probeCount": 145,
-  "note": "Fresh run at this head. The eval and simplicity records keyed to 6324e09f were NOT reused: a probe changed in this commit, so the content-head rule correctly stops covering them."
+  "counts": {
+    "PASS": 138,
+    "REGRESSION": 1,
+    "SKIPPED": 6
+  },
+  "log": ".oh/tasks/delegate-follow-up/parent-verification/final/eval.log",
+  "nonPassing": "Six unchanged environment skips; skills-vendored unchanged regression (missing cc-safety-net binary), independently reproduced at approved base 56ab2bab. No new green-to-red regression."
 }

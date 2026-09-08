@@ -1,82 +1,70 @@
 {
   "schemaVersion": 1,
-  "commit": "9962d68bd18f7d61f6e1e5dcea63b8ba342a7807",
-  "reviewer": "Fresh independent simplicity reviewer with no prior context on this task or branch, running as Claude (model id claude-fable-5-1); read-only review of the implementation diff against 56ab2bab. Dispatched fresh at this head because a probe changed in this commit, so the record keyed to 6324e09f no longer described the head content and was not reused.",
-  "reviewedAt": "2026-09-07T22:20:09Z",
-  "reviewedAtProvenance": "produced by the reviewer from `date -u +%Y-%m-%dT%H:%M:%SZ`, not hand-entered, after an earlier record in this task was caught carrying a stamp that postdated its own commit.",
+  "commit": "23e409e6ab9193f9c1cac5fb0977c0e07215c623",
+  "reviewer": "7c3b8668-b6b9-485",
+  "reviewedAt": "2026-09-08T00:06:32Z",
   "findings": [
     {
+      "id": "historical-1",
       "file": ".oh/evals/probes/advisor-execution-contract.sh",
-      "line": 111,
-      "simplerAlternative": "Delete the three exact-phrase negative checks at lines 111-119 ('Pass completed task summaries as context to the next wave', 'treat `completed` tasks as done', 'Re-run only tasks whose status is `pending`, `FAIL`, or `BLOCKED`'). Each fires only if someone reverts to the precise superseded wording; any paraphrase of the old policy passes. The positive `need` fragments at lines 91, 93, 96 and 97 already require the replacement rules to be present, so these negatives add no failure mode a real regression would trigger. Keep line 108 (Memory Protocol) which greps a term, not a sentence.",
+      "line": 119,
+      "simplerAlternative": "Delete the three superseded-wording guards. Nonblocking: this loses coverage for contradictory old wording alongside new positive assertions.",
       "removesLines": 9,
       "blocking": false,
-      "status": "open",
-      "resolvedIn": null
+      "status": "open"
     },
     {
+      "id": "historical-2",
       "file": ".oh/evals/probes/advisor-execution-contract.sh",
-      "line": 152,
-      "simplerAlternative": "Replace lines 152-164 with two direct assertions: `grep -qF 'D --> F{--dry-run?}' <<<\"$delegate_mermaid\"` and `grep -qF 'F -->|No| E[\"Step 4: Write run ledger' <<<\"$delegate_mermaid\"`, each appending its own message. The dry_nodes/ledger_nodes count pre-check is implied by the edge greps, so the outer if/else and the edges accumulator only change which message prints.",
-      "removesLines": 11,
-      "blocking": false,
-      "status": "open",
-      "resolvedIn": null
+      "line": 163,
+      "simplerAlternative": "Replace node counts, nesting, and edges accumulator with the two existing edge greps, each directly appending to problems. Each edge implies its node prerequisite; four replacement lines preserve both assertions.",
+      "removesLines": 9,
+      "blocking": true,
+      "status": "resolved",
+      "resolvedIn": "23e409e6ab9193f9c1cac5fb0977c0e07215c623"
     },
     {
+      "id": "historical-3",
       "file": ".oh/evals/probes/advisor-execution-contract.sh",
-      "line": 165,
-      "simplerAlternative": "Delete lines 165-167. Line 108 already greps the whole of $DELEGATE for 'Memory Protocol', which includes the mermaid block; the only extra token here is MEM_. Widen line 108 to grep -qiE 'MEM_|Memory Protocol' and drop the diagram-scoped duplicate.",
+      "line": 167,
+      "simplerAlternative": "Widen whole-file Memory Protocol guard to MEM_|Memory Protocol and delete diagram guard. Nonblocking: this changes rejection scope outside the diagram.",
       "removesLines": 3,
       "blocking": false,
-      "status": "open",
-      "resolvedIn": null
+      "status": "open"
     },
     {
+      "id": "historical-4",
       "file": ".oh/evals/probes/advisor-execution-contract.sh",
-      "line": 123,
-      "simplerAlternative": "Delete the `for key in name description argument-hint` loop (lines 123-125). description presence is already enforced by the empty-delegate_desc check at line 137, and name/argument-hint presence is generic skill-frontmatter hygiene unrelated to the execution contract this probe guards.",
+      "line": 134,
+      "simplerAlternative": "Delete the frontmatter-key loop. Nonblocking: US-004 explicitly preserves these keys and replacement coverage is not established.",
       "removesLines": 3,
       "blocking": false,
-      "status": "open",
-      "resolvedIn": null
+      "status": "open"
     },
     {
-      "file": ".oh/evals/probes/advisor-execution-contract.sh",
-      "line": 126,
-      "simplerAlternative": "Drop negation_word and reuse the file's existing negation variable (line 31) inside unnegated_hits, which already greps with -i; extend line 31 to include no/neither/nor/without so the later checks gain the extra words rather than the file carrying two negation lists.",
-      "removesLines": 1,
-      "blocking": false,
-      "status": "open",
-      "resolvedIn": null
-    },
-    {
+      "id": "historical-7",
       "file": ".oh/skills/delegate/SKILL.md",
-      "line": 269,
-      "simplerAlternative": "Remove 'Never replay work that is already correct.' from both the FAIL bullet (lines 263-264) and the running bullet (line 269). Line 63 already states 'Never replay completed work.' as a standing rule for every resume and rebrief; restating it per status bullet is the same policy three times in one file.",
-      "removesLines": 2,
-      "blocking": false,
-      "status": "open",
-      "resolvedIn": null
-    },
-    {
-      "file": ".oh/skills/delegate/SKILL.md",
-      "line": 323,
-      "simplerAlternative": "Trim the step 5b paragraph to its operative rules. Its first sentence restates the Status table row at line 194 and the sentence immediately above at lines 320-321; its last sentence restates the Acceptance owner row. Keep the new content. Move the probe literal 'acceptance decision, never a worker' into the table row so advisor-execution-contract.sh line 89 still passes.",
+      "line": 347,
+      "simplerAlternative": "Remove repeated acceptance-ownership sentences and relocate required fragment into Status row. Nonblocking: coordinated contract relocation is additional work.",
       "removesLines": 3,
       "blocking": false,
-      "status": "open",
-      "resolvedIn": null
+      "status": "open"
     },
     {
-      "file": ".oh/skills/delegate/SKILL.md",
-      "line": 131,
-      "simplerAlternative": "Shorten the DRY node label to \"Step 7: report the task graph and wave plan, then stop\". The no-file/no-worker/no-execution-state triple is already stated at lines 161-162 and 280-281; the diagram only needs to route to the step that carries the rule. Probe assertions target lines 161 and 280, not the label.",
-      "removesLines": 0,
-      "blocking": false,
-      "status": "open",
-      "resolvedIn": null
+      "id": "new-1",
+      "file": ".oh/evals/probes/delegate-worker-boundary.sh",
+      "line": 117,
+      "simplerAlternative": "Delete the three fragment greps subsumed by the immediately following case-insensitive full-phrase assertion.",
+      "removesLines": 3,
+      "blocking": true,
+      "status": "resolved",
+      "resolvedIn": "23e409e6ab9193f9c1cac5fb0977c0e07215c623"
     }
   ],
-  "advisorNote": "Eight findings, none blocking, all left open. Finding 1 independently reaches the same conclusion as the amendment reviewer's B3: exact-phrase negative checks fire only on superseded wording and any paraphrase passes. That gap is real and is disclosed in evidence.md; the specific instance B3 identified - the stale-completed contract having no check at all - was repaired in this commit, while the broader weakness of phrase-exact negatives remains an open non-blocking finding rather than a silent one. The simplify loop was not run and no simplify-rounds.json was seeded, per pattern-spec-simplify-round-seeded-non-reducing."
+  "historicalDispositions": {
+    "2": "Promoted to blocking; reduction corrected from 11 to 9 lines.",
+    "5": "Withdrawn: sharing negation lists changes older guards; equivalence not established.",
+    "6": "Withdrawn: completed work does not necessarily cover correct portions of incomplete work.",
+    "8": "Withdrawn: shorter diagram label removes zero lines."
+  }
 }
