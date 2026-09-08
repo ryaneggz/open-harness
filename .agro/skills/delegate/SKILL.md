@@ -2,11 +2,11 @@
 name: delegate
 description: |
   TRIGGER when: asked to delegate work, execute or parallelize a plan, "run this
-  plan", "delegate this", or after /prd or plan creation. Decomposes work by
-  dependency, launches bounded provider-native workers in parallel waves, validates
-  completion, and reports results while preserving failure isolation and recursion
-  limits. Keeps judgment in the active session and coupled implementation with one
-  continuing worker.
+  plan", or "delegate this". Writing, reading, or finishing a plan is not a trigger
+  and authorizes no dispatch. Decomposes work by dependency, launches bounded
+  provider-native workers in parallel waves, validates completion, and reports
+  results while preserving failure isolation and recursion limits. Keeps judgment
+  in the active session and coupled implementation with one continuing worker.
 argument-hint: "[--plan <path>] [--dry-run]"
 ---
 
@@ -16,7 +16,8 @@ Parallel execution coordinator. Read a plan or conversation context, decompose i
 a dependency-ordered task graph, and spawn worker sub-agents in parallel waves. Each wave
 completes before the next begins. Results are collected, validated, and reported.
 
-**Core principle: maximize parallelism while respecting dependencies absolutely.**
+**Core principle: dependency order is absolute. Size each task for usefulness,
+not for a worker count.**
 
 ## When a worker is justified
 
@@ -42,9 +43,10 @@ isolation, parallelism, and bounded implementation, and nothing else.
 | A deliberate tool or permission restriction | Task state: `prd.json`, `progress.txt`, and acceptance records |
 
 A small task can use one worker; parallelism is not mandatory. A factual question
-or a plan-only request needs no worker. Do not invent named architectural roles for
-workers. `/delegate` owns fan-out policy; other skills must not grow a competing
-worker hierarchy beside it.
+or a plan-only request needs no worker: loading this skill, writing a plan, or
+finishing a plan authorizes no dispatch and creates no execution state. Do not
+invent named architectural roles for workers. `/delegate` owns fan-out policy;
+other skills must not grow a competing worker hierarchy beside it.
 
 ## Complexity classification
 
@@ -121,28 +123,25 @@ operator marks required.
 ```mermaid
 flowchart TD
     A["Resolve input: $ARGUMENTS or conversation context"] --> B{Plan found?}
-    B -->|No| FAIL["Report: no plan found"]
-    FAIL --> MEM_FAIL[Memory Protocol]
+    B -->|No| FAIL["Report: no plan found, then stop"]
 
     B -->|Yes| C["Step 2: Deep-think task decomposition"]
     C --> D["Step 3: Build dependency graph"]
-    D --> E["Step 4: Write run ledger to .agro/tasks/"]
-    E --> F{--dry-run?}
-    F -->|Yes| DRY["Report: task graph + wave plan"]
-    DRY --> MEM_DRY[Memory Protocol]
+    D --> F{--dry-run?}
+    F -->|Yes| DRY["Step 7: report the task graph and wave plan, then stop: no file written, no worker dispatched, no execution state"]
 
-    F -->|No| G["Step 5: Execute Wave N"]
+    F -->|No| E["Step 4: Write run ledger to .agro/tasks/"]
+    E --> G["Step 5: Execute Wave N"]
     G --> G1["Worker A"]
     G --> G2["Worker B"]
     G --> G3["Worker C"]
-    G1 & G2 & G3 --> H{All passed?}
-    H -->|No| I["Mark dependents BLOCKED, continue independent"]
+    G1 & G2 & G3 --> H{"accepted by the advisor?"}
+    H -->|No| I["Mark dependents BLOCKED, route repair, continue independent"]
     I --> J{More waves?}
     H -->|Yes| J
     J -->|Yes| G
-    J -->|No| K["Step 6: Validate"]
+    J -->|No| K["Step 6: Validate the integrated result"]
     K --> L["Step 7: Report"]
-    L --> MEM_OP[Memory Protocol]
 ```
 
 ## Instructions
@@ -159,7 +158,8 @@ Arguments received: `$ARGUMENTS`
 If no plan is found in either source, report:
 > No plan found. Provide a plan file path with `--plan <path>` or discuss the plan first, then run `/delegate`.
 
-Run Memory Protocol and stop.
+Then stop. This path writes no file, dispatches no worker, and creates no execution
+state.
 
 ### 2. Decompose into tasks (reason according to complexity)
 
@@ -177,6 +177,7 @@ record with every field below; a record with a missing field is not ready to dis
 | **Requested model / reasoning** | The exact model and reasoning setting requested, or `inherit` when the operator selected no preference for this class |
 | **Observed settings + provenance** | The effective model and reasoning setting the native surface reported, each with its source; `unknown` when unobserved |
 | **Read scope** | Files and directories the worker reads |
+| **Search / output limits** | The search breadth and the output volume the worker stays inside, so verbose disposable output stays bounded |
 | **Owned write paths** | The only paths the worker edits |
 | **Exclusions** | Paths, actions, and settings the worker must not touch |
 | **Execution directory** | The absolute directory the worker runs in |
@@ -185,18 +186,19 @@ record with every field below; a record with a missing field is not ready to dis
 | **Continuation method** | Native continuation, or checkpoint-and-rebrief with the checkpoint artifacts |
 | **Deliverable** | The concrete artifact, patch, or commit the worker returns |
 | **Verification** | Commands or exact review procedure, with expected results |
+| **Stopping condition** | The observable state at which the worker stops and reports, including the blocked case |
 | **Evidence destinations** | The paths that receive outputs, logs, and artifacts |
 | **Covered DoD IDs** | The Definition of Done criteria this task covers |
 | **Acceptance owner** | The advisor; a worker never accepts its own result |
 | **Failure / repair route** | Which worker repairs a failed check, and what returns to the advisor |
 | **Native worker ID** | Assigned at dispatch |
-| **Status** | `pending`/`running`/`completed`/`FAIL`/`BLOCKED` |
+| **Status** | The advisor's record, never a worker's claim: `pending`/`running`/`completed`/`FAIL`/`BLOCKED`. `completed` means the advisor accepted the artifacts |
 | **Artifact references** | Paths, commits, or logs the worker produced |
 | **Usage** | Token or cost usage when the provider reports it; otherwise `unknown` |
 
 **Decomposition rules:**
 - Each task must be completable by a single sub-agent in one session
-- Prefer more smaller tasks over fewer larger ones, except that coupled implementation stays in one continuing worker
+- Complexity, briefing overhead, shared context, and verification cost decide a useful task boundary; a further split is not a default, and one continuing bounded worker is a valid answer
 - Schema/infrastructure before backend, backend before frontend
 - Tasks that touch different files with no shared state CAN be parallel
 - Tasks that modify the same file or depend on another's output MUST be sequential
@@ -252,17 +254,59 @@ This skill's two files sit beside them without collision.
 Both live under `.agro/tasks/`, which is gitignored — that is correct for run state.
 Stage them with `git add -f` only when a PR must carry the delegation as evidence.
 
-**Resume rather than restart.** If `delegate-graph.json` already exists in the resolved
-directory, read it first. Re-run only tasks whose status is `pending`, `FAIL`, or
-`BLOCKED`; treat `completed` tasks as done and pass their summaries forward as
-prior-wave context. A resumed run appends to `delegate-log.txt`; it never truncates it.
+**Dispatch eligibility applies to initial and resumed runs.** Before any dispatch,
+re-evaluate the task against the current graph, artifacts, and native capabilities. A
+task is eligible only when all of these conditions hold:
 
-If `--dry-run`, write neither file — output the full task graph and wave plan, then
-skip to **Step 7**.
+- all blocking prerequisites in the plan and dispatch record are satisfied;
+- every `Depends On` task is recorded `completed`, its accepted evidence still
+  describes the required artifact revision, and that evidence has established
+  provenance;
+- every required model, control, and capability is available; and
+- no unresolved native worker status, artifact provenance, or owned-path ambiguity
+  remains.
+
+A `pending`, `FAIL`, or `BLOCKED` label does not itself authorize dispatch. If every
+condition holds, dispatch only the incomplete authorized scope and record `running`
+before the worker starts. If any condition remains unmet, record or keep `BLOCKED`,
+log each unmet condition, and dispatch nothing. Never infer eligibility from `pending`
+alone or from only some accepted dependencies.
+
+**Resume rather than restart.** If `delegate-graph.json` already exists in the resolved
+directory, read it first and reconcile every task against real state before any
+dispatch.
+
+- `pending`: apply the dispatch-eligibility conditions. Do not release it from the
+  label alone.
+- `BLOCKED`: re-evaluate every recorded blocking condition, including all dependencies
+  and required controls. It remains `BLOCKED` while any condition is unmet and becomes
+  eligible only after every condition holds.
+- `FAIL`: read the failed task's current artifacts before any retry, apply the
+  dispatch-eligibility conditions, then route only the incomplete scope through the
+  existing failure / repair route. Never replay work that is already correct.
+- `running`: inspect the persisted native worker reference and the current artifacts
+  before any retry. While the worker is still active, reconnect to it or observe it
+  through the supported native mechanism, and never spawn a duplicate for it. Once it
+  has ended, validate its artifacts first, then decide to accept, resume, or retry only
+  the incomplete scope. Never replay work that is already correct.
+- `completed`: the saved label holds only while its recorded evidence still describes
+  the required artifact revision. Re-read the artifact references against the current
+  tree. Evidence that no longer describes that revision is stale, so the task returns
+  to `running` for reconciliation and its dependents wait.
+- Unknown native worker status, or an artifact whose provenance cannot be established,
+  is reported to the operator as ambiguity. Ambiguity blocks every write to the
+  affected paths and never authorizes a second writer.
+
+A resumed run appends to `delegate-log.txt`; it never truncates it.
+
+If `--dry-run`, write neither file — output the full task graph and wave plan,
+dispatch no worker, create no execution state, then skip to **Step 7**.
 
 ### 5. Execute waves
 
-For each wave, starting from Wave 1:
+For each wave, starting from Wave 1, apply the dispatch-eligibility conditions before
+each task enters step 5a. Wave membership and persisted status never replace that
+check.
 
 **a) Spawn worker agents in ONE message (parallel)**
 
@@ -291,7 +335,7 @@ These are **prompt-level conventions, not runtime-enforced caps** — nothing re
 
 If any field is missing, either add it or downgrade the task to flat execution (`Max depth: 1`). Workers without all three fields MUST stay flat — they have no authority to spawn grandchildren regardless of how the task is described in prose.
 
-**b) Collect results**
+**b) Collect results and record acceptance**
 
 After all agents in the wave complete, set each task's `status`, `summary`, native
 worker ID, artifact references, observed settings, and usage in
@@ -299,6 +343,16 @@ worker ID, artifact references, observed settings, and usage in
 both before spawning the next wave — a crash between waves must leave the graph
 readable. A worker's completed status is a report, not acceptance; the advisor
 inspects the artifact and runs the verification before it records acceptance.
+
+The `status` field carries the advisor's acceptance decision, never a worker's claim,
+and it stays inside the existing `pending`/`running`/`completed`/`FAIL`/`BLOCKED`
+values. Keep the worker's own claim in `summary`. Record `status: completed` — the
+accepted state that step 5d reads — only after the advisor has read the named artifact
+references and run the task's `Verification` commands with their real exit statuses. A
+task whose worker reported done but whose acceptance is not yet recorded stays
+`running`. A task whose inspection or verification failed is recorded `FAIL`. Append
+the acceptance decision, its commands, and their exit statuses to `delegate-log.txt`.
+No worker records this decision for itself.
 
 | Task | Status | Summary | Files Changed |
 |------|--------|---------|---------------|
@@ -308,7 +362,7 @@ inspects the artifact and runs the verification before it records acceptance.
 
 **c) Handle failures**
 
-If any task fails:
+If any task fails its verification or is otherwise not accepted:
 - Log the failure with details
 - Check if tasks in subsequent waves depend on the failed task
 - Mark dependent tasks as BLOCKED (do not execute them)
@@ -317,7 +371,15 @@ If any task fails:
 
 **d) Advance to next wave**
 
-Pass completed task summaries as context to the next wave's workers. Repeat until all waves complete or all remaining tasks are blocked.
+Release a dependent only on accepted artifacts. Pass the artifact references and
+summaries of tasks recorded `completed` as context to the next wave's workers. A
+dependency that is `running`, `FAIL`, or `BLOCKED` is not accepted: its dependents
+stay `BLOCKED`, and the defect returns to the bounded writer named in the task's
+failure / repair route. Re-evaluate a `BLOCKED` dependent against all dependencies,
+blocking prerequisites, required controls, and provenance conditions; release it only
+when every condition holds. Repeat until all waves complete or all remaining tasks are
+blocked. Per-task acceptance does not replace step 6; the integrated validation there
+is a separate, still-required check.
 
 ### 6. Validate
 
@@ -390,7 +452,7 @@ worker reports it, and do not record the request as confirmed.
 |------|-------|
 | Max concurrent agents per wave | 5 (split larger waves) |
 | Failure handling | Mark dependent tasks BLOCKED, continue independent ones; the named repair worker repairs |
-| Context passing | Prior wave summaries, not full output |
+| Context passing | Accepted prior-wave artifact references and summaries, not full output |
 | Model, reasoning, and settings evidence | See `## Worker model and reasoning policy` |
 
 ### Key Resources
