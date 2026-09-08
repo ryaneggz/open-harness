@@ -36,8 +36,8 @@
         "pnpm test, both typechecks, link-providers.sh --check, and /eval are green."
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "commit 03c3d69b; CLI defaults (self-upgrade agro.js URL, docs.ts, remote.ts, image ref, service Documentation= URLs) classified compatibility and deferred to the US-006 canonical-defaults flip"
     },
     {
       "id": "US-003",
@@ -67,8 +67,8 @@
         "Delivered on a web-repo PR that is not merged before the operator activates the domain in US-006."
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "draft web PR https://github.com/mifunedev/openharness-web/pull/47 (feat/943-agro-web-identity@73a06e7, stacked on #46); no banner asset regenerated because no current-default recipe exists; merge only after the Pages domain is active (US-006)"
     },
     {
       "id": "US-005",
@@ -82,8 +82,8 @@
         "Rollback: Pages domain back, Cloudflare rules disabled, dispatch skipped by removing the secret; repository renames are not reverted; migrated filesystem state is never reverted."
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "docs/agro-cutover-runbook.md; Cloudflare rules stated as Redirect Rules with dashboard fields and the rulesets API payload; existing /install.sh mechanism is a placeholder the operator identifies"
     },
     {
       "id": "US-006",

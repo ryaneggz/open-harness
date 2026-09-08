@@ -110,7 +110,7 @@
       "complexity": "L: many files across README, docs, package manifests, Dockerfile, eight probes with fault injection, plus a full classified sweep",
       "selectionReason": "Broad but mechanical sweep with judgment on historical vs current; default model with careful verification",
       "requestedModel": "inherit",
-      "observedSettings": "unknown",
+      "observedSettings": "general-purpose subagent, model inherit (session default), provenance: Agent tool defaults",
       "readScope": [
         "/home/sandbox/harness/.worktrees/feat/943-agro-identity-cutover (whole worktree)",
         "prd.md US-002, Technical Considerations, Non-Goals"
@@ -169,10 +169,14 @@
       "acceptanceOwner": "advisor",
       "failureRepairRoute": "T2 worker repairs; owner commits",
       "nativeWorkerId": "aae802958fd288d50",
-      "status": "running",
-      "summary": "",
-      "artifactReferences": [],
-      "usage": "unknown"
+      "status": "completed",
+      "summary": "41 files: manifests, Dockerfile label, README, installers, 18 docs pages, compat doc Phase 3 section + endpoint table, 9 skill files, 4 probes repinned with fault injection, classification (115 files/781 hits, 0 unclassified). Owner re-ran pnpm test (first run 3 transient failures, clean rerun 1246 passed), both typechecks, link check, 8 probes; whole-diff whitespace scan reviewed; committed 03c3d69b.",
+      "artifactReferences": [
+        "feat/943-agro-identity-cutover@03c3d69b",
+        ".agro/tasks/agro-identity-cutover/reference-classification.md",
+        ".agro/tasks/agro-identity-cutover/probe-fault-injection.md"
+      ],
+      "usage": "162076 tokens, 38 tool uses, 727 s"
     },
     {
       "id": "T3",
@@ -244,7 +248,7 @@
       "complexity": "M: config plus a docs sweep and regenerated banner assets",
       "selectionReason": "Continuation of the T1 worker keeps the web-repo context",
       "requestedModel": "inherit",
-      "observedSettings": "unknown",
+      "observedSettings": "general-purpose subagent (T1 continuation), model inherit",
       "readScope": [
         "web worktree for T4 (branch feat/943-agro-web-identity stacked on feat/943-agro-source-layout)",
         "prd.md US-004"
@@ -286,10 +290,13 @@
       "acceptanceOwner": "advisor",
       "failureRepairRoute": "T4 worker repairs; owner commits and opens the web PR (US-004 AC6)",
       "nativeWorkerId": null,
-      "status": "running",
-      "summary": "",
-      "artifactReferences": [],
-      "usage": "unknown"
+      "status": "completed",
+      "summary": "25 files (+187/-128): docusaurus config, CNAME, robots, package name, banner literals, drift rule LEGACY_IDENTITY, 18 docs pages, landing page, intro note. Round 2 fixed homepage prose and the installation.md default claim. Owner re-ran build (exit 0) and drift (PASS), checked CNAME, sitemap 66 agro / 0 oh, title AGRO, canonical links; committed 73a06e7, pushed, opened draft web PR #47 stacked on #46.",
+      "artifactReferences": [
+        "mifunedev/openharness-web feat/943-agro-web-identity@73a06e7",
+        "https://github.com/mifunedev/openharness-web/pull/47"
+      ],
+      "usage": "166055 tokens cumulative, 34 tool uses, 550 s (T4 both rounds)"
     },
     {
       "id": "T5",
@@ -303,7 +310,7 @@
       "complexity": "M: one document with precise commands grounded in T1-T3 results",
       "selectionReason": "Continuation of the T2 worker keeps the core-docs context",
       "requestedModel": "inherit",
-      "observedSettings": "unknown",
+      "observedSettings": "general-purpose subagent (T2 continuation), model inherit",
       "readScope": [
         "task worktree",
         "prd.md US-005, Technical Considerations, Open Questions",
@@ -337,10 +344,12 @@
       "acceptanceOwner": "advisor",
       "failureRepairRoute": "T5 worker repairs; owner commits",
       "nativeWorkerId": null,
-      "status": "BLOCKED",
-      "summary": "",
-      "artifactReferences": [],
-      "usage": "unknown"
+      "status": "completed",
+      "summary": "docs/agro-cutover-runbook.md (288 lines: preconditions, 8 ordered actions with commands, 10-pair verification matrix, rollback) plus links from agro-compatibility.md and docs/README.md. Owner re-ran ste-check (exit 0), link greps, curl-bash probe (exit 0), and read the Cloudflare section against the rulesets API shape.",
+      "artifactReferences": [
+        "docs/agro-cutover-runbook.md"
+      ],
+      "usage": "188379 tokens cumulative, 11 tool uses, 179 s (T5)"
     },
     {
       "id": "T6",

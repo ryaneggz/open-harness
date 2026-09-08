@@ -258,7 +258,9 @@ reading, `~/.oh`, and the legacy images stay valid through the SLA.
 Phase 3 ([#943](https://github.com/mifunedev/agro/issues/943)) renames the two
 GitHub repositories in place and moves the documentation host. It retires
 nothing. GitHub redirects a renamed repository, so every old clone, API, and
-release URL keeps resolving through the SLA.
+release URL keeps resolving through the SLA. The operator actions, the
+verification matrix, and the rollback are in the
+[cutover runbook](agro-cutover-runbook.md).
 
 | Surface | Canonical | Retained through the SLA |
 |---|---|---|
