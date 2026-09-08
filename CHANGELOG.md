@@ -11,6 +11,7 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 ### Changed
 
 - Fresh installs now create `.agro/`, `agro.json`, `~/.agro/sandboxes`, and `/opt/agro-seed`; legacy `.oh/` state keeps working, and `agro migrate` moves a project or registry. ([#942](https://github.com/mifunedev/openharness/issues/942))
+- Make `mifunedev/agro` and `agro.mifune.dev` the canonical repository and docs domain, send `agro-release` to the docs site on release, and keep legacy names as compatibility endpoints. ([#943](https://github.com/mifunedev/openharness/issues/943))
 
 ### Fixed
 

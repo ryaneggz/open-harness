@@ -34,7 +34,7 @@ sources:
   - docs/lifecycle-commands.md
   - docs/oh-directory-layout.md
   - docs/rfcs/rfc-brain-hands-boundary.md
-verified_at: a0d0437ec9819ce6ecf879cabeaefef9980cdcec
+verified_at: 4db24429bbf08c521b62ad6386fd1370445ac203
 related: [fresh-machine-setup, compose-env-boundary]
 confidence: provisional
 ---
@@ -48,13 +48,13 @@ confidence: provisional
 - `.agro/cli/build.mjs` — the `oh-asset:` esbuild plugin that inlines the four compose files and three scripts from `OH_ASSET_ROOT` (default: the repository root) into `dist/agro.js`, copied to `dist/oh.js`.  The specifier prefix is still `oh-asset:`; only the asset paths moved.
 - `.agro/cli/src/lib/product.ts` — `resolveProduct(argv[1])`: basename `oh` → `LEGACY_PRODUCT`, else `AGRO_PRODUCT`.
 - `.agro/cli/src/commands/self-upgrade.ts` — `classifyInstallation`, `runSelfUpgrade` (`agro update`).
-- `.agro/cli/package.json` (`@mifune/agro`, bin `agro`); `.agro/cli/legacy/package.json` (`@mifune/openharness`, bin `oh`, exact pin).
+- `.agro/cli/package.json` (`@mifune/agro`, bin `agro`); `.agro/cli/legacy/package.json` (`@mifune/openharness`, bin `oh`, exact pin). Since #943 `homepage`, `repository.url`, and `bugs.url` in both name `mifunedev/agro`.
 - `.agro/cli/src/commands/sandbox.ts` — `oh sandbox install <runtime>` (wizard, entry write, materialise, provision) and `oh sandbox list`.
 - `.agro/cli/src/commands/lifecycle.ts` — `oh shell|stop|restart|logs|ps|destroy [name]`; thin wrappers over the `ExecutionTarget` contract and the materialised wrapper script.
 - `.agro/cli/src/lib/execution/target.ts`, `docker-compose-target.ts` — the provider-neutral contract and its one adapter, which owns the engine argv.
 - `.agro/cli/src/cli.ts` — `main` threads the product `bin` into help and errors and dispatches `update` by product; `parseUpdateArgs`, `resolveUpdateSource`, `runWithRemoteSource`, `--sandbox` on `config` / `secret`.
 - `.agro/cli/src/commands/update.ts` — the `.agro/` + `crons/` bootstrap and upgrade.
-- `.agro/cli/src/lib/remote.ts` — `fetchRemoteSource`: shallow clone, `GIT_TERMINAL_PROMPT=0`, bounded timeout.
+- `.agro/cli/src/lib/remote.ts` — `fetchRemoteSource`: shallow clone, `GIT_TERMINAL_PROMPT=0`, bounded timeout; `DEFAULT_REPO_URL` (`remote.ts:4`) still names `mifunedev/openharness`.
 - `.agro/cli/src/lib/project.ts` — equipped-root walk-up resolver, still used by the in-repo verbs; since #940 it recognizes `.oh/` or `.agro/` through `resolveControlDir` (`.agro/cli/src/lib/compat.ts`) and fails closed when both exist and differ.
 - `.agro/cli/src/lib/execution/runner.ts` — `requireLifecycleScript(root, rel)` joins `resolveProjectLayout(root).controlDir` with `scripts/`, so every verb reaches the wrapper through whichever generation the root actually carries (`runner.ts:69-78`).
 - `.agro/scripts/docker-compose.sh`, `gateway.sh` — the scripts the verbs delegate to; the wrapper sources its sibling `compat.sh` to pick `agro.json` or `oh.json` and exits 2 when the sibling is missing or the two configs differ.
@@ -90,7 +90,7 @@ Issue #950 moved sandbox configuration out of the project checkout. `agro sandbo
 
 **`agro migrate` moves a workspace across generations.** It is the only verb that renames state, and it is opt-in: nothing on the boot path or the lifecycle path migrates anything. Project mode (the default) walks up from the cwd to the nearest ancestor holding `.oh`, `.agro`, `oh.json` or `agro.json` (`ROOT_MARKERS`, `findProjectRoot`), renames `.oh/` → `.agro/` and `oh.json` → `agro.json` wholesale, and re-points the five provider symlinks — `.claude/skills`, `.claude/hooks`, `.codex/skills`, `.agents/skills`, `.pi/skills` (`PROVIDER_LINKS`) — from `../.oh/<target>` to `../.agro/<target>`. A link that is absent, already AGRO, or points somewhere else is a reported `noop`, not a failure. When both spellings exist and are byte-identical the legacy copy is retired to `<name>.migrated` (`RETIRED_SUFFIX`) rather than deleted; when they diverge the run is **refused** with the differences printed and nothing is merged or removed. `--home` migrates `~/.oh/sandboxes` → `~/.agro/sandboxes` instead, and reports a `noop` when `AGRO_HOME`/`OH_HOME` names the registry home explicitly, because an explicit home holds no `.oh` or `.agro` directory to rename (`resolveRegistryHome`, `migrate.ts:188-193`). `--check` prints the plan and writes nothing; `--json` emits the plan or `{plan, result}`. One run holds `.agro-migrate.lock` (`LOCK_FILE`) under the root, a second run over migrated state is a `noop`, and the exit codes are 0 applied-or-nothing-to-do, 2 refused (conflict or lock), 1 failure. `~/.openharness`, `.env` and `.git` are never touched. `oh migrate` reaches the same code — the verb is on both products.
 
-**Remote fetch** — `git clone --depth 1 [--branch <ref>] -- <url> <tmp>` of `https://github.com/mifunedev/openharness` with `GIT_TERMINAL_PROMPT=0` and a 120 s timeout (`remote.ts`); `runWithRemoteSource` prints `fetched payload vX (installed CLI vY)` (`cli.ts`) so version skew is visible. Public HTTPS only.
+**Remote fetch** — `git clone --depth 1 [--branch <ref>] -- <url> <tmp>` of `DEFAULT_REPO_URL` = `https://github.com/mifunedev/openharness` (`remote.ts:4`) with `GIT_TERMINAL_PROMPT=0` and a 120 s timeout; `runWithRemoteSource` prints `fetched payload vX (installed CLI vY)` (`cli.ts`) so version skew is visible. Public HTTPS only. #943 left that default alone, as it did `DEFAULT_ARTIFACT_URL` (`self-upgrade.ts:66`) and `DEFAULT_SANDBOX_IMAGE` (`lifecycle.ts:104`), which also name `mifunedev/openharness`: they are compatibility defaults that resolve directly until the operator rename and through GitHub's redirect after it, and they flip to `mifunedev/agro` in US-006 of the cutover. Metadata moved first: `homepage`, `repository.url`, and `bugs.url` in `.agro/cli/package.json` and `legacy/package.json` name `mifunedev/agro`, the image label `org.opencontainers.image.source` is `https://github.com/mifunedev/agro` (`.devcontainer/Dockerfile:127`), and `.agro/README.md` names the docs source `mifunedev/agro-web`.
 
 **Troubleshooting / limits**
 - Host prerequisites: Node.js ≥ 20, git, docker; `get-agro.sh` or `npm install -g @mifune/agro` installs the CLI ([[fresh-machine-setup]]). No checkout is needed.

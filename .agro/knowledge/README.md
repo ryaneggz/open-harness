@@ -55,7 +55,7 @@ Schema, frontmatter spec, provenance kinds, and every authoring rule:
 | Slug | Title | Tags | Updated |
 | --- | --- | --- | --- |
 | sandbox-dependency-installs | Sandbox Dependency Installs | [sandbox, devcontainer, pnpm, dependencies, boot] | 2026-09-07 |
-| release-versioning | Release Versioning | [release, versioning, semver, calver, github-actions, ghcr, tags, workflow, package-json, agro, npm] | 2026-09-07 |
+| release-versioning | Release Versioning | [release, versioning, semver, calver, github-actions, ghcr, tags, workflow, package-json, agro, npm, repository-dispatch, docs-site] | 2026-09-07 |
 | plan-vs-built-reconciliation | Plan-vs-Built Reconciliation | [spec-execute, evidence, merge-gate, comprehension, audit, task-folder, review] | 2026-09-07 |
 | pattern-rename-sweep-collapses-block-scalar-indent | A tree-wide path sweep can re-indent one line inside a YAML block scalar and invalidate the workflow | [rename, yaml, workflows, github-actions, sweep, sed, perl, startup-failure, diff-review] | 2026-09-07 |
 | pattern-evals-probe-failure-path-untested | A probe's failure branch is unexecuted code until something injects the fault | [evals, probes, fault-injection, false-pass, exit-code, anchors] | 2026-09-07 |
@@ -67,6 +67,7 @@ Schema, frontmatter spec, provenance kinds, and every authoring rule:
 | document-ingestion | Local Document Ingestion | [wiki, ingestion, markitdown, documents, provenance, security] | 2026-09-07 |
 | compose-env-boundary | Compose Environment Boundary | [compose, devcontainer, oh-json, cli, entrypoint, boundary, installs, sandbox, registry] | 2026-09-07 |
 | audit-architecture | Audit Architecture | [audit, pr, workflow, safety, observability] | 2026-09-07 |
+| agro-web-pipeline | AGRO Web Pipeline | [docs-site, agro-web, pages, repository-dispatch, mirror, installers, cloudflare, identity, release] | 2026-09-07 |
 | pattern-scripts-sibling-dependency-standalone-copies | A script that gains a sourced sibling breaks every test and probe that copies it alone | [scripts, compose, testing, probes, bundling, registry, boot] | 2026-09-06 |
 | pattern-evals-tracked-only-scan-misses-uncommitted | A repository scan over git ls-files passes on uncommitted files and fails once they are committed | [evals, testing, git, inventory, ci, false-pass] | 2026-09-06 |
 | pattern-evals-product-name-literal-pinning | Probes and tests that pin the product name beside a verb break when the executable is renamed or templated | [evals, probes, cli, docs, rename, false-failure] | 2026-09-06 |
