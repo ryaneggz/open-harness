@@ -2,11 +2,11 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/License-Apache--2.0-D4AF37?style=plastic&labelColor=0B1220"></a>
-  <a href="https://github.com/mifunedev/openharness/actions/workflows/ci-harness.yml"><img alt="CI: Harness" src="https://img.shields.io/github/actions/workflow/status/mifunedev/openharness/ci-harness.yml?branch=main&style=plastic&label=CI&labelColor=0B1220&color=D4AF37"></a>
-  <a href="https://github.com/mifunedev/openharness/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/mifunedev/openharness?style=plastic&logo=github&logoColor=white&labelColor=0B1220&color=D4AF37"></a>
-  <a href="https://github.com/mifunedev/openharness/issues"><img alt="Issues" src="https://img.shields.io/github/issues/mifunedev/openharness?style=plastic&labelColor=0B1220&color=D4AF37"></a>
+  <a href="https://github.com/mifunedev/agro/actions/workflows/ci-harness.yml"><img alt="CI: Harness" src="https://img.shields.io/github/actions/workflow/status/mifunedev/agro/ci-harness.yml?branch=main&style=plastic&label=CI&labelColor=0B1220&color=D4AF37"></a>
+  <a href="https://github.com/mifunedev/agro/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/mifunedev/agro?style=plastic&logo=github&logoColor=white&labelColor=0B1220&color=D4AF37"></a>
+  <a href="https://github.com/mifunedev/agro/issues"><img alt="Issues" src="https://img.shields.io/github/issues/mifunedev/agro?style=plastic&labelColor=0B1220&color=D4AF37"></a>
   <img alt="Docker required" src="https://img.shields.io/badge/Docker-required-D4AF37?style=plastic&logo=docker&logoColor=white&labelColor=0B1220">
-  <a href="https://deepwiki.com/mifunedev/openharness"><img alt="Ask DeepWiki" src="https://img.shields.io/badge/DeepWiki-ask-D4AF37?style=plastic&labelColor=0B1220"></a>
+  <a href="https://deepwiki.com/mifunedev/agro"><img alt="Ask DeepWiki" src="https://img.shields.io/badge/DeepWiki-ask-D4AF37?style=plastic&labelColor=0B1220"></a>
 </p>
 
 <p align="center">
@@ -26,7 +26,7 @@
 
 ---
 
-> 📖 **Read the docs → https://oh.mifune.dev**
+> 📖 **Read the docs → https://agro.mifune.dev**
 > Rendered, searchable docs, guides, and blog. New here? Start with the [Start Here hub](docs/README.md).
 
 ## 📦 Install
@@ -48,13 +48,13 @@ the latest GitHub release (nothing is cloned or built on your host) and offers t
 install nvm + Node 22 for you:
 
 ```bash
-curl -fsSL https://github.com/mifunedev/openharness/releases/latest/download/get-agro.sh | bash
+curl -fsSL https://agro.mifune.dev/get-agro.sh | bash
 ```
 
 Review-first (download, read, then run — no extra dependency):
 
 ```bash
-curl -fsSL -o get-agro.sh https://github.com/mifunedev/openharness/releases/latest/download/get-agro.sh
+curl -fsSL -o get-agro.sh https://agro.mifune.dev/get-agro.sh
 # Review get-agro.sh in your editor or pager before running it.
 bash get-agro.sh
 ```
@@ -280,11 +280,11 @@ the image-mode recipe.
 
 ## 📚 Where to go next
 
-- **[Read the docs → oh.mifune.dev](https://oh.mifune.dev)** — the rendered, searchable documentation site (start here)
+- **[Read the docs → agro.mifune.dev](https://agro.mifune.dev)** — the rendered, searchable documentation site (start here)
 - [Docs index](docs/README.md) — GitHub-readable docs kept with the core repo
 - [Quickstart](docs/quickstart.md) — full step-by-step
-- [DeepWiki](https://deepwiki.com/mifunedev/openharness) — generated codebase map
-- [Docs site source](https://github.com/mifunedev/openharness-web) — Docusaurus source repo that builds oh.mifune.dev (contribute doc edits here)
+- [DeepWiki](https://deepwiki.com/mifunedev/agro) — generated codebase map
+- [Docs site source](https://github.com/mifunedev/agro-web) — Docusaurus source repo that builds agro.mifune.dev (contribute doc edits here)
 
 ## 🧹 Cleanup
 
@@ -294,7 +294,7 @@ agro destroy <name>
 
 ## 🤝 Contributing & community
 
-Open Harness is maintained under the [`mifunedev`](https://github.com/mifunedev) org — the canonical repo is [github.com/mifunedev/openharness](https://github.com/mifunedev/openharness). Contribute from a running sandbox: complete the GitHub-login prerequisite above, then use the contribution prompt or the workflow in [Contributing](docs/contributing.md). Issues and PRs welcome; if Open Harness is useful to you, please [give us a star](https://github.com/mifunedev/openharness/stargazers).
+Open Harness is maintained under the [`mifunedev`](https://github.com/mifunedev) org — the canonical repo is [github.com/mifunedev/agro](https://github.com/mifunedev/agro). Contribute from a running sandbox: complete the GitHub-login prerequisite above, then use the contribution prompt or the workflow in [Contributing](docs/contributing.md). Issues and PRs welcome; if Open Harness is useful to you, please [give us a star](https://github.com/mifunedev/agro/stargazers).
 
 ## 📄 License
 
@@ -308,4 +308,4 @@ Apache-2.0 §6 grants no permission to use the Mifune or Open Harness names, log
 
 ---
 
-[Read the docs](https://oh.mifune.dev) · [Docs index](docs/README.md) · [Docs site source](https://github.com/mifunedev/openharness-web)
+[Read the docs](https://agro.mifune.dev) · [Docs index](docs/README.md) · [Docs site source](https://github.com/mifunedev/agro-web)

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tier: A
 # source: #455 — docs builds must stay out of fast harness/eval/release gates; #536 — docs site externalized to openharness-web; docs markdown relocated to docs/
-# desc: Docusaurus site/BUILD machinery stays out of the core repo (openharness-web owns the rendered site). The GitHub-readable markdown now lives at docs/; only build machinery is forbidden under that path.
+# desc: Docusaurus site/BUILD machinery stays out of the core repo (agro-web owns the rendered site). The GitHub-readable markdown now lives at docs/; only build machinery is forbidden under that path.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -50,7 +50,7 @@ fi
 
 [[ -d "$DOCS_DIR" ]] || failures+=("docs/ must exist as the project documentation directory")
 [[ ! -e "$ROOT/.agro/docs" && ! -L "$ROOT/.agro/docs" ]] || failures+=(".agro/docs must not exist after the documentation move")
-[[ ! -e "$DOCS_DIR/package.json" ]] || failures+=("docs must not regain a Docusaurus package.json (the rendered site stays in openharness-web)")
+[[ ! -e "$DOCS_DIR/package.json" ]] || failures+=("docs must not regain a Docusaurus package.json (the rendered site stays in agro-web)")
 for __cfg in "$DOCS_DIR"/docusaurus.config.* "$DOCS_DIR"/sidebars.*; do
   [[ -e "$__cfg" ]] && failures+=("docs must not contain Docusaurus build config: $(basename "$__cfg")")
 done
@@ -64,7 +64,7 @@ if [[ -d "$DOCS_DIR" ]]; then
   done < <(find "$DOCS_DIR" -type f -print0)
 fi
 [[ ! -e "$ROOT/.github/workflows/docs.yml" ]] || failures+=("core repo must not keep the Docusaurus docs.yml workflow")
-[[ ! -e "$ROOT/blog" ]] || failures+=("blog archive must live in mifunedev/openharness-web, not the core repo")
+[[ ! -e "$ROOT/blog" ]] || failures+=("blog archive must live in mifunedev/agro-web, not the core repo")
 [[ ! -e "$ROOT/.agro/patches/gray-matter@4.0.3.patch" ]] || failures+=("docs-only gray-matter patch must not remain in core repo")
 
 for key in build setup build:harness docs:build docs:dev docs:serve; do
@@ -104,7 +104,7 @@ release_build="$(workflow_build_run "$RELEASE_WORKFLOW")"
 [[ "$release_build" == "pnpm run build:harness" ]] || failures+=("release.yml Build step must run pnpm run build:harness, got: ${release_build:-<missing>}")
 
 for f in "$README" "$DOCS_INDEX"; do
-  grep -Fq 'https://github.com/mifunedev/openharness-web' "$f" || failures+=("$(basename "$f") must point to mifunedev/openharness-web")
+  grep -Fq 'https://github.com/mifunedev/agro-web' "$f" || failures+=("$(basename "$f") must point to mifunedev/agro-web")
 done
 grep -Fiq 'deepwiki' "$README" || failures+=("README.md must point readers to DeepWiki for generated navigation")
 grep -Fq 'docs/README.md' "$README" || failures+=("README.md must point readers to docs/README.md")
@@ -117,7 +117,7 @@ if git -C "$ROOT" grep -nE 'docusaurus build|pnpm (run )?docs:build|pnpm --dir (
 fi
 
 if (( ${#failures[@]} == 0 )); then
-  echo "PASS: docs site externalized to mifunedev/openharness-web; docs holds markdown only (no build machinery)" >&2
+  echo "PASS: docs site externalized to mifunedev/agro-web; docs holds markdown only (no build machinery)" >&2
   exit 0
 fi
 

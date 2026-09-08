@@ -58,7 +58,7 @@ Flags:
 Env vars:
   OH_BIN_DIR           Where to install 'oh' (default: ~/.local/bin)
   OH_JS_URL            Prebuilt bundle URL (default: https://oh.mifune.dev/oh.js)
-  OH_GITHUB_REPO       Repo for the build fallback (default: mifunedev/openharness)
+  OH_GITHUB_REPO       Repo for the build fallback (default: mifunedev/agro)
   OH_GITHUB_REF        Git ref for the build fallback (alias: OH_INSTALL_REF)
   OH_NVM_VERSION       nvm version tag for the Node install (default: v0.40.3)
   OH_SKIP_EPILOGUE=1   Suppress the closing next-steps block (used when another
@@ -86,7 +86,7 @@ done
 
 OH_BIN_DIR="${OH_BIN_DIR:-$HOME/.local/bin}"
 OH_JS_URL="${OH_JS_URL:-https://oh.mifune.dev/oh.js}"
-OH_GITHUB_REPO="${OH_GITHUB_REPO:-mifunedev/openharness}"
+OH_GITHUB_REPO="${OH_GITHUB_REPO:-mifunedev/agro}"
 if [[ ! "$OH_GITHUB_REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
   die "OH_GITHUB_REPO must be <owner>/<repo>: got '$OH_GITHUB_REPO'"
 fi

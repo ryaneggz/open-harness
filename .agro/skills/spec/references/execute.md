@@ -25,12 +25,12 @@ written out below, in order, with no deferral to another skill.
 |-----|---------|
 | `<slug>` | The task slug — reads the three-file contract in `.agro/tasks/<slug>/` and `prd.json`'s `branchName`. Required. |
 | `--pr <N>` | Resume against an existing PR rather than creating one. |
-| `--repo <owner/name>` | GitHub repo (default `mifunedev/openharness`; read from the folder if `/spec plan` recorded it). |
+| `--repo <owner/name>` | GitHub repo (default `mifunedev/agro`; read from the folder if `/spec plan` recorded it). |
 | `--remote <name>` | Git remote (resolved from `--repo` if absent). |
 | `--base <branch>` | PR base + branch start point (default `development`). |
 
 ```bash
-SPEC_REPO="${SPEC_REPO:-mifunedev/openharness}"
+SPEC_REPO="${SPEC_REPO:-mifunedev/agro}"
 SPEC_BASE="${SPEC_BASE:-development}"
 case "${ARGUMENTS:-}" in *--repo*) SPEC_REPO=$(printf '%s\n' "$ARGUMENTS" | sed -n 's/.*--repo[ =]\([^ ]*\).*/\1/p') ;; esac
 case "${ARGUMENTS:-}" in *--base*) SPEC_BASE=$(printf '%s\n' "$ARGUMENTS" | sed -n 's/.*--base[ =]\([^ ]*\).*/\1/p') ;; esac

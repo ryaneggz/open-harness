@@ -1,7 +1,7 @@
 # /sync publish — origin→upstream procedure
 
 Push the fork's accumulated changes to the canonical public repo
-(upstream=mifunedev/openharness). This is a sanitize + structural-reconcile
+(upstream=mifunedev/agro). This is a sanitize + structural-reconcile
 operation, not a simple push. Read `references/topology.md` before starting.
 
 ## Pre-flight
@@ -21,7 +21,7 @@ operation, not a simple push. Read `references/topology.md` before starting.
    ```
    If absent, add it:
    ```bash
-   git remote add upstream https://github.com/mifunedev/openharness.git
+   git remote add upstream https://github.com/mifunedev/agro.git
    ```
 
 ## Step 1 — Fetch remotes
@@ -149,7 +149,7 @@ git diff upstream/development HEAD | grep '^+' | grep "$ORIGIN_REPO"
 ```
 
 Sanitize every leaked reference: retarget to the upstream tracking issue
-(check `gh issue list --repo mifunedev/openharness` for equivalents) or
+(check `gh issue list --repo mifunedev/agro` for equivalents) or
 remove the link. Also check non-CHANGELOG files:
 
 ```bash
@@ -180,7 +180,7 @@ git add -A
 git commit -m "sync: publish origin→upstream $(date -u +%Y-%m-%d)"
 git push upstream sync/publish-$DATE
 gh pr create \
-  --repo mifunedev/openharness \
+  --repo mifunedev/agro \
   --base development \
   --head sync/publish-$DATE \
   --title "sync: publish origin→upstream $(date -u +%Y-%m-%d)" \
@@ -192,14 +192,14 @@ Open as **draft** first.
 
 ## Step 11 — Gate to ready
 
-After CI passes, run `/audit pr <N> --repo mifunedev/openharness` while the
+After CI passes, run `/audit pr <N> --repo mifunedev/agro` while the
 PR is still a draft. Consume the focused classifier JSON and require
 `.draftStatus == "promotable"` with `.evidenceComplete == true`; a draft is
 never in the non-draft `ready` bucket. Only that immediately preceding result
 permits the state change:
 
 ```bash
-gh pr ready <N> --repo mifunedev/openharness
+gh pr ready <N> --repo mifunedev/agro
 ```
 
 If the audit is stale, partial, blocked, or reports any other draft status,

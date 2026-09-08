@@ -10,7 +10,7 @@ sync subcommand.
 | Name | Repo | Role | Default branch |
 |------|------|------|----------------|
 | `origin` | github.com/<origin-owner>/openharness | Operator fork / private workspace | `development` |
-| `upstream` | github.com/mifunedev/openharness | Canonical / public repo | `main` |
+| `upstream` | github.com/mifunedev/agro | Canonical / public repo | `main` |
 
 The integration branch is `development` on **both** remotes. PRs from
 feature branches target `development` on whichever remote owns the work.

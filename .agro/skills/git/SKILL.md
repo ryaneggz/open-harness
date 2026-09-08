@@ -23,7 +23,7 @@ for routing changes to the right remote and for preserving local work safely.
 
 This checkout commonly has two remotes:
 
-- `upstream` → `mifunedev/openharness` (public template/canonical upstream)
+- `upstream` → `mifunedev/agro` (public template/canonical upstream)
 - `origin` → your fork of `openharness` (private/operator fork)
 
 Before every commit or PR, inspect the changed paths and choose the remote

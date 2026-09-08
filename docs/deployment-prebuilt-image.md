@@ -176,7 +176,7 @@ Without `--repo`, the CLI materialises
 [`.devcontainer/docker-compose.image-only.yml`](../.devcontainer/docker-compose.image-only.yml)
 into the entry as the compose base. Everything below describes that path, and it
 is what `agro sandbox install docker` runs for you. Tracked in
-[#609](https://github.com/mifunedev/openharness/issues/609).
+[#609](https://github.com/mifunedev/agro/issues/609).
 
 ### The recipe by hand
 
@@ -233,7 +233,7 @@ clobbered.
 
 > ⚠️ **The image-only path requires an image built after two changes:** (1) the seed-bake
 > that stages `/opt/oh-seed`, and (2) the `.claude` seed-config fix
-> ([#617](https://github.com/mifunedev/openharness/pull/617)) that stops
+> ([#617](https://github.com/mifunedev/agro/pull/617)) that stops
 > `.dockerignore` from starving `/opt/oh-seed` of `.claude/protected-paths.txt`.
 > An image missing (2) crash-loops on boot with
 > `ERROR: .claude/protected-paths.txt is missing`. Pin a tag published **after

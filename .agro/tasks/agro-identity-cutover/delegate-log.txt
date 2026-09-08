@@ -1,0 +1,7 @@
+2026-09-08T02:57:41Z ledger written: 7 tasks, 4 waves; wave 1 = T1 T2 T3 (parallel, isolated worktrees); T4 T5 T6 T7 BLOCKED pending dependencies
+2026-09-08T02:57:41Z wave 1 dispatch: T1 T2 T3 -> running
+2026-09-08T02:59:29Z native worker IDs recorded for T1 T2 T3 (general-purpose, model inherit)
+2026-09-08T03:04:15Z T1 accepted: owner verification (oh-source resolution x2 exit 0, check:docs-drift exit 0, OH_SCRIPTS_REF=main pnpm run build exit 0, four artifacts start with #!, cmp agro.js oh.js identical); commit 05e81c7; web PR https://github.com/mifunedev/openharness-web/pull/46; status completed
+2026-09-08T03:04:30Z T4 eligible (T1 completed, accepted evidence 05e81c7); web worktree feat-943-agro-web-identity on branch feat/943-agro-web-identity from feat/943-agro-source-layout; dispatched to T1 worker by continuation -> running
+2026-09-08T03:05:17Z T3 round 1 reported: 5 files, tests green (24 + 1247), YAML ok, zero whitespace pairs; NOT accepted yet: AC1 default order satisfied by a workflow env override instead of the script default (promote-release-latest.sh:89) -> repair routed to T3 worker (flip default + test, drop override); status stays running
+2026-09-08T03:06:33Z T3 accepted after repair: vitest release-latest + release-reservation exit 0 (39 tests), ruby YAML safe_load exit 0, whitespace pair scan clean; commit 4d80868b integrated by cherry-pick; status completed

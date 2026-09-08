@@ -63,8 +63,8 @@ agro harness install pi            # pi
 Clone the repository inside the sandbox, in a Herdr pane:
 
 ```bash
-git clone --recurse-submodules https://github.com/mifunedev/openharness.git
-cd openharness
+git clone --recurse-submodules https://github.com/mifunedev/agro.git
+cd agro
 ```
 
 If this sandbox already holds your own workspace, do not replace it. Check whether the
@@ -89,7 +89,7 @@ pnpm run test:scripts   # root script + .pi extension tests
 bash .agro/skills/eval/run.sh
 ```
 
-The rendered docs site is maintained in [`mifunedev/openharness-web`](https://github.com/mifunedev/openharness-web). In this core repo, validate docs by checking the Markdown links and the GitHub-readable index at `docs/README.md`; no Docusaurus build runs here.
+The rendered docs site is maintained in [`mifunedev/agro-web`](https://github.com/mifunedev/agro-web). In this core repo, validate docs by checking the Markdown links and the GitHub-readable index at `docs/README.md`; no Docusaurus build runs here.
 
 ### Multi-agent messaging (Slack)
 
@@ -144,7 +144,7 @@ Example:
 
 ```markdown
 ### Added
-- Slack thread replies in multi-channel mode ([#42](https://github.com/mifunedev/openharness/pull/42)).
+- Slack thread replies in multi-channel mode ([#42](https://github.com/mifunedev/agro/pull/42)).
 ```
 
 Skip CHANGELOG entries only for pure chores with no runtime or workflow effect (refactors, test fixes, typos). When in doubt, add an entry.

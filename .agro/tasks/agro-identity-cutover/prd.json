@@ -17,8 +17,8 @@
         "Opened as a PR in mifunedev/openharness-web from a dedicated worktree; its URL is recorded in progress.txt and evidence.md; it is safe to merge before the rename."
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "web PR https://github.com/mifunedev/openharness-web/pull/46 (feat/943-agro-source-layout@05e81c7); merge before the rename"
     },
     {
       "id": "US-002",
@@ -51,8 +51,8 @@
         "Workflow YAML validates; the whole-diff leading-whitespace pair scan reports zero pairs."
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "commit 4d80868b; released sha source needs.reserve.outputs.releaseSha; token scope contents: write on the docs repo"
     },
     {
       "id": "US-004",

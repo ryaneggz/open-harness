@@ -1,11 +1,11 @@
 # Open Harness docs
 
-📖 **Full rendered docs & search → https://oh.mifune.dev**
+📖 **Full rendered docs & search → https://agro.mifune.dev**
 
 GitHub-readable documentation for the core Open Harness repo. Prefer this index
-for repo-local docs and [DeepWiki](https://deepwiki.com/mifunedev/openharness)
+for repo-local docs and [DeepWiki](https://deepwiki.com/mifunedev/agro)
 for generated codebase navigation. The rendered Docusaurus site and blog archive
-live in [`mifunedev/openharness-web`](https://github.com/mifunedev/openharness-web).
+live in [`mifunedev/agro-web`](https://github.com/mifunedev/agro-web).
 
 ## Start here
 

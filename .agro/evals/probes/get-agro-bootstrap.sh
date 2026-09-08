@@ -17,7 +17,7 @@ fi
 
 [ -x "$SCRIPT" ] || { echo 'REGRESSION .agro/scripts/get-agro.sh is not executable' >&2; exit 1; }
 
-bash "$SCRIPT" --help | grep -qF 'https://github.com/mifunedev/openharness/releases/latest/download/agro.js' \
+bash "$SCRIPT" --help | grep -qF 'https://github.com/mifunedev/agro/releases/latest/download/agro.js' \
   || { echo 'REGRESSION get-agro.sh lost the default release-asset agro.js URL' >&2; exit 1; }
 
 grep -qF 'install -m 0755 "$TMP/agro.js" "$AGRO_BIN_DIR/agro"' "$SCRIPT" \

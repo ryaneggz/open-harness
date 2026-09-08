@@ -1,6 +1,6 @@
 # @mifune/agro
 
-The **AGRO CLI** (`agro`) — create an [Open Harness](https://oh.mifune.dev)
+The **AGRO CLI** (`agro`) — create an [Open Harness](https://agro.mifune.dev)
 Docker sandbox for coding agents and drive its lifecycle from the command line.
 
 Open Harness is a portable harness for running coding agents (Claude Code, Codex, Pi,
@@ -31,7 +31,7 @@ installs the prebuilt `agro` artifact from the latest GitHub release — it neve
 clones or builds on your machine:
 
 ```bash
-curl -fsSL https://github.com/mifunedev/openharness/releases/latest/download/get-agro.sh | bash
+curl -fsSL https://agro.mifune.dev/get-agro.sh | bash
 ```
 
 ### Requirements
@@ -123,12 +123,12 @@ with `OH_EXECUTION_TARGET=local` or `OH_EXECUTION_TARGET=docker-compose`.
 holds every non-secret setting, `.env` holds only the allow-listed secrets. Each has
 two homes — a sandbox's registry entry (`--sandbox <name>`) and the project root
 (no flag). See
-[configuration](https://github.com/mifunedev/openharness/blob/main/docs/configuration.md)
+[configuration](https://github.com/mifunedev/agro/blob/main/docs/configuration.md)
 for the field reference.
 
 `agro` (or `oh`) is the only lifecycle door, on the host and in the sandbox, and every verb
 runs `.agro/scripts/docker-compose.sh` — see
-[lifecycle commands](https://github.com/mifunedev/openharness/blob/main/docs/lifecycle-commands.md), which also
+[lifecycle commands](https://github.com/mifunedev/agro/blob/main/docs/lifecycle-commands.md), which also
 states the confirmation policy `agro destroy` carries.
 
 `agro update` never touches a project. During the compatibility window `oh update` vendors
@@ -173,9 +173,9 @@ SSH-key and node lifecycle command set.
 
 ## Documentation
 
-- **Docs:** https://oh.mifune.dev
-- **Installation guide:** https://oh.mifune.dev/docs/installation
-- **Source & issues:** https://github.com/mifunedev/openharness
+- **Docs:** https://agro.mifune.dev
+- **Installation guide:** https://agro.mifune.dev/docs/installation
+- **Source & issues:** https://github.com/mifunedev/agro
 
 ## License
 

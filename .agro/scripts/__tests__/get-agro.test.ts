@@ -208,7 +208,7 @@ describe("get-agro.sh static contract", () => {
     expect(source).toContain("# Added by AGRO get-agro.sh");
     const help = run(["--help"]);
     expect(help.status).toBe(0);
-    expect(help.stdout).toContain("https://github.com/mifunedev/openharness/releases/latest/download/agro.js");
+    expect(help.stdout).toContain("https://github.com/mifunedev/agro/releases/latest/download/agro.js");
     expect(run(["--help"], { AGRO_GITHUB_REPO: "someone/fork" }).stdout).toContain(
       "https://github.com/someone/fork/releases/latest/download/agro.js",
     );
