@@ -165,3 +165,19 @@ because no release was due.
 - **A worker used a bare `git stash`** against its dispatch record. The tree was
   verified intact afterwards, but `stash@{0}` (`279b74a2`) is redundant and still
   present; the safety net blocks dropping it from this session.
+
+## Artifact index
+
+| Artifact | What it carries |
+|---|---|
+| `cutover-record.md` | The before-state, every action performed, and the post-cutover verification matrix |
+| `reference-classification.md` | Every remaining `mifunedev/openharness` and `oh.mifune.dev` hit, classified historical, compatibility, test-fixture, generic, or flipped |
+| `probe-fault-injection.md` | Per repinned probe: the injected change, the red exit it produced, and the restored exit |
+| `eval-result.json` | The probe floor keyed to `9a7de4f7`, runner exit 0 |
+| `simplicity-review.json` | Six non-blocking findings at `a18e421a` from a read-only reviewer |
+| `simplify-rounds.json` | Round 1, `netAdded` 2105, not non-reducing |
+| `delegate-graph.json`, `delegate-log.txt` | The nine bounded worker dispatches, their acceptance decisions, and the verification commands behind each |
+| `progress.txt` | The per-story narrative, including the recorded operator authorization |
+
+Web pull requests: mifunedev/agro-web#46 (merged, `4f26a55`) and mifunedev/agro-web#47
+(draft, `4c5958f`, held for the Pages domain).
