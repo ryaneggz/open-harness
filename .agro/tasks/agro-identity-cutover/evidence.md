@@ -1,13 +1,21 @@
 # Evidence — agro-identity-cutover (#943)
 
-Written at commit `9a7de4f7`, after the GitHub-side cutover. Correlates to the
+Written at commit `892f1413`, after the GitHub-side cutover and the Pages domain change. Correlates to the
 eval run recorded in `eval-result.json` and the simplicity review in
 `simplicity-review.json`, both keyed to that commit.
 
-**Terminal state: `DRAFT-BLOCKED(operator-cutover)`.** Six of seven stories are
-complete. US-006 holds the PR because three runbook steps need credentials the
-sandbox does not hold: the GitHub Pages custom domain, the Cloudflare redirect
-rules, and the dispatch token.
+**Terminal state: `DRAFT-BLOCKED(operator-cutover)`.** The operator has since
+performed the Pages custom-domain change and repointed the CDN rule for
+`/install.sh`, so `agro.mifune.dev` is live and canonical. Two operator actions
+remain, both needing credentials the sandbox does not hold: the Cloudflare
+redirect rules that restore `oh.mifune.dev`, and the dispatch token.
+
+**One documented compatibility surface is down while that first action is
+outstanding.** `oh.mifune.dev` returns 421 on every path, including the five
+executable ones, because GitHub Pages answers for only one custom domain. This is
+the expected window between runbook steps 5 and 6, and the redirect rules close
+it. `.agro/tasks/agro-identity-cutover/cloudflare-rules.json` holds the exact
+payload.
 
 ## 0. Why this is better than not doing it
 
@@ -20,20 +28,22 @@ a daily schedule, leaving up to 24 hours where a published release and the
 installers people actually download disagreed.
 
 **After.** The pipeline reads `.agro/` first and falls back to `.oh/`, proven by
-building against both layouts. Both repositories are renamed, and all five
-executable paths on the legacy host still return a script body:
+building against both layouts. Both repositories are renamed, and the canonical
+host now serves the documentation and every mirrored artifact:
 
 ```
-oh.mifune.dev/install.sh    200 body=#!
-oh.mifune.dev/get-oh.sh     200 body=#!
-oh.mifune.dev/oh.js         200 body=#!
-oh.mifune.dev/get-agro.sh   200 body=#!
-oh.mifune.dev/agro.js       200 body=#!
+agro.mifune.dev/            200  <title>AGRO
+agro.mifune.dev/install.sh  302 -> raw install.sh, body=#!
+agro.mifune.dev/get-oh.sh   200 body=#!
+agro.mifune.dev/oh.js       200 body=#!
+agro.mifune.dev/get-agro.sh 200 body=#!
+agro.mifune.dev/agro.js     200 body=#!
 ```
 
-Two of those (`/get-agro.sh`, `/agro.js`) were `404` before this work; they are
-mirrored now. A clean `node:22-slim` container installs both CLIs from the legacy
-host with no manual step.
+`/get-agro.sh` and `/agro.js` did not exist as endpoints before this work. A clean
+`node:22-slim` container installs `agro 0.9.0` from the canonical host with no
+manual step. The same check passed against the legacy host earlier in the run,
+before the domain moved.
 
 **Cost.** 8 commits on the core branch, `netAdded` 2105 lines across ~100 files,
 two docs-site PRs, 8 bounded worker dispatches with 4 repair rounds. Most of the
@@ -59,9 +69,9 @@ the operator.
 | US-001 web pipeline accepts `.agro/` | agro-web#46, merged `4f26a55` | build exit 0 against `development` (`.agro/` path) and `main` (`.oh/` fallback); `agro.js`/`oh.js` byte-identical; drift PASS |
 | US-002 core names AGRO | `03c3d69b` | `pnpm test` 1246 passed; both typechecks 0; `link-providers.sh --check` 0; 8 probes 0; `reference-classification.md` covers every remaining old-name hit |
 | US-003 release infra | `4d80868b` | 39 release tests pass; YAML validates; whitespace pair scan clean; `notify-docs` passes the secret only through `env:` and skips with `::notice::` |
-| US-004 docs-site identity | agro-web#47 (draft, mergeable) `4c5958f` | build exit 0; drift PASS; `build/CNAME` = `agro.mifune.dev`; sitemap 66 agro / 0 legacy; canonical and `og:url` on all 66 routed pages |
+| US-004 docs-site identity | agro-web#47, merged `409ef104` | build exit 0; drift PASS; `build/CNAME` = `agro.mifune.dev`; sitemap 66 agro / 0 legacy; deployed site serves `<title>AGRO` and a matching `CNAME` |
 | US-005 runbook | `4db24429` | `ste-check.sh` 0; linked from the compatibility doc and the docs index; `curl-bash-safe-alternatives` 0 |
-| US-006 operator cutover | `cutover-record.md`, `0b58c0a7` | GitHub-side steps done (below); Pages domain, Cloudflare, and token outstanding |
+| US-006 operator cutover | `cutover-record.md`, `0b58c0a7`, `892f1413` | renames, metadata, defaults, Pages domain and `/install.sh` done; installer references repointed; Cloudflare rules and token outstanding |
 | US-007 knowledge and changelog | `143cd6b8`, `b63cf41e`, `a18e421a` | `knowledge-impact.sh --verified` 0 needing review; wiki probes 0; `changelog-entry-length` 0 |
 
 ### Cutover performed (US-006 partial)
@@ -128,12 +138,18 @@ because no release was due.
 
 ## 4. What remains unverified
 
-- **Three runbook steps are outstanding**, and US-006 cannot pass without them:
-  step 5 (Pages custom domain), step 6 (Cloudflare redirect rules), step 7a (issue
-  and store `AGRO_WEB_DISPATCH_TOKEN`). Until step 5, `agro.mifune.dev` returns
-  `421` and the README's `agro.mifune.dev/get-agro.sh` one-liner does not resolve.
-- **agro-web#47 is not merged**, by design: merging it before the Pages domain is
-  active would ship a `CNAME` that disagrees with the live setting.
+- **Two runbook steps are outstanding**, and US-006 cannot pass without them:
+  step 6 (Cloudflare redirect rules) and step 7a (issue and store
+  `AGRO_WEB_DISPATCH_TOKEN`). Step 5 is done.
+- **`oh.mifune.dev` returns 421 on every path right now.** Five of those are
+  documented compatibility endpoints. Only the step 6 redirect rules restore them,
+  and the payload is prepared at `cloudflare-rules.json` with its README beside it.
+  The legacy half of the US-006 live re-verification stays unverified until then.
+- **The `/install.sh` redirect target is on a deadline.** It names
+  `.oh/scripts/install.sh` on `main`, which exists only because `main` predates the
+  directory rename. The first release that carries the rename to `main` deletes
+  that path, so the rule target must move to the `.agro/` path in the same change
+  window, never earlier. Recorded in the compatibility doc and runbook step 6.
 - **The real release dispatch has never fired.** `notify-docs` is exercised only by
   tests and by the `workflow_dispatch` stand-in; the first real release after the
   token is stored is its first live run.
@@ -178,6 +194,9 @@ because no release was due.
 | `simplify-rounds.json` | Round 1, `netAdded` 2105, not non-reducing |
 | `delegate-graph.json`, `delegate-log.txt` | The nine bounded worker dispatches, their acceptance decisions, and the verification commands behind each |
 | `progress.txt` | The per-story narrative, including the recorded operator authorization |
+| `cloudflare-rules.json`, `cloudflare-rules.README.md` | The exact runbook step 6 payload and how to apply, verify, and time it |
 
 Web pull requests: mifunedev/agro-web#46 (merged, `4f26a55`) and mifunedev/agro-web#47
-(draft, `4c5958f`, held for the Pages domain).
+(merged, `409ef104`). #47 was merged once the Pages domain was live, because `main`
+still carried `static/CNAME` = `oh.mifune.dev` and the next scheduled build would
+have deployed it and reverted the operator's domain change.
