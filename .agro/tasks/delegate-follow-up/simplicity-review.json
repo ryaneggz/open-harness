@@ -1,70 +1,62 @@
 {
   "schemaVersion": 1,
-  "commit": "23e409e6ab9193f9c1cac5fb0977c0e07215c623",
-  "reviewer": "7c3b8668-b6b9-485",
-  "reviewedAt": "2026-09-08T00:06:32Z",
+  "commit": "e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4",
+  "reviewer": "c4a2d9ce-92aa-411",
+  "reviewedAt": "2026-09-08T02:16:33.129596+00:00",
+  "timeProvenance": "Parent recorded accepted completed review at this time; not an invented exact worker finish timestamp.",
+  "verdict": "SOURCE-PROMOTABLE; OWNER-RECORDS-REQUIRED",
+  "report": ".agro/tasks/delegate-follow-up/parent-verification/namespace/independent/report.md",
   "findings": [
     {
       "id": "historical-1",
-      "file": ".oh/evals/probes/advisor-execution-contract.sh",
+      "file": ".agro/evals/probes/advisor-execution-contract.sh",
       "line": 119,
       "simplerAlternative": "Delete the three superseded-wording guards. Nonblocking: this loses coverage for contradictory old wording alongside new positive assertions.",
       "removesLines": 9,
       "blocking": false,
-      "status": "open"
-    },
-    {
-      "id": "historical-2",
-      "file": ".oh/evals/probes/advisor-execution-contract.sh",
-      "line": 163,
-      "simplerAlternative": "Replace node counts, nesting, and edges accumulator with the two existing edge greps, each directly appending to problems. Each edge implies its node prerequisite; four replacement lines preserve both assertions.",
-      "removesLines": 9,
-      "blocking": true,
-      "status": "resolved",
-      "resolvedIn": "23e409e6ab9193f9c1cac5fb0977c0e07215c623"
+      "status": "open",
+      "provenance": "Retained nonblocking disposition from pre-namespace review7c3b8668-b6b9-485; source is independently verified namespace-equivalent. Not a newly invented reviewer finding."
     },
     {
       "id": "historical-3",
-      "file": ".oh/evals/probes/advisor-execution-contract.sh",
+      "file": ".agro/evals/probes/advisor-execution-contract.sh",
       "line": 167,
       "simplerAlternative": "Widen whole-file Memory Protocol guard to MEM_|Memory Protocol and delete diagram guard. Nonblocking: this changes rejection scope outside the diagram.",
       "removesLines": 3,
       "blocking": false,
-      "status": "open"
+      "status": "open",
+      "provenance": "Retained nonblocking disposition from pre-namespace review7c3b8668-b6b9-485; source is independently verified namespace-equivalent. Not a newly invented reviewer finding."
     },
     {
       "id": "historical-4",
-      "file": ".oh/evals/probes/advisor-execution-contract.sh",
+      "file": ".agro/evals/probes/advisor-execution-contract.sh",
       "line": 134,
       "simplerAlternative": "Delete the frontmatter-key loop. Nonblocking: US-004 explicitly preserves these keys and replacement coverage is not established.",
       "removesLines": 3,
       "blocking": false,
-      "status": "open"
+      "status": "open",
+      "provenance": "Retained nonblocking disposition from pre-namespace review7c3b8668-b6b9-485; source is independently verified namespace-equivalent. Not a newly invented reviewer finding."
     },
     {
       "id": "historical-7",
-      "file": ".oh/skills/delegate/SKILL.md",
+      "file": ".agro/skills/delegate/SKILL.md",
       "line": 347,
       "simplerAlternative": "Remove repeated acceptance-ownership sentences and relocate required fragment into Status row. Nonblocking: coordinated contract relocation is additional work.",
       "removesLines": 3,
       "blocking": false,
-      "status": "open"
-    },
-    {
-      "id": "new-1",
-      "file": ".oh/evals/probes/delegate-worker-boundary.sh",
-      "line": 117,
-      "simplerAlternative": "Delete the three fragment greps subsumed by the immediately following case-insensitive full-phrase assertion.",
-      "removesLines": 3,
-      "blocking": true,
-      "status": "resolved",
-      "resolvedIn": "23e409e6ab9193f9c1cac5fb0977c0e07215c623"
+      "status": "open",
+      "provenance": "Retained nonblocking disposition from pre-namespace review7c3b8668-b6b9-485; source is independently verified namespace-equivalent. Not a newly invented reviewer finding."
     }
   ],
-  "historicalDispositions": {
-    "2": "Promoted to blocking; reduction corrected from 11 to 9 lines.",
-    "5": "Withdrawn: sharing negation lists changes older guards; equivalence not established.",
-    "6": "Withdrawn: completed work does not necessarily cover correct portions of incomplete work.",
-    "8": "Withdrawn: shorter diagram label removes zero lines."
-  }
+  "newSourceBlockers": [],
+  "ownerRecordFindings": {
+    "O-1": "Fresh parent eval-result now names e139 and includes true-base receipts.",
+    "O-2": "This record supersedes pre-namespace review; final actual audits still required."
+  },
+  "historicalRecord": "e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4:.agro/tasks/delegate-follow-up/simplicity-review.json",
+  "limits": [
+    "No new native runtime experiment or reconnect-success claim.",
+    "Inherited namespace persistence coverage gap verified manually for this PR; no unrelated probe repair.",
+    "Finalization requires fresh CI and actual audits on clean matching local/remote head."
+  ]
 }

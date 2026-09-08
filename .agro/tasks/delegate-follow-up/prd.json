@@ -19,8 +19,11 @@
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Skill 5b/5c/5d + Status field revised; advisor-run injection: old 5d text -> exit 1. D2 runtime row observed in a disposable context: dependent releasable False (returned, unverified) -> False (verification failed, exit 0 but wrong output) -> True (verified acceptance). Repair routed to the same worker by native continuation.",
-      "parentContentAccepted": true
+      "notes": "Namespace repair accepted at e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4 after independent reviewc4a2d9ce-92aa-411. Original behavioral and native evidence retained with its original limits under SA-1. Current namespace-equivalent skill/probes,17mutation cases,145row base/head comparison and5content-head CI checks verified. Finalization must recheck the committed record head before undraft/merge.",
+      "parentContentAccepted": true,
+      "preNamespaceContentAccepted": true,
+      "currentVerificationState": "CONTENT_ACCEPTED; final committed-head CI and actual audits remain mandatory before merge.",
+      "preNamespaceNotes": "Skill 5b/5c/5d + Status field revised; advisor-run injection: old 5d text -> exit 1. D2 runtime row observed in a disposable context: dependent releasable False (returned, unverified) -> False (verification failed, exit 0 but wrong output) -> True (verified acceptance). Repair routed to the same worker by native continuation."
     },
     {
       "id": "US-002",
@@ -37,8 +40,11 @@
       ],
       "priority": 2,
       "passes": true,
-      "notes": "Core principle and decomposition rule rewritten; Search / output limits and Stopping condition added to the dispatch record (R3). Concurrency and recursion caps pinned. D3 three-brief review performed and recorded, including a finding against the advisor's own briefs.",
-      "parentContentAccepted": true
+      "notes": "Namespace repair accepted at e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4 after independent reviewc4a2d9ce-92aa-411. Original behavioral and native evidence retained with its original limits under SA-1. Current namespace-equivalent skill/probes,17mutation cases,145row base/head comparison and5content-head CI checks verified. Finalization must recheck the committed record head before undraft/merge.",
+      "parentContentAccepted": true,
+      "preNamespaceContentAccepted": true,
+      "currentVerificationState": "CONTENT_ACCEPTED; final committed-head CI and actual audits remain mandatory before merge.",
+      "preNamespaceNotes": "Core principle and decomposition rule rewritten; Search / output limits and Stopping condition added to the dispatch record (R3). Concurrency and recursion caps pinned. D3 three-brief review performed and recorded, including a finding against the advisor's own briefs."
     },
     {
       "id": "US-003",
@@ -57,7 +63,7 @@
       ],
       "priority": 3,
       "passes": true,
-      "notes": "Current parent epoch: resume eligibility repaired at c6704966, integrated at 1fd401cc; skill unchanged by final probe simplification at 23e409e6. Independently reviewed live unknown-status/fail-closed observation accepted under unchanged reconnect-only SA-1. Historical notes and withdrawn claims remain explicitly historical below. Final-head CI remains pending.",
+      "notes": "Namespace repair accepted at e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4 after independent reviewc4a2d9ce-92aa-411. Original behavioral and native evidence retained with its original limits under SA-1. Current namespace-equivalent skill/probes,17mutation cases,145row base/head comparison and5content-head CI checks verified. Finalization must recheck the committed record head before undraft/merge.",
       "deferredCriteria": [
         {
           "criterion": "ACROSS SESSIONS: a worker still active is reconnected to or observed through the supported native mechanism from persisted state alone; spawning a duplicate for it is forbidden",
@@ -83,6 +89,24 @@
       },
       "historicalNotes": "Resume rule covers pending/BLOCKED, FAIL (incomplete scope only), running (reconnect, never duplicate), completed (stale-evidence check) and unknown provenance. | CORRECTION after independent review B-4: the earlier case-(a) record described an ENDED worker awaiting verification, not a reconnect to a still-active one; the still-active branch was then exercised properly and is live within a session. | HISTORY, PRESERVED DELIBERATELY: this story was set passes=false after independent review R4 finding B-3, because it had carried passes=true while its own note said the cross-session criterion was BLOCKED - and that boolean is the single input audit gate 1 reads. Gate 1 then failed closed, correctly, at audit-20260907T214546Z-3826355. That failure and the prior blocked state are historical evidence and are NOT rewritten as prior passes. | passes RESTORED TO TRUE under operator scope amendment SA-1, which defers the cross-session reconnection criterion ONLY. It is deferred, not satisfied: the authorized experiment measured it unavailable on this provider. Every remaining criterion was re-verified against its source before this flip - see remainingCriteriaVerification - rather than inherited from an earlier verdict. An earlier revision of this story additionally claimed two criteria had come out stronger; independent review defeated both and they are recorded as withdrawn in remainingCriteriaVerification. Case (d) remains a disclosed fixture.",
       "remainingCriteriaVerification": {
+        "commit": "e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4",
+        "method": "Current independent namespace-equivalence and mutation reviewc4a2d9ce-92aa-411 plus parent verification. Historical runtime observations retain their source hashes and original scope; no rerun or broader provider claim.",
+        "results": {
+          "C1": "Initial and resumed dispatch require every prerequisite, dependency evidence, required control and resolved provenance condition.",
+          "C2": "Prior live within-session observation retained; original evidence describes native SendMessage and ListAgents. No new model/effort inference.",
+          "C4": "Prior live ended-worker artifact validation and dependent hold/repair observations retained.",
+          "C5": "Live new observation accepted: Session B could not resolve exact running handle a8e871ee7a180398b via tested lookup, applied ambiguity clause, left task hashes/count unchanged and spawned zero workers without an independent ban. See sol-runtime-proof/ and parent-verification/runtime-acceptance.json.",
+          "C6": "Stale evidence rule retained; negative and positive probe cases independently repeated at final content head.",
+          "C7": "Append-only instruction retained; historical log-prefix observations remain corroboration, not runtime proof of complete bookkeeping.",
+          "C8": "Prior active, ended, interrupted and stale cases retained; unknown-status now has the independently accepted unconfounded live observation, not only the historical fixture. Unknown is epistemic to observer B, not a separate actual worker state.",
+          "C9": "All five CI checks SUCCESS at repaired content heade139; parent-verification/namespace/ci-content-head.json. Finalization rechecks the subsequent records-only head."
+        }
+      },
+      "parentContentAccepted": true,
+      "preNamespaceContentAccepted": true,
+      "currentVerificationState": "CONTENT_ACCEPTED; final committed-head CI and actual audits remain mandatory before merge.",
+      "preNamespaceNotes": "Current parent epoch: resume eligibility repaired at c6704966, integrated at 1fd401cc; skill unchanged by final probe simplification at 23e409e6. Independently reviewed live unknown-status/fail-closed observation accepted under unchanged reconnect-only SA-1. Historical notes and withdrawn claims remain explicitly historical below. Final-head CI remains pending.",
+      "preNamespaceRemainingCriteriaVerification": {
         "commit": "23e409e6ab9193f9c1cac5fb0977c0e07215c623",
         "method": "Parent source inspection plus independent runtime reviewer c67fc8a2-0100-4f7 and final probe reviewer 7c3b8668-b6b9-485; prior live cases retained with original observation limits.",
         "results": {
@@ -95,8 +119,7 @@
           "C8": "Prior active, ended, interrupted and stale cases retained; unknown-status now has the independently accepted unconfounded live observation, not only the historical fixture. Unknown is epistemic to observer B, not a separate actual worker state.",
           "C9": "Lint, Typecheck, Build & Test SUCCESS at a89f07c8c34df7b4b21a02f89d3846368ae40e4a; parent-verification/ci-content-record-head.json. Finalization rechecks subsequent record heads."
         }
-      },
-      "parentContentAccepted": true
+      }
     },
     {
       "id": "US-004",
@@ -112,8 +135,11 @@
       ],
       "priority": 4,
       "passes": true,
-      "notes": "Memory Protocol references 0; frontmatter trigger no longer fires on /prd or plan creation and resists sibling-command evasion; diagram branches on --dry-run before the ledger write, pinned by literal-edge assertions. Dry-run observed: 0 execution-state files and no dispatch event before or after.",
-      "parentContentAccepted": true
+      "notes": "Namespace repair accepted at e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4 after independent reviewc4a2d9ce-92aa-411. Original behavioral and native evidence retained with its original limits under SA-1. Current namespace-equivalent skill/probes,17mutation cases,145row base/head comparison and5content-head CI checks verified. Finalization must recheck the committed record head before undraft/merge.",
+      "parentContentAccepted": true,
+      "preNamespaceContentAccepted": true,
+      "currentVerificationState": "CONTENT_ACCEPTED; final committed-head CI and actual audits remain mandatory before merge.",
+      "preNamespaceNotes": "Memory Protocol references 0; frontmatter trigger no longer fires on /prd or plan creation and resists sibling-command evasion; diagram branches on --dry-run before the ledger write, pinned by literal-edge assertions. Dry-run observed: 0 execution-state files and no dispatch event before or after."
     },
     {
       "id": "US-005",
@@ -129,8 +155,11 @@
       ],
       "priority": 5,
       "passes": true,
-      "notes": "Both probes extended; advisor ran 8 independent injections (all mutated exit 1 / restored exit 0, plus an unmodified control at 0); T1 reports 31 round-1 and 17 repair-round injections with raw output retained; T2 independently confirmed 4. shellcheck absent from the sandbox \u2014 recorded as a gap. | DEFECT FOUND AND FIXED after independent review: this story's guarantee that a future edit 'cannot silently reopen any of the four gaps' was FALSE as shipped. Deleting the entire stale-completed bullet at SKILL.md:270-273 left both probes exiting 0, along with seven other probes, because the need-list carried no literal from that bullet and the only related guard matched the superseded phrasing. Gap 3 was therefore unpinned. Repaired by adding two literals - the required action and the required consequence - because a variant with a token re-read sentence and no demotion passes the first and is caught only by the second. Fault-injection tested in both directions: four must-fail variants exit 1 naming the missing literal, and two full rewordings plus the unmodified tree exit 0.",
-      "parentContentAccepted": true
+      "notes": "Namespace repair accepted at e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4 after independent reviewc4a2d9ce-92aa-411. Original behavioral and native evidence retained with its original limits under SA-1. Current namespace-equivalent skill/probes,17mutation cases,145row base/head comparison and5content-head CI checks verified. Finalization must recheck the committed record head before undraft/merge.",
+      "parentContentAccepted": true,
+      "preNamespaceContentAccepted": true,
+      "currentVerificationState": "CONTENT_ACCEPTED; final committed-head CI and actual audits remain mandatory before merge.",
+      "preNamespaceNotes": "Both probes extended; advisor ran 8 independent injections (all mutated exit 1 / restored exit 0, plus an unmodified control at 0); T1 reports 31 round-1 and 17 repair-round injections with raw output retained; T2 independently confirmed 4. shellcheck absent from the sandbox \u2014 recorded as a gap. | DEFECT FOUND AND FIXED after independent review: this story's guarantee that a future edit 'cannot silently reopen any of the four gaps' was FALSE as shipped. Deleting the entire stale-completed bullet at SKILL.md:270-273 left both probes exiting 0, along with seven other probes, because the need-list carried no literal from that bullet and the only related guard matched the superseded phrasing. Gap 3 was therefore unpinned. Repaired by adding two literals - the required action and the required consequence - because a variant with a token re-read sentence and no demotion passes the first and is caught only by the second. Fault-injection tested in both directions: four must-fail variants exit 1 naming the missing literal, and two full rewordings plus the unmodified tree exit 0."
     },
     {
       "id": "US-006",
@@ -138,7 +167,7 @@
       "description": "As the advisor, I want the predecessor's contracts and the wider probe suite verified on the integrated commit, so that no merged guarantee is weakened and no new regression ships.",
       "acceptanceCriteria": [
         "delegate-model-effort-policy.sh, spec-single-owner.sh, plan-orchestration-contract.sh, and roles-are-skills.sh each exit 0 on the integrated result",
-        "link-providers.sh --check exits 0; the canonical .oh/ source was edited and no provider mirror was patched",
+        "link-providers.sh --check exits 0; the canonical .agro/ source was edited and no provider mirror was patched",
         "eval/run.sh runs on the approved base and on the integrated result; every non-PASS row is reviewed and each pre-existing failure is reproduced on the base before being attributed elsewhere",
         "The suite run, not a name grep, is the authoritative list of affected probes (pattern-evals-probe-brief-under-enumeration)",
         "The merged model/effort policy, no-Sonnet exclusion, requested-vs-observed evidence rule, single-owner ownership, optional handoff, and the audit gate-4/gate-5 completion contract are unchanged by this diff",
@@ -147,8 +176,11 @@
       ],
       "priority": 6,
       "passes": true,
-      "notes": "Six named probes plus five more exit 0; link-providers --check 0; eval runner exit 0 on base 56ab2bab (137 PASS/7 SKIPPED/1 RED, retained as a committed artifact) and on the final head (138 PASS/6 SKIPPED/1 RED). No new green->red. Eight merged contracts verified present.",
-      "parentContentAccepted": true
+      "notes": "Actual a227 ande139 full suites each exit0 with137PASS7SKIP1RED,145identical status rows. Each non-PASS reproduced separately at bothheads. Six environment skips plus inherited namespace-sensitive wiki-pattern-persistence skip; all22existing patterns verified byte-identical. Missing cc-safety-net inherited. Independent focused contracts/provider links and17mutations pass; final record-head CI/audits remain required.",
+      "parentContentAccepted": true,
+      "preNamespaceContentAccepted": true,
+      "currentVerificationState": "CONTENT_ACCEPTED; final committed-head CI and actual audits remain mandatory before merge.",
+      "preNamespaceNotes": "Six named probes plus five more exit 0; link-providers --check 0; eval runner exit 0 on base 56ab2bab (137 PASS/7 SKIPPED/1 RED, retained as a committed artifact) and on the final head (138 PASS/6 SKIPPED/1 RED). No new green->red. Eight merged contracts verified present."
     },
     {
       "id": "US-007",
@@ -164,11 +196,14 @@
       ],
       "priority": 7,
       "passes": true,
-      "notes": "Every retained register row dispositioned in evidence.md; diff touches no deferred surface; historical unknown model/effort observations preserved as unknown.",
-      "parentContentAccepted": true
+      "notes": "Namespace repair accepted at e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4 after independent reviewc4a2d9ce-92aa-411. Original behavioral and native evidence retained with its original limits under SA-1. Current namespace-equivalent skill/probes,17mutation cases,145row base/head comparison and5content-head CI checks verified. Finalization must recheck the committed record head before undraft/merge.",
+      "parentContentAccepted": true,
+      "preNamespaceContentAccepted": true,
+      "currentVerificationState": "CONTENT_ACCEPTED; final committed-head CI and actual audits remain mandatory before merge.",
+      "preNamespaceNotes": "Every retained register row dispositioned in evidence.md; diff touches no deferred surface; historical unknown model/effort observations preserved as unknown."
     }
   ],
-  "completionAuthority": "prd.json is the authoritative completion state per .oh/skills/spec/SKILL.md (\"Completion is structured state... There is no prose sentinel\"). The unticked checkboxes in prd.md are the approved plan as written and are deliberately not edited to mark completion; this file is the record that decides it.",
+  "completionAuthority": "prd.json is the authoritative completion state per .agro/skills/spec/SKILL.md (\"Completion is structured state... There is no prose sentinel\"). The unticked checkboxes in prd.md are the approved plan as written and are deliberately not edited to mark completion; this file is the record that decides it.",
   "scopeAmendments": [
     {
       "id": "SA-1",
@@ -192,6 +227,19 @@
     }
   ],
   "parentAcceptance": {
+    "recordedAt": "2026-09-08T02:16:33.129596+00:00",
+    "state": "CONTENT_ACCEPTED",
+    "contentHead": "e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4",
+    "baseCommit": "a227bbf3f3166a0e1a8a1951fc88694cfa0151ee",
+    "owner": "requesting parent Pi session",
+    "reviewer": "c4a2d9ce-92aa-411",
+    "scopeAmendment": "SA-1 unchanged, reconnect-only",
+    "operatorAuthorization": "Namespace conflict repair, fresh review and verification, then merge and safe PR-specific cleanup",
+    "finalization": "All content criteria accepted with five actual content-head CI successes. A records-only descendant must pass fresh head-matched CI and actual implementation/PR audits on a clean matching local/remote head before parent undraft and release of the expected-head merge to Luna. No release or unrelated cleanup authorized.",
+    "finalAudits": "Not run yet for this namespace epoch; no reused historical audit IDs.",
+    "modelProvenance": "Luna native footer/env self-report gpt-5.6-luna max. Independent reviewer self-reports requested gpt-5.6-sol high; no further runtime instrumentation."
+  },
+  "historicalPreNamespaceParentAcceptance": {
     "recordedAt": "2026-09-08T00:14:46.470984+00:00",
     "state": "CONTENT_ACCEPTED",
     "scopeAmendment": "SA-1 unchanged",

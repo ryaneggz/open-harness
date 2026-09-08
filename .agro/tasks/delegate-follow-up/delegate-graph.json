@@ -579,7 +579,7 @@
       "action": "acceptance written back to both the graph and the log; the page's own recipe is now run before each commit that follows an acceptance"
     }
   },
-  "parentAcceptance": {
+  "historicalPreNamespaceParentAcceptance": {
     "owner": "requesting Pi session; operator retained acceptance here; Sol is a bounded worker",
     "recordedAt": "2026-09-08T00:14:46.470984+00:00",
     "recordTiming": "Retrospective durable reconciliation of actual dispatch/acceptance in parent conversation, not a claim this ledger preceded dispatch.",
@@ -594,5 +594,144 @@
       "audit-20260908T001250Z-4036385",
       "audit-20260908T001251Z-4036476"
     ]
+  },
+  "parentAcceptance": {
+    "recordedAt": "2026-09-08T02:16:33.129596+00:00",
+    "state": "CONTENT_ACCEPTED",
+    "contentHead": "e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4",
+    "baseCommit": "a227bbf3f3166a0e1a8a1951fc88694cfa0151ee",
+    "owner": "requesting parent Pi session",
+    "reviewer": "c4a2d9ce-92aa-411",
+    "scopeAmendment": "SA-1 unchanged, reconnect-only",
+    "operatorAuthorization": "Namespace conflict repair, fresh review and verification, then merge and safe PR-specific cleanup",
+    "finalization": "All content criteria accepted with five actual content-head CI successes. A records-only descendant must pass fresh head-matched CI and actual implementation/PR audits on a clean matching local/remote head before parent undraft and release of the expected-head merge to Luna. No release or unrelated cleanup authorized.",
+    "finalAudits": "Not run yet for this namespace epoch; no reused historical audit IDs.",
+    "modelProvenance": "Luna native footer/env self-report gpt-5.6-luna max. Independent reviewer self-reports requested gpt-5.6-sol high; no further runtime instrumentation."
+  },
+  "namespaceContinuation": {
+    "task": "PR1004 approved namespace reconciliation, merge, cleanup",
+    "acceptanceOwner": "requesting parent session",
+    "operatorApproval": "Approved. Have Luna proceed and monitor its progress to completion.",
+    "workers": [
+      {
+        "id": "T1",
+        "title": "Reconcile accepted PR1004 with namespace cutover",
+        "description": "Preserve accepted delegation behavior while integrating current development namespace; relocate PR1004 task evidence without modifying historical raw bytes. Report verified repair for parent acceptance before merge and cleanup.",
+        "dependsOn": [],
+        "complexity": "cross-boundary integration; five conflicts plus unconflicted historical task relocation; known intended semantics, evidence provenance risk",
+        "selectionReason": "Operator explicitly selected existing Luna; continue the same worker with accumulated diagnosis context and unchanged settings.",
+        "requestedModel": "openai-codex/gpt-5.6-luna",
+        "requestedReasoning": "max (retain existing setting)",
+        "observedModel": "openai-codex/gpt-5.6-luna",
+        "observedReasoning": "max",
+        "settingsProvenance": "Herdr footer and worker's prior PI_PROVIDER/PI_MODEL/PI_REASONING_LEVEL report; not independently inferred from alias",
+        "readScope": [
+          "/tmp/luna-pr1004-repair-handoff.md",
+          "/tmp/luna-pr1004-conflict-diagnosis.md",
+          "accepted e81a5aad PR source/evidence",
+          "current development a227bbf3 namespace delta",
+          "applicable AGENTS and canonical spec/git/worktrees/ci-status procedures"
+        ],
+        "ownedWritePaths": [
+          "PR worktree .agro/skills/delegate/SKILL.md",
+          "PR worktree .agro/knowledge/README.md",
+          "PR worktree .agro/knowledge/patterns/pattern-delegate-ledger-stale-at-acceptance.md",
+          "PR worktree .agro/knowledge/patterns/pattern-evals-probe-failure-path-untested.md",
+          "PR worktree .agro/evals/probes/advisor-execution-contract.sh",
+          "PR worktree .agro/evals/probes/delegate-worker-boundary.sh",
+          "PR worktree .agro/evals/RESULTS.md",
+          "PR worktree CHANGELOG.md integration only",
+          "PR worktree .oh/tasks/delegate-follow-up -> .agro/tasks/delegate-follow-up relocation only",
+          "/tmp/luna-pr1004-repair-report.md",
+          "disposable repair verification scratch"
+        ],
+        "exclusions": [
+          "root checkout and development ref writes",
+          "parent acceptance and task-completion record content",
+          "historical raw evidence content",
+          "unrelated source, branches, worktrees, settings, sessions",
+          "issue1014",
+          "release",
+          "force-push",
+          "merge/undraft/cleanup before parent release",
+          "recursive workers",
+          "new inference CLI or paid experiment"
+        ],
+        "executionDirectory": "/home/sandbox/harness/.worktrees/skill/1003-delegate-follow-up",
+        "worktreeIsolation": "Existing PR worktree; single bounded implementation writer; parent and later reviewer read frozen reported head while worker pauses.",
+        "workerType": "existing Herdr Pi session, not an Agent builtin subagent",
+        "continuationMethod": "Herdr agent send w4:pE plus Enter",
+        "deliverable": "Pushed draft repair head with report and verification receipts; pause for parent review",
+        "verification": "Full source delta review, namespace equivalence, git diff check, syntax/focused/adjacent probes, provider links, negative/positive mutations, preserved evidence hashes, full eval and true-base delta, head-matched CI; parent independent review/audits before merge",
+        "evidenceDestinations": [
+          "/tmp/luna-pr1004-repair-report.md",
+          "worker reported scratch paths",
+          ".agro/tasks/pr1004-namespace-reconciliation/delegate-graph.json"
+        ],
+        "coveredDoD": [
+          "R1 preserve accepted behavior and canonical namespace",
+          "R2 preserve historical provenance",
+          "R3 passing fresh verification and review",
+          "R4 parent-approved matching head merge",
+          "R5 safe PR-specific cleanup and merged-head CI"
+        ],
+        "acceptanceOwner": "requesting parent session",
+        "failureRepairRoute": "Same Luna repairs scoped failures after parent feedback; scope expansion escalates; stop after two failed cycles on same cause",
+        "nativeWorkerId": "Herdr w4:pE, tab w4:tC, workspace w4 harness",
+        "status": "completed",
+        "nativeAcknowledgment": "Parent observed Luna processing the repair handoff, inspecting current namespace scope, and creating native task2 Repair and verify PR1004; Herdr footer remains gpt-5.6-luna max.",
+        "completionMonitor": 15,
+        "progressLoop": 14,
+        "artifactReferences": [
+          "/tmp/luna-pr1004-merge-report.md",
+          "/tmp/luna-pr1004-conflict-diagnosis.md",
+          "021d07e75036fea02ef4ed093ba4e4d1dc4a2632",
+          "e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4",
+          "/tmp/luna-pr1004-repair-report.md"
+        ],
+        "budget": {
+          "operatorSpendCap": null,
+          "usage": "unknown for this continuation",
+          "checkpointMinutes": 20,
+          "sameCauseFailedRepairCycleLimit": 2
+        },
+        "usage": "unknown",
+        "workerReported": "Repair complete; paused awaiting parent acceptance, not accepted yet",
+        "verificationObserved": "Five head-matched CI checks successful; parent full evals at a227/e139 both137PASS7SKIP1RED with identical rows; independent reviewer running",
+        "acceptedContentHead": "e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4",
+        "summary": "Parent accepted namespace repair after independent review and actual base/head verification. Merge/cleanup are a separate unreleased stage; worker remains paused."
+      }
+    ],
+    "review": {
+      "nativeWorkerId": "c4a2d9ce-92aa-411",
+      "status": "completed",
+      "requestedModel": "openai-codex/gpt-5.6-sol",
+      "requestedReasoning": "high",
+      "observedSettings": "Reviewer self-report: requested gpt-5.6-sol high; no independent native instrumentation",
+      "readOnly": true,
+      "ownedWritePaths": [
+        "independent disposable scratch only"
+      ],
+      "isolation": "native isolated worktree; immutable e139 review",
+      "acceptanceOwner": "parent",
+      "dispatchedBeforeAcceptance": true,
+      "report": "parent-verification/namespace/independent/report.md",
+      "providerReportedUsage": {
+        "totalTokens": 381000,
+        "toolUses": 155,
+        "durationMs": 1414422,
+        "billingCost": "unknown"
+      }
+    },
+    "recordTiming": "Pre-dispatch parent ledger persisted separately; copied into the PR task after repair. This copy is retrospective, not a claim that the committed PR ledger preceded dispatch.",
+    "mergeCleanup": {
+      "status": "BLOCKED",
+      "dependsOn": [
+        "parent final-head CI and actual implementation/PR audits"
+      ],
+      "nativeWorkerId": "herdr:w4:pE",
+      "acceptanceOwner": "parent",
+      "summary": "Not released; no merge or cleanup yet."
+    }
   }
 }

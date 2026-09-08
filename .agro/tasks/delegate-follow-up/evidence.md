@@ -1,6 +1,44 @@
 # Evidence — delegate-follow-up
 
-## Current parent-owned acceptance epoch
+## Current namespace-reconciliation epoch — content accepted
+
+The operator approved namespace conflict repair, fresh verification, merge, and safe cleanup.
+The parent accepted repaired content `e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4` after independent review `c4a2d9ce-92aa-411` and the checks below.
+The actual target is `a227bbf3f3166a0e1a8a1951fc88694cfa0151ee`, not the stale PR base metadata at `56ab2bab`.
+Luna remains paused. The PR remains draft until final-head CI and actual implementation/PR audits pass on a clean local head that matches GitHub.
+After those checks, the parent may undraft and release Luna to merge that exact head and perform only safe PR-specific cleanup.
+No release, issue #1014 work, or unrelated cleanup is authorized.
+
+Current canonical paths use `.agro/`.
+At reviewed head `e139bc36`, all 104 original task files retained their exact modes and blobs after relocation.
+Subsequent parent edits update current completion records only. Historical runtime logs, frozen procedures, and manifests remain unchanged.
+The independent reviewer verified namespace-normalized equivalence of the skill and both probes to the accepted implementation.
+The reviewer independently passed all 17 mutation cases: 12 negative cases rejected and five positive cases accepted.
+Both historical manifests passed. The parent verified all 49 new reviewer-manifest entries and archived only the listed regular files, not generated fixture directories.
+An initial parent manifest command used the wrong working directory and failed before checking files. The corrected check passed; the setup error is not a product-test result.
+The review report, tests, failed setup attempts, namespace comparison, and manifest live under `parent-verification/namespace/independent/`.
+
+The parent ran the full eval on both the actual base and repaired head.
+Both runs exited 0 with 137 PASS, seven SKIPPED, and one REGRESSION. All 145 row statuses match.
+The parent also ran every non-PASS probe separately on both revisions and retained the exact reasons and exits.
+Six skips reflect environment requirements. The seventh is the inherited namespace-sensitive `wiki-pattern-persistence` coverage gap: the unchanged probe searches `.oh` at a base that now stores patterns under `.agro`.
+The parent and reviewer separately verified that all 22 pre-existing `.agro/knowledge/patterns` files remain byte-identical, with only the two intended additions.
+The `skills-vendored` regression comes from the missing `cc-safety-net` executable on both revisions. No installation or bypass manufactured a pass.
+Raw base/head logs, timestamps, exits, scoreboards, and non-PASS receipts live under `parent-verification/namespace/{base,final}/`.
+All five CI checks succeeded at `e139bc36`; `parent-verification/namespace/ci-content-head.json` carries the actual receipt.
+
+The parent superseded `eval-result.json` and `simplicity-review.json` for this content epoch, resolving the review's two owner-record blockers.
+Four existing nonblocking simplification dispositions remain disclosed. No new source-repair blocker remains.
+Only the production audit driver's content-head rule may reuse this review and eval for records-only descendants.
+Finalization must re-query the actual remote base, verify local/remote head equality and a clean tree, observe final-head CI, and run both actual audits before undraft or merge.
+The parent preserves the new audit boundary JSON before its temporary-file cleanup. Actual final run IDs and receipts belong in the PR body and handback; this avoids a self-referential evidence commit.
+No historical audit ID or verdict covers this new source epoch by implication.
+
+SA-1 still defers only cross-session reconnection success on the tested provider.
+No new native experiment or broader waiver applies. Historical native observations retain their original source hashes, settings unknowns, and observation limits.
+The preceding acceptance at `e81a5aad` and all records below remain historical evidence, not the repaired head's current finalization proof.
+
+## Historical pre-namespace parent acceptance epoch
 
 Status: CONTENT ACCEPTED. Undraft only after the finalization checks below. No merge is authorized.
 

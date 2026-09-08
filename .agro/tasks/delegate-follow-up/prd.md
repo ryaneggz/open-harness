@@ -1,5 +1,50 @@
 # PRD: Delegate follow-up — four residual delegation corrections
 
+## Approved namespace-reconciliation continuation
+
+The operator approved repair of PR #1004's conflicts with namespace-cutover PR #996, fresh review and verification, then merge and safe PR-specific cleanup.
+The integration target is `a227bbf3f3166a0e1a8a1951fc88694cfa0151ee`.
+The accepted pre-migration head is `e81a5aad703a0f7081104a97d2eea980b72bca2e`.
+The current repaired content is `e139bc363d95b5ee1acf4a22ca3c1a2a7c37c1c4`.
+
+Current source and task paths use `.agro/`.
+The original plan below retains the paths and baseline that the operator approved at that time.
+Those historical paths do not authorize a second current `.oh` control plane.
+Historical raw evidence and frozen procedures retain their original bytes and observation limits.
+SA-1 still defers only successful cross-session reconnection on the tested provider.
+Issue #1014 remains separate and does not authorize an experiment or implementation here.
+
+| Criterion | Implementation or execution owner | Acceptance evidence |
+|---|---|---|
+| R1: Preserve all four accepted behavioral repairs in the canonical namespace | Continuing Luna worker in the isolated PR worktree | Complete source delta, namespace-normalized equivalence, focused and adjacent probes, independent review |
+| R2: Preserve historical task and runtime provenance | Luna relocates files; parent owns current completion records | Exact identity of all 104 original task blobs at the repair head; frozen runtime and repair manifests remain unchanged |
+| R3: Verify the actual target and repaired head | Parent and independent read-only reviewer | Full base/head evals, individual non-PASS receipts, mutation outcomes, final-head CI and actual audits |
+| R4: Merge only the accepted matching head into development | Luna, after explicit parent acceptance release | Fresh head/base checks, expected-head merge guard, GitHub merge receipt, post-merge CI and issue #1003 closure |
+| R5: Clean only safe PR-specific resources | Luna for PR resources; parent for parent-created verification worktrees | Classified resource inventory, merged-content proof, preserved unique evidence, final removed/retained list |
+
+The parent retains scope, task state, integration approval, verification, acceptance, and undraft authority.
+Luna stays the single continuing implementation worker and pauses at the repair-review gate.
+Independent review reads an immutable commit in an isolated worktree and owns no implementation files.
+A successful worker report alone releases no merge or cleanup.
+
+### Surface reconciliation
+
+This table records the parent reconciliation after the repair. It is not a claim that a checklist preceded dispatch.
+
+| Surface | Disposition |
+|---|---|
+| Host and sandbox | Applied: all work stays inside the sandbox; root shared checkout and active writers remain untouched |
+| Lifecycle door | Not applicable: no lifecycle verb, installer, or runtime command changes |
+| Canonical and provider surfaces | Applied: reconcile `.agro` source and verify provider links; never edit a mirror |
+| Root and scaffold | Applied: preserve portable canonical skill behavior; no separate scaffold implementation |
+| Interactive and headless processes | Applied: Luna remains in existing Herdr; finite checks use managed background monitors; no service changes |
+| Local and remote operation | Applied: GitHub checks and expected-head merge guard use actual remote refs; work does not require an attached operator terminal |
+| Parallel operation | Applied: isolated implementation, independent review, and parent evaluation worktrees; serialize writes and freeze reviewed source |
+| Public documentation | Not applicable to this repair: no new public feature; the external documentation follow-up remains deferred |
+| Verification | Applied: R1–R5 map to explicit evidence and acceptance owners above |
+
+## Original approved plan and baseline
+
 Issue: #1003. Predecessor: #988 / PR #991, merged at `e90bbed8`.
 Source plan: `.oh/plans/delegate-follow-up/plan.md` (operator-approved).
 Approved baseline: `56ab2bab894e43073bf79edc43f70fe3ddd6d6de`.
