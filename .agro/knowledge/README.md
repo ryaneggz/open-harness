@@ -54,6 +54,7 @@ Schema, frontmatter spec, provenance kinds, and every authoring rule:
 
 | Slug | Title | Tags | Updated |
 | --- | --- | --- | --- |
+| oh-cli-portable-lifecycle | oh CLI Portable Lifecycle | [cli, oh, agro, lifecycle, standalone, registry, sandbox, remote-fetch, execution-target, update, self-upgrade, npm] | 2026-09-08 |
 | sandbox-dependency-installs | Sandbox Dependency Installs | [sandbox, devcontainer, pnpm, dependencies, boot] | 2026-09-07 |
 | release-versioning | Release Versioning | [release, versioning, semver, calver, github-actions, ghcr, tags, workflow, package-json, agro, npm, repository-dispatch, docs-site] | 2026-09-07 |
 | plan-vs-built-reconciliation | Plan-vs-Built Reconciliation | [spec-execute, evidence, merge-gate, comprehension, audit, task-folder, review] | 2026-09-07 |
@@ -61,7 +62,6 @@ Schema, frontmatter spec, provenance kinds, and every authoring rule:
 | pattern-evals-probe-failure-path-untested | A probe's failure branch is unexecuted code until something injects the fault | [evals, probes, fault-injection, false-pass, exit-code, anchors] | 2026-09-07 |
 | pattern-evals-inherited-environment-diagnosis | An inherited environment label on a red probe outlives the environment and hides real defects | [evals, probes, environment, path, diagnosis, evidence, delegation, false-attribution] | 2026-09-07 |
 | pattern-delegate-ledger-stale-at-acceptance | A run ledger written at dispatch and not updated at acceptance is itself the duplicate-worker hazard | [delegate, resume, ledger, duplicate-worker, acceptance, evidence] | 2026-09-07 |
-| oh-cli-portable-lifecycle | oh CLI Portable Lifecycle | [cli, oh, agro, lifecycle, standalone, registry, sandbox, remote-fetch, execution-target, update, self-upgrade, npm] | 2026-09-07 |
 | managed-agents | Scaling Managed Agents: Decoupling the brain from the hands | [agents, meta-harness, sessions, sandbox, resilience, security, scaling, anthropic, model-evolution] | 2026-09-07 |
 | fresh-machine-setup | Fresh-Machine Setup Flow | [setup, onboarding, installation, agro, registry, gateway, ssh, github, slack] | 2026-09-07 |
 | document-ingestion | Local Document Ingestion | [wiki, ingestion, markitdown, documents, provenance, security] | 2026-09-07 |

@@ -457,7 +457,7 @@
       "dependsOn": [
         "T6"
       ],
-      "status": "running",
+      "status": "completed",
       "nativeWorkerId": "ae99bf85d391ab68e",
       "workerType": "general-purpose",
       "executionDirectory": "/home/sandbox/harness/.worktrees/feat/943-agro-identity-cutover",
@@ -474,7 +474,11 @@
       ],
       "verification": "pnpm test, typechecks, six probes",
       "acceptanceOwner": "advisor",
-      "summary": ""
+      "summary": "remote.ts, self-upgrade.ts, docs.ts, two systemd units, lifecycle-commands.md, five test files, OH_SCRIPTS_REF inventory entry, classification rows, oh-cli-portable-lifecycle page. Owner re-ran pnpm test (1246), typechecks, 7 probes; committed 0b58c0a7 + b63cf41e. Worker used a bare stash against instructions; state verified intact; stash@{0} 279b74a2 left for the operator to drop.",
+      "artifactReferences": [
+        "feat/943-agro-identity-cutover@0b58c0a7",
+        "feat/943-agro-identity-cutover@b63cf41e"
+      ]
     },
     {
       "id": "T6b",
