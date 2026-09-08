@@ -4,16 +4,19 @@ Open Harness is migrating to AGRO (Agent Governance Runtime Orchestrator) under
 epic [#939](https://github.com/mifunedev/openharness/issues/939). This page is the
 compatibility contract: the Phase 0 resolver
 ([#940](https://github.com/mifunedev/openharness/issues/940)) that lets the
-runtime understand both naming generations, and the Phase 1 entry points and
+runtime understand both naming generations, the Phase 1 entry points and
 artifacts ([#941](https://github.com/mifunedev/openharness/issues/941)) that put
-`agro` in the operator's hands without changing any persisted default.
+`agro` in the operator's hands without changing any persisted default, and the
+Phase 2 cutover ([#942](https://github.com/mifunedev/openharness/issues/942))
+that makes AGRO the fresh-state default and ships `agro migrate`.
 
 ## What Phase 0 changes, and what it does not
 
-Phase 0 changes no default. A normal project with `.oh/`, `oh.json`, and `OH_*`
-variables behaves exactly as before. Phase 0 ships no `agro` executable,
-package, command, or image; Phase 1 does, below. Fresh sandboxes still create
-`~/.oh/sandboxes/`, `oh.json`, and `.oh/`.
+Phase 0 changed no default. A project with `.oh/`, `oh.json`, and `OH_*`
+variables behaves exactly as before, and still does. Phase 0 shipped no `agro`
+executable, package, command, or image; Phase 1 did, below. Through Phase 1 a
+fresh sandbox still created `~/.oh/sandboxes/`, `oh.json`, and `.oh/`; Phase 2
+flipped that, and only that.
 
 Phase 0 adds one resolver, in two boot-safe forms, that both generations pass
 through:
@@ -27,10 +30,10 @@ through:
 | Image seed | `/opt/oh-seed` | `/opt/agro-seed` | `resolveSeedSource`, `compat_seed_src` |
 | First-boot marker | `.oh/.image-seeded` | `.agro/.image-seeded` | `compat_marker_file` |
 
-The TypeScript module is `.oh/cli/src/lib/compat.ts`. The shell adapter is
-`.oh/scripts/compat.sh`; it needs only bash and coreutils, so the entrypoint can
+The TypeScript module is `.agro/cli/src/lib/compat.ts`. The shell adapter is
+`.agro/scripts/compat.sh`; it needs only bash and coreutils, so the entrypoint can
 use it before Node or the control plane exists. Both consume the same vectors in
-`.oh/cli/src/lib/__tests__/fixtures/compat-vectors.json`, and a test runs every
+`.agro/cli/src/lib/__tests__/fixtures/compat-vectors.json`, and a test runs every
 vector through each implementation.
 
 ## Precedence and conflicts
@@ -72,8 +75,8 @@ seeds a workspace whose two control directories diverge.
 
 ## Migration engine
 
-`.oh/cli/src/lib/migrate.ts` implements the engine that Phase 2 exposes as
-`agro migrate`. Phase 0 ships no command.
+`.agro/cli/src/lib/migrate.ts` implements the engine that Phase 2 exposes as
+`agro migrate`. Phase 0 shipped no command; Phase 2 ships it.
 
 - `planMigration(spec)` inspects the tree and returns a JSON-serializable plan
   with `status` (`ready`, `noop`, or `conflict`), ordered steps, and conflicts. It
@@ -98,7 +101,7 @@ seeds a workspace whose two control directories diverge.
 
 ## Legacy contract inventory
 
-`.oh/compat-inventory.json` classifies every `OH_*` identifier in tracked files
+`.agro/compat-inventory.json` classifies every `OH_*` identifier in tracked files
 and every persisted legacy path as one of `migrate-later`, `alias-sla`,
 `retained-generic`, or `obsolete`, with the owning phase. The test
 `compat-inventory.test.ts` and the probe `agro-compat-inventory.sh` fail when an
@@ -113,7 +116,7 @@ legacy ones. It changes no persisted default.
 
 ### Product identity by executable name
 
-There is one bundle. `.oh/cli/dist/agro.js` and `.oh/cli/dist/oh.js` are
+There is one bundle. `.agro/cli/dist/agro.js` and `.agro/cli/dist/oh.js` are
 byte-identical (`bundle-identity.test.ts`). The CLI derives its product identity
 from the basename of the invoked executable (`process.argv[1]`, symlinks not
 resolved, Windows extensions stripped): run as `agro`, it says `agro` in help,
@@ -122,9 +125,9 @@ line that names `agro` as the canonical CLI. There is no build-time fork.
 
 ### Packages
 
-- `@mifune/agro` (`.oh/cli/`) is the canonical npm package and ships only the
+- `@mifune/agro` (`.agro/cli/`) is the canonical npm package and ships only the
   `agro` executable.
-- `@mifune/openharness` (`.oh/cli/legacy/`) is a delegation shim. It ships only
+- `@mifune/openharness` (`.agro/cli/legacy/`) is a delegation shim. It ships only
   the `oh` executable, contains no CLI code, and pins the exact `@mifune/agro`
   version it delegates to, so `oh --version` and `agro --version` from one
   release agree. It is deprecated on npm immediately after each publication and
@@ -145,12 +148,13 @@ with the supported procedure, never uses `sudo`, and is a no-op when current. It
 rejects `--from`, `--from-remote`, `--ref`, and `--force`.
 
 `oh update` keeps its project-payload behavior for the compatibility window:
-it vendors `.oh/` and `crons/` into the current directory and nothing else. The
+it vendors the `.agro/` control plane and `crons/` into the current directory and
+nothing else. The
 verb reference is [lifecycle commands](lifecycle-commands.md).
 
 ### `get-agro.sh`
 
-`.oh/scripts/get-agro.sh` is the artifact-only installer. It downloads the
+`.agro/scripts/get-agro.sh` is the artifact-only installer. It downloads the
 published `agro.js` release asset into `AGRO_BIN_DIR/agro` (default
 `~/.local/bin`), offers nvm + Node 22 when Node ≥ 20 is missing, and never
 clones, builds, or needs a source checkout. Controls: `AGRO_BIN_DIR`,
@@ -177,21 +181,78 @@ The sandbox image links `/opt/oh/dist/agro.js` to `/usr/local/bin/agro` beside
 
 ### Unchanged in Phase 1
 
-The control directory `.oh/`, the config file `oh.json`, every `OH_*` variable,
-the registry home `~/.oh`, the image seed `/opt/oh-seed`, the CLI install root
-`/opt/oh`, and the default image reference
-`ghcr.io/mifunedev/openharness:latest` are all unchanged. A fresh
-`agro sandbox install docker` writes `~/.oh/sandboxes/<name>/oh.json`. No
-document instructs creating `.agro/`, `agro.json`, or `~/.agro`; `agro migrate`
-is Phase 2 and is not yet available.
+Phase 1 left the control directory `.oh/`, the config file `oh.json`, every
+`OH_*` variable, the registry home `~/.oh`, the image seed `/opt/oh-seed`, the
+CLI install root `/opt/oh`, and the default image reference
+`ghcr.io/mifunedev/openharness:latest` in place. Phase 2 supersedes the first
+five of those for fresh state; see below.
+
+## Phase 2 — AGRO is the fresh-state default
+
+Phase 2 ([#942](https://github.com/mifunedev/openharness/issues/942)) flips what
+a *fresh* installation creates and adds the migration command. Nothing an
+existing installation already persisted changes on its own.
+
+### Fresh state resolves to AGRO
+
+An absent pair now resolves to the AGRO generation. The `legacy-only`,
+`agro-only`, `both-equivalent`, and divergent cases keep their Phase 0 behavior.
+
+| Surface | Fresh state | Legacy installation |
+|---|---|---|
+| Project control directory | `.agro/` | `.oh/` keeps resolving |
+| Project config file | `agro.json` | `oh.json` keeps resolving |
+| Host registry | `~/.agro/sandboxes/<name>/agro.json` | `~/.oh/sandboxes/<name>/oh.json` keeps resolving |
+| Image seed | `/opt/agro-seed` | `/opt/oh-seed`, when a legacy image ships it |
+| First-boot marker | `.agro/.image-seeded` | `.oh/.image-seeded` is recognised, never re-seeded |
+| Default registry name | `agro-sbx-<n>` | an existing name is never rewritten |
+| Unnamed compose identity | `agro` | a configured `name` is never rewritten |
+
+The control-plane tree of this repository is now `.agro/`, and its config file is
+`agro.json`, so a seeded workspace is self-consistent. This repository keeps
+`"name": "openharness"` in `agro.json`, so its own sandbox identity, volumes, and
+network are unchanged.
+
+### Compose interpolation
+
+`config-render.ts` renders `AGRO_HOME_MOUNT`, `AGRO_REPO_DIR`,
+`AGRO_SANDBOX_IMAGE`, and `AGRO_PULL_POLICY`. The compose files read
+`${AGRO_<NAME>:-${OH_<NAME>:-<default>}}`, so a registry entry rendered by an
+older CLI still resolves. `OH_PROJECT_ROOT` and `AGRO_PROJECT_ROOT` are both in
+`RETIRED_KEYS` and are never rendered.
+
+### `agro migrate`
+
+`agro migrate [--check] [--home] [--json]` exposes the migration engine above.
+It renames `.oh/` to `.agro/` and `oh.json` to `agro.json`, retires a
+byte-identical legacy copy to `<name>.migrated`, and re-points the five provider
+links from `../.oh/...` to `../.agro/...`. `--home` migrates `~/.oh/sandboxes`
+instead. It is idempotent, has no force option, fails closed on divergence, and
+names `.agro-migrate.lock` when the lock is held. Exit codes: `0` applied or
+noop, `2` refused, `1` failure. `oh migrate` dispatches to the same command.
+Flags and recipes:
+[lifecycle commands](lifecycle-commands.md#migrating-to-the-agro-names-agro-migrate).
+
+### `oh config repo` is an SLA compatibility helper
+
+`oh config repo` (and `agro config repo`) creates a GitHub repository and
+re-points `origin` for the retired clone-and-own recipe. It is classified
+`alias-sla`: it keeps working under both executable names for the whole
+compatibility window, and it is **not** part of canonical onboarding.
+Sandbox-first onboarding is the GitHub-login prerequisite plus the two optional
+agent prompts in
+[Quickstart](quickstart.md#authenticate-github-before-any-repository-work).
+
+### Unchanged in Phase 2
+
+The CLI install root `/opt/oh`, the default image reference
+`ghcr.io/mifunedev/openharness:latest`, the `oh.mifune.dev` domain, the GitHub
+repository name, the Cloud variables, and the Python kernel home
+`~/.local/share/oh/` are unchanged. Every `OH_*` variable, `oh`, `oh.json`
+reading, `~/.oh`, and the legacy images stay valid through the SLA.
 
 ## Legacy references intentionally left for later phases
 
-- Phase 2: the fresh-state defaults (`.oh/`, `oh.json`, `~/.oh/sandboxes`,
-  `/opt/oh-seed`, the `openharness` sandbox identity), the compose interpolation
-  keys (`OH_SANDBOX_IMAGE`, `OH_PULL_POLICY`, `OH_REPO_DIR`, `OH_HOME_MOUNT`),
-  the image `ENV OH_PROJECT_ROOT`, the entrypoint's `OH_BIN` executable-name
-  override, the `/opt/oh` install root, and the `agro migrate` command.
 - Phase 3: the default image reference `ghcr.io/mifunedev/openharness:latest`,
   the `oh.mifune.dev` domain, and the GitHub repository name.
 - Phase 4: the Cloud CLI variables (`OH_CLOUD_*`, `OH_API_URL`,
@@ -203,17 +264,18 @@ is Phase 2 and is not yet available.
 
 ```bash
 pnpm test
-npm --prefix .oh/cli run typecheck
-pnpm vitest run .oh/cli/src/__tests__/bundle-identity.test.ts \
-  .oh/cli/src/lib/__tests__/product.test.ts \
-  .oh/cli/src/__tests__/self-upgrade.test.ts \
-  .oh/scripts/__tests__/get-agro.test.ts \
-  .oh/scripts/__tests__/verify-release-aliases.test.ts
-bash .oh/evals/probes/agro-compat-inventory.sh
-bash .oh/evals/probes/get-agro-bootstrap.sh
-bash .oh/evals/probes/agro-legacy-shim.sh
-bash .oh/evals/probes/oh-npm-package.sh
-bash .oh/evals/probes/version-parity.sh
-bash .oh/evals/probes/sandbox-registry.sh
-bash .oh/evals/probes/oh-image-only-deploy.sh
+npm --prefix .agro/cli run typecheck
+pnpm vitest run .agro/cli/src/__tests__/bundle-identity.test.ts \
+  .agro/cli/src/lib/__tests__/product.test.ts \
+  .agro/cli/src/__tests__/self-upgrade.test.ts \
+  .agro/scripts/__tests__/get-agro.test.ts \
+  .agro/scripts/__tests__/verify-release-aliases.test.ts
+bash .agro/evals/probes/agro-compat-inventory.sh
+bash .agro/evals/probes/get-agro-bootstrap.sh
+bash .agro/evals/probes/agro-legacy-shim.sh
+bash .agro/evals/probes/oh-npm-package.sh
+bash .agro/evals/probes/version-parity.sh
+bash .agro/evals/probes/sandbox-registry.sh
+bash .agro/evals/probes/oh-image-only-deploy.sh
+bash .agro/evals/probes/oh-compose-env-wiring.sh
 ```

@@ -8,6 +8,10 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 
 ## [Unreleased]
 
+### Changed
+
+- Fresh installs now create `.agro/`, `agro.json`, `~/.agro/sandboxes`, and `/opt/agro-seed`; legacy `.oh/` state keeps working, and `agro migrate` moves a project or registry. ([#942](https://github.com/mifunedev/openharness/issues/942))
+
 ### Fixed
 
 - Point the pi banner at the Mifune GitHub organization. ([#1001](https://github.com/mifunedev/openharness/issues/1001))
