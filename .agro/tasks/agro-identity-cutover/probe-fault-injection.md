@@ -36,3 +36,24 @@ Post-restore check: `git diff --stat -- .agro/scripts/get-agro.sh
 .agro/skills/sync/references/publish.md docs/README.md AGENTS.md` reported the
 same four files with the same line counts as before injection (4, 12, 6, 2), and
 `get-agro.sh` kept its executable bit.
+
+## US-006 — agro.mifune.dev cutover
+
+`agro.mifune.dev` now serves the installers directly, so `get-oh.sh`'s internal
+default artifact URL (`OH_JS_URL`) moved off the legacy host; `get-oh.sh`'s
+documented legacy ENTRY POINT (`oh.mifune.dev/get-oh.sh`) stays pinned, since that
+host is still promised and returns to service once the Cloudflare rules apply.
+
+| Probe | Intent | Decision |
+|---|---|---|
+| `get-oh-bootstrap.sh` | default artifact host updated | pin `agro.mifune.dev/oh.js` as the `get-oh.sh` default prebuilt `OH_JS_URL`; the legacy `oh.mifune.dev/get-oh.sh` entry point remains pinned elsewhere in the same probe |
+
+### Injection record
+
+| Probe | Injected change (then restored) | Pass exit | Red exit | Restored exit |
+|---|---|---|---|---|
+| `get-oh-bootstrap.sh` | `.agro/scripts/get-oh.sh` lines 60 and 88: `OH_JS_URL` default (doc line and assignment) reverted to `https://oh.mifune.dev/oh.js` | 0 | 1 (`REGRESSION get-oh.sh lost the default prebuilt URL`) | 0 |
+
+Post-restore check: `diff` against a pre-injection copy of `get-oh.sh` showed the
+file byte-identical, and `git diff --stat -- .agro/scripts/get-oh.sh` reported
+only the intended two-line change from the cutover edit itself.

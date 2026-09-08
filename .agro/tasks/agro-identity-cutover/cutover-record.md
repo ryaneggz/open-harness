@@ -143,3 +143,30 @@ configured custom domain. Setting it to `agro.mifune.dev` makes Pages stop
 answering for `oh.mifune.dev`, and the five executable paths on that host begin
 returning 404 until the step 6 redirect rules exist. Perform steps 5 and 6 in one
 sitting, executable-path rules first.
+
+## After runbook step 5 and the `/install.sh` rule (operator, 2026-09-08)
+
+The operator set the Pages custom domain to `agro.mifune.dev` and repointed the
+CDN rule for `/install.sh`. The advisor merged web PR #47 (`409ef104`) because
+`main` still carried `static/CNAME` = `oh.mifune.dev`, which the next scheduled
+build would have deployed, reverting the domain. The deploy after that merge
+completed successfully and the site now serves `agro.mifune.dev` with the AGRO
+title and a matching `CNAME`.
+
+| Endpoint | Status |
+|---|---|
+| `agro.mifune.dev/` | 200, `<title>AGRO` |
+| `agro.mifune.dev/get-agro.sh`, `/agro.js`, `/get-oh.sh`, `/oh.js` | 200, bodies start `#!` |
+| `agro.mifune.dev/install.sh` | 302 to the raw `install.sh` on `main`, body starts `#!` |
+| `oh.mifune.dev/` and every path | **421** until the step 6 Cloudflare rules are applied |
+
+Clean `node:22-slim`: `curl -fsSL https://agro.mifune.dev/get-agro.sh | bash`
+installed `agro 0.9.0` and `agro --version` reported `0.9.0`. This satisfies the
+canonical half of the US-006 live re-verification. The legacy half was verified
+before the domain change and returns when the redirect rules exist.
+
+**Open hazard.** The `/install.sh` redirect targets `.oh/scripts/install.sh` on
+`main`. That path exists only because `main` predates the `.oh/` to `.agro/`
+rename. The first release that carries the rename to `main` deletes it, so the
+rule target must move to `.agro/scripts/install.sh` on `mifunedev/agro` in the
+same change window as that release. An earlier change breaks the endpoint.

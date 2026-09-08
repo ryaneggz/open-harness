@@ -278,7 +278,7 @@ Installer defaults:
   `AGRO_JS_URL` is `https://github.com/mifunedev/agro/releases/latest/download/agro.js`.
 - `get-oh.sh`: `OH_GITHUB_REPO` (the build fallback) defaults to `mifunedev/agro`.
   Its documented entry point stays `https://oh.mifune.dev/get-oh.sh`, and
-  `OH_JS_URL` still defaults to `https://oh.mifune.dev/oh.js`.
+  `OH_JS_URL` defaults to `https://agro.mifune.dev/oh.js`.
 
 ### `oh.mifune.dev` endpoints
 
@@ -298,6 +298,15 @@ the table are operator actions at cutover.
 | `https://oh.mifune.dev/get-agro.sh` | compatibility alias | 302 to `https://agro.mifune.dev/get-agro.sh` (canonical) |
 | `https://oh.mifune.dev/agro.js` | compatibility alias | 302 to `https://agro.mifune.dev/agro.js` (canonical) |
 | `https://agro.mifune.dev/get-agro.sh` and `/agro.js` | canonical | the current `get-agro.sh` and `agro.js` release assets |
+| `https://agro.mifune.dev/install.sh` | compatibility alias | 302 to the raw `install.sh` on `main` of `mifunedev/agro`; the retired clone-and-own installer, served directly from the canonical host |
+
+The `/install.sh` redirect target has a sequencing hazard. The rule currently
+points at `.oh/scripts/install.sh` on `main`. That path exists only because
+`main` predates the `.oh/` to `.agro/` rename. The first release that carries
+the rename to `main` deletes that path. Change the Cloudflare rule target to
+`https://raw.githubusercontent.com/mifunedev/agro/main/.agro/scripts/install.sh`
+in the same change window as that release. Do not change it earlier: that path
+does not exist on `main` yet, and an early change breaks the endpoint.
 
 ### Unchanged in Phase 3
 

@@ -195,6 +195,15 @@ active, so that one rule owns the path. The alternative in the PRD's open
 question, an origin-host override that serves the bytes from `oh.mifune.dev`
 itself, is a valid choice; this runbook documents the redirect form only.
 
+Sequencing hazard: rule 1's target names `.agro/scripts/install.sh` on `main`.
+That path does not exist on `main` yet. `main` still carries
+`.oh/scripts/install.sh`, because `main` predates the `.oh/` to `.agro/`
+rename. Keep the rule target on the `.oh/` path until the release that
+carries the rename lands on `main`. Change the target to
+`https://raw.githubusercontent.com/mifunedev/agro/main/.agro/scripts/install.sh`
+in the same change window as that release, never before it. An earlier
+change breaks the endpoint, because the target path does not exist yet.
+
 ### 7. Store the dispatch secret and the docs repository variable
 
 ```bash

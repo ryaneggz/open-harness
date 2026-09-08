@@ -20,7 +20,7 @@ fi
 grep -q '${OH_GITHUB_REPO:-' "$SCRIPT" || { echo 'REGRESSION get-oh.sh lost the OH_GITHUB_REPO override' >&2; exit 1; }
 
 grep -q 'OH_JS_URL' "$SCRIPT" || { echo 'REGRESSION get-oh.sh no longer downloads a prebuilt oh.js (OH_JS_URL)' >&2; exit 1; }
-grep -q 'oh.mifune.dev/oh.js' "$SCRIPT" || { echo 'REGRESSION get-oh.sh lost the default prebuilt URL' >&2; exit 1; }
+grep -q 'agro.mifune.dev/oh.js' "$SCRIPT" || { echo 'REGRESSION get-oh.sh lost the default prebuilt URL' >&2; exit 1; }
 grep -Eq 'install -m 0755 .*"\$OH_BIN_DIR/oh"' "$SCRIPT" || { echo 'REGRESSION get-oh.sh no longer installs oh to $OH_BIN_DIR/oh' >&2; exit 1; }
 
 grep -qE '\.openharness|OH_HOME=' "$SCRIPT" && { echo 'REGRESSION get-oh.sh reintroduced a persistent ~/.openharness / OH_HOME clone' >&2; exit 1; }
