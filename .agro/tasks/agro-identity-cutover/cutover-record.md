@@ -120,3 +120,26 @@ Not verified, because they wait on the operator: `agro.mifune.dev` serving the
 site, the five `oh.mifune.dev` executable paths after the Cloudflare rules, the
 `README` one-liner against `agro.mifune.dev/get-agro.sh`, the real release
 dispatch (needs `AGRO_WEB_DISPATCH_TOKEN`), and the merge of web PR #47.
+
+## Edge reconnaissance for the remaining operator steps
+
+Gathered after the rename, so steps 5 and 6 need no discovery work:
+
+| Fact | Observed |
+|---|---|
+| `oh.mifune.dev` resolves to | `104.21.83.243`, `172.67.183.153` (Cloudflare proxy) |
+| `agro.mifune.dev` resolves to | the same two Cloudflare addresses |
+| `mifunedev.github.io` resolves to | the four GitHub Pages addresses, reached only behind Cloudflare |
+| `oh.mifune.dev/` response | `HTTP/2 200`, `server: cloudflare`, `x-served-by: cache-den-…` (Pages through Fastly) |
+| `agro.mifune.dev/` response | `HTTP/2 421`, `server: cloudflare` |
+
+**What this means.** Both hostnames are already proxied on the same Cloudflare
+zone toward the same origin, so **no DNS change is required**. The `421` on
+`agro.mifune.dev` is the origin refusing a hostname GitHub Pages does not yet
+recognize; it clears the moment the Pages custom domain is set in step 5.
+
+**Why step 5 must not run alone.** GitHub Pages answers only for its one
+configured custom domain. Setting it to `agro.mifune.dev` makes Pages stop
+answering for `oh.mifune.dev`, and the five executable paths on that host begin
+returning 404 until the step 6 redirect rules exist. Perform steps 5 and 6 in one
+sitting, executable-path rules first.
