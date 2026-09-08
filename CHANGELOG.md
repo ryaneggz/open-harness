@@ -8,6 +8,10 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 
 ## [Unreleased]
 
+### Changed
+
+- Fresh installs now create `.agro/`, `agro.json`, `~/.agro/sandboxes`, and `/opt/agro-seed`; legacy `.oh/` state keeps working, and `agro migrate` moves a project or registry. ([#942](https://github.com/mifunedev/openharness/issues/942))
+
 ### Fixed
 
 - Require verified dependency acceptance and safe resume eligibility before dispatching delegated work. ([#1004](https://github.com/mifunedev/openharness/pull/1004))
