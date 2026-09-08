@@ -55,6 +55,25 @@ fails the build when they drift:
   pull it until the operator changes the visibility.
 - The compatibility SLA clock starts at the first public AGRO release, that is,
   the first release that publishes `@mifune/agro` and `ghcr.io/mifunedev/agro`.
+- The docs-site dispatch token exists. The `notify-docs` job reads the secret
+  `AGRO_WEB_DISPATCH_TOKEN` from the release repository (`mifunedev/agro`) and sends
+  `repository_dispatch` to the docs repository. When the secret is absent the job
+  prints a `::notice::` line and exits green without a dispatch. Issue a fine-grained
+  personal access token for the docs repository with **Contents: Read and write**
+  (`repository_dispatch` requires `contents: write`; a classic token needs the
+  `repo` scope), then store it from a file, never from the command line:
+
+  ```bash
+  gh secret set AGRO_WEB_DISPATCH_TOKEN --repo mifunedev/agro < token-file
+  ```
+
+- The docs repository target is the repository variable `AGRO_WEB_REPO`, default
+  `mifunedev/openharness-web`. After the docs repository is renamed, point it at
+  the new name:
+
+  ```bash
+  gh variable set AGRO_WEB_REPO --repo mifunedev/agro --body mifunedev/agro-web
+  ```
 
 ## 1. Resolve the canonical destination
 
@@ -173,3 +192,18 @@ The canonical mutable/latest branch is `main` when it exists, otherwise
 refs and promotes the canonical head's versioned image to `latest` by immutable
 digest. Stale canonical runs and every noncanonical-branch run skip `latest`;
 GitHub's `make_latest` flag uses the same rule after a second fresh check.
+
+After `finalize` succeeds on a real release, `notify-docs` sends
+`repository_dispatch` with `event_type: agro-release` and
+`client_payload: { ref: <released sha> }` to `AGRO_WEB_REPO`. The docs site's
+`pages.yml` reads `client_payload.ref` and rebuilds its mirrored installers from
+that commit. Confirm the dispatch landed:
+
+```bash
+gh run list --repo "${AGRO_WEB_REPO:-mifunedev/openharness-web}" \
+  --workflow pages.yml --event repository_dispatch --limit 3 \
+  --json databaseId,status,conclusion,createdAt,url
+```
+
+A skipped `notify-docs` step with the `::notice::` line means the secret is not
+set; the daily schedule in `pages.yml` still refreshes the mirror.

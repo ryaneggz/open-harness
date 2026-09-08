@@ -54,7 +54,7 @@ export async function reserveGitHubRelease({
     accept: "application/vnd.github+json",
     authorization: `Bearer ${token}`,
     "content-type": "application/json",
-    "user-agent": "openharness-release-reservation",
+    "user-agent": "agro-release-reservation",
     "x-github-api-version": GITHUB_API_VERSION,
   };
 
