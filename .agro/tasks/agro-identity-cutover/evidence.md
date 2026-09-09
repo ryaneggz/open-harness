@@ -14,9 +14,9 @@ redirect rules. Both hosts now serve correctly: `agro.mifune.dev` is canonical,
 and every `oh.mifune.dev` path redirects to it while the five executable paths
 keep returning a script body.
 
-One optional item is deferred: the release dispatch token
-`AGRO_WEB_DISPATCH_TOKEN` is not stored, so `notify-docs` skips with a notice and
-the docs mirror refreshes on its daily schedule instead of on each release.
+The release dispatch is now configured: `AGRO_WEB_DISPATCH_TOKEN` is stored on
+`mifunedev/agro` and `AGRO_WEB_REPO` points at `mifunedev/agro-web`. Its
+authorization is proven only by the next real release.
 
 ## 0. Why this is better than not doing it
 
@@ -169,14 +169,15 @@ because no release was due.
   relying on the image's seeded manifest does not, because that copy is immutable.
   Remediating the CI fixture and recovering existing users are separate problems
   and neither is solved by editing the hook alone.
-- **One runbook step is deferred**, step 7a: `AGRO_WEB_DISPATCH_TOKEN` is not
-  stored. `notify-docs` therefore skips with a `::notice::` on every release and
-  the docs mirror refreshes on its daily schedule. Nothing is broken by this; the
-  release path is simply not yet using the faster refresh it gained in US-003.
-- **The release dispatch has never fired for real.** It is covered by tests and by
-  a `workflow_dispatch` stand-in of `pages.yml` that completed success, which
-  US-006 explicitly permits when no release is due. The first release after the
-  token is stored is its first live run.
+- **The release dispatch is configured but not yet exercised.** The operator has
+  stored `AGRO_WEB_DISPATCH_TOKEN` on `mifunedev/agro`, and `AGRO_WEB_REPO` is set
+  to `mifunedev/agro-web`. The docs site accepts the `agro-release` event on live
+  `main` (`409ef10`), and a manual `workflow_dispatch` of `pages.yml` completed
+  successfully, which proves the receiving workflow is healthy. **The token's
+  authorization is still unproven**: confirming it requires calling the dispatch
+  endpoint with the secret's value, which the advisor does not read. It is proven
+  on the next real release, when `notify-docs` runs instead of printing its skip
+  notice and a `repository_dispatch` run appears on the docs site.
 - **The `/install.sh` redirect target is on a deadline.** The `oh.mifune.dev`
   Redirect Rule and the `oh-redirect` Worker that serves the canonical host both
   name `.oh/scripts/install.sh` on `main`, which exists only because `main`
