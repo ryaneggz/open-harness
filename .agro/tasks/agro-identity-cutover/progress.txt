@@ -60,3 +60,36 @@ never make an existing sandbox fail to start. Bumping LEGACY_IMAGE instead only
 moves the pin; the next advisory reproduces the failure. This changes a security
 posture, so it is the operator's decision, not the advisor's.
 2026-09-09T02:59:35Z escalation recorded
+
+CORRECTION to the escalation above, after an independent review forwarded by the operator
+
+The earlier entry implied that removing security:audit from pnpm:devPreinstall
+would unblock the failing check. That is wrong and is withdrawn. The legacy-boot
+job fails at step 1 while booting ghcr.io/mifunedev/openharness:0.9.0, before the
+image built from this branch is involved at all. The manifest that fails is
+/opt/oh-seed/package.json inside that published image, which is immutable. No
+source-only change on this branch can repair it.
+
+Causal evidence gap now closed. Reproduced directly inside the released image:
+/opt/oh-seed/package.json pins vitest ^3.2.6 and wires pnpm:devPreinstall to
+security:audit; running pnpm install --prefer-offline against that manifest exits
+1 through pnpm:devPreinstall citing GHSA-82fw-gwwq-j7x9. The captured output is
+.agro/tasks/agro-identity-cutover/legacy-boot-install.log. Advisory published
+2026-09-08T20:46:45Z, which sits between the last green run of this job
+(bfeaaab7, 20:06Z) and the first red one (378f8964, 02:51Z).
+
+Two distinct problems, not one:
+1. Fixture remediation. The legacy-boot test needs a fixture that still proves a
+   genuine .oh-layout volume upgrades correctly. Simply repointing LEGACY_IMAGE at
+   a new-layout image would delete the coverage rather than fix it.
+2. User recovery. A workspace volume without node_modules cannot boot on the
+   released image. A user who can update their checkout recovers once the source
+   pins a patched vitest; a user depending on the image's seeded manifest cannot,
+   because that copy is immutable.
+
+Making security:audit CI-only remains the right forward fix, because a boot must
+not depend on a live vulnerability feed, but it repairs neither published images
+nor existing seeded volumes. It also needs regression coverage proving that boot
+and install do not invoke the live audit while CI still does. All of this is
+outside #943 and is the operator's decision.
+2026-09-09T03:07:56Z correction recorded

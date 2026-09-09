@@ -4,6 +4,11 @@ Written at commit `f27b0003`, after the full cutover: repository renames, Pages 
 eval run recorded in `eval-result.json` and the simplicity review in
 `simplicity-review.json`, both keyed to that commit.
 
+**Terminal state: `DRAFT-BLOCKED(ci-unrelated)`.** All seven stories pass and the
+cutover is complete. One CI check, `Boot a legacy volume against the fresh image`,
+fails for a cause outside this branch and outside anything this branch can repair:
+see *What remains unverified*.
+
 **The cutover is complete.** The operator performed the Pages custom-domain
 change, then issued a scoped Cloudflare token and asked the advisor to apply the
 redirect rules. Both hosts now serve correctly: `agro.mifune.dev` is canonical,
@@ -68,8 +73,8 @@ the operator.
 | US-003 release infra | `4d80868b` | 39 release tests pass; YAML validates; whitespace pair scan clean; `notify-docs` passes the secret only through `env:` and skips with `::notice::` |
 | US-004 docs-site identity | agro-web#47, merged `409ef104` | build exit 0; drift PASS; `build/CNAME` = `agro.mifune.dev`; sitemap 66 agro / 0 legacy; deployed site serves `<title>AGRO` and a matching `CNAME` |
 | US-005 runbook | `4db24429` | `ste-check.sh` 0; linked from the compatibility doc and the docs index; `curl-bash-safe-alternatives` 0 |
-| US-006 operator cutover | `cutover-record.md`, `0b58c0a7`, `892f1413` | renames, metadata, defaults, Pages domain and `/install.sh` done; installer references repointed; Cloudflare rules and token outstanding |
-| US-007 knowledge and changelog | `143cd6b8`, `b63cf41e`, `a18e421a` | `knowledge-impact.sh --verified` 0 needing review; wiki probes 0; `changelog-entry-length` 0 |
+| US-006 operator cutover | `cutover-record.md`, `0b58c0a7`, `892f1413` | renames, metadata, defaults, Pages domain, installer references, and the three Cloudflare redirect rules all done and verified; only the dispatch token is deferred |
+| US-007 knowledge and changelog | `143cd6b8` through `75efbf59` | `knowledge-impact.sh --verified` 0 needing review; wiki probes 0; `changelog-entry-length` 0 |
 
 ### Cutover performed (US-006 partial)
 
@@ -135,6 +140,23 @@ because no release was due.
 
 ## 4. What remains unverified
 
+- **One CI check fails and this branch cannot repair it.** `Boot a legacy volume
+  against the fresh image` fails at step 1, booting `ghcr.io/mifunedev/openharness:0.9.0`,
+  before the new image is built. Advisory GHSA-82fw-gwwq-j7x9 (published
+  2026-09-08T20:46:45Z) covers vitest >=2.1.0 <4.1.11. That image's seeded manifest
+  at `/opt/oh-seed/package.json` pins vitest ^3.2.6 and wires `pnpm:devPreinstall`
+  to `security:audit`, so the entrypoint's `pnpm install` fails and boot aborts.
+  Reproduced directly inside the released image; the captured log is
+  `legacy-boot-install.log`. The image and the manifest it seeds are immutable, so
+  **no source-only change on this branch fixes this test.** The other six checks
+  pass. Timeline: this job passed at `bfeaaab7` (2026-09-08T20:06Z) and has failed
+  since `378f8964` (2026-09-09T02:51Z); the commits between are documentation only.
+- **Existing users are affected differently from the fixture.** A workspace volume
+  whose `node_modules` is absent cannot boot on the released image. A user whose
+  checkout can be updated recovers once the source pins a patched vitest; a user
+  relying on the image's seeded manifest does not, because that copy is immutable.
+  Remediating the CI fixture and recovering existing users are separate problems
+  and neither is solved by editing the hook alone.
 - **One runbook step is deferred**, step 7a: `AGRO_WEB_DISPATCH_TOKEN` is not
   stored. `notify-docs` therefore skips with a `::notice::` on every release and
   the docs mirror refreshes on its daily schedule. Nothing is broken by this; the
@@ -193,7 +215,8 @@ because no release was due.
 | `simplicity-review.json` | Six non-blocking findings at `a18e421a` from a read-only reviewer |
 | `simplify-rounds.json` | Round 1, `netAdded` 2105, not non-reducing |
 | `delegate-graph.json`, `delegate-log.txt` | The nine bounded worker dispatches, their acceptance decisions, and the verification commands behind each |
-| `progress.txt` | The per-story narrative, including the recorded operator authorization |
+| `progress.txt` | The per-story narrative, the recorded operator authorization, and the cold-boot escalation |
+| `legacy-boot-install.log` | The captured `pnpm install` failure reproduced inside `ghcr.io/mifunedev/openharness:0.9.0` |
 | `cloudflare-rules.json`, `cloudflare-rules.README.md` | The exact runbook step 6 payload and how to apply, verify, and time it |
 
 Web pull requests: mifunedev/agro-web#46 (merged, `4f26a55`) and mifunedev/agro-web#47
