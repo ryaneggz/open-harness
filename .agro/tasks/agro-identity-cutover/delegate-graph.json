@@ -520,7 +520,7 @@
       "id": "W2",
       "title": "Repair the legacy boot fixture preserving .oh-layout coverage",
       "dependsOn": [],
-      "status": "running",
+      "status": "completed",
       "nativeWorkerId": "a67cebb1b4f04f38d",
       "workerType": "general-purpose",
       "executionDirectory": "/home/sandbox/harness/.worktrees/fix/943-legacy-fixture",
@@ -530,7 +530,7 @@
         ".github/workflows/sandbox-boot-guard.yml"
       ],
       "acceptanceOwner": "advisor",
-      "summary": ""
+      "summary": "Fixture no longer boots the broken published image; extracts the real /opt/oh-seed payload into a fresh volume as genuine .oh content and boots only the freshly built image. Owner re-ran the smoke end to end: PASS, exit 0."
     }
   ]
 }
