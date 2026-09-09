@@ -34,3 +34,29 @@
 2026-09-09T02:51:41Z final /eval at f27b0003: runner exit 0, no new regression, pre-existing skills-vendored unchanged; eval-result.json keyed to that commit; evidence.md header re-keyed. All seven stories pass.
 2026-09-09T02:55:58Z simplicity round 2 at 378f8964: one BLOCKING finding, .agro/scripts/agro-cutover-domain.sh (393 lines, no caller, no test, no reference, reimplementing the runbook). Accepted and removed. The file was written by the worker that died on a provider spend limit; a later 'git add -A' swept it into 892f1413 unnoticed. Owner performed the deletion as integration repair because the authoring worker had terminated. netAdded 2979 vs 2105, nonReducing true, so the loop terminates with SIMPLICITY-RESIDUAL as the procedure specifies; the growth is task-folder evidence, not code.
 2026-09-09T02:55:58Z CI unblock, unrelated to #943: a newly published advisory GHSA-82fw-gwwq-j7x9 against vitest >=2.1.0 <4.1.11 made 'pnpm run security:audit' fail. That script runs from the pnpm:devPreinstall hook, so every 'pnpm install' in CI failed, taking down three checks (Lint/Typecheck/Build/Test, Boot a legacy volume, Validate sandbox compose). The branch changes no dependency; development's last green run predates the advisory, so this is repo-wide. Bumped vitest ^3.2.6 -> ^4.1.11: audit clean, 74 files / 1246 tests pass, both typechecks 0, lint 0. Included here because the PR cannot reach a green CI without it; flagged for the operator as an unrelated change.
+ESCALATION — released image cannot cold-boot (found while closing #943, not caused by it)
+
+The v0.9.0 manifest pins vitest ^3.2.6 and wires "pnpm:devPreinstall" to
+"security:audit" (pnpm audit --audit-level low). Advisory GHSA-82fw-gwwq-j7x9
+against vitest >=2.1.0 <4.1.11 was published on 2026-09-08. The sandbox
+entrypoint runs "pnpm install --prefer-offline" whenever node_modules is absent,
+so the preinstall hook now runs a failing audit and the entrypoint aborts the
+boot. Any workspace volume without node_modules on the released image is
+therefore unbootable, which is a product impact, not only a CI one.
+
+Evidence: sandbox-boot-guard passed at bfeaaab7 (2026-09-08T20:06Z) and failed at
+378f8964 (2026-09-09T02:51Z) and a2c39ed0. The commits between those two heads
+are documentation and task-folder text only and cannot affect a container boot.
+The legacy-boot job seeds its volume from ghcr.io/mifunedev/openharness:0.9.0, so
+the failing manifest is the published image's, not this branch's.
+
+The branch itself is clean: vitest is bumped to ^4.1.11 here, the audit reports
+no known vulnerabilities, and the whole suite, both typechecks, and lint pass.
+
+Recommendation for the operator, a separate change from #943: stop gating the
+sandbox boot on a live vulnerability feed. Keep "security:audit" as a CI step and
+remove it from "pnpm:devPreinstall", so a newly published advisory anywhere can
+never make an existing sandbox fail to start. Bumping LEGACY_IMAGE instead only
+moves the pin; the next advisory reproduces the failure. This changes a security
+posture, so it is the operator's decision, not the advisor's.
+2026-09-09T02:59:35Z escalation recorded
