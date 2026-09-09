@@ -66,8 +66,8 @@ That asymmetry is why the two need different framing.
 ## Why the CLI selects no substrate key
 
 Two proposals name the selector differently — `sandbox.substrate` (the substrate
-plan, [#802](https://github.com/mifunedev/openharness/issues/802) P4) and
-`sandbox.runtime` (the EPIC [#731](https://github.com/mifunedev/openharness/issues/731)
+plan, [#802](https://github.com/mifunedev/agro/issues/802) P4) and
+`sandbox.runtime` (the EPIC [#731](https://github.com/mifunedev/agro/issues/731)
 sysbox slice). The open decision, and the axes taxonomy behind it, live in
 [the runtime-support RFC](../rfcs/rfc-runtime-support.md); settling it outside
 #731 forks the `ExecutionTarget` seam.

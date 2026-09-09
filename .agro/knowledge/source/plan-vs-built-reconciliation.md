@@ -10,7 +10,7 @@ sources:
   - .agro/skills/spec/references/execute.md
   - .agro/skills/audit/references/reviewer-evidence-doc.md
   - .agro/evals/probes/spec-ready-finalization.sh
-verified_at: a0d0437ec9819ce6ecf879cabeaefef9980cdcec
+verified_at: 4db24429bbf08c521b62ad6386fd1370445ac203
 related: [audit-architecture]
 confidence: provisional
 ---

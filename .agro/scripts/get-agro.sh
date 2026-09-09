@@ -29,7 +29,7 @@ agro_env() {
 }
 
 AGRO_GITHUB_REPO="$(agro_env GITHUB_REPO "" | cut -f2-)"
-AGRO_GITHUB_REPO="${AGRO_GITHUB_REPO:-mifunedev/openharness}"
+AGRO_GITHUB_REPO="${AGRO_GITHUB_REPO:-mifunedev/agro}"
 if [[ ! "$AGRO_GITHUB_REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
   die "AGRO_GITHUB_REPO must be <owner>/<repo>: got '$AGRO_GITHUB_REPO'"
 fi
@@ -86,7 +86,7 @@ Env vars:
   AGRO_JS_URL          Prebuilt artifact URL
                        (default: $RELEASE_BASE/agro.js)
   AGRO_GITHUB_REPO     <owner>/<repo> whose latest GitHub release hosts the artifacts
-                       (default: mifunedev/openharness)
+                       (default: mifunedev/agro)
   AGRO_NVM_VERSION     nvm version tag for the Node install (default: v0.40.3)
   AGRO_ASSUME_YES      Non-empty accepts prompts (same as --yes)
 

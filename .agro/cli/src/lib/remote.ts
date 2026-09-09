@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 
 
-export const DEFAULT_REPO_URL = "https://github.com/mifunedev/openharness";
+export const DEFAULT_REPO_URL = "https://github.com/mifunedev/agro";
 export const DEFAULT_CLONE_TIMEOUT_MS = 120_000;
 
 export interface RunResult {

@@ -259,7 +259,7 @@ describe.each(["opencode", "muse-code"])("runHarnessInstall %s against the conta
     expect(install!.args.slice(-entry.installArgv.length)).toEqual(entry.installArgv);
     expect(text(out)).toContain("installed");
     expect(text(out)).toContain(
-      `https://github.com/mifunedev/openharness/blob/main/docs/harnesses/${harness}.md`,
+      `https://github.com/mifunedev/agro/blob/main/docs/harnesses/${harness}.md`,
     );
   });
 
@@ -440,7 +440,7 @@ describe("runHarnessStatus", () => {
     const parsed = JSON.parse(text(out));
     expect(parsed.id).toBe("hermes");
     expect(parsed.docs).toBe(
-      "https://github.com/mifunedev/openharness/blob/main/docs/harnesses/hermes.md",
+      "https://github.com/mifunedev/agro/blob/main/docs/harnesses/hermes.md",
     );
   });
 

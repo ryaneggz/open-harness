@@ -145,7 +145,7 @@ describe("help", () => {
     expect(text).not.toMatch(/\bmake\b/);
     expect(text).toContain("oh stop");
     expect(text).toContain(
-      "https://github.com/mifunedev/openharness/blob/main/docs/lifecycle-commands.md",
+      "https://github.com/mifunedev/agro/blob/main/docs/lifecycle-commands.md",
     );
   });
 });

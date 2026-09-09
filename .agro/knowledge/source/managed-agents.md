@@ -12,7 +12,7 @@ sources:
   - docs/harnesses/overview.md
   - .devcontainer/docker-compose.yml
   - .devcontainer/docker-compose.image-only.yml
-verified_at: a0d0437ec9819ce6ecf879cabeaefef9980cdcec
+verified_at: 4db24429bbf08c521b62ad6386fd1370445ac203
 related: [audit-architecture, runtime-isolation-landscape, recursive-language-models]
 confidence: provisional
 ---

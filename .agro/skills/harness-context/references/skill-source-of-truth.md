@@ -25,4 +25,4 @@ When asked to list, audit, or reason about Open Harness skills, distinguish the 
 1. Say explicitly which view you are using: repo source-of-truth vs active Hermes runtime catalog.
 2. For Open Harness skills, enumerate `.agro/skills/*/SKILL.md` first.
 3. If mentioning Hermes skills, label them as runtime/bundled/profile skills and separate them from harness skills.
-4. Check `git remote -v` or `CHANGELOG.md` if the user asks which repo is canonical; current docs identify `mifunedev/openharness` as canonical, with forks/remotes possibly still named `origin` locally.
+4. Check `git remote -v` or `CHANGELOG.md` if the user asks which repo is canonical; current docs identify `mifunedev/agro` as canonical, with forks/remotes possibly still named `origin` locally.

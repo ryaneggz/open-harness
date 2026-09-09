@@ -4,10 +4,10 @@ import { sourceDocsUrl } from "../lib/docs.js";
 describe("sourceDocsUrl", () => {
   it("converts a normalized repository docs path to a durable source URL", () => {
     expect(sourceDocsUrl("docs/lifecycle-commands.md")).toBe(
-      "https://github.com/mifunedev/openharness/blob/main/docs/lifecycle-commands.md",
+      "https://github.com/mifunedev/agro/blob/main/docs/lifecycle-commands.md",
     );
     expect(sourceDocsUrl("docs/a guide.md")).toBe(
-      "https://github.com/mifunedev/openharness/blob/main/docs/a%20guide.md",
+      "https://github.com/mifunedev/agro/blob/main/docs/a%20guide.md",
     );
   });
 

@@ -27,13 +27,13 @@ the latest GitHub release — nothing is cloned or built on your host — and of
 to install nvm + Node 22 when Node is missing:
 
 ```bash
-curl -fsSL https://github.com/mifunedev/openharness/releases/latest/download/get-agro.sh | bash
+curl -fsSL https://agro.mifune.dev/get-agro.sh | bash
 ```
 
 Review-first, without adding a host dependency:
 
 ```bash
-curl -fsSL -o get-agro.sh https://github.com/mifunedev/openharness/releases/latest/download/get-agro.sh
+curl -fsSL -o get-agro.sh https://agro.mifune.dev/get-agro.sh
 # Review get-agro.sh in your editor or pager before running it.
 bash get-agro.sh
 ```
@@ -346,11 +346,11 @@ required path; everything after them is optional and can wait. Steps 4 onward ru
 1. **Install host prerequisites** — Docker (+ Compose), Git, and Node.js ≥ 20
    ([details](./installation.md#prerequisites)):
    ```bash
-   curl -fsSL -o get-agro.sh https://github.com/mifunedev/openharness/releases/latest/download/get-agro.sh   # review it first
+   curl -fsSL -o get-agro.sh https://agro.mifune.dev/get-agro.sh   # review it first
    bash get-agro.sh                                          # installs `agro`, and Node if missing
    ```
 
-   To skip the review step: `curl -fsSL https://github.com/mifunedev/openharness/releases/latest/download/get-agro.sh | bash`. `npm install -g @mifune/agro` is the npm equivalent when Node is already present.
+   To skip the review step: `curl -fsSL https://agro.mifune.dev/get-agro.sh | bash`. `npm install -g @mifune/agro` is the npm equivalent when Node is already present.
 2. **Create the sandbox** — the wizard asks for the name, timezone, git identity,
    SSH, and the Docker socket, then writes `~/.agro/sandboxes/<name>/`:
    ```bash

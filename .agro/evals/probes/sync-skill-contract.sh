@@ -76,7 +76,7 @@ if [ -f "$SYNC/references/catchup.md" ]; then
     missing+=("references/catchup.md: must explicitly prohibit 'git merge upstream/development' (catchup must use cherry-pick, not a full merge)")
 fi
 
-grep -qF '/audit pr <N> --repo mifunedev/openharness' "$SYNC/references/publish.md" || \
+grep -qF '/audit pr <N> --repo mifunedev/agro' "$SYNC/references/publish.md" || \
   missing+=("references/publish.md: focused /audit pr invocation lacks PR number/repo")
 grep -qF "/audit pr <N> --repo \"\$ORIGIN_REPO\"" "$SYNC/references/catchup.md" || \
   missing+=("references/catchup.md: focused /audit pr invocation lacks PR number/repo")

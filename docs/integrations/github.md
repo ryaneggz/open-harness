@@ -98,7 +98,7 @@ running them:
 ```bash
 gh repo create <your-user>/<repo> --private
 git remote set-url origin git@github.com:<your-user>/<repo>.git
-git remote add upstream git@github.com:mifunedev/openharness.git
+git remote add upstream git@github.com:mifunedev/agro.git
 git push -u origin HEAD
 ```
 

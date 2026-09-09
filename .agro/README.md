@@ -29,7 +29,7 @@ is obsolete):
   and the Ralph/spec task workdirs (`tasks/` — ephemeral build scratch, now at
   `.agro/tasks/`). The former top-level `packages/` folder
   was **retired** — its `oh` package moved in here; the Docusaurus docs *site*
-  was externalized to [`mifunedev/openharness-web`](https://github.com/mifunedev/openharness-web)
+  was externalized to [`mifunedev/agro-web`](https://github.com/mifunedev/agro-web)
   (#536).
 - **repo root** — human-facing Markdown docs live under `docs/`, alongside
   everything forced to root by *external* tooling (`.devcontainer/` for the
@@ -42,7 +42,7 @@ is obsolete):
   (`projects/`) sit at the repo root, because a repository keeps its worktrees at
   its own root and a project clone is a peer repo, not control-plane machinery;
   the rendered docs site and the `blog/` archive
-  live in `mifunedev/openharness-web`.
+  live in `mifunedev/agro-web`.
 
 ### Relocated into `.agro/` (no back-compat symlinks)
 
@@ -93,7 +93,7 @@ paths:
   `install/**` / `packages/oh/**` filters are kept so the path probes stay green.)
 
 The former `packages/docs` Docusaurus **site** is **not** in `.agro/` — it was
-externalized to [`mifunedev/openharness-web`](https://github.com/mifunedev/openharness-web)
+externalized to [`mifunedev/agro-web`](https://github.com/mifunedev/agro-web)
 (#536), which removed the pnpm-workspace member, the `docs:build`/`docs:dev`/`docs:serve`
 scripts, and the `docs.yml` workflow. The GitHub-readable Markdown docs live at
 root `docs/` (Markdown only — no build machinery; guarded by
@@ -150,7 +150,7 @@ The shared skills and hooks are vendored directly under `.agro/` (`.agro/skills`
 
 `OH_PROJECT_ROOT` is `/home/sandbox/harness`, fixed. It is no longer configurable:
 the sandbox home is one mount at `/home/sandbox` and the checkout is nested inside
-it, so a relocatable project root buys nothing ([#898](https://github.com/mifunedev/openharness/issues/898)).
+it, so a relocatable project root buys nothing ([#898](https://github.com/mifunedev/agro/issues/898)).
 The image pins it (`ENV OH_PROJECT_ROOT=/home/sandbox/harness`), and devcontainer
 and `.agro/scripts` consumers keep reading `${OH_PROJECT_ROOT:-/home/sandbox/harness}`
 rather than the bare literal. `HARNESS` remains a back-compat alias
@@ -230,7 +230,7 @@ into a consumer repo. The files remain in this repository. The manifest does not
 include `docs/**`. Root `docs/` is project-owned source documentation and is not
 copied or overwritten by `oh update`. The rendered Docusaurus docs
 *site* remains external at
-[`mifunedev/openharness-web`](https://github.com/mifunedev/openharness-web) (#536).
+[`mifunedev/agro-web`](https://github.com/mifunedev/agro-web) (#536).
 
 - **The manifest ships itself** — `manifest.json` is in `include`, so the policy
   **propagates forward**: a consumer's next `oh update` reads the *source's*

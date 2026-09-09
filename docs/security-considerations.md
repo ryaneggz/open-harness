@@ -158,7 +158,7 @@ expose to whichever trust level you choose.
   Stream) systemd's mounts may be denied by SELinux instead, which `apparmor=unconfined`
   does not affect. The failure is loud rather than silent — PID 1 exits and the container
   restart-loops — so an affected operator sees it immediately in `oh logs`. Tracked as
-  [#960](https://github.com/mifunedev/openharness/issues/960); the supported host baseline
+  [#960](https://github.com/mifunedev/agro/issues/960); the supported host baseline
   remains Debian/Ubuntu per
   [Runtimes → Docker](runtimes/docker.md).
 

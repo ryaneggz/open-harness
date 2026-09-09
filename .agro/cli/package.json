@@ -3,14 +3,14 @@
   "version": "0.9.0",
   "description": "AGRO CLI — create sandboxes for coding agents and manage OpenHarness Cloud nodes.",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/mifunedev/openharness#readme",
+  "homepage": "https://github.com/mifunedev/agro#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mifunedev/openharness.git",
+    "url": "git+https://github.com/mifunedev/agro.git",
     "directory": ".agro/cli"
   },
   "bugs": {
-    "url": "https://github.com/mifunedev/openharness/issues"
+    "url": "https://github.com/mifunedev/agro/issues"
   },
   "engines": {
     "node": ">=20"

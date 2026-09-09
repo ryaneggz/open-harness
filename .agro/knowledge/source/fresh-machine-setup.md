@@ -22,7 +22,7 @@ sources:
   - .agro/scripts/hermes-install-smoke.sh
   - .agro/scripts/gateway.sh
   - .agro/scripts/get-agro.sh
-verified_at: a0d0437ec9819ce6ecf879cabeaefef9980cdcec
+verified_at: 4db24429bbf08c521b62ad6386fd1370445ac203
 related: [sandbox-dependency-installs, oh-cli-portable-lifecycle]
 confidence: provisional
 ---
@@ -63,13 +63,21 @@ Host prerequisites are Docker (with the Compose plugin), Git, and **Node.js >= 2
 Makefile). Install it with `npm install -g @mifune/agro`, run it zero-install with
 `npx @mifune/agro`, or bootstrap with `get-agro.sh`: it downloads the prebuilt
 `agro.js` asset of the latest GitHub Release of `AGRO_GITHUB_REPO` (default
-`mifunedev/openharness`, so a fork can host its own) into `~/.local/bin/agro`
+`mifunedev/agro` since #943, so a fork can host its own) into `~/.local/bin/agro`
 (`AGRO_BIN_DIR`), checks the shebang, offers nvm + Node 22 when Node is missing, and
 never clones or builds — no ref override exists because nothing is checked out. Each
 `AGRO_<NAME>` falls back to `OH_<NAME>`; a warning names both keys when they differ
 (`agro_env`). `get-oh.sh` stays the compatibility bootstrap for `oh`, and
 `@mifune/openharness` installs the delegating `oh` shim. `agro update` upgrades the
-executable later ([[oh-cli-portable-lifecycle]]).
+executable later ([[oh-cli-portable-lifecycle]]). The documented entry points are
+`https://agro.mifune.dev/get-agro.sh` (canonical; `README.md:51`,
+`docs/installation.md:38`) and `https://oh.mifune.dev/get-oh.sh` (compatibility;
+`docs/installation.md:74`), and README and the docs link `mifunedev/agro`,
+`mifunedev/agro-web`, and `agro.mifune.dev` (#943; `README.md:29,287`). The GitHub
+repository rename is an operator step in `docs/agro-cutover-runbook.md`, pending at
+this pin, so `mifunedev/openharness` still resolves directly and the `mifunedev/agro`
+default takes effect once the rename lands. [[agro-web-pipeline]] describes the site
+that serves the installers.
 
 No checkout is required to create a sandbox: `agro sandbox install docker` runs from
 any directory and asks name, timezone, git identity, SSH (with port), and Docker

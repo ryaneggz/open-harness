@@ -85,8 +85,8 @@ print_help() {
 Open Harness — Installer
 
 Usage:
-  curl -fsSL https://oh.mifune.dev/install.sh | bash [-s -- <flags>]
-  curl -fsSL -o openharness-install.sh https://oh.mifune.dev/install.sh
+  curl -fsSL https://agro.mifune.dev/install.sh | bash [-s -- <flags>]
+  curl -fsSL -o openharness-install.sh https://agro.mifune.dev/install.sh
   # Review openharness-install.sh in your editor or pager, then:
   bash openharness-install.sh [<flags>]
   ./.agro/scripts/install.sh [<flags>]
@@ -123,11 +123,11 @@ Env vars:
                        and --yes/--no keep it off.
 
 Examples:
-  curl -fsSL https://oh.mifune.dev/install.sh | bash
-  curl -fsSL -o openharness-install.sh https://oh.mifune.dev/install.sh
+  curl -fsSL https://agro.mifune.dev/install.sh | bash
+  curl -fsSL -o openharness-install.sh https://agro.mifune.dev/install.sh
   # Review openharness-install.sh before running it.
   bash openharness-install.sh
-  curl -fsSL https://oh.mifune.dev/install.sh | bash -s -- --yes
+  curl -fsSL https://agro.mifune.dev/install.sh | bash -s -- --yes
   ./.agro/scripts/install.sh
   OH_GITHUB_REPO=myorg/my-harness curl -fsSL \
     https://raw.githubusercontent.com/myorg/my-harness/main/.agro/scripts/install.sh | bash

@@ -1,6 +1,6 @@
 [Unit]
 Description=Open Harness cron runtime
-Documentation=https://github.com/mifunedev/openharness
+Documentation=https://github.com/mifunedev/agro
 Requires=openharness-bootstrap.service
 After=openharness-bootstrap.service
 StartLimitIntervalSec=60

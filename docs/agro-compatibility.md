@@ -1,14 +1,16 @@
 # AGRO compatibility contract
 
 Open Harness is migrating to AGRO (Agent Governance Runtime Orchestrator) under
-epic [#939](https://github.com/mifunedev/openharness/issues/939). This page is the
+epic [#939](https://github.com/mifunedev/agro/issues/939). This page is the
 compatibility contract: the Phase 0 resolver
-([#940](https://github.com/mifunedev/openharness/issues/940)) that lets the
+([#940](https://github.com/mifunedev/agro/issues/940)) that lets the
 runtime understand both naming generations, the Phase 1 entry points and
-artifacts ([#941](https://github.com/mifunedev/openharness/issues/941)) that put
+artifacts ([#941](https://github.com/mifunedev/agro/issues/941)) that put
 `agro` in the operator's hands without changing any persisted default, and the
-Phase 2 cutover ([#942](https://github.com/mifunedev/openharness/issues/942))
-that makes AGRO the fresh-state default and ships `agro migrate`.
+Phase 2 cutover ([#942](https://github.com/mifunedev/agro/issues/942))
+that makes AGRO the fresh-state default and ships `agro migrate`, and the Phase 3
+identity cutover ([#943](https://github.com/mifunedev/agro/issues/943)) that makes
+`mifunedev/agro` and `agro.mifune.dev` the canonical external names.
 
 ## What Phase 0 changes, and what it does not
 
@@ -110,7 +112,7 @@ entry goes stale, or when an `alias-sla` entry lacks its `AGRO_*` spelling.
 
 ## Phase 1 — entry points and artifacts
 
-Phase 1 ([#941](https://github.com/mifunedev/openharness/issues/941)) introduces
+Phase 1 ([#941](https://github.com/mifunedev/agro/issues/941)) introduces
 the `agro` name at every entry point and publishes the AGRO artifacts beside the
 legacy ones. It changes no persisted default.
 
@@ -189,7 +191,7 @@ five of those for fresh state; see below.
 
 ## Phase 2 — AGRO is the fresh-state default
 
-Phase 2 ([#942](https://github.com/mifunedev/openharness/issues/942)) flips what
+Phase 2 ([#942](https://github.com/mifunedev/agro/issues/942)) flips what
 a *fresh* installation creates and adds the migration command. Nothing an
 existing installation already persisted changes on its own.
 
@@ -251,10 +253,72 @@ repository name, the Cloud variables, and the Python kernel home
 `~/.local/share/oh/` are unchanged. Every `OH_*` variable, `oh`, `oh.json`
 reading, `~/.oh`, and the legacy images stay valid through the SLA.
 
+## Phase 3 — AGRO is the canonical external identity
+
+Phase 3 ([#943](https://github.com/mifunedev/agro/issues/943)) renames the two
+GitHub repositories in place and moves the documentation host. It retires
+nothing. GitHub redirects a renamed repository, so every old clone, API, and
+release URL keeps resolving through the SLA. The operator actions, the
+verification matrix, and the rollback are in the
+[cutover runbook](agro-cutover-runbook.md).
+
+| Surface | Canonical | Retained through the SLA |
+|---|---|---|
+| Core repository | `github.com/mifunedev/agro` | `github.com/mifunedev/openharness` (GitHub rename redirect) |
+| Docs site source | `github.com/mifunedev/agro-web` | `github.com/mifunedev/openharness-web` (GitHub rename redirect) |
+| Documentation host | `https://agro.mifune.dev` | `https://oh.mifune.dev`, see the endpoint table |
+| Release assets | `https://github.com/mifunedev/agro/releases/latest/download/<asset>` | the old repository path (GitHub rename redirect) |
+| Installer entry point | `https://agro.mifune.dev/get-agro.sh` | `https://oh.mifune.dev/get-oh.sh` |
+| npm package metadata | `homepage`, `repository`, and `bugs` of `@mifune/agro` and `@mifune/openharness` name `mifunedev/agro` | the package names are unchanged |
+| Image label `org.opencontainers.image.source` | `https://github.com/mifunedev/agro` | the image names are unchanged, see below |
+
+Installer defaults:
+
+- `get-agro.sh`: `AGRO_GITHUB_REPO` defaults to `mifunedev/agro`, so the default
+  `AGRO_JS_URL` is `https://github.com/mifunedev/agro/releases/latest/download/agro.js`.
+- `get-oh.sh`: `OH_GITHUB_REPO` (the build fallback) defaults to `mifunedev/agro`.
+  Its documented entry point stays `https://oh.mifune.dev/get-oh.sh`, and
+  `OH_JS_URL` defaults to `https://agro.mifune.dev/oh.js`.
+
+### `oh.mifune.dev` endpoints
+
+Every path on the legacy host keeps working. *Redirect* means a 301 to the same
+route on `agro.mifune.dev`. *Compatibility alias* means the path keeps returning
+a script body, directly or through a 302 that `curl -fsSL` follows, so an
+existing piped install line never receives HTML. *Canonical* means the
+location that current documentation names. The Cloudflare rules that implement
+the table are operator actions at cutover.
+
+| Endpoint | SLA classification | Resolves to |
+|---|---|---|
+| `https://oh.mifune.dev/` and every documentation route | redirect | the same route on `https://agro.mifune.dev` |
+| `https://oh.mifune.dev/get-oh.sh` | compatibility alias | the `get-oh.sh` script body; the documented legacy installer entry point |
+| `https://oh.mifune.dev/oh.js` | compatibility alias | the `oh.js` bundle; the `get-oh.sh` default `OH_JS_URL` |
+| `https://oh.mifune.dev/install.sh` | compatibility alias | 302 to the raw `install.sh` on `main` of `mifunedev/agro`; the retired clone-and-own installer |
+| `https://oh.mifune.dev/get-agro.sh` | compatibility alias | 302 to `https://agro.mifune.dev/get-agro.sh` (canonical) |
+| `https://oh.mifune.dev/agro.js` | compatibility alias | 302 to `https://agro.mifune.dev/agro.js` (canonical) |
+| `https://agro.mifune.dev/get-agro.sh` and `/agro.js` | canonical | the current `get-agro.sh` and `agro.js` release assets |
+| `https://agro.mifune.dev/install.sh` | compatibility alias | 302 to the raw `install.sh` on `main` of `mifunedev/agro`; the retired clone-and-own installer, served directly from the canonical host |
+
+The `/install.sh` redirect target has a sequencing hazard. The rule currently
+points at `.oh/scripts/install.sh` on `main`. That path exists only because
+`main` predates the `.oh/` to `.agro/` rename. The first release that carries
+the rename to `main` deletes that path. Change the Cloudflare rule target to
+`https://raw.githubusercontent.com/mifunedev/agro/main/.agro/scripts/install.sh`
+in the same change window as that release. Do not change it earlier: that path
+does not exist on `main` yet, and an early change breaks the endpoint.
+
+### Unchanged in Phase 3
+
+The default image reference `ghcr.io/mifunedev/openharness:latest` is unchanged;
+both image names are published from one digest, so the default selects the same
+image under either name. The CLI install root `/opt/oh`, the Cloud variables, the
+Python kernel home `~/.local/share/oh/`, `oh`, `@mifune/openharness`, `get-oh.sh`,
+`oh.js`, every `OH_*` variable, `~/.oh`, and the legacy GHCR tags stay valid
+through the SLA. This repository keeps `"name": "openharness"` in `agro.json`.
+
 ## Legacy references intentionally left for later phases
 
-- Phase 3: the default image reference `ghcr.io/mifunedev/openharness:latest`,
-  the `oh.mifune.dev` domain, and the GitHub repository name.
 - Phase 4: the Cloud CLI variables (`OH_CLOUD_*`, `OH_API_URL`,
   `OH_PROVISION_KEY`).
 - Phase 5: retirement of `oh`, `@mifune/openharness`, `get-oh.sh`, and the

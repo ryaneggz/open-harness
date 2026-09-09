@@ -66,8 +66,8 @@ If you already have a sandbox running, jump directly to the page you need.
 
 ## Where to get help
 
-- Source code and issues: [github.com/mifunedev/openharness](https://github.com/mifunedev/openharness)
+- Source code and issues: [github.com/mifunedev/agro](https://github.com/mifunedev/agro)
 - Learning material: [Resources](/docs/resources)
-- Philosophy: [How Open Harness embodies compound engineering](https://github.com/mifunedev/openharness-web/tree/main/blog) — why each unit of work here should make the next one easier.
+- Philosophy: [How Open Harness embodies compound engineering](https://github.com/mifunedev/agro-web/tree/main/blog) — why each unit of work here should make the next one easier.
 
 [Connecting to the Sandbox](/docs/connecting)

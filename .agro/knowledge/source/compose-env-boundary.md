@@ -18,7 +18,7 @@ sources:
   - .agro/evals/probes/compose-env-boundary.sh
   - .agro/evals/probes/harness-one-door.sh
   - .agro/evals/probes/sandbox-registry.sh
-verified_at: a0d0437ec9819ce6ecf879cabeaefef9980cdcec
+verified_at: 4db24429bbf08c521b62ad6386fd1370445ac203
 related: [sandbox-dependency-installs, oh-cli-portable-lifecycle]
 confidence: confirmed
 ---

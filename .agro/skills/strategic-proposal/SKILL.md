@@ -73,9 +73,9 @@ If this fails, log `[strategic-proposal] SKIP: gh CLI not authenticated` → Mem
 Read the following to build the briefing:
 - `AGENTS.md` — stack, mission, URLs
 - `.agro/cli/`, `scripts/`, `install/` — orchestrator entrypoints and provisioning surface
-- `docs/` — GitHub-readable core docs; rendered docs site source lives in `mifunedev/openharness-web`
-- Open issues: `gh api "repos/mifunedev/openharness/issues?state=open&per_page=50"`
-- Repo stats: `gh api repos/mifunedev/openharness --jq '{stars: .stargazers_count, forks: .forks_count}'`
+- `docs/` — GitHub-readable core docs; rendered docs site source lives in `mifunedev/agro-web`
+- Open issues: `gh api "repos/mifunedev/agro/issues?state=open&per_page=50"`
+- Repo stats: `gh api repos/mifunedev/agro --jq '{stars: .stargazers_count, forks: .forks_count}'`
 
 ### 3. Compose the Current State Briefing
 
@@ -181,25 +181,25 @@ The council's final output becomes the pinned issue body.
 
 Search for existing:
 ```bash
-gh api "repos/mifunedev/openharness/issues?state=open&labels=roadmap&per_page=10" \
+gh api "repos/mifunedev/agro/issues?state=open&labels=roadmap&per_page=10" \
   --jq '[.[] | select(.title == "Product Roadmap")] | first'
 ```
 
 If none exists:
 ```bash
-gh label create roadmap --repo mifunedev/openharness \
+gh label create roadmap --repo mifunedev/agro \
   --description "Product roadmap tracking" --color "0075ca" 2>/dev/null || true
 
-gh issue create --repo mifunedev/openharness \
+gh issue create --repo mifunedev/agro \
   --title "Product Roadmap" --label roadmap \
   --body "<council output>"
 ```
 
-Then pin it: `gh issue pin <NUMBER> --repo mifunedev/openharness`
+Then pin it: `gh issue pin <NUMBER> --repo mifunedev/agro`
 
 If it already exists, update:
 ```bash
-gh issue edit <NUMBER> --repo mifunedev/openharness --body "<council output>"
+gh issue edit <NUMBER> --repo mifunedev/agro --body "<council output>"
 ```
 
 ### 9. Report

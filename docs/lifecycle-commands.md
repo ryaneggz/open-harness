@@ -105,7 +105,7 @@ executable:
 | Installation | Detected as | What `agro update` does |
 |---|---|---|
 | `npm install -g @mifune/agro` | realpath under `node_modules/@mifune/agro/` | reads the registry version with `npm view`, then runs `npm install -g --prefix <owning prefix> @mifune/agro@<version>` |
-| `get-agro.sh` | a plain file | downloads `AGRO_JS_URL` (falls back to `OH_JS_URL`; default `https://github.com/mifunedev/openharness/releases/latest/download/agro.js`) into the same directory, checks its shebang and `--version`, renames it over the executable, and keeps `<path>.prev` until the new file verifies |
+| `get-agro.sh` | a plain file | downloads `AGRO_JS_URL` (falls back to `OH_JS_URL`; default `https://github.com/mifunedev/agro/releases/latest/download/agro.js`) into the same directory, checks its shebang and `--version`, renames it over the executable, and keeps `<path>.prev` until the new file verifies |
 
 It refuses, and prints the supported procedure, when the executable is shipped
 by the sandbox image (`/opt/oh`), is a source checkout's `dist/`, belongs to the

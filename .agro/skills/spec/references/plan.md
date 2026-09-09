@@ -36,7 +36,7 @@ written.
 | `--issue <N>` | The issue number this spec builds — **consumed by the `/ralph` step** (the branch name embeds it, so `/ralph` hard-fails without it). The human selects the issue. For a fresh manual topic with no issue, open one first (per `/git`) or let `/spec execute` open one in a standalone run. `plan` only **reads** `<N>`. |
 | `--slug <slug>` | Override the derived slug. Must match `[a-z0-9-]+`, ≤5 words, not `archive`. |
 | `--prefix <type>` | Branch/issue prefix (default `feat`), per `.agro/skills/git/SKILL.md`. |
-| `--repo <owner/name>` | Recorded for downstream `/spec execute`; not acted on here. Default `mifunedev/openharness`. |
+| `--repo <owner/name>` | Recorded for downstream `/spec execute`; not acted on here. Default `mifunedev/agro`. |
 | `--base <branch>` | Recorded for downstream `/spec execute`; not acted on here. Default `development`. |
 
 `plan` never touches GitHub — `--issue`, `--repo`, `--base` are recorded into the

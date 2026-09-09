@@ -11,9 +11,11 @@ Update policy and release automation live in [`/git`](.claude/skills/git/SKILL.m
 ### Changed
 
 - Fresh installs now create `.agro/`, `agro.json`, `~/.agro/sandboxes`, and `/opt/agro-seed`; legacy `.oh/` state keeps working, and `agro migrate` moves a project or registry. ([#942](https://github.com/mifunedev/openharness/issues/942))
+- Make `mifunedev/agro` and `agro.mifune.dev` the canonical repository and docs domain, send `agro-release` to the docs site on release, and keep legacy names as compatibility endpoints. ([#943](https://github.com/mifunedev/openharness/issues/943))
 
 ### Fixed
 
+- Move the dependency security audit to CI-only so a new advisory can no longer block a sandbox boot. ([#943](https://github.com/mifunedev/openharness/issues/943))
 - Require verified dependency acceptance and safe resume eligibility before dispatching delegated work. ([#1004](https://github.com/mifunedev/openharness/pull/1004))
 - Point the pi banner at the Mifune GitHub organization. ([#1001](https://github.com/mifunedev/openharness/issues/1001))
 - Release publishing waits for npm registry propagation with an uncached `npm view` before publishing the `@mifune/openharness` shim and fails when its deprecation notice is not applied. ([#994](https://github.com/mifunedev/openharness/issues/994))

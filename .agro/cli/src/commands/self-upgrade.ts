@@ -63,7 +63,7 @@ export interface SelfUpgradeIO {
 }
 
 export const DEFAULT_ARTIFACT_URL =
-  "https://github.com/mifunedev/openharness/releases/latest/download/agro.js";
+  "https://github.com/mifunedev/agro/releases/latest/download/agro.js";
 
 const PREFIX = `${AGRO_PRODUCT.bin} update`;
 const PACKAGE = AGRO_PRODUCT.packageName;
