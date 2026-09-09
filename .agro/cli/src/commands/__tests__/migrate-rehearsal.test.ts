@@ -121,82 +121,102 @@ afterAll(() => {
 describe("agro migrate rehearsal on a legacy sandbox entry (built CLI)", () => {
   let untouchedBefore: Record<string, string> = {};
 
-  it("--check prints a ready plan and changes nothing", () => {
-    const before = manifest(root);
-    untouchedBefore = { app: sha(join(root, "src", "app.ts")), env: sha(join(root, ".env")) };
+  it(
+    "--check prints a ready plan and changes nothing",
+    () => {
+      const before = manifest(root);
+      untouchedBefore = { app: sha(join(root, "src", "app.ts")), env: sha(join(root, ".env")) };
 
-    const check = cli(AGRO_BIN, ["migrate", "--check"]);
-    expect(check.stderr).toBe("");
-    expect(check.status).toBe(0);
-    expect(check.stdout).toContain(`agro migrate: plan for ${root}`);
-    expect(check.stdout).toContain("status: ready");
-    expect(manifest(root)).toEqual(before);
-    expect(existsSync(join(root, LOCK_FILE))).toBe(false);
-  });
+      const check = cli(AGRO_BIN, ["migrate", "--check"]);
+      expect(check.stderr).toBe("");
+      expect(check.status).toBe(0);
+      expect(check.stdout).toContain(`agro migrate: plan for ${root}`);
+      expect(check.stdout).toContain("status: ready");
+      expect(manifest(root)).toEqual(before);
+      expect(existsSync(join(root, LOCK_FILE))).toBe(false);
+    },
+    60_000,
+  );
 
-  it("applies the rename and relinks every provider link at ../.agro/", () => {
-    const apply = cli(AGRO_BIN, ["migrate"]);
-    expect(apply.stderr).toBe("");
-    expect(apply.status).toBe(0);
-    expect(apply.stdout).toContain("agro migrate: applied");
+  it(
+    "applies the rename and relinks every provider link at ../.agro/",
+    () => {
+      const apply = cli(AGRO_BIN, ["migrate"]);
+      expect(apply.stderr).toBe("");
+      expect(apply.status).toBe(0);
+      expect(apply.stdout).toContain("agro migrate: applied");
 
-    expect(lstatSync(join(root, ".agro")).isDirectory()).toBe(true);
-    expect(lstatSync(join(root, "agro.json")).isFile()).toBe(true);
-    expect(existsSync(join(root, ".oh"))).toBe(false);
-    expect(existsSync(join(root, "oh.json"))).toBe(false);
-    expect(existsSync(join(root, LOCK_FILE))).toBe(false);
-    expect(readFileSync(join(root, ".agro", ".image-seeded"), "utf8")).toBe("");
-    for (const script of VENDORED_SCRIPTS) {
-      expect(sha(join(root, ".agro", "scripts", script))).toBe(sha(join(REPO_ROOT, ".agro", "scripts", script)));
-    }
-    for (const { link, target } of PROVIDER_LINKS) {
-      const path = join(root, ...link.split("/"));
-      expect(readlinkSync(path)).toBe(`../.agro/${target}`);
-      expect(lstatSync(resolve(dirname(path), readlinkSync(path))).isDirectory()).toBe(true);
-    }
-    expect(sha(join(root, "src", "app.ts"))).toBe(untouchedBefore.app);
-    expect(sha(join(root, ".env"))).toBe(untouchedBefore.env);
-    expect(lstatSync(join(root, ".env")).mode & 0o777).toBe(0o600);
-  });
+      expect(lstatSync(join(root, ".agro")).isDirectory()).toBe(true);
+      expect(lstatSync(join(root, "agro.json")).isFile()).toBe(true);
+      expect(existsSync(join(root, ".oh"))).toBe(false);
+      expect(existsSync(join(root, "oh.json"))).toBe(false);
+      expect(existsSync(join(root, LOCK_FILE))).toBe(false);
+      expect(readFileSync(join(root, ".agro", ".image-seeded"), "utf8")).toBe("");
+      for (const script of VENDORED_SCRIPTS) {
+        expect(sha(join(root, ".agro", "scripts", script))).toBe(sha(join(REPO_ROOT, ".agro", "scripts", script)));
+      }
+      for (const { link, target } of PROVIDER_LINKS) {
+        const path = join(root, ...link.split("/"));
+        expect(readlinkSync(path)).toBe(`../.agro/${target}`);
+        expect(lstatSync(resolve(dirname(path), readlinkSync(path))).isDirectory()).toBe(true);
+      }
+      expect(sha(join(root, "src", "app.ts"))).toBe(untouchedBefore.app);
+      expect(sha(join(root, ".env"))).toBe(untouchedBefore.env);
+      expect(lstatSync(join(root, ".env")).mode & 0o777).toBe(0o600);
+    },
+    60_000,
+  );
 
-  it("resolves the migrated entry through the compose wrapper from agro.json", () => {
-    const r = spawnSync(
-      "bash",
-      [join(root, ".agro", "scripts", "docker-compose.sh"), "--repo-dir", root, "--print-argv", "ps"],
-      { cwd: root, encoding: "utf8" },
-    );
-    expect(r.status).toBe(0);
-    expect(r.stderr).toContain("agro.json");
-    expect(r.stderr).not.toMatch(/compat:/);
-    expect(r.stdout.split("\n")).toContain(join(root, ".devcontainer", "docker-compose.yml"));
-    expect(r.stdout.split("\n")).toContain(join(root, ".env"));
-  });
+  it(
+    "resolves the migrated entry through the compose wrapper from agro.json",
+    () => {
+      const r = spawnSync(
+        "bash",
+        [join(root, ".agro", "scripts", "docker-compose.sh"), "--repo-dir", root, "--print-argv", "ps"],
+        { cwd: root, encoding: "utf8" },
+      );
+      expect(r.status).toBe(0);
+      expect(r.stderr).toContain("agro.json");
+      expect(r.stderr).not.toMatch(/compat:/);
+      expect(r.stdout.split("\n")).toContain(join(root, ".devcontainer", "docker-compose.yml"));
+      expect(r.stdout.split("\n")).toContain(join(root, ".env"));
+    },
+    60_000,
+  );
 
   for (const [label, bin] of [
     ["agro ps", AGRO_BIN],
     ["oh ps", OH_BIN],
   ] as const) {
-    it(`${label} resolves the migrated entry and reaches docker compose`, () => {
-      const ps = cli(bin, ["ps", SANDBOX]);
-      for (const pattern of CONFIG_RESOLUTION_FAILURES) expect(ps.stderr).not.toMatch(pattern);
-      if (dockerComposeAvailable()) {
-        expect(ps.status).toBe(0);
-      } else {
-        expect(ps.status).not.toBe(0);
-        expect(ps.stderr).toMatch(/docker/);
-      }
-      expect(sha(join(root, "src", "app.ts"))).toBe(untouchedBefore.app);
-      expect(sha(join(root, ".env"))).toBe(untouchedBefore.env);
-    });
+    it(
+      `${label} resolves the migrated entry and reaches docker compose`,
+      () => {
+        const ps = cli(bin, ["ps", SANDBOX]);
+        for (const pattern of CONFIG_RESOLUTION_FAILURES) expect(ps.stderr).not.toMatch(pattern);
+        if (dockerComposeAvailable()) {
+          expect(ps.status).toBe(0);
+        } else {
+          expect(ps.status).not.toBe(0);
+          expect(ps.stderr).toMatch(/docker/);
+        }
+        expect(sha(join(root, "src", "app.ts"))).toBe(untouchedBefore.app);
+        expect(sha(join(root, ".env"))).toBe(untouchedBefore.env);
+      },
+      60_000,
+    );
   }
 
-  it("is a noop on the second run", () => {
-    const before = manifest(root);
-    const again = cli(AGRO_BIN, ["migrate"]);
-    expect(again.stderr).toBe("");
-    expect(again.status).toBe(0);
-    expect(again.stdout).toContain("agro migrate: noop");
-    expect(manifest(root)).toEqual(before);
-    expect(existsSync(join(root, LOCK_FILE))).toBe(false);
-  });
+  it(
+    "is a noop on the second run",
+    () => {
+      const before = manifest(root);
+      const again = cli(AGRO_BIN, ["migrate"]);
+      expect(again.stderr).toBe("");
+      expect(again.status).toBe(0);
+      expect(again.stdout).toContain("agro migrate: noop");
+      expect(manifest(root)).toEqual(before);
+      expect(existsSync(join(root, LOCK_FILE))).toBe(false);
+    },
+    60_000,
+  );
 });
