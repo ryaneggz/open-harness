@@ -112,8 +112,8 @@
         "evidence.md links the web PR(s), the cutover record, the endpoint matrix before and after, the dispatch run, the release smoke, the probe fault injections, and the classified reference list; eval-result.json is written at the final commit."
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Knowledge pages updated and pinned, agro-web-pipeline corrected to the observed edge configuration, index regenerated, CHANGELOG entry, evidence.md keyed to the final commit. Release smoke covered by the stand-in the criterion permits; the dispatch token is deferred and disclosed."
     }
   ]
 }

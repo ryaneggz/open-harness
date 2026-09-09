@@ -13,7 +13,7 @@ sources:
   - .agro/scripts/get-agro.sh
   - .agro/scripts/get-oh.sh
   - .agro/README.md
-verified_at: 4db24429bbf08c521b62ad6386fd1370445ac203
+verified_at: 75efbf5992fcb78c42210fdc31ca9d0652820a7c
 related: [release-versioning, fresh-machine-setup]
 confidence: provisional
 ---
