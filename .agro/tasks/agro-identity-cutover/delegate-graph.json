@@ -498,6 +498,39 @@
       "verification": "resolver prints mifunedev/agro main; pnpm run build; drift check",
       "acceptanceOwner": "advisor",
       "summary": ""
+    },
+    {
+      "id": "W1",
+      "title": "Make security:audit CI-only with regression coverage",
+      "dependsOn": [],
+      "status": "completed",
+      "nativeWorkerId": "a155d1bf1d84aedc7",
+      "workerType": "general-purpose",
+      "executionDirectory": "/home/sandbox/harness/.worktrees/feat/943-agro-identity-cutover",
+      "ownedWritePaths": [
+        "package.json",
+        "new probe security-audit-ci-only.sh",
+        "probe-fault-injection.md",
+        "CHANGELOG.md"
+      ],
+      "acceptanceOwner": "advisor",
+      "summary": "Removed pnpm:devPreinstall from the root package.json; .agro/cli manifests had no equivalent hook. Both CI and release workflows already run pnpm run security:audit explicitly before install, using the lockfile rather than node_modules, so the gate ordering still protects the build. New probe security-audit-ci-only.sh asserts both halves. Owner re-verified and independently fault-injected the probe."
+    },
+    {
+      "id": "W2",
+      "title": "Repair the legacy boot fixture preserving .oh-layout coverage",
+      "dependsOn": [],
+      "status": "running",
+      "nativeWorkerId": "a67cebb1b4f04f38d",
+      "workerType": "general-purpose",
+      "executionDirectory": "/home/sandbox/harness/.worktrees/fix/943-legacy-fixture",
+      "ownedWritePaths": [
+        ".agro/scripts/sandbox-upgrade-smoke.sh",
+        ".agro/scripts/__tests__/sandbox-upgrade-smoke.test.ts",
+        ".github/workflows/sandbox-boot-guard.yml"
+      ],
+      "acceptanceOwner": "advisor",
+      "summary": ""
     }
   ]
 }

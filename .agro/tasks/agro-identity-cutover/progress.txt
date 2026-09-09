@@ -93,3 +93,4 @@ nor existing seeded volumes. It also needs regression coverage proving that boot
 and install do not invoke the live audit while CI still does. All of this is
 outside #943 and is the operator's decision.
 2026-09-09T03:07:56Z correction recorded
+2026-09-09T03:21:09Z Remediation part 1 (operator-authorized): security:audit is now CI-only. Removed "pnpm:devPreinstall" from the root package.json, keeping the security:audit script unweakened and both explicit workflow gates, which run before install against the lockfile. Added probe .agro/evals/probes/security-audit-ci-only.sh asserting that no tracked package.json lifecycle hook invokes the audit AND that both workflows still run it explicitly; the owner independently fault-injected it (1 injected, 0 restored). CHANGELOG entry added. This prevents a future advisory from blocking a boot; it does not repair the immutable 0.9.0 image or volumes already seeded from it.

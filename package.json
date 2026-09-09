@@ -16,7 +16,6 @@
     "format:check": "echo \"No root format check configured\"",
     "typecheck": "(test -d .agro/cli/node_modules || npm --prefix .agro/cli ci --ignore-scripts) && npm --prefix .agro/cli run typecheck",
     "format": "echo \"No root formatter configured\"",
-    "pnpm:devPreinstall": "pnpm run security:audit",
     "security:audit": "pnpm audit --audit-level low --ignore-registry-errors"
   },
   "dependencies": {
