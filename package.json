@@ -26,7 +26,7 @@
     "@sinclair/typebox": "^0.34.0",
     "diff": "^8.0.2",
     "fast-check": "^4.8.0",
-    "vitest": "^3.2.6"
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": ">=20.0.0"

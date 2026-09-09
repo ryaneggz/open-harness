@@ -1,1 +1,6 @@
-{ "rounds": 1, "netAdded": 2105, "lastCommit": "a18e421aaa0124f263b7623ef3990b4f5f86a3f0", "nonReducing": false }
+{
+ "rounds": 2,
+ "netAdded": 2979,
+ "lastCommit": "fd08eaac72b7427de16bfeab89baca7ad0ed7ff1",
+ "nonReducing": true
+}
