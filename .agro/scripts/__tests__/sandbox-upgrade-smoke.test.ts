@@ -17,7 +17,7 @@ describe("sandbox upgrade smoke script", () => {
     expect(parsed.status).toBe(0);
   });
 
-  it("boots the last legacy image by default and accepts the documented knobs", () => {
+  it("seeds from the last legacy image by default and accepts the documented knobs", () => {
     expect(script).toContain("LEGACY_IMAGE=${LEGACY_IMAGE:-ghcr.io/mifunedev/openharness:0.9.0}");
     expect(script).toContain("NEW_IMAGE=${NEW_IMAGE:-}");
     expect(script).toContain("KEEP=${KEEP:-0}");
@@ -25,12 +25,34 @@ describe("sandbox upgrade smoke script", () => {
     expect(script).toContain('docker build --file "$REPO_ROOT/.devcontainer/Dockerfile"');
   });
 
-  it("stops without dropping the volume, then tears down with down -v under a trap", () => {
-    expect(script).toContain('compose stop "$SERVICE"');
-    expect(script).not.toMatch(/compose stop[^\n]*-v/);
+  it("never boots the legacy image and tears down with down -v under a trap", () => {
+    const bootCalls = script.match(/compose up -d --no-build "\$SERVICE"/g) ?? [];
+    expect(bootCalls).toHaveLength(1);
+    const waitReadyCalls = script.match(/wait_ready "[^"]+"/g) ?? [];
+    expect(waitReadyCalls).toEqual(['wait_ready "upgraded boot"']);
+    expect(script).not.toContain("compose stop");
+    const downCalls = script.match(/compose down[^\n]*/g) ?? [];
+    expect(downCalls).toEqual(["compose down -v --remove-orphans >/dev/null 2>&1 || true"]);
     expect(script).toContain("trap teardown EXIT");
-    expect(script).toContain("compose down -v --remove-orphans");
     expect(script).toContain('docker rmi -f "$BUILT_IMAGE"');
+  });
+
+  it("seeds the workspace volume from the legacy image's real /opt/oh-seed via a helper container", () => {
+    expect(script).toContain("seed_legacy_volume");
+    expect(script).toContain("cp -a /opt/oh-seed/. /home/sandbox/harness/");
+    expect(script).toContain(': > /home/sandbox/harness/.oh/.image-seeded');
+    expect(script).toContain('VOLUME="${PROJECT}_workspace"');
+    expect(script).toContain('-v "$vol:/home/sandbox" "$LEGACY_IMAGE"');
+    expect(script).toContain("mounted_volume=$(docker inspect --format");
+  });
+
+  it("states the coverage reduction: the legacy image itself is no longer proven to boot", () => {
+    expect(script).toContain("COVERAGE REDUCTION");
+    expect(script).toContain("GHSA-82fw-gwwq-j7x9");
+    expect(script).toContain("this script never boots the legacy image");
+    expect(script).toContain("does not prove the published legacy image itself still boots");
+    expect(script).toContain("not be read as repairing that image or any volume already seeded from it");
+    expect(script).toContain('del(.scripts["pnpm:devPreinstall"])');
   });
 
   it("writes only synthetic credentials and never a bare docker inspect", () => {
