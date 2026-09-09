@@ -18,7 +18,7 @@ sources:
   - .agro/cli/legacy/package.json
   - .agro/evals/probes/version-parity.sh
   - .agro/skills/release/SKILL.md
-verified_at: 4db24429bbf08c521b62ad6386fd1370445ac203
+verified_at: 8f142cfa6f4ccaf8d98ecefef700cea18148f05b
 related: [oh-cli-portable-lifecycle, agro-web-pipeline]
 confidence: confirmed
 ---

@@ -4,10 +4,9 @@ Written at commit `f27b0003`, after the full cutover: repository renames, Pages 
 eval run recorded in `eval-result.json` and the simplicity review in
 `simplicity-review.json`, both keyed to that commit.
 
-**Terminal state: `DRAFT-BLOCKED(ci-unrelated)`.** All seven stories pass and the
-cutover is complete. One CI check, `Boot a legacy volume against the fresh image`,
-fails for a cause outside this branch and outside anything this branch can repair:
-see *What remains unverified*.
+**Terminal state: `READY`.** All seven stories pass, the cutover is complete, and
+all seven CI checks pass at `8f142cfa`. The operator authorized remediating the
+advisory fallout that had blocked the build; that work is below.
 
 **The cutover is complete.** The operator performed the Pages custom-domain
 change, then issued a scoped Cloudflare token and asked the advisor to apply the
@@ -76,6 +75,22 @@ the operator.
 | US-006 operator cutover | `cutover-record.md`, `0b58c0a7`, `892f1413` | renames, metadata, defaults, Pages domain, installer references, and the three Cloudflare redirect rules all done and verified; only the dispatch token is deferred |
 | US-007 knowledge and changelog | `143cd6b8` through `75efbf59` | `knowledge-impact.sh --verified` 0 needing review; wiki probes 0; `changelog-entry-length` 0 |
 
+### Advisory remediation (operator-authorized, outside the #943 plan)
+
+| Change | Commit | Verified |
+|---|---|---|
+| vitest bumped to ^4.1.11 | `a2c39ed0` | audit clean; suite, both typechecks, lint green |
+| `.agro/scripts/agro-cutover-domain.sh` removed | `a2c39ed0` | blocking simplicity finding; 393 lines, no caller, no test, no reference |
+| `security:audit` made CI-only, `pnpm:devPreinstall` removed | `189ba5a6` | install no longer queries the feed; both workflow gates intact and unweakened |
+| Legacy upgrade fixture rebuilt | `b0fa4a76` | owner re-ran the smoke end to end: PASS, exit 0 |
+| Audit-wiring contract folded into one probe | `b6f7d7c6` | owner injected a `prepare` hook the original probe never covered: 1 injected, 0 restored |
+| Process-spawning rehearsal tests given explicit timeouts | `8f142cfa` | assertions unchanged, no retry, no global default touched |
+
+Three CI rounds, three distinct real causes: the advisory failing every install,
+an existing probe pinning the very hook the operator authorized removing, and a
+test spawning `docker compose` under the 5000 ms default while its own setup
+already allowed 180 s. None was masked.
+
 ### Cutover performed (US-006 partial)
 
 Under the operator's explicit in-session authorization ("Authorize me for the gh
@@ -140,17 +155,14 @@ because no release was due.
 
 ## 4. What remains unverified
 
-- **One CI check fails and this branch cannot repair it.** `Boot a legacy volume
-  against the fresh image` fails at step 1, booting `ghcr.io/mifunedev/openharness:0.9.0`,
-  before the new image is built. Advisory GHSA-82fw-gwwq-j7x9 (published
-  2026-09-08T20:46:45Z) covers vitest >=2.1.0 <4.1.11. That image's seeded manifest
-  at `/opt/oh-seed/package.json` pins vitest ^3.2.6 and wires `pnpm:devPreinstall`
-  to `security:audit`, so the entrypoint's `pnpm install` fails and boot aborts.
-  Reproduced directly inside the released image; the captured log is
-  `legacy-boot-install.log`. The image and the manifest it seeds are immutable, so
-  **no source-only change on this branch fixes this test.** The other six checks
-  pass. Timeline: this job passed at `bfeaaab7` (2026-09-08T20:06Z) and has failed
-  since `378f8964` (2026-09-09T02:51Z); the commits between are documentation only.
+- **The published 0.9.0 image and volumes already seeded from it remain broken.**
+  Advisory GHSA-82fw-gwwq-j7x9 (published 2026-09-08T20:46:45Z) covers vitest
+  >=2.1.0 <4.1.11. That image's seeded `/opt/oh-seed/package.json` pins vitest
+  ^3.2.6 and wired `pnpm:devPreinstall` to `security:audit`, so its entrypoint's
+  `pnpm install` fails and boot aborts. Reproduced inside the released image; log
+  at `legacy-boot-install.log`. **Nothing in this branch repairs that image or
+  those volumes.** The remediation below prevents recurrence and restores the
+  fixture; it does not reach already-published artifacts.
 - **Existing users are affected differently from the fixture.** A workspace volume
   whose `node_modules` is absent cannot boot on the released image. A user whose
   checkout can be updated recovers once the source pins a patched vitest; a user
