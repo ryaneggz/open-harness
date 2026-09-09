@@ -1,6 +1,6 @@
 # Evidence — agro-identity-cutover (#943)
 
-Written at commit `892f1413`, after the GitHub-side cutover and the Pages domain change. Correlates to the
+Written at commit `f27b0003`, after the full cutover: repository renames, Pages domain, and the Cloudflare redirect rules. Correlates to the
 eval run recorded in `eval-result.json` and the simplicity review in
 `simplicity-review.json`, both keyed to that commit.
 
