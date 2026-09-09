@@ -2,7 +2,7 @@
   "rules": [
     {
       "description": "agro-install-sh",
-      "expression": "http.request.uri.path eq \"/install.sh\" and http.host in {\"oh.mifune.dev\" \"agro.mifune.dev\"}",
+      "expression": "http.request.uri.path eq \"/install.sh\" and http.host eq \"oh.mifune.dev\"",
       "action": "redirect",
       "action_parameters": {
         "from_value": {

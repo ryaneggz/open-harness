@@ -97,8 +97,8 @@
         "Release smoke: the next release from main publishes both image names with equal digests and the notify-docs dispatch triggers a green pages.yml run, with run URLs recorded; a workflow_dispatch of pages.yml with ref=main stands in when no release is due and is labelled as such."
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Runbook steps 1-6, 7b and 8 performed and recorded in cutover-record.md; step 7a (AGRO_WEB_DISPATCH_TOKEN) deferred and listed with its reason, which AC1 permits. All ten endpoint pairs verified; clean-container installs pass from both hosts; release dispatch covered by the workflow_dispatch stand-in that AC5 permits."
     },
     {
       "id": "US-007",

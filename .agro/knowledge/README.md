@@ -57,6 +57,7 @@ Schema, frontmatter spec, provenance kinds, and every authoring rule:
 | pattern-wiki-frontmatter-edit-without-reindex | A frontmatter edit without a reindex leaves the generated index stale while the freshness probe stays green | [wiki, knowledge, evals, probes, index, ci] | 2026-09-08 |
 | pattern-evals-tracked-only-scan-misses-uncommitted | A repository scan over git ls-files passes on uncommitted files and fails once they are committed | [evals, testing, git, inventory, ci, false-pass] | 2026-09-08 |
 | oh-cli-portable-lifecycle | oh CLI Portable Lifecycle | [cli, oh, agro, lifecycle, standalone, registry, sandbox, remote-fetch, execution-target, update, self-upgrade, npm] | 2026-09-08 |
+| agro-web-pipeline | AGRO Web Pipeline | [docs-site, agro-web, pages, repository-dispatch, mirror, installers, cloudflare, identity, release] | 2026-09-08 |
 | sandbox-dependency-installs | Sandbox Dependency Installs | [sandbox, devcontainer, pnpm, dependencies, boot] | 2026-09-07 |
 | release-versioning | Release Versioning | [release, versioning, semver, calver, github-actions, ghcr, tags, workflow, package-json, agro, npm, repository-dispatch, docs-site] | 2026-09-07 |
 | plan-vs-built-reconciliation | Plan-vs-Built Reconciliation | [spec-execute, evidence, merge-gate, comprehension, audit, task-folder, review] | 2026-09-07 |
@@ -69,7 +70,6 @@ Schema, frontmatter spec, provenance kinds, and every authoring rule:
 | document-ingestion | Local Document Ingestion | [wiki, ingestion, markitdown, documents, provenance, security] | 2026-09-07 |
 | compose-env-boundary | Compose Environment Boundary | [compose, devcontainer, oh-json, cli, entrypoint, boundary, installs, sandbox, registry] | 2026-09-07 |
 | audit-architecture | Audit Architecture | [audit, pr, workflow, safety, observability] | 2026-09-07 |
-| agro-web-pipeline | AGRO Web Pipeline | [docs-site, agro-web, pages, repository-dispatch, mirror, installers, cloudflare, identity, release] | 2026-09-07 |
 | pattern-scripts-sibling-dependency-standalone-copies | A script that gains a sourced sibling breaks every test and probe that copies it alone | [scripts, compose, testing, probes, bundling, registry, boot] | 2026-09-06 |
 | pattern-evals-product-name-literal-pinning | Probes and tests that pin the product name beside a verb break when the executable is renamed or templated | [evals, probes, cli, docs, rename, false-failure] | 2026-09-06 |
 | pattern-evals-negation-must-govern-token | A sentence-wide negation filter lets a forbidden routing target through | [evals, probes, negation, oracle-design] | 2026-09-06 |

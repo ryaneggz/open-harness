@@ -4,7 +4,7 @@ slug: agro-web-pipeline
 kind: repo
 tags: [docs-site, agro-web, pages, repository-dispatch, mirror, installers, cloudflare, identity, release]
 created: 2026-09-07
-updated: 2026-09-07
+updated: 2026-09-08
 sources:
   - .github/workflows/release.yml
   - .agro/skills/release/SKILL.md
@@ -36,7 +36,7 @@ External repository `mifunedev/openharness-web` (renamed `mifunedev/agro-web` by
 - `docusaurus.config.ts`, `static/CNAME`, `scripts/check-docs-drift.mjs` at `73a06e7` (PR #47) — site identity and the `LEGACY_IDENTITY` rule.
 
 ## Summary
-The docs site is a Docusaurus build that also mirrors the harness: at build time it fetches `get-agro.sh` and `get-oh.sh` from the core repository and builds `agro.js` and `oh.js` from the core CLI, so `https://agro.mifune.dev/get-agro.sh` and `/agro.js` serve the same artifacts the GitHub Release carries. The mirror rebuilds on push, daily, and — since #943 — on the `agro-release` dispatch the core release sends. `/install.sh` is not part of the site: a Cloudflare redirect owns it.
+The docs site is a Docusaurus build that also mirrors the harness: at build time it fetches `get-agro.sh` and `get-oh.sh` from the core repository and builds `agro.js` and `oh.js` from the core CLI, so `https://agro.mifune.dev/get-agro.sh` and `/agro.js` serve the same artifacts the GitHub Release carries. The mirror rebuilds on push, daily, and — since #943 — on the `agro-release` dispatch the core release sends. `/install.sh` is not part of the site: on the canonical host a Cloudflare Worker serves it directly, and on the legacy host a Cloudflare ruleset redirects it.
 
 ## Detail
 **Resolver.** `scripts/oh-source.mjs` (05e81c7) resolves one repository and one ref for both mirror scripts. `AGRO_GITHUB_REPO` wins over `OH_GITHUB_REPO` and `AGRO_SCRIPTS_REF` over `OH_SCRIPTS_REF`; when both are set and differ it warns and uses the `AGRO_` value. Defaults are `mifunedev/openharness` and `main` (a `refs/heads/` prefix is stripped); the repository default flips to `mifunedev/agro` in US-006, after the operator rename. Both values reach `git clone` as arguments, so `SAFE` (`^[A-Za-z0-9][A-Za-z0-9._/-]*$`) rejects anything else and exits 1. `resolveSha` turns the ref into a commit through the GitHub API and doubles as the existence check. `reportAndExit` keeps a previously published artifact only on a transient failure (408, 429, 5xx, network) and only when that artifact is on disk; anything else fails the build rather than deploying a stale mirror.
@@ -47,7 +47,9 @@ The docs site is a Docusaurus build that also mirrors the harness: at build time
 
 **Workflow.** `.github/workflows/pages.yml` runs on push to `main`, on pull requests (build only), on `repository_dispatch` types `agro-release` and `openharness-release`, on a daily `17 6 * * *` schedule, and on `workflow_dispatch` with a `ref` input. `OH_SCRIPTS_REF` is `client_payload.ref || inputs.ref || 'main'`, so a dispatch mirrors exactly the released commit. The drift check runs on pull requests only and never gates the deploy. `configure-pages`, the artifact upload, and the `deploy` job run only on `refs/heads/main` and only when `github.repository` is `mifunedev/agro-web` or `mifunedev/openharness-web`, so the workflow survives the rename in either order.
 
-**`/install.sh` is CDN-owned.** No `static/install.sh` exists. Cloudflare answers `/install.sh` with a 302 to the raw `install.sh` on `main`: today the `.oh/scripts/install.sh` of `mifunedev/openharness` (the web repository's own note), and the `.agro/scripts/install.sh` of `mifunedev/agro` once runbook rule 1 is applied (`docs/agro-cutover-runbook.md:134`, `docs/agro-compatibility.md:297`). Mirroring the file would put two mechanisms behind one path, so US-006 keeps it out.
+**`/install.sh` is CDN-owned.** No `static/install.sh` exists. Before the cutover, the `http_request_dynamic_redirect` phase held no entrypoint ruleset at all on zone `mifune.dev` (id `70c7b49f48707d47766c45c12cd988d6`). On the canonical host, `/install.sh` is served directly by a Cloudflare Worker named `oh-redirect`, bound to the route `agro.mifune.dev/install.sh`. On the legacy host, the advisor created ruleset `752b9a63a91b44c0be739401481f5a59` (version 1) in that phase, with three enabled rules in order: `agro-install-sh` (`http.host eq "oh.mifune.dev"` and path `/install.sh`, 302 to the raw `install.sh` on `main`), `agro-legacy-artifacts` (`oh.mifune.dev` paths `/get-oh.sh`, `/oh.js`, `/get-agro.sh`, `/agro.js`, 302 to the same path on `agro.mifune.dev`), and `agro-docs-catch-all` (everything else on `oh.mifune.dev`, 301 to the same path on `agro.mifune.dev`). Rule 1 is scoped to the legacy host on purpose: Cloudflare evaluates Redirect Rules before Workers, so a rule matching the canonical host would shadow the `oh-redirect` Worker — one mechanism owns each host. Mirroring the file into the site would add a third mechanism behind one path, so US-006 keeps it out.
+
+Both rule 1's target and the `oh-redirect` Worker point at `.oh/scripts/install.sh` on `main`; that path exists only because `main` predates the `.oh/` → `.agro/` rename. The first release carrying the rename deletes it, so both must move to `https://raw.githubusercontent.com/mifunedev/agro/main/.agro/scripts/install.sh` in the same change window as that release, never earlier.
 
 **Site identity (73a06e7).** `docusaurus.config.ts` sets `url: "https://agro.mifune.dev"`, `title: "AGRO"`, `projectName: "agro-web"`, and edit and footer links to `mifunedev/agro` and `mifunedev/agro-web`; `static/CNAME` is `agro.mifune.dev`. `check-docs-drift.mjs` adds `LEGACY_IDENTITY`: `oh.mifune.dev` and `mifunedev/openharness(-web)` are violations in `docs/` and `src/pages/` unless the line, or the heading of the section it sits in, contains the word "compatibility"; `ghcr.io/mifunedev/openharness` is exempt because the release workflow owns the image name, and `promos/` is not scanned.
 
@@ -65,11 +67,11 @@ flowchart LR
   CLI --> DEPLOY["deploy: main, agro-web | openharness-web only"]
   SYNC --> DEPLOY
   DEPLOY --> HOST["agro.mifune.dev (CNAME)"]
-  CF["Cloudflare redirect rules"] -. "/install.sh → raw install.sh on main" .-> HOST
-  CF -. "oh.mifune.dev/* → agro.mifune.dev/*" .-> HOST
+  WORKER["oh-redirect Worker<br/>agro.mifune.dev/install.sh"] -. "serves install.sh directly" .-> HOST
+  CF["ruleset 752b9a63...<br/>oh.mifune.dev"] -. "install.sh, legacy artifacts, docs → agro.mifune.dev" .-> HOST
 ```
 
-Ownership: the core owns the artifacts and the dispatch; the web repository owns the mirror, the build, and the site identity; Cloudflare owns `/install.sh` and the `oh.mifune.dev` aliases.
+Ownership: the core owns the artifacts and the dispatch; the web repository owns the mirror, the build, and the site identity; Cloudflare owns `/install.sh` on the canonical host through the `oh-redirect` Worker, and the `oh.mifune.dev` aliases through ruleset `752b9a63a91b44c0be739401481f5a59`.
 
 ## See Also
 - [[release-versioning]] — the pipeline that sends the dispatch and uploads the same four assets to the Release.

@@ -170,3 +170,35 @@ before the domain change and returns when the redirect rules exist.
 rename. The first release that carries the rename to `main` deletes it, so the
 rule target must move to `.agro/scripts/install.sh` on `mifunedev/agro` in the
 same change window as that release. An earlier change breaks the endpoint.
+
+## Step 6 applied by the advisor (operator-issued token, 2026-09-08)
+
+The operator issued a short-lived Cloudflare token scoped to the `mifune.dev`
+zone with Dynamic URL Redirects read and write, and asked the advisor to apply
+the rules. Zone `70c7b49f48707d47766c45c12cd988d6`.
+
+Findings before applying:
+
+- The `http_request_dynamic_redirect` phase held **no entrypoint ruleset**, so
+  nothing was overwritten and no backup was needed.
+- `/install.sh` is served by a Worker named `oh-redirect`, routed at
+  `agro.mifune.dev/install.sh` only. Nothing was routed on the legacy host, which
+  is why every legacy path returned 421.
+- Redirect Rules run before Workers, so the `/install.sh` rule was **narrowed to
+  `oh.mifune.dev` only**. The Worker keeps owning the canonical host, and one
+  mechanism owns each host.
+
+Applied ruleset `752b9a63a91b44c0be739401481f5a59` version 1, three rules, all
+enabled. Verification, every check passing:
+
+| Endpoint | Result |
+|---|---|
+| `oh.mifune.dev/install.sh` | 302 to the raw `install.sh`, body `#!` |
+| `oh.mifune.dev/get-oh.sh` `/oh.js` `/get-agro.sh` `/agro.js` | 302 to the same path on `agro.mifune.dev`, bodies `#!` |
+| `agro.mifune.dev` same five paths | bodies `#!` |
+| `oh.mifune.dev/docs/quickstart` | 301 to the canonical host, follows to 200 |
+| clean `node:22-slim` via `oh.mifune.dev/get-oh.sh` | installed `oh 0.9.0` |
+| clean `node:22-slim` via `agro.mifune.dev/get-agro.sh` | installed `agro 0.9.0` |
+
+The token file was deleted immediately after. The operator should revoke the
+token, because its value appeared in the session transcript.

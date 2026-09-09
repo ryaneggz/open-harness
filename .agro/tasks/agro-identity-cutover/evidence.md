@@ -4,18 +4,15 @@ Written at commit `892f1413`, after the GitHub-side cutover and the Pages domain
 eval run recorded in `eval-result.json` and the simplicity review in
 `simplicity-review.json`, both keyed to that commit.
 
-**Terminal state: `DRAFT-BLOCKED(operator-cutover)`.** The operator has since
-performed the Pages custom-domain change and repointed the CDN rule for
-`/install.sh`, so `agro.mifune.dev` is live and canonical. Two operator actions
-remain, both needing credentials the sandbox does not hold: the Cloudflare
-redirect rules that restore `oh.mifune.dev`, and the dispatch token.
+**The cutover is complete.** The operator performed the Pages custom-domain
+change, then issued a scoped Cloudflare token and asked the advisor to apply the
+redirect rules. Both hosts now serve correctly: `agro.mifune.dev` is canonical,
+and every `oh.mifune.dev` path redirects to it while the five executable paths
+keep returning a script body.
 
-**One documented compatibility surface is down while that first action is
-outstanding.** `oh.mifune.dev` returns 421 on every path, including the five
-executable ones, because GitHub Pages answers for only one custom domain. This is
-the expected window between runbook steps 5 and 6, and the redirect rules close
-it. `.agro/tasks/agro-identity-cutover/cloudflare-rules.json` holds the exact
-payload.
+One optional item is deferred: the release dispatch token
+`AGRO_WEB_DISPATCH_TOKEN` is not stored, so `notify-docs` skips with a notice and
+the docs mirror refreshes on its daily schedule instead of on each release.
 
 ## 0. Why this is better than not doing it
 
@@ -32,18 +29,18 @@ building against both layouts. Both repositories are renamed, and the canonical
 host now serves the documentation and every mirrored artifact:
 
 ```
-agro.mifune.dev/            200  <title>AGRO
-agro.mifune.dev/install.sh  302 -> raw install.sh, body=#!
-agro.mifune.dev/get-oh.sh   200 body=#!
-agro.mifune.dev/oh.js       200 body=#!
-agro.mifune.dev/get-agro.sh 200 body=#!
-agro.mifune.dev/agro.js     200 body=#!
+oh.mifune.dev/install.sh    302 -> raw install.sh          body=#!
+oh.mifune.dev/get-oh.sh     302 -> agro.mifune.dev/get-oh.sh    body=#!
+oh.mifune.dev/oh.js         302 -> agro.mifune.dev/oh.js        body=#!
+oh.mifune.dev/get-agro.sh   302 -> agro.mifune.dev/get-agro.sh  body=#!
+oh.mifune.dev/agro.js       302 -> agro.mifune.dev/agro.js      body=#!
+agro.mifune.dev  same five paths                           body=#!
+oh.mifune.dev/docs/quickstart  301 -> canonical, follows to 200
 ```
 
 `/get-agro.sh` and `/agro.js` did not exist as endpoints before this work. A clean
-`node:22-slim` container installs `agro 0.9.0` from the canonical host with no
-manual step. The same check passed against the legacy host earlier in the run,
-before the domain moved.
+`node:22-slim` container installs `oh 0.9.0` through the legacy host and
+`agro 0.9.0` through the canonical host, each in one piped command.
 
 **Cost.** 8 commits on the core branch, `netAdded` 2105 lines across ~100 files,
 two docs-site PRs, 8 bounded worker dispatches with 4 repair rounds. Most of the
@@ -138,21 +135,24 @@ because no release was due.
 
 ## 4. What remains unverified
 
-- **Two runbook steps are outstanding**, and US-006 cannot pass without them:
-  step 6 (Cloudflare redirect rules) and step 7a (issue and store
-  `AGRO_WEB_DISPATCH_TOKEN`). Step 5 is done.
-- **`oh.mifune.dev` returns 421 on every path right now.** Five of those are
-  documented compatibility endpoints. Only the step 6 redirect rules restore them,
-  and the payload is prepared at `cloudflare-rules.json` with its README beside it.
-  The legacy half of the US-006 live re-verification stays unverified until then.
-- **The `/install.sh` redirect target is on a deadline.** It names
-  `.oh/scripts/install.sh` on `main`, which exists only because `main` predates the
-  directory rename. The first release that carries the rename to `main` deletes
-  that path, so the rule target must move to the `.agro/` path in the same change
-  window, never earlier. Recorded in the compatibility doc and runbook step 6.
-- **The real release dispatch has never fired.** `notify-docs` is exercised only by
-  tests and by the `workflow_dispatch` stand-in; the first real release after the
+- **One runbook step is deferred**, step 7a: `AGRO_WEB_DISPATCH_TOKEN` is not
+  stored. `notify-docs` therefore skips with a `::notice::` on every release and
+  the docs mirror refreshes on its daily schedule. Nothing is broken by this; the
+  release path is simply not yet using the faster refresh it gained in US-003.
+- **The release dispatch has never fired for real.** It is covered by tests and by
+  a `workflow_dispatch` stand-in of `pages.yml` that completed success, which
+  US-006 explicitly permits when no release is due. The first release after the
   token is stored is its first live run.
+- **The `/install.sh` redirect target is on a deadline.** The `oh.mifune.dev`
+  Redirect Rule and the `oh-redirect` Worker that serves the canonical host both
+  name `.oh/scripts/install.sh` on `main`, which exists only because `main`
+  predates the directory rename. The first release that carries the rename deletes
+  that path, so **both** must move to the `.agro/` path in the same change window,
+  never earlier. Recorded in the compatibility doc and runbook step 6.
+- **A short-lived Cloudflare token was pasted into the session transcript** by the
+  operator before the file-based hand-off could be used. The advisor deleted its
+  local copy immediately after applying the rules and asked the operator to revoke
+  it. Revocation is not verifiable from here.
 - **The Cloudflare rulesets payload in the runbook was written from the API shape,
   not exercised against the live zone.** The existing `/install.sh` redirect
   mechanism (Worker or older rule) is still a placeholder the operator identifies.
