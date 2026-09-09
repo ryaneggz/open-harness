@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tier: A
-# source: issue #171 — pnpm security audits must run in CI
-# desc: string/order guard — local pnpm installs and CI/release validation must audit before dependency install so pnpm audit cannot be silently removed
+# source: issue #171 — pnpm security audits must run in CI; #943 — GHSA-82fw-gwwq-j7x9 turned a live `pnpm:devPreinstall` advisory query into a sandbox boot failure
+# desc: string/order guard — the security audit must run only as an explicit CI/release workflow step, before dependency install, and never as an npm/pnpm lifecycle hook that fires on every `pnpm install` (and therefore on every sandbox boot that lacks node_modules)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -27,11 +27,40 @@ if grep -Fq 'GHSA-h67p-54hq-rp68' "$PACKAGE_JSON"; then
   exit 1
 fi
 
-dev_preinstall_value="$(node -e 'const p=require(process.argv[1]); process.stdout.write(p.scripts?.["pnpm:devPreinstall"] || "")' "$PACKAGE_JSON")"
-if [[ "$dev_preinstall_value" != "pnpm run security:audit" ]]; then
-  echo "REGRESSION: package.json scripts.pnpm:devPreinstall must run 'pnpm run security:audit' before local dependency install (got: ${dev_preinstall_value:-<missing>})" >&2
-  exit 1
-fi
+HOOK_NAMES=(preinstall postinstall prepare pnpm:devPreinstall pnpm:devPrepare)
+
+mapfile -t PACKAGE_JSONS < <(git -C "$ROOT" ls-files -- '*package.json')
+
+for rel in "${PACKAGE_JSONS[@]}"; do
+  pkg="$ROOT/$rel"
+  [[ -f "$pkg" ]] || continue
+
+  hit="$(node -e '
+    const fs = require("fs");
+    const hookNames = process.argv.slice(2);
+    let pkg;
+    try {
+      pkg = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    } catch (e) {
+      process.exit(0);
+    }
+    const scripts = pkg.scripts || {};
+    for (const name of hookNames) {
+      const value = scripts[name];
+      if (typeof value === "string" && /security:audit|pnpm\s+audit|npm\s+audit/.test(value)) {
+        console.log(name + "=" + value);
+      }
+    }
+  ' "$pkg" "${HOOK_NAMES[@]}")"
+
+  if [[ -n "$hit" ]]; then
+    while IFS= read -r line; do
+      [[ -n "$line" ]] || continue
+      echo "REGRESSION: $rel: lifecycle hook $line invokes the security audit — the audit must run only as an explicit CI/release step" >&2
+      exit 1
+    done <<<"$hit"
+  fi
+done
 
 node - "$CI_WORKFLOW" "$RELEASE_WORKFLOW" <<'NODE'
 const fs = require('fs');
@@ -61,4 +90,4 @@ if ! grep -qE 'pnpm/action-setup@v[0-9]+' "$CI_WORKFLOW"; then
   exit 1
 fi
 
-echo "PASS: pnpm audit is wired through local devPreinstall, CI, and release validation before install" >&2
+echo "PASS: pnpm audit runs only as an explicit CI/release step before install, and no package.json lifecycle hook invokes it" >&2

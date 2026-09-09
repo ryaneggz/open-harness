@@ -65,19 +65,21 @@ live advisory query on every `pnpm install`, so a newly published advisory
 (GHSA-82fw-gwwq-j7x9) could fail a sandbox boot. The hook was removed;
 `security:audit` itself is unchanged, and `ci-harness.yml` / `release.yml`
 keep running it as an explicit step before `pnpm install --frozen-lockfile`.
-`.agro/evals/probes/security-audit-ci-only.sh` guards both halves.
+The negative lifecycle-hook assertion was folded into the pre-existing
+`.agro/evals/probes/pnpm-audit-ci-gate.sh` (#171) instead of living in a
+second probe, so one probe owns the audit-wiring contract; the standalone
+`security-audit-ci-only.sh` probe was deleted.
 
 ### Injection record
 
 | Probe | Injected change (then restored) | Pass exit | Red exit | Restored exit |
 |---|---|---|---|---|
-| `security-audit-ci-only.sh` | `package.json`: re-added `"pnpm:devPreinstall": "pnpm run security:audit"` after `"format"` | 0 | 1 (`REGRESSION: ... lifecycle hook pnpm:devPreinstall=pnpm run security:audit invokes the security audit`) | 0 |
-| `security-audit-ci-only.sh` | `.github/workflows/ci-harness.yml`: removed the `Run pnpm security audit` step (`run: pnpm run security:audit`) before `Install dependencies` | 0 | 1 (`REGRESSION: ... ci-harness.yml no longer runs 'pnpm run security:audit' as an explicit step`) | 0 |
+| `pnpm-audit-ci-gate.sh` | `package.json`: re-added `"pnpm:devPreinstall": "pnpm run security:audit"` after `"format"` | 0 | 1 (`REGRESSION: package.json: lifecycle hook pnpm:devPreinstall=pnpm run security:audit invokes the security audit — the audit must run only as an explicit CI/release step`) | 0 |
+| `pnpm-audit-ci-gate.sh` | `.github/workflows/ci-harness.yml`: removed the `Run pnpm security audit` step (`run: pnpm run security:audit`) before `Install dependencies` | 0 | 1 (`REGRESSION: .../ci-harness.yml no longer invokes 'pnpm run security:audit'`) | 0 |
 
 Post-restore check: `git diff --stat -- package.json .github/workflows/ci-harness.yml`
-showed only the intended one-line removal in `package.json` (the
-`pnpm:devPreinstall` hook); `ci-harness.yml` came back byte-identical to its
-pre-injection state.
+showed no output after each restore — both files came back byte-identical to
+their committed (HEAD) state.
 
 Removing the hook prevents future sandbox boots from depending on a live
 advisory feed. It does not repair the immutable `ghcr.io/mifunedev/openharness:0.9.0`
